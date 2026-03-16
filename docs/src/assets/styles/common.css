@@ -7,9 +7,25 @@
 }
 
 html,
+body,
+#app {
+  min-height: 100%;
+}
+
+html,
 body {
+  background: #fff;
+  color: var(--ant-color-text, rgba(0, 0, 0, 0.88));
+  transition:
+    background-color var(--ant-motion-duration-slow),
+    color var(--ant-motion-duration-slow);
   scrollbar-width: thin;
-  scrollbar-color: #eaeaea transparent;
+  scrollbar-color: color-mix(in srgb, var(--ant-color-text-tertiary), transparent 25%) transparent;
+}
+
+html.dark,
+html.dark body {
+  background: #141414;
 }
 
 .custom-carousel-item {

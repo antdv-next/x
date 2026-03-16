@@ -109,6 +109,7 @@ const handleSiderMenuClick: MenuEmits['click'] = (info) => {
           {{ sectionTitle }}
         </h2>
         <a-menu
+          class="ant-doc-main-sider-menu"
           mode="inline"
           :items="siderItems"
           :selected-keys="selectedSiderKeys"
@@ -145,15 +146,16 @@ const handleSiderMenuClick: MenuEmits['click'] = (info) => {
 .antdx-doc-layout {
   min-height: 100vh;
   background: var(--ant-color-bg-layout);
+  transition: background-color var(--ant-motion-duration-slow);
 }
 
 .antdx-doc-layout-main {
   max-width: 1440px;
   margin: 0 auto;
-  padding: 24px;
+  padding: 24px 24px 40px;
   display: grid;
-  grid-template-columns: 264px minmax(0, 1fr) 220px;
-  gap: 24px;
+  grid-template-columns: 240px minmax(0, 1fr) 200px;
+  gap: 40px;
 }
 
 .antdx-doc-layout-sider {
@@ -161,8 +163,14 @@ const handleSiderMenuClick: MenuEmits['click'] = (info) => {
   top: 88px;
   align-self: start;
   max-height: calc(100vh - 96px);
-  overflow: auto;
+  overflow: hidden;
+  scrollbar-width: thin;
+  scrollbar-gutter: stable;
   padding-right: 8px;
+}
+
+.antdx-doc-layout-sider:hover {
+  overflow-y: auto;
 }
 
 .antdx-doc-layout-sider-title {
@@ -173,12 +181,17 @@ const handleSiderMenuClick: MenuEmits['click'] = (info) => {
 }
 
 .antdx-doc-layout-sider :deep(.ant-menu) {
+  min-height: 100%;
+  padding-top: 0;
+  padding-bottom: var(--ant-margin-xxl) !important;
+  padding-inline: var(--ant-margin-xxs);
   border-inline-end: none;
-  background: transparent;
+  background: transparent !important;
 }
 
 .antdx-doc-layout-content {
   min-width: 0;
+  padding: 0;
 }
 
 .antdx-doc-layout-content-header {
@@ -212,6 +225,8 @@ const handleSiderMenuClick: MenuEmits['click'] = (info) => {
   align-self: start;
   max-height: calc(100vh - 96px);
   overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-gutter: stable;
   padding-left: 8px;
 }
 
@@ -221,7 +236,8 @@ const handleSiderMenuClick: MenuEmits['click'] = (info) => {
 
 @media (max-width: 1280px) {
   .antdx-doc-layout-main {
-    grid-template-columns: 240px minmax(0, 1fr);
+    grid-template-columns: 220px minmax(0, 1fr);
+    gap: 32px;
   }
 
   .antdx-doc-layout-anchor {

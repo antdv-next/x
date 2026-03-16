@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { storeToRefs } from 'pinia'
 import { onBeforeUnmount, onMounted, reactive } from 'vue'
-import { useAppStore } from '@/stores/app'
+import { useDarkMode } from '@/composables/use-dark-mode'
 
 interface BubbleConfig {
   size: number
@@ -22,8 +21,7 @@ interface BubbleState extends BubbleConfig {
 
 const MAX_OFFSET = 200
 
-const appStore = useAppStore()
-const { darkMode } = storeToRefs(appStore)
+const { isDark } = useDarkMode()
 
 const bubbles = reactive<BubbleState[]>([
   {
@@ -75,7 +73,7 @@ function randomize(index: number) {
 
   bubble.offsetX = (Math.random() - 0.5) * MAX_OFFSET * 2 * offsetXMultiple
   bubble.offsetY = (Math.random() - 0.5) * MAX_OFFSET * 2 * offsetYMultiple
-  bubble.opacity = darkMode.value
+  bubble.opacity = isDark.value
     ? 0.1 + Math.random() * 0.2
     : 0.1 + Math.random() * 0.05
   bubble.scale = 1 + Math.random() * 1
@@ -121,7 +119,7 @@ onBeforeUnmount(() => {
   position: absolute;
   inset: 0;
   overflow: hidden;
-  background: var(--ant-color-bg-container);
+  background: var(--ant-color-bg-layout);
 }
 
 .antdv-home-preview-banner-luminous-bubble {

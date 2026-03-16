@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { MenuEmits } from 'antdv-next'
-import { GlobalOutlined } from '@antdv-next/icons'
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import logoUrl from '@/assets/x.png'
@@ -8,28 +7,29 @@ import { useLocale } from '@/composables/use-locale'
 import { headerItems, headerLocales } from '@/config/header'
 import { resolveDocRoutePath } from '@/router/docs'
 import { useAppStore } from '@/stores/app'
+import SwitchBtn from './switch-btn.vue'
+import ThemeBtn from './theme-btn.vue'
 import 'antdv-next/dist/antd.css'
 
 const route = useRoute()
 const router = useRouter()
 const appStore = useAppStore()
-const { locale } = useLocale()
+const { locale, t } = useLocale()
 
-const itemKeys = headerItems.map(item => item.key).filter(Boolean) as string[]
-const headerPrefixes = itemKeys.toSorted((a, b) => b.length - a.length)
+const itemKeys = headerItems.map((item) => item.key).filter(Boolean) as string[]
+const headerPrefixes = [...itemKeys].sort((a, b) => b.length - a.length)
 
 function normalizeHeaderMatchPath(path: string) {
-  if (path.endsWith('-en'))
-    return path.slice(0, -3) || '/'
-  if (path.endsWith('-cn'))
-    return path.slice(0, -3) || '/'
+  if (path.endsWith('-en')) return path.slice(0, -3) || '/'
+  if (path.endsWith('-cn')) return path.slice(0, -3) || '/'
   return path
 }
 
 const selectedKeys = computed(() => {
   const normalizedPath = normalizeHeaderMatchPath(route.path)
-  const matchedHeaderPrefix = headerPrefixes.find(prefix =>
-    normalizedPath === prefix || normalizedPath.startsWith(`${prefix}/`),
+  const matchedHeaderPrefix = headerPrefixes.find(
+    (prefix) =>
+      normalizedPath === prefix || normalizedPath.startsWith(`${prefix}/`),
   )
   return matchedHeaderPrefix ? [matchedHeaderPrefix] : []
 })
@@ -38,13 +38,16 @@ const handleHeaderChange: MenuEmits['click'] = (info) => {
   router.push(String(info.key))
 }
 
-function toggleLocale() {
-  const nextLocale = appStore.locale === 'zh-CN' ? 'en-US' : 'zh-CN'
+const localeValue = computed(() => (appStore.locale === 'zh-CN' ? 1 : 2))
+
+function changeLocale(value: 1 | 2) {
+  const nextLocale = value === 1 ? 'zh-CN' : 'en-US'
+  if (appStore.locale === nextLocale) return
+
   appStore.setLocale(nextLocale)
 
   const localizedPath = resolveDocRoutePath(route.path, nextLocale)
-  if (!localizedPath || localizedPath === route.path)
-    return
+  if (!localizedPath || localizedPath === route.path) return
 
   router.replace({
     path: localizedPath,
@@ -58,7 +61,12 @@ function toggleLocale() {
   <header class="antdx-doc-header">
     <div class="antdx-doc-header-inner">
       <router-link class="antdx-doc-header-logo" to="/">
-        <img class="antdx-doc-header-logo-img" :src="logoUrl" draggable="false" alt="logo">
+        <img
+          class="antdx-doc-header-logo-img"
+          :src="logoUrl"
+          draggable="false"
+          alt="logo"
+        />
         <span class="antdx-doc-header-logo-text">Antd Next X</span>
       </router-link>
 
@@ -76,12 +84,17 @@ function toggleLocale() {
           </template>
         </a-menu>
 
-        <a-button class="antdx-doc-header-locale" type="text" @click="toggleLocale">
-          <template #icon>
-            <GlobalOutlined />
-          </template>
-          {{ locale === 'zh-CN' ? '中' : 'En' }}
-        </a-button>
+        <ThemeBtn />
+
+        <SwitchBtn
+          :value="localeValue"
+          :tooltip1="t('ui.localeBtn.tooltip1')"
+          :tooltip2="t('ui.localeBtn.tooltip2')"
+          @click="changeLocale"
+        >
+          <template #label1> 中 </template>
+          <template #label2> En </template>
+        </SwitchBtn>
       </div>
     </div>
   </header>
@@ -94,9 +107,13 @@ function toggleLocale() {
   z-index: 1000;
   height: 64px;
   width: 100%;
-  background-color: color-mix(in srgb, var(--ant-color-bg-container), transparent 20%);
+  background-color: color-mix(
+    in srgb,
+    var(--ant-color-bg-container),
+    transparent 20%
+  );
   backdrop-filter: blur(8px);
-  border-bottom: 1px solid color-mix(in srgb, var(--ant-color-border), transparent 30%);
+  box-shadow: var(--ant-box-shadow-tertiary);
 }
 
 .antdx-doc-header-inner {
@@ -135,23 +152,28 @@ function toggleLocale() {
   flex-shrink: 0;
 }
 
-.antdx-doc-header-menu {
+:deep(.antdx-doc-header-menu) {
+  flex: 1;
+  min-width: 0;
+  justify-content: flex-end;
   background: transparent !important;
   border-bottom: none !important;
   flex-shrink: 0;
-  width: max-content;
 }
 
-.antdx-doc-header-menu :deep(.ant-menu-item) {
+:deep(.antdx-doc-header-menu .ant-menu-item) {
   height: 64px;
   line-height: 64px;
 }
 
-.antdx-doc-header-locale {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  white-space: nowrap;
+@media (max-width: 1024px) {
+  .antdx-doc-header-right {
+    gap: 10px;
+  }
+
+  .antdx-doc-header-menu :deep(.ant-menu-item) {
+    padding-inline: 12px;
+  }
 }
 
 @media (max-width: 768px) {
@@ -161,6 +183,14 @@ function toggleLocale() {
 
   .antdx-doc-header-logo-text {
     display: none;
+  }
+
+  .antdx-doc-header-right {
+    gap: 8px;
+  }
+
+  .antdx-doc-header-menu :deep(.ant-menu-item) {
+    padding-inline: 8px;
   }
 }
 </style>

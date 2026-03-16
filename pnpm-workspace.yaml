@@ -57,6 +57,8 @@ catalogs:
     '@antdv-next/icons': ^1.0.4
     '@vueuse/core': ^14.2.1
     antdv-next: ^1.1.2
+    '@antdv-next/cssinjs': ^1.0.4
+    '@ant-design/fast-color': ^3.0.1
     dayjs: ^1.11.19
     lru-cache: ^11.2.2
     mlly: ^1.8.0

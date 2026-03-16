@@ -4,22 +4,35 @@ import { useDarkMode } from '@/composables/use-dark-mode'
 
 export function useProviderTheme() {
   const { isDark } = useDarkMode()
-  const theme = shallowRef<NonNullable<ConfigProviderProps['theme']>>({
+
+  const lightTheme: NonNullable<ConfigProviderProps['theme']> = {
+    token: {
+      colorBgBase: '#ffffff',
+      colorBgLayout: '#ffffff',
+    },
     zeroRuntime: true,
+  }
+
+  const darkTheme: NonNullable<ConfigProviderProps['theme']> = {
+    algorithm: [themeConfig.darkAlgorithm],
+    token: {
+      colorBgBase: '#141414',
+      colorBgLayout: '#141414',
+    },
+    zeroRuntime: true,
+  }
+
+  const theme = shallowRef<NonNullable<ConfigProviderProps['theme']>>({
+    ...lightTheme,
   })
   watch(
     isDark,
     () => {
       if (isDark.value) {
-        theme.value = {
-          algorithm: [themeConfig.darkAlgorithm],
-          zeroRuntime: true,
-        }
+        theme.value = darkTheme
       }
       else {
-        theme.value = {
-          zeroRuntime: true,
-        }
+        theme.value = lightTheme
       }
     },
     {

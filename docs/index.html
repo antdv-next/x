@@ -9,8 +9,9 @@
       (function () {
         const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
         const setting = localStorage.getItem('antdv-color-scheme') || 'auto'
-        if (setting === 'dark' || (prefersDark && setting !== 'light'))
-          document.documentElement.classList.toggle('dark', true)
+        const isDark = setting === 'dark' || (prefersDark && setting !== 'light')
+        document.documentElement.style.colorScheme = isDark ? 'dark' : 'light'
+        document.documentElement.classList.toggle('dark', isDark)
       })()
     </script>
   </head>

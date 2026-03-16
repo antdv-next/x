@@ -143,6 +143,12 @@ catalogs:
       specifier: ^66.6.6
       version: 66.6.6
   prod:
+    '@ant-design/fast-color':
+      specifier: ^3.0.1
+      version: 3.0.1
+    '@antdv-next/cssinjs':
+      specifier: ^1.0.4
+      version: 1.0.4
     '@antdv-next/icons':
       specifier: ^1.0.4
       version: 1.0.4
@@ -389,6 +395,12 @@ importers:
 
   packages/x:
     dependencies:
+      '@ant-design/fast-color':
+        specifier: catalog:prod
+        version: 3.0.1
+      '@antdv-next/cssinjs':
+        specifier: catalog:prod
+        version: 1.0.4(vue@3.5.29(typescript@5.9.3))
       '@antdv-next/icons':
         specifier: catalog:prod
         version: 1.0.4(vue@3.5.29(typescript@5.9.3))
@@ -442,6 +454,11 @@ packages:
 
   '@antdv-next/cssinjs@1.0.3':
     resolution: {integrity: sha512-weK+i7xxsqBhiq3ZISsEZo9Nrpzyvj/w5XTuX3f6u7+tDJX2x3sa7XDK4lhBeYuwFI9RBpJ8VpUFK4e/hc/m4g==}
+    peerDependencies:
+      vue: '>=3.2.0'
+
+  '@antdv-next/cssinjs@1.0.4':
+    resolution: {integrity: sha512-bk/jnt5jkDDgULeH5gHyNVMf1krC8xz/E0LAqLVUnmYnaxKoNOOUYJgZtM+ElbJfFVz6PuahtjX1Wqk61zNhWw==}
     peerDependencies:
       vue: '>=3.2.0'
 
@@ -2155,6 +2172,11 @@ packages:
 
   '@v-c/util@1.0.17':
     resolution: {integrity: sha512-Ixi2RmRkfXRRQjmGltTow9ZrycRQ+XRjg4mSp7nFtCnP/n+THEnFvA1VxU0G84H5a6boL4wlA8LTRbYyFuUKZw==}
+    peerDependencies:
+      vue: ^3.0.0
+
+  '@v-c/util@1.0.18':
+    resolution: {integrity: sha512-6inpVDoLC8JpcrZPR9hWaWcsEx1ruCPzhJ00sj92EEiAbA1OUEP7lF7NXj+nf5i/JZGfYzGOGKjXO7WACZL7Nw==}
     peerDependencies:
       vue: ^3.0.0
 
@@ -4548,6 +4570,15 @@ snapshots:
       stylis: 4.3.6
       vue: 3.5.29(typescript@5.9.3)
 
+  '@antdv-next/cssinjs@1.0.4(vue@3.5.29(typescript@5.9.3))':
+    dependencies:
+      '@emotion/hash': 0.8.0
+      '@emotion/unitless': 0.7.5
+      '@v-c/util': 1.0.18(vue@3.5.29(typescript@5.9.3))
+      csstype: 3.2.3
+      stylis: 4.3.6
+      vue: 3.5.29(typescript@5.9.3)
+
   '@antdv-next/icons@1.0.4(vue@3.5.29(typescript@5.9.3))':
     dependencies:
       '@ant-design/colors': 7.2.1
@@ -6100,6 +6131,10 @@ snapshots:
       vue: 3.5.29(typescript@5.9.3)
 
   '@v-c/util@1.0.17(vue@3.5.29(typescript@5.9.3))':
+    dependencies:
+      vue: 3.5.29(typescript@5.9.3)
+
+  '@v-c/util@1.0.18(vue@3.5.29(typescript@5.9.3))':
     dependencies:
       vue: 3.5.29(typescript@5.9.3)
 
