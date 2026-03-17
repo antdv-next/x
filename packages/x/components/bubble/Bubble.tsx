@@ -24,6 +24,7 @@ import { EditableContent } from './EditableContent'
 import Loading from './loading'
 import useBubbleStyle from './style'
 import { TypingContent } from './TypingContent'
+import useXComponentConfig from '../x-provider/hooks/use-x-component-config'
 
 function renderBubbleSlot(slot: BubbleSlot<any> | undefined, content: any, info: Info) {
   if (!slot)
@@ -142,6 +143,7 @@ export const XBubble = defineComponent({
   },
   setup(props, { expose }) {
     const attrs = useAttrs()
+    const contextConfig = useXComponentConfig('bubble')
     const rootRef = ref<HTMLDivElement>()
     const [hashId, cssVarCls] = useBubbleStyle(computed(() => props.prefixCls))
 
@@ -200,12 +202,16 @@ export const XBubble = defineComponent({
     const getSlotClassName = (slot: SemanticType) => {
       return [
         `${props.prefixCls}-${slot}`,
+        contextConfig.value.classes?.[slot],
         props.classes?.[slot],
       ]
     }
 
     const getSlotStyle = (slot: SemanticType) => {
-      return props.styles?.[slot]
+      return {
+        ...(contextConfig.value.styles?.[slot] ?? {}),
+        ...(props.styles?.[slot] ?? {}),
+      }
     }
 
     const renderHeader = () => {
@@ -284,6 +290,8 @@ export const XBubble = defineComponent({
         class={[
           prefixCls.value,
           `${prefixCls.value}-${placement.value}`,
+          contextConfig.value.className,
+          contextConfig.value.classes?.root,
           props.rootClassName,
           props.classes?.root,
           hashId.value,
@@ -296,6 +304,8 @@ export const XBubble = defineComponent({
           },
         ]}
         style={[
+          contextConfig.value.style,
+          contextConfig.value.styles?.root,
           props.styles?.root,
           attrs.style as StyleValue,
           props.style,
@@ -316,6 +326,7 @@ export const XBubble = defineComponent({
               `${prefixCls.value}-content`,
               `${prefixCls.value}-content-${variant.value}`,
               `${prefixCls.value}-content-${shape.value}`,
+              contextConfig.value.classes?.content,
               props.classes?.content,
               {
                 [`${prefixCls.value}-content-string`]: typeof memoedContent.value === 'string',
@@ -323,7 +334,10 @@ export const XBubble = defineComponent({
                 [`${prefixCls.value}-content-${props.info.status}`]: props.info.status,
               },
             ]}
-            style={props.styles?.content}
+            style={{
+              ...(contextConfig.value.styles?.content ?? {}),
+              ...(props.styles?.content ?? {}),
+            }}
           >
             {isFooterInner.value
               ? (

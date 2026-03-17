@@ -15,6 +15,7 @@ import {
 } from 'vue'
 import Item from './Item'
 import useActionsStyle from './style'
+import useXComponentConfig from '../x-provider/hooks/use-x-component-config'
 
 function getMotionTransitionProps(motionName: string): TransitionProps {
   return {
@@ -85,6 +86,7 @@ export const XActions = defineComponent({
   setup(props, { expose }) {
     const configCtx = useConfig()
     const attrs = useAttrs()
+    const contextConfig = useXComponentConfig('actions')
     const rootRef = ref<HTMLDivElement>()
     const [hashId, cssVarCls] = useActionsStyle(computed(() => props.prefixCls))
     const rootPrefixCls = computed(() => configCtx.value.getPrefixCls())
@@ -110,6 +112,20 @@ export const XActions = defineComponent({
       return rest
     })
 
+    const mergedClasses = computed(() => {
+      return {
+        ...(contextConfig.value.classes ?? {}),
+        ...(props.classes ?? {}),
+      } as Partial<Record<SemanticType, string>>
+    })
+
+    const mergedStyles = computed(() => {
+      return {
+        ...(contextConfig.value.styles ?? {}),
+        ...(props.styles ?? {}),
+      } as Partial<Record<SemanticType, CSSProperties>>
+    })
+
     const renderList = () => (
       <div
         class={[
@@ -124,8 +140,8 @@ export const XActions = defineComponent({
             onClick={props.onClick}
             dropdownProps={props.dropdownProps}
             prefixCls={props.prefixCls}
-            classes={props.classes}
-            styles={props.styles}
+            classes={mergedClasses.value}
+            styles={mergedStyles.value}
           />
         ))}
       </div>
@@ -137,6 +153,8 @@ export const XActions = defineComponent({
         {...domAttrs.value}
         class={[
           props.prefixCls,
+          contextConfig.value.className,
+          contextConfig.value.classes?.root,
           props.rootClassName,
           props.classes?.root,
           hashId.value,
@@ -148,6 +166,8 @@ export const XActions = defineComponent({
           },
         ]}
         style={[
+          contextConfig.value.style,
+          contextConfig.value.styles?.root,
           props.styles?.root,
           attrs.style as StyleValue,
           props.style,

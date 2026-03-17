@@ -13,12 +13,20 @@ import Bubble, {
   XBubbleList,
   XBubbleSystem,
 } from './bubble'
+import Conversations, {
+  ConversationsCreation,
+  XConversations,
+} from './conversations'
+import XProvider from './x-provider'
 
 const components = [
   XBubble,
   XBubbleList,
   XBubbleSystem,
   XBubbleDivider,
+  XConversations,
+  ConversationsCreation,
+  XProvider,
   XActions,
   ActionsAudio,
   ActionsCopy,
@@ -43,12 +51,16 @@ export {
   ActionsFeedback,
   ActionsItem,
   Bubble,
+  Conversations,
+  ConversationsCreation,
+  XProvider,
   version,
   XActions,
   XBubble,
   XBubbleDivider,
   XBubbleList,
   XBubbleSystem,
+  XConversations,
 }
 
 export type {
@@ -69,3 +81,15 @@ export type {
   BubbleProps,
   BubbleRef,
 } from './bubble'
+
+export type {
+  ConversationItemType,
+  ConversationsProps,
+  ConversationsRef,
+  CreationProps,
+  DividerItemType,
+  GroupableProps,
+  ShortcutKeys,
+} from './conversations'
+
+export type { XProviderProps } from './x-provider'

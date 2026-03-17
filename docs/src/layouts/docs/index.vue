@@ -2,6 +2,7 @@
 import type { MenuEmits } from 'antdv-next'
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { componentOverviewItems } from '@/components/component-overview/data'
 import { useDocPage } from '@/composables/use-doc-page'
 import { headerLocales } from '@/config/header'
 import { docsRoutes, LOCALE_EN_US, LOCALE_ZH_CN } from '@/router/docs'
@@ -35,6 +36,20 @@ function formatSegmentLabel(segment: string) {
     .join(' ')
 }
 
+interface SiderLeafItem {
+  key: string
+  label: string
+}
+
+interface SiderGroupItem {
+  key: string
+  type: 'group'
+  label: string
+  children: SiderLeafItem[]
+}
+
+type SiderItem = SiderLeafItem | SiderGroupItem
+
 const normalizedCurrentPath = computed(() => normalizePath(route.path))
 const currentPathWithoutLocale = computed(() => stripLocaleSuffix(normalizedCurrentPath.value))
 
@@ -53,7 +68,7 @@ const sectionTitle = computed(() => {
   return headerLocales?.[section]?.[locale] || formatSegmentLabel(section.slice(1))
 })
 
-const siderItems = computed(() => {
+const siderItems = computed<SiderItem[]>(() => {
   const section = currentSectionKey.value
   if (!section)
     return []
@@ -76,7 +91,7 @@ const siderItems = computed(() => {
       return leftPath.localeCompare(rightPath)
     })
 
-  return routesInSection.map((item) => {
+  const baseItems = routesInSection.map((item) => {
     const withoutLocale = stripLocaleSuffix(normalizePath(item.path))
     const segments = withoutLocale.split('/').filter(Boolean)
     const lastSegment = segments.at(-1) || ''
@@ -84,11 +99,63 @@ const siderItems = computed(() => {
 
     return {
       key: normalizePath(item.path),
+      pathWithoutLocale: withoutLocale,
+      slug: lastSegment,
+      isSectionIndex,
       label: isSectionIndex
         ? (appStore.locale === LOCALE_ZH_CN ? '概览' : 'Overview')
         : formatSegmentLabel(lastSegment),
     }
   })
+
+  if (section !== '/components')
+    return baseItems.map(({ key, label }) => ({ key, label }))
+
+  const localeKey = appStore.locale === LOCALE_EN_US ? LOCALE_EN_US : LOCALE_ZH_CN
+  const fallbackGroupLabel = localeKey === LOCALE_ZH_CN ? '未分类' : 'Ungrouped'
+  const overviewItem = baseItems.find(item => item.isSectionIndex)
+
+  const groups = new Map<string, { key: string, label: string, order: number, children: SiderLeafItem[] }>()
+  baseItems
+    .filter(item => !item.isSectionIndex)
+    .forEach((item) => {
+      const meta = componentOverviewItems.find(info => info.slug === item.slug)
+      const groupLabel = meta?.group?.[localeKey] ?? fallbackGroupLabel
+      const groupOrder = meta?.groupOrder ?? Number.MAX_SAFE_INTEGER
+      const groupKey = `${groupOrder}-${groupLabel}`
+
+      if (!groups.has(groupKey)) {
+        groups.set(groupKey, {
+          key: groupKey,
+          label: groupLabel,
+          order: groupOrder,
+          children: [],
+        })
+      }
+
+      groups.get(groupKey)!.children.push({
+        key: item.key,
+        label: meta?.title ?? item.label,
+      })
+    })
+
+  const groupedItems: SiderGroupItem[] = Array.from(groups.values())
+    .sort((left, right) => {
+      if (left.order !== right.order)
+        return left.order - right.order
+      return left.label.localeCompare(right.label)
+    })
+    .map(group => ({
+      key: group.key,
+      type: 'group',
+      label: group.label,
+      children: group.children.sort((left, right) => left.label.localeCompare(right.label)),
+    }))
+
+  return [
+    ...(overviewItem ? [{ key: overviewItem.key, label: overviewItem.label }] : []),
+    ...groupedItems,
+  ]
 })
 
 const selectedSiderKeys = computed(() => [normalizedCurrentPath.value])
