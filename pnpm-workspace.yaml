@@ -49,6 +49,8 @@ catalogs:
     markdown-it-container: ^4.0.0
     markdown-it-emoji: ^3.0.0
     shiki: ^3.13.0
+    pinia: ^3.0.4
+    oxfmt: ^0.41.0
     unocss: ^66.6.6
   prod:
     "@ant-design/fast-color": ^3.0.1
@@ -62,7 +64,6 @@ catalogs:
     nanoid: ^5.1.6
     pathe: ^2.0.3
     picomatch: ^4.0.3
-    pinia: ^3.0.4
     vue: ^3.5.29
     vue-i18n: ^11.2.8
     vue-router: ^5.0.3

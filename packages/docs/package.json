@@ -7,5 +7,26 @@
     "dev": "vp dev .",
     "build": "vp build .",
     "preview": "vp preview ."
+  },
+  "devDependencies": {
+    "@antdv-next/auto-import-resolver": "catalog:dev",
+    "@mdit-vue/plugin-frontmatter": "catalog:docs",
+    "@mdit-vue/plugin-headers": "catalog:docs",
+    "@mdit-vue/plugin-title": "catalog:docs",
+    "@mdit-vue/plugin-toc": "catalog:docs",
+    "@mdit-vue/shared": "catalog:docs",
+    "@mdit-vue/types": "catalog:docs",
+    "@shikijs/markdown-it": "catalog:docs",
+    "@shikijs/transformers": "catalog:docs",
+    "@types/markdown-it": "catalog:types",
+    "markdown-it": "catalog:docs",
+    "markdown-it-anchor": "catalog:docs",
+    "markdown-it-async": "catalog:docs",
+    "markdown-it-attrs": "catalog:docs",
+    "markdown-it-container": "catalog:docs",
+    "markdown-it-emoji": "catalog:docs",
+    "oxfmt": "catalog:docs",
+    "pinia": "catalog:docs",
+    "shiki": "catalog:docs"
   }
 }
