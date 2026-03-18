@@ -1,6 +1,7 @@
 import type { ComponentToken as ActionsToken } from "../../actions/style";
 import type { ComponentToken as BubbleComponentToken } from "../../bubble/style";
 import type { ComponentToken as ConversationsComponentToken } from "../../conversations/style";
+import type { ComponentToken as FileCardComponentToken } from "../../file-card/style";
 
 type EmptyComponentToken = Record<string, never>;
 
@@ -15,7 +16,7 @@ export interface ComponentTokenMap {
   ThoughtChain?: EmptyComponentToken;
   Welcome?: EmptyComponentToken;
   Actions?: ActionsToken;
-  FileCard?: EmptyComponentToken;
+  FileCard?: FileCardComponentToken;
   Folder?: EmptyComponentToken;
   Sources?: EmptyComponentToken;
   CodeHighlighter?: EmptyComponentToken;

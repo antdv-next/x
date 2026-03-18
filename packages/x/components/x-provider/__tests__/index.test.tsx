@@ -1,7 +1,7 @@
 import { mount } from "@vue/test-utils";
 import { describe, expect, it, vi } from "vite-plus/test";
 
-import { Bubble, Conversations } from "../../index";
+import { Bubble, Conversations, FileCard } from "../../index";
 import XProvider from "../index";
 
 describe("XProvider", () => {
@@ -44,6 +44,24 @@ describe("XProvider", () => {
 
     await wrapper.get(".antdx-conversations-creation").trigger("click");
     expect(onClick).toHaveBeenCalledTimes(1);
+  });
+
+  it("injects file-card component config", () => {
+    const wrapper = mount({
+      render() {
+        return (
+          <XProvider
+            fileCard={{
+              className: "test-file-card",
+            }}
+          >
+            <FileCard name="test.pdf" byte={1024} />
+          </XProvider>
+        );
+      },
+    });
+
+    expect(wrapper.find(".test-file-card").exists()).toBe(true);
   });
 
   it("passes iconPrefixCls and theme config to ConfigProvider", () => {

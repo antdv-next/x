@@ -18,6 +18,7 @@ import Conversations, {
   ConversationsCreation,
   XConversations,
 } from "./conversations";
+import FileCard, { FileCardList } from "./file-card";
 import XProvider from "./x-provider";
 
 const components = [
@@ -33,6 +34,8 @@ const components = [
   ActionsCopy,
   ActionsFeedback,
   ActionsItem,
+  FileCard,
+  FileCardList,
 ];
 
 export default {
@@ -53,6 +56,8 @@ export {
   Bubble,
   Conversations,
   ConversationsCreation,
+  FileCard,
+  FileCardList,
   XProvider,
   version,
   XActions,
@@ -81,6 +86,8 @@ export type {
   BubbleProps,
   BubbleRef,
 } from "./bubble";
+
+export type { FileCardListProps, FileCardProps } from "./file-card";
 
 export type {
   ConversationItemType,

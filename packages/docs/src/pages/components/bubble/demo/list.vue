@@ -1,15 +1,16 @@
 <script setup lang="ts">
+import type { FileCardProps } from "@antdv-next/x";
+
 import {
   AntDesignOutlined,
   CheckOutlined,
   CopyOutlined,
   EditOutlined,
-  FileOutlined,
   LinkOutlined,
   RedoOutlined,
   UserOutlined,
 } from "@antdv-next/icons";
-import { Actions, Bubble } from "@antdv-next/x";
+import { Actions, Bubble, FileCard } from "@antdv-next/x";
 import { Avatar, Button, Flex, Space, Switch, Typography } from "antdv-next";
 import MarkdownIt from "markdown-it";
 import { computed, h, ref } from "vue";
@@ -108,24 +109,18 @@ const role = computed<any>(() => ({
     variant: "borderless",
     styles: { root: { margin: 0, marginBottom: "-12px" } },
     avatar: () => "",
-    contentRender: (content: { name: string; size?: string }) =>
-      // FIXME: Replace this mocked reference card with `FileCard` after FileCard lands in `@antdv-next/x`.
-      h("div", { class: "reference-content" }, [
-        h(LinkOutlined, { class: "reference-link" }),
-        h("div", { class: "reference-file" }, [
-          h(FileOutlined, { class: "reference-file-icon" }),
-          h("div", { class: "reference-file-meta" }, [
-            h(Typography.Text, null, { default: () => content.name }),
-            content.size
-              ? h(
-                  Typography.Text,
-                  { type: "secondary", class: "reference-file-size" },
-                  { default: () => content.size },
-                )
-              : null,
-          ]),
-        ]),
-      ]),
+    contentRender: (content: FileCardProps) =>
+      h(Space, null, {
+        default: () => [
+          h(LinkOutlined),
+          h(FileCard, {
+            type: "file",
+            size: "small",
+            name: content.name,
+            byte: content.byte,
+          }),
+        ],
+      }),
   },
 }));
 
@@ -239,57 +234,6 @@ function addWithReference() {
 .markdown-content {
   white-space: normal;
   line-height: 1.7;
-}
-
-.reference-content {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.reference-link {
-  color: #8c8c8c;
-}
-
-.reference-file {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  max-width: 240px;
-  padding: 6px 10px;
-  border: 1px solid #f0f0f0;
-  border-radius: 10px;
-  background: #fff;
-}
-
-.reference-file-icon {
-  color: #1677ff;
-  font-size: 16px;
-}
-
-.reference-file-meta {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.reference-file-meta :deep(.ant-typography) {
-  margin-bottom: 0;
-  line-height: 1.2;
-}
-
-.reference-file-meta :deep(.ant-typography:last-child) {
-  margin-bottom: 0;
-}
-
-.reference-file-meta :deep(.ant-typography:first-child) {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.reference-file-size {
-  font-size: 12px;
 }
 </style>
 
