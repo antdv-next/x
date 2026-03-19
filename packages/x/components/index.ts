@@ -18,6 +18,7 @@ import Conversations, {
   ConversationsCreation,
   XConversations,
 } from "./conversations";
+import Sources from "./sources";
 import XProvider from "./x-provider";
 
 const components = [
@@ -33,6 +34,7 @@ const components = [
   ActionsCopy,
   ActionsFeedback,
   ActionsItem,
+  Sources,
 ];
 
 export default {
@@ -61,6 +63,7 @@ export {
   XBubbleList,
   XBubbleSystem,
   XConversations,
+  Sources,
 };
 
 export type {
@@ -91,5 +94,7 @@ export type {
   GroupableProps,
   ShortcutKeys,
 } from "./conversations";
+
+export type { SourcesProps } from "./sources";
 
 export type { XProviderProps } from "./x-provider";

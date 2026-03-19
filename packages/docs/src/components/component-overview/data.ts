@@ -79,6 +79,27 @@ export const componentOverviewItems: ComponentOverviewItem[] = [
       "https://mdn.alipayobjects.com/huamei_lkxviz/afts/img/bcXhRphVOuIAAAAAQFAAAAgADtFMAQFr/original",
   },
   {
+    slug: "sources",
+    path: "/components/sources",
+    title: "Sources",
+    subtitle: {
+      "zh-CN": "来源引用",
+    },
+    description: {
+      "zh-CN": "展示引用的数据来源地址。",
+      "en-US": "Show the source address of the referenced data.",
+    },
+    group: {
+      "zh-CN": "反馈",
+      "en-US": "Feedback",
+    },
+    groupOrder: 4,
+    cover:
+      "https://mdn.alipayobjects.com/huamei_b00jk5/afts/img/A*3nEPRYJbNQgAAAAAQFAAAAgAegitAQ/original",
+    coverDark:
+      "https://mdn.alipayobjects.com/huamei_b00jk5/afts/img/A*_7mMRrQVcXcAAAAAQEAAAAgAegitAQ/original",
+  },
+  {
     slug: "x-provider",
     path: "/components/x-provider",
     title: "XProvider",
