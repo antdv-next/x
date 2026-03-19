@@ -48,7 +48,7 @@
     "@vueuse/core": "catalog:prod",
     "antdv-next": "catalog:prod",
     "dayjs": "catalog:prod",
-    "shiki": "^3.13.0",
+    "shiki": "catalog:docs",
     "vue": "catalog:prod"
   },
   "peerDependencies": {
