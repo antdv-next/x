@@ -35,6 +35,27 @@ export const componentOverviewItems: ComponentOverviewItem[] = [
       "https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*uaGhTY1-LL0AAAAAAAAAAAAADgCCAQ/original",
   },
   {
+    slug: "code-highlighter",
+    path: "/components/code-highlighter",
+    title: "CodeHighlighter",
+    subtitle: {
+      "zh-CN": "代码高亮",
+    },
+    description: {
+      "zh-CN": "用于展示代码块的语法高亮组件。",
+      "en-US": "A component for displaying syntax-highlighted code blocks.",
+    },
+    group: {
+      "zh-CN": "通用",
+      "en-US": "Common",
+    },
+    groupOrder: 0,
+    cover:
+      "https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*rHIYQIL1X-QAAAAAAAAAAAAADgCCAQ/original",
+    coverDark:
+      "https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*uaGhTY1-LL0AAAAAAAAAAAAADgCCAQ/original",
+  },
+  {
     slug: "conversations",
     path: "/components/conversations",
     title: "Conversations",

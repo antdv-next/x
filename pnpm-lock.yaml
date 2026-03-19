@@ -403,6 +403,9 @@ importers:
       dayjs:
         specifier: catalog:prod
         version: 1.11.19
+      shiki:
+        specifier: ^3.13.0
+        version: 3.23.0
       vue:
         specifier: catalog:prod
         version: 3.5.29(typescript@5.9.3)

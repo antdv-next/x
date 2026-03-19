@@ -1,5 +1,6 @@
 import type { ComponentToken as ActionsToken } from "../../actions/style";
 import type { ComponentToken as BubbleComponentToken } from "../../bubble/style";
+import type { ComponentToken as CodeHighlighterToken } from "../../code-highlighter/style";
 import type { ComponentToken as ConversationsComponentToken } from "../../conversations/style";
 
 type EmptyComponentToken = Record<string, never>;
@@ -18,6 +19,6 @@ export interface ComponentTokenMap {
   FileCard?: EmptyComponentToken;
   Folder?: EmptyComponentToken;
   Sources?: EmptyComponentToken;
-  CodeHighlighter?: EmptyComponentToken;
+  CodeHighlighter?: CodeHighlighterToken;
   Mermaid?: EmptyComponentToken;
 }
