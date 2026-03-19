@@ -46,14 +46,14 @@ export const componentOverviewItems: ComponentOverviewItem[] = [
       "en-US": "A component for displaying syntax-highlighted code blocks.",
     },
     group: {
-      "zh-CN": "通用",
-      "en-US": "Common",
+      "zh-CN": "反馈",
+      "en-US": "Feedback",
     },
-    groupOrder: 0,
+    groupOrder: 4,
     cover:
-      "https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*rHIYQIL1X-QAAAAAAAAAAAAADgCCAQ/original",
+      "https://mdn.alipayobjects.com/huamei_lkxviz/afts/img/_KKkTrXq7wcAAAAAKuAAAAgADtFMAQFr/original",
     coverDark:
-      "https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*uaGhTY1-LL0AAAAAAAAAAAAADgCCAQ/original",
+      "https://mdn.alipayobjects.com/huamei_lkxviz/afts/img/c62-S4SH1tUAAAAANuAAAAgADtFMAQFr/original",
   },
   {
     slug: "conversations",

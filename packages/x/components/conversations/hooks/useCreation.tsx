@@ -8,6 +8,8 @@ import type {
   PrefixKeysType,
 } from "../interface";
 
+import { useLocale } from "../../locale";
+
 const PrefixKeys: PrefixKeysType = {
   Alt: ["altKey", "Alt", "Alt"],
   Ctrl: ["ctrlKey", "Ctrl", "Ctrl"],
@@ -58,6 +60,8 @@ export const CreationLabel = defineComponent<CreationLabelProps>({
     },
   },
   setup(props) {
+    const [locale] = useLocale("Conversations");
+
     return () => {
       const showShortcutKeys = !!props.shortcutKeysIcon?.length;
 
@@ -68,7 +72,7 @@ export const CreationLabel = defineComponent<CreationLabelProps>({
             { [`${props.prefixCls}-shortcut-keys-show`]: showShortcutKeys },
           ]}
         >
-          <span>New chat</span>
+          <span>{locale.value.create}</span>
           {showShortcutKeys && (
             <span class={`${props.prefixCls}-shortcut-keys`}>
               {props.shortcutKeysIcon?.map(keyIcon => (

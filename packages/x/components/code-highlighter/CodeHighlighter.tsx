@@ -141,7 +141,7 @@ export const XCodeHighlighter = defineComponent({
     watch(
       () => [props.content, props.language, props.theme] as const,
       () => {
-        highlightCode();
+        void highlightCode();
       },
       { immediate: true },
     );
