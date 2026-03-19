@@ -63,7 +63,7 @@ type PresetIcons =
   | "python";
 ```
 
-### FileCard.List
+### FileCardList
 
 | 属性        | 说明         | 类型                                                                                              | 默认值      |
 | ----------- | ------------ | ------------------------------------------------------------------------------------------------- | ----------- |
@@ -75,3 +75,11 @@ type PresetIcons =
 | `overflow`  | 超出展示方式 | `'scrollX' \| 'scrollY' \| 'wrap'`                                                                | `'wrap'`    |
 | `classes`   | 语义化 class | `Partial<Record<'root' \| 'card' \| 'file' \| 'icon' \| 'name' \| 'description', string>>`        | -           |
 | `styles`    | 语义化 style | `Partial<Record<'root' \| 'card' \| 'file' \| 'icon' \| 'name' \| 'description', CSSProperties>>` | -           |
+
+> 推荐优先使用 `FileCardList` 导出。`FileCard.List` 旧写法仍兼容。
+
+## 语义化 DOM
+
+<demo src="./demo/semantic.vue" simplify>FileCard 语义结构</demo>
+
+<demo src="./demo/semantic-list.vue" simplify>FileCardList 语义结构</demo>

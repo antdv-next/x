@@ -19,7 +19,7 @@ export interface ActionsAudioProps {
   styles?: Partial<Record<SemanticType, CSSProperties>>;
 }
 
-const ActionsAudio = defineComponent({
+export const XActionsAudio = defineComponent({
   name: "XActionsAudio",
   props: {
     status: {
@@ -87,4 +87,4 @@ const ActionsAudio = defineComponent({
   },
 });
 
-export default ActionsAudio;
+export default XActionsAudio;

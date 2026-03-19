@@ -187,7 +187,7 @@ const DEFAULT_ICON = {
   key: "default" as const,
 };
 
-const FileCard = defineComponent({
+export const XFileCard = defineComponent({
   name: "XFileCard",
   inheritAttrs: false,
   props: {
@@ -461,4 +461,4 @@ const FileCard = defineComponent({
   },
 });
 
-export default FileCard;
+export default XFileCard;

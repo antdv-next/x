@@ -24,18 +24,18 @@ description: 用于 AI 对话场景中展示代码块，提供语法高亮、行
 
 ### 属性
 
-| 属性            | 说明                 | 类型                                                     | 默认值    |
-| --------------- | -------------------- | -------------------------------------------------------- | --------- |
-| content         | 代码内容             | `string`                                                 | -         |
-| language        | 代码语言类型         | `string`                                                 | `'text'`  |
-| showLineNumbers | 是否显示行号         | `boolean`                                                | `true`    |
-| showLanguage    | 是否显示语言标识     | `boolean`                                                | `true`    |
-| showThemeToggle | 是否显示主题切换按钮 | `boolean`                                                | `true`    |
-| showCopyButton  | 是否显示复制按钮     | `boolean`                                                | `true`    |
-| theme           | 主题模式             | `'light' \| 'dark'`                                      | `'light'` |
-| startLineNumber | 起始行号             | `number`                                                 | `1`       |
-| classes         | 自定义类名           | `Record<'root' \| 'header' \| 'content', string>`        | -         |
-| styles          | 自定义样式           | `Record<'root' \| 'header' \| 'content', CSSProperties>` | -         |
+| 属性            | 说明                 | 类型                                                                                         | 默认值    |
+| --------------- | -------------------- | -------------------------------------------------------------------------------------------- | --------- |
+| content         | 代码内容             | `string`                                                                                     | -         |
+| language        | 代码语言类型         | `string`                                                                                     | `'text'`  |
+| showLineNumbers | 是否显示行号         | `boolean`                                                                                    | `true`    |
+| showLanguage    | 是否显示语言标识     | `boolean`                                                                                    | `true`    |
+| showThemeToggle | 是否显示主题切换按钮 | `boolean`                                                                                    | `true`    |
+| showCopyButton  | 是否显示复制按钮     | `boolean`                                                                                    | `true`    |
+| theme           | 主题模式             | `'light' \| 'dark'`                                                                          | `'light'` |
+| startLineNumber | 起始行号             | `number`                                                                                     | `1`       |
+| classes         | 自定义类名           | `Partial<Record<'root' \| 'header' \| 'headerTitle' \| 'code' \| 'content', string>>`        | -         |
+| styles          | 自定义样式           | `Partial<Record<'root' \| 'header' \| 'headerTitle' \| 'code' \| 'content', CSSProperties>>` | -         |
 
 ### 事件
 
@@ -49,6 +49,10 @@ description: 用于 AI 对话场景中展示代码块，提供语法高亮、行
 | 属性          | 说明              | 类型             |
 | ------------- | ----------------- | ---------------- |
 | nativeElement | 获取原生 DOM 元素 | `HTMLDivElement` |
+
+## 语义化 DOM
+
+<demo src="./demo/semantic.vue" simplify>CodeHighlighter 语义结构</demo>
 
 ## 设计令牌
 

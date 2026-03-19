@@ -2,7 +2,7 @@
 import type { ActionsProps } from "@antdv-next/x";
 
 import { RedoOutlined } from "@antdv-next/icons";
-import { Actions } from "@antdv-next/x";
+import { Actions, ActionsCopy } from "@antdv-next/x";
 import { message, Pagination, Space } from "antdv-next";
 import { computed, h, ref } from "vue";
 
@@ -30,7 +30,7 @@ const items = computed<ActionsProps["items"]>(() => [
   {
     key: "copy",
     label: "Copy",
-    actionRender: () => h(Actions.Copy, { text: "copy value" }),
+    actionRender: () => h(ActionsCopy, { text: "copy value" }),
   },
 ]);
 

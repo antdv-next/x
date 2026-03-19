@@ -1,4 +1,4 @@
-import type { PropType, StyleValue } from "vue";
+import type { CSSProperties, PropType, StyleValue } from "vue";
 
 import {
   CopyOutlined,
@@ -82,7 +82,7 @@ export const XCodeHighlighter = defineComponent({
     },
     styles: {
       type: Object as PropType<
-        Partial<Record<CodeHighlighterSemanticType, Record<string, any>>>
+        Partial<Record<CodeHighlighterSemanticType, CSSProperties>>
       >,
       default: () => ({}),
     },
@@ -200,7 +200,10 @@ export const XCodeHighlighter = defineComponent({
       return (
         <div class={getSlotClassName("header")} style={props.styles?.header}>
           {props.showLanguage && (
-            <span class={`${props.prefixCls}-lang`}>
+            <span
+              class={[`${props.prefixCls}-lang`, props.classes?.headerTitle]}
+              style={props.styles?.headerTitle}
+            >
               {props.language || "text"}
             </span>
           )}
@@ -257,7 +260,8 @@ export const XCodeHighlighter = defineComponent({
         <div class={getSlotClassName("content")} style={props.styles?.content}>
           {renderLineNumbers()}
           <div
-            class={`${props.prefixCls}-code`}
+            class={[`${props.prefixCls}-code`, props.classes?.code]}
+            style={props.styles?.code}
             innerHTML={highlightedHtml.value}
           />
         </div>

@@ -41,7 +41,7 @@ export interface FileCardListProps {
   overflow?: "scrollX" | "scrollY" | "wrap";
 }
 
-const List = defineComponent({
+export const XFileCardList = defineComponent({
   name: "XFileCardList",
   props: {
     prefixCls: {
@@ -298,4 +298,4 @@ const List = defineComponent({
   },
 });
 
-export default List;
+export default XFileCardList;

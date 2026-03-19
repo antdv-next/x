@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Bubble } from "@antdv-next/x";
+import { BubbleSystem } from "@antdv-next/x";
 import { Space, Typography } from "antdv-next";
 import { h } from "vue";
 
@@ -8,15 +8,15 @@ const text = "Hello, this is a system message";
 
 <template>
   <Space direction="vertical" style="display: flex; width: 100%" :size="14">
-    <Bubble.System :content="text" />
+    <BubbleSystem :content="text" />
 
-    <Bubble.System
+    <BubbleSystem
       variant="outlined"
       shape="round"
       :content="[text, ' ', h(Typography.Link, null, { default: () => 'ok' })]"
     />
 
-    <Bubble.System
+    <BubbleSystem
       variant="borderless"
       :content="[
         text,

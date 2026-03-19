@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { ActionsFeedbackProps } from "@antdv-next/x";
 
-import { Actions, Bubble } from "@antdv-next/x";
+import { Actions, BubbleList } from "@antdv-next/x";
 import { Flex, Spin } from "antdv-next";
 import { h, ref } from "vue";
 
@@ -115,7 +115,7 @@ const role: any = {
 </script>
 
 <template>
-  <Bubble.List style="height: 500px" :role="role" :items="messages" />
+  <BubbleList style="height: 500px" :role="role" :items="messages" />
 </template>
 
 <docs lang="zh-CN">

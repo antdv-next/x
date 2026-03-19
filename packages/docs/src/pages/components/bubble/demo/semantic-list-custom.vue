@@ -2,7 +2,7 @@
 import type { BubbleListProps } from "@antdv-next/x";
 
 import { FrownOutlined, SmileOutlined, SyncOutlined } from "@antdv-next/icons";
-import { Bubble } from "@antdv-next/x";
+import { BubbleList } from "@antdv-next/x";
 import { Button, Space, Spin } from "antdv-next";
 import { h } from "vue";
 
@@ -81,7 +81,7 @@ const items = [
 </script>
 
 <template>
-  <Bubble.List style="height: 500px" :role="role" :items="items" />
+  <BubbleList style="height: 500px" :role="role" :items="items" />
 </template>
 
 <docs lang="zh-CN">

@@ -30,7 +30,7 @@ export interface ActionsFeedbackProps {
   styles?: Partial<Record<SemanticType, CSSProperties>>;
 }
 
-const ActionsFeedback = defineComponent({
+export const XActionsFeedback = defineComponent({
   name: "XActionsFeedback",
   inheritAttrs: false,
   props: {
@@ -183,4 +183,4 @@ const ActionsFeedback = defineComponent({
   },
 });
 
-export default ActionsFeedback;
+export default XActionsFeedback;

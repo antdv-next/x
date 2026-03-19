@@ -1,6 +1,11 @@
-import type { HTMLAttributes } from "vue";
+import type { CSSProperties, HTMLAttributes } from "vue";
 
-export type CodeHighlighterSemanticType = "root" | "header" | "content";
+export type CodeHighlighterSemanticType =
+  | "root"
+  | "header"
+  | "headerTitle"
+  | "code"
+  | "content";
 
 export interface CodeHighlighterRef {
   nativeElement: HTMLDivElement;
@@ -46,7 +51,7 @@ export interface CodeHighlighterProps extends Omit<
   /**
    * 自定义样式
    */
-  styles?: Partial<Record<CodeHighlighterSemanticType, Record<string, any>>>;
+  styles?: Partial<Record<CodeHighlighterSemanticType, CSSProperties>>;
   /**
    * 自定义类名
    */

@@ -24,7 +24,7 @@ export interface ActionsCopyProps {
   styles?: Partial<Record<SemanticType, CSSProperties>>;
 }
 
-const ActionsCopy = defineComponent({
+export const XActionsCopy = defineComponent({
   name: "XActionsCopy",
   inheritAttrs: false,
   props: {
@@ -98,4 +98,4 @@ const ActionsCopy = defineComponent({
   },
 });
 
-export default ActionsCopy;
+export default XActionsCopy;

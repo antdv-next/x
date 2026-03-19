@@ -84,3 +84,7 @@ type ItemType = ConversationItemType | DividerItemType;
 | `icon`     | 自定义图标         | `VNodeChild \| (() => VNodeChild)`     | -          |
 | `disabled` | 是否禁用新会话按钮 | `boolean`                              | `false`    |
 | `onClick`  | 点击回调           | `(event?: MouseEvent) => void`         | -          |
+
+## 语义化 DOM
+
+<demo src="./demo/semantic.vue" simplify>Conversations 语义结构</demo>

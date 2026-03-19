@@ -83,3 +83,7 @@ type ItemType = ConversationItemType | DividerItemType;
 | `icon`     | Custom icon           | `VNodeChild \| (() => VNodeChild)`     | -          |
 | `disabled` | Disable create button | `boolean`                              | `false`    |
 | `onClick`  | Click callback        | `(event?: MouseEvent) => void`         | -          |
+
+## Semantic DOM
+
+<demo src="./demo/semantic.vue" simplify>Conversations Semantic DOM</demo>

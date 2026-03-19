@@ -24,6 +24,7 @@ declare module 'vue' {
     AFlex: typeof import('antdv-next')['Flex']
     AInput: typeof import('antdv-next')['Input']
     AMenu: typeof import('antdv-next')['Menu']
+    APopover: typeof import('antdv-next')['Popover']
     ARadio: typeof import('antdv-next')['Radio']
     ARadioGroup: typeof import('antdv-next')['RadioGroup']
     ARow: typeof import('antdv-next')['Row']
@@ -34,6 +35,8 @@ declare module 'vue' {
     ATag: typeof import('antdv-next')['Tag']
     ATooltip: typeof import('antdv-next')['Tooltip']
     ATypography: typeof import('antdv-next')['Typography']
+    ATypographyParagraph: typeof import('antdv-next')['TypographyParagraph']
+    ATypographyTitle: typeof import('antdv-next')['TypographyTitle']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
   }
@@ -53,6 +56,7 @@ declare global {
   const AFlex: typeof import('antdv-next')['Flex']
   const AInput: typeof import('antdv-next')['Input']
   const AMenu: typeof import('antdv-next')['Menu']
+  const APopover: typeof import('antdv-next')['Popover']
   const ARadio: typeof import('antdv-next')['Radio']
   const ARadioGroup: typeof import('antdv-next')['RadioGroup']
   const ARow: typeof import('antdv-next')['Row']
@@ -63,6 +67,8 @@ declare global {
   const ATag: typeof import('antdv-next')['Tag']
   const ATooltip: typeof import('antdv-next')['Tooltip']
   const ATypography: typeof import('antdv-next')['Typography']
+  const ATypographyParagraph: typeof import('antdv-next')['TypographyParagraph']
+  const ATypographyTitle: typeof import('antdv-next')['TypographyTitle']
   const RouterLink: typeof import('vue-router')['RouterLink']
   const RouterView: typeof import('vue-router')['RouterView']
 }

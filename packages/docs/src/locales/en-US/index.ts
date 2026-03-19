@@ -13,6 +13,11 @@ export default {
       tooltip2: "English / 中文",
     },
   },
+  components: {
+    semanticPreview: {
+      usage: "Usage Example",
+    },
+  },
   home: {
     desc: "A community-driven AI design system for Vue. Build intelligent interfaces with ease.",
     start: "Get Started",

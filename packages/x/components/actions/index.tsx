@@ -4,10 +4,10 @@ import type { ActionsFeedbackProps } from "./ActionsFeedback";
 import type { ActionsItemProps } from "./ActionsItem";
 
 import Actions, { XActions } from "./Actions";
-import ActionsAudio from "./ActionsAudio";
-import ActionsCopy from "./ActionsCopy";
-import ActionsFeedback from "./ActionsFeedback";
-import ActionsItem, { ACTIONS_ITEM_STATUS } from "./ActionsItem";
+import ActionsAudio, { XActionsAudio } from "./ActionsAudio";
+import ActionsCopy, { XActionsCopy } from "./ActionsCopy";
+import ActionsFeedback, { XActionsFeedback } from "./ActionsFeedback";
+import ActionsItem, { ACTIONS_ITEM_STATUS, XActionsItem } from "./ActionsItem";
 
 export type {
   ActionsClickInfo,
@@ -36,6 +36,10 @@ export {
   ActionsFeedback,
   ActionsItem,
   XActions,
+  XActionsAudio,
+  XActionsCopy,
+  XActionsFeedback,
+  XActionsItem,
 };
 
 export type {

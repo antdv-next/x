@@ -62,7 +62,7 @@ type PresetIcons =
   | "python";
 ```
 
-### FileCard.List
+### FileCardList
 
 | Property    | Description            | Type                                                                                              | Default     |
 | ----------- | ---------------------- | ------------------------------------------------------------------------------------------------- | ----------- |
@@ -74,3 +74,11 @@ type PresetIcons =
 | `overflow`  | Overflow display style | `'scrollX' \| 'scrollY' \| 'wrap'`                                                                | `'wrap'`    |
 | `classes`   | Semantic class names   | `Partial<Record<'root' \| 'card' \| 'file' \| 'icon' \| 'name' \| 'description', string>>`        | -           |
 | `styles`    | Semantic styles        | `Partial<Record<'root' \| 'card' \| 'file' \| 'icon' \| 'name' \| 'description', CSSProperties>>` | -           |
+
+Prefer the `FileCardList` export. Legacy `FileCard.List` syntax remains compatible.
+
+## Semantic DOM
+
+<demo src="./demo/semantic.vue" simplify>FileCard Semantic DOM</demo>
+
+<demo src="./demo/semantic-list.vue" simplify>FileCardList Semantic DOM</demo>

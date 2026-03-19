@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { FileCardListProps, FileCardProps } from "@antdv-next/x";
 
-import { FileCard } from "@antdv-next/x";
+import { FileCardList } from "@antdv-next/x";
 import { Flex, Segmented } from "antdv-next";
 import { ref } from "vue";
 
@@ -53,7 +53,7 @@ const overflow = ref<FileCardListProps["overflow"]>("wrap");
       style="margin-inline-end: auto"
       @change="value => (overflow = value as FileCardListProps['overflow'])"
     />
-    <FileCard.List
+    <FileCardList
       :items="[...images, ...files]"
       removable
       :overflow="overflow"

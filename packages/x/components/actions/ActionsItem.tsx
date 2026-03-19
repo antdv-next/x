@@ -34,7 +34,7 @@ export interface ActionsItemProps {
   styles?: Partial<Record<SemanticType, CSSProperties>>;
 }
 
-const ActionsItem = defineComponent({
+export const XActionsItem = defineComponent({
   name: "XActionsItem",
   inheritAttrs: false,
   props: {
@@ -132,4 +132,4 @@ const ActionsItem = defineComponent({
   },
 });
 
-export default ActionsItem;
+export default XActionsItem;

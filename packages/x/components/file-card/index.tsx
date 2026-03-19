@@ -1,5 +1,5 @@
-import FileCard, { type FileCardProps } from "./FileCard";
-import List, { type FileCardListProps } from "./List";
+import FileCard, { type FileCardProps, XFileCard } from "./FileCard";
+import List, { type FileCardListProps, XFileCardList } from "./List";
 
 type FileCardType = typeof FileCard & {
   List: typeof List;
@@ -8,7 +8,7 @@ type FileCardType = typeof FileCard & {
 const FileCardWithSub = FileCard as FileCardType;
 FileCardWithSub.List = List;
 
-export { List as FileCardList };
+export { List as FileCardList, XFileCard, XFileCardList };
 
 export type { FileCardListProps, FileCardProps };
 

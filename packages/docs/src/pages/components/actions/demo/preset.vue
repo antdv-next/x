@@ -6,7 +6,13 @@ import type {
 } from "@antdv-next/x";
 
 import { CheckOutlined, ShareAltOutlined } from "@antdv-next/icons";
-import { Actions } from "@antdv-next/x";
+import {
+  Actions,
+  ActionsAudio,
+  ActionsCopy,
+  ActionsFeedback,
+  ActionsItem,
+} from "@antdv-next/x";
 import { message, Pagination } from "antdv-next";
 import { computed, h, ref } from "vue";
 
@@ -51,7 +57,7 @@ const items = computed<ActionsProps["items"]>(() => [
   {
     key: "feedback",
     actionRender: () =>
-      h(Actions.Feedback, {
+      h(ActionsFeedback, {
         value: feedbackStatus.value,
         styles: {
           liked: {
@@ -67,13 +73,13 @@ const items = computed<ActionsProps["items"]>(() => [
   {
     key: "copy",
     label: "Copy",
-    actionRender: () => h(Actions.Copy, { text: "copy value" }),
+    actionRender: () => h(ActionsCopy, { text: "copy value" }),
   },
   {
     key: "audio",
     label: "Audio",
     actionRender: () =>
-      h(Actions.Audio, {
+      h(ActionsAudio, {
         onClick: () => toggleStatus("audio"),
         status: audioStatus.value,
       }),
@@ -82,7 +88,7 @@ const items = computed<ActionsProps["items"]>(() => [
     key: "share",
     label: "Share",
     actionRender: () =>
-      h(Actions.Item, {
+      h(ActionsItem, {
         onClick: () => toggleStatus("share"),
         label: shareStatus.value,
         status: shareStatus.value,
