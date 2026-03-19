@@ -34,9 +34,9 @@ export const XBubble = defineComponent({
   props: {
     prefixCls: {
       type: String,
-      default: "antdx-bubble",
+      default: "antd-bubble",
     },
-    rootClassName: {
+    rootClass: {
       type: String,
       default: "",
     },
@@ -358,7 +358,7 @@ export const XBubble = defineComponent({
           `${prefixCls.value}-${placement.value}`,
           contextConfig.value.className,
           contextConfig.value.classes?.root,
-          props.rootClassName,
+          props.rootClass,
           props.classes?.root,
           hashId.value,
           cssVarCls.value,

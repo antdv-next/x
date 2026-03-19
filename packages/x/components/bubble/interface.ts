@@ -74,7 +74,7 @@ export interface BubbleProps<
 > extends Omit<HTMLAttributes, "content"> {
   prefixCls?: string;
   styles?: Partial<Record<SemanticType, CSSProperties>>;
-  rootClassName?: string;
+  rootClass?: string;
   classes?: Partial<Record<SemanticType, string>>;
   placement?: Placement;
   loading?: boolean;
@@ -111,7 +111,7 @@ export interface SystemBubbleProps<
   | "content"
   | "style"
   | "class"
-  | "rootClassName"
+  | "rootClass"
   | "variant"
   | "shape"
 > {
@@ -123,7 +123,7 @@ export interface DividerBubbleProps<
   ContentType extends BubbleContentType = string,
 > {
   prefixCls?: string;
-  rootClassName?: string;
+  rootClass?: string;
   style?: StyleValue;
   class?: ClassValue;
   styles?: Partial<Record<SemanticType, CSSProperties>>;
@@ -165,7 +165,7 @@ export type RoleProps = Pick<
   | "variant"
   | "shape"
   | "placement"
-  | "rootClassName"
+  | "rootClass"
   | "classes"
   | "class"
   | "styles"
@@ -200,7 +200,7 @@ export interface BubbleListProps extends Omit<HTMLAttributes, "role"> {
   prefixCls?: string;
   styles?: Partial<Record<ListSemanticType, CSSProperties>>;
   classes?: Partial<Record<ListSemanticType, string>>;
-  rootClassName?: string;
+  rootClass?: string;
   items: BubbleItemType[];
   autoScroll?: boolean;
   role?: RoleType;

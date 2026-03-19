@@ -27,14 +27,14 @@ export interface ActionsItemProps {
   label?: string;
   runningIcon?: VNodeChild;
   prefixCls?: string;
-  rootClassName?: string;
+  rootClass?: string;
   class?: ClassValue;
   style?: StyleValue;
   classes?: Partial<Record<SemanticType, string>>;
   styles?: Partial<Record<SemanticType, CSSProperties>>;
 }
 
-const ActionsItem = defineComponent({
+export const XActionsItem = defineComponent({
   name: "XActionsItem",
   inheritAttrs: false,
   props: {
@@ -56,9 +56,9 @@ const ActionsItem = defineComponent({
     },
     prefixCls: {
       type: String,
-      default: "antdx-actions",
+      default: "antd-actions",
     },
-    rootClassName: {
+    rootClass: {
       type: String,
       default: "",
     },
@@ -112,7 +112,7 @@ const ActionsItem = defineComponent({
             `${props.prefixCls}-item`,
             hashId.value,
             cssVarCls.value,
-            props.rootClassName,
+            props.rootClass,
             props.classes?.root,
             props.classes?.[props.status],
             attrs.class,
@@ -132,4 +132,4 @@ const ActionsItem = defineComponent({
   },
 });
 
-export default ActionsItem;
+export default XActionsItem;

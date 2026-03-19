@@ -71,46 +71,16 @@ onUnmounted(() => {
 <template>
   <div
     ref="containerRef"
-    class="demo-group"
+    class="mb-6 flex m-[calc(var(--demo-gap)*-1)] max-[900px]:flex-col"
     :class="pageInfo?.frontmatter?.demo?.class"
     :style="{ '--demo-gap': `${gap}px` }"
   >
     <section
       v-for="(column, index) in columns"
       :key="index"
-      class="demo-column"
+      class="min-w-0 flex-1 p-[var(--demo-gap)] [&>*:last-child]:mb-0 [&>*]:mb-[calc(var(--demo-gap)*2)]"
     >
       <component :is="() => column" />
     </section>
   </div>
 </template>
-
-<style scoped>
-.demo-group {
-  --demo-gap: 16px;
-
-  display: flex;
-  margin: calc(var(--demo-gap) * -1);
-  margin-bottom: 24px;
-}
-
-.demo-column {
-  flex: 1;
-  min-width: 0;
-  padding: var(--demo-gap);
-}
-
-.demo-column :deep(> *) {
-  margin-bottom: calc(var(--demo-gap) * 2);
-}
-
-.demo-column :deep(> *:last-child) {
-  margin-bottom: 0;
-}
-
-@media (max-width: 900px) {
-  .demo-group {
-    flex-direction: column;
-  }
-}
-</style>

@@ -30,6 +30,22 @@ Use it as an operation area below messages, such as retry, edit, copy, feedback,
 | `classes`       | Semantic class names                       | `Partial<Record<'root' \| 'item' \| 'itemDropdown', string>>`        | -              |
 | `styles`        | Semantic styles                            | `Partial<Record<'root' \| 'item' \| 'itemDropdown', CSSProperties>>` | -              |
 
+Prefer `ActionsCopy`, `ActionsFeedback`, `ActionsAudio`, and `ActionsItem` exports. Legacy `Actions.Copy`, `Actions.Feedback`, `Actions.Audio`, and `Actions.Item` syntax remains compatible.
+
+Recommended usage:
+
+```vue
+<script setup lang="ts">
+import { Actions, ActionsCopy } from "@antdv-next/x";
+</script>
+
+<template>
+  <Actions :items="items" />
+  <ActionsCopy text="copy value" />
+  <a-actions-copy text="copy value" />
+</template>
+```
+
 ### ItemType
 
 | Property               | Description                                                  | Type                                                                       | Default   |
@@ -43,27 +59,27 @@ Use it as an operation area below messages, such as retry, edit, copy, feedback,
 | `triggerSubMenuAction` | Sub-menu trigger action                                      | `'hover' \| 'click'`                                                       | `'hover'` |
 | `actionRender`         | Custom rendered item content                                 | `VNodeChild \| ((item: ItemType) => VNodeChild)`                           | -         |
 
-### Actions.Feedback
+### ActionsFeedback
 
 | Property   | Description                    | Type                               | Default     |
 | ---------- | ------------------------------ | ---------------------------------- | ----------- |
 | `value`    | Feedback value                 | `'like' \| 'dislike' \| 'default'` | `'default'` |
 | `onChange` | Feedback value change callback | `(value) => void`                  | -           |
 
-### Actions.Copy
+### ActionsCopy
 
 | Property | Description  | Type         | Default |
 | -------- | ------------ | ------------ | ------- |
 | `text`   | Text to copy | `string`     | `''`    |
 | `icon`   | Copy icon    | `VNodeChild` | -       |
 
-### Actions.Audio
+### ActionsAudio
 
 | Property | Description  | Type                                             | Default     |
 | -------- | ------------ | ------------------------------------------------ | ----------- |
 | `status` | Audio status | `'loading' \| 'error' \| 'running' \| 'default'` | `'default'` |
 
-### Actions.Item
+### ActionsItem
 
 | Property      | Description   | Type                                             | Default     |
 | ------------- | ------------- | ------------------------------------------------ | ----------- |
@@ -71,3 +87,15 @@ Use it as an operation area below messages, such as retry, edit, copy, feedback,
 | `label`       | Tooltip label | `string`                                         | -           |
 | `defaultIcon` | Default icon  | `VNodeChild`                                     | -           |
 | `runningIcon` | Running icon  | `VNodeChild`                                     | -           |
+
+## Semantic DOM
+
+<demo src="./demo/semantic.vue" simplify>Actions Semantic DOM</demo>
+
+<demo src="./demo/semantic-copy.vue" simplify>ActionsCopy Semantic DOM</demo>
+
+<demo src="./demo/semantic-feedback.vue" simplify>ActionsFeedback Semantic DOM</demo>
+
+<demo src="./demo/semantic-audio.vue" simplify>ActionsAudio Semantic DOM</demo>
+
+<demo src="./demo/semantic-item.vue" simplify>ActionsItem Semantic DOM</demo>

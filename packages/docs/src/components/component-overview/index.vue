@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { SearchOutlined } from "@antdv-next/icons";
+import { createStyles } from "antdv-style";
 import { computed, ref } from "vue";
 
 import { useDarkMode } from "@/composables/use-dark-mode";
@@ -18,10 +19,80 @@ interface OverviewGroup {
   items: ComponentOverviewItem[];
 }
 
+const useStyles = createStyles(({ token }) => ({
+  root: {
+    width: "100%",
+    ".component-overview-search-affix": {
+      padding: "4px 0",
+      transition: `all ${token.motionDurationMid}`,
+    },
+    ".component-overview-search-affix.is-affixed": {
+      padding: 12,
+      borderRadius: 10,
+      background: token.colorBgElevated,
+      boxShadow: token.boxShadowSecondary,
+    },
+    ".component-overview-search-input": {
+      width: "100%",
+      fontSize: 18,
+      paddingInline: 0,
+    },
+    ".component-overview-search-input input": {
+      fontSize: 18,
+    },
+    ".component-overview-group": {
+      marginTop: 24,
+    },
+    ".component-overview-group-title": {
+      margin: "0 0 16px",
+      color: token.colorText,
+    },
+    ".component-overview-card-link": {
+      color: "inherit",
+      textDecoration: "none",
+    },
+    ".component-overview-card": {
+      height: "100%",
+      cursor: "pointer",
+      transition: `transform ${token.motionDurationMid}, box-shadow ${token.motionDurationMid}`,
+    },
+    ".component-overview-card:hover": {
+      transform: "translateY(-2px)",
+      boxShadow: token.boxShadowSecondary,
+    },
+    ".component-overview-card-image-wrap": {
+      height: 132,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    ".component-overview-card-image": {
+      maxHeight: "100%",
+      maxWidth: "100%",
+      objectFit: "cover",
+    },
+    ".component-overview-card-subtitle": {
+      margin: 0,
+      fontSize: 13,
+      lineHeight: 1.4,
+      color: token.colorTextSecondary,
+    },
+    ".component-overview-empty": {
+      marginTop: 40,
+    },
+    "@media (max-width: 768px)": {
+      ".component-overview-search-affix.is-affixed": {
+        marginInline: -6,
+      },
+    },
+  },
+}));
+
 const search = ref("");
 const searchBarAffixed = ref(false);
 const { locale } = useLocale();
 const { isDark } = useDarkMode();
+const styleState = useStyles();
 
 const currentLocale = computed<OverviewLocale>(() =>
   locale.value === "en-US" ? "en-US" : "zh-CN",
@@ -107,7 +178,7 @@ function handleAffixChange(affixed?: boolean) {
 </script>
 
 <template>
-  <section class="component-overview">
+  <section class="component-overview" :class="styleState.styles.root">
     <a-affix :offset-top="80" @change="handleAffixChange">
       <div
         class="component-overview-search-affix"
@@ -187,88 +258,3 @@ function handleAffixChange(affixed?: boolean) {
     />
   </section>
 </template>
-
-<style scoped>
-.component-overview {
-  width: 100%;
-}
-
-.component-overview-search-affix {
-  padding: 4px 0;
-  transition: all var(--ant-motion-duration-mid);
-}
-
-.component-overview-search-affix.is-affixed {
-  padding: 12px;
-  border-radius: 10px;
-  background: var(--ant-color-bg-elevated);
-  box-shadow: var(--ant-box-shadow-secondary);
-}
-
-.component-overview-search-input {
-  width: 100%;
-  font-size: 18px;
-  padding-inline: 0;
-}
-
-.component-overview-search-input :deep(input) {
-  font-size: 18px;
-}
-
-.component-overview-group {
-  margin-top: 24px;
-}
-
-.component-overview-group-title {
-  margin: 0 0 16px;
-  color: var(--ant-color-text);
-}
-
-.component-overview-card-link {
-  color: inherit;
-  text-decoration: none;
-}
-
-.component-overview-card {
-  height: 100%;
-  cursor: pointer;
-  transition:
-    transform var(--ant-motion-duration-mid),
-    box-shadow var(--ant-motion-duration-mid);
-}
-
-.component-overview-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--ant-box-shadow-secondary);
-}
-
-.component-overview-card-image-wrap {
-  height: 132px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.component-overview-card-image {
-  max-height: 100%;
-  max-width: 100%;
-  object-fit: cover;
-}
-
-.component-overview-card-subtitle {
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.4;
-  color: var(--ant-color-text-secondary);
-}
-
-.component-overview-empty {
-  margin-top: 40px;
-}
-
-@media (max-width: 768px) {
-  .component-overview-search-affix.is-affixed {
-    margin-inline: -6px;
-  }
-}
-</style>

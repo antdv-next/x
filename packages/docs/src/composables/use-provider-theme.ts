@@ -8,11 +8,11 @@ export function useProviderTheme() {
   const { isDark } = useDarkMode();
 
   const lightTheme: NonNullable<ConfigProviderProps["theme"]> = {
+    algorithm: [themeConfig.defaultAlgorithm],
     token: {
       colorBgBase: "#ffffff",
       colorBgLayout: "#ffffff",
     },
-    zeroRuntime: true,
   };
 
   const darkTheme: NonNullable<ConfigProviderProps["theme"]> = {
@@ -21,24 +21,10 @@ export function useProviderTheme() {
       colorBgBase: "#141414",
       colorBgLayout: "#141414",
     },
-    zeroRuntime: true,
   };
 
-  const theme = shallowRef<NonNullable<ConfigProviderProps["theme"]>>({
-    ...lightTheme,
-  });
-  watch(
-    isDark,
-    () => {
-      if (isDark.value) {
-        theme.value = darkTheme;
-      } else {
-        theme.value = lightTheme;
-      }
-    },
-    {
-      immediate: true,
-    },
+  const theme = computed<NonNullable<ConfigProviderProps["theme"]>>(() =>
+    isDark.value ? { ...darkTheme } : { ...lightTheme },
   );
   return {
     theme,

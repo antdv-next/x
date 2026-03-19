@@ -19,6 +19,7 @@
     "@shikijs/markdown-it": "catalog:docs",
     "@shikijs/transformers": "catalog:docs",
     "@types/markdown-it": "catalog:types",
+    "antdv-style": "catalog:docs",
     "markdown-it": "catalog:docs",
     "markdown-it-anchor": "catalog:docs",
     "markdown-it-async": "catalog:docs",

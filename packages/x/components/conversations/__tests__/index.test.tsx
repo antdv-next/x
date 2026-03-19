@@ -78,7 +78,7 @@ describe("Conversations", () => {
       }),
     );
 
-    const active = wrapper.find(".antdx-conversations-item-active");
+    const active = wrapper.find(".antd-conversations-item-active");
     expect(active.exists()).toBe(true);
     expect(active.text()).toContain("What is Ant Design X ?");
   });
@@ -93,12 +93,12 @@ describe("Conversations", () => {
       }),
     );
 
-    expect(wrapper.find(".antdx-conversations-item-active").text()).toContain(
+    expect(wrapper.find(".antd-conversations-item-active").text()).toContain(
       "What is Ant Design X ?",
     );
 
     await wrapper.setProps({ activeKey: "demo4" });
-    expect(wrapper.find(".antdx-conversations-item-active").text()).toContain(
+    expect(wrapper.find(".antd-conversations-item-active").text()).toContain(
       "In Docker, use Ollama and initialize",
     );
   });
@@ -115,7 +115,7 @@ describe("Conversations", () => {
       }),
     );
 
-    const listItems = wrapper.findAll(".antdx-conversations-item");
+    const listItems = wrapper.findAll(".antd-conversations-item");
 
     await listItems[0]!.trigger("click");
     expect(onActiveChange).toHaveBeenCalledWith(
@@ -148,7 +148,7 @@ describe("Conversations", () => {
     );
 
     expect(menu).toHaveBeenCalled();
-    expect(wrapper.find(".antdx-conversations-menu-icon").exists()).toBe(true);
+    expect(wrapper.find(".antd-conversations-menu-icon").exists()).toBe(true);
   });
 
   it("supports custom menu trigger node", () => {
@@ -165,7 +165,7 @@ describe("Conversations", () => {
     );
 
     expect(wrapper.find(".menu-trigger-node").exists()).toBe(true);
-    expect(wrapper.find(".antdx-conversations-menu-icon").exists()).toBe(false);
+    expect(wrapper.find(".antd-conversations-menu-icon").exists()).toBe(false);
   });
 
   it("supports custom menu trigger function", () => {
@@ -187,7 +187,7 @@ describe("Conversations", () => {
     );
 
     expect(wrapper.find(".menu-trigger-fn").exists()).toBe(true);
-    expect(wrapper.find(".antdx-conversations-menu-icon").exists()).toBe(false);
+    expect(wrapper.find(".antd-conversations-menu-icon").exists()).toBe(false);
   });
 
   it("supports grouping and custom group label", () => {
@@ -243,12 +243,12 @@ describe("Conversations", () => {
       }),
     );
 
-    expect(wrapper.find(".antdx-conversations-content-hidden").exists()).toBe(
+    expect(wrapper.find(".antd-conversations-content-hidden").exists()).toBe(
       false,
     );
 
-    await wrapper.find(".antdx-conversations-group-title").trigger("click");
-    expect(wrapper.find(".antdx-conversations-content-hidden").exists()).toBe(
+    await wrapper.find(".antd-conversations-group-title").trigger("click");
+    expect(wrapper.find(".antd-conversations-content-hidden").exists()).toBe(
       true,
     );
   });
@@ -267,7 +267,7 @@ describe("Conversations", () => {
       }),
     );
 
-    const creationButton = wrapper.get(".antdx-conversations-creation");
+    const creationButton = wrapper.get(".antd-conversations-creation");
     expect(creationButton.text()).toContain("New chat");
 
     await creationButton.trigger("click");
@@ -280,7 +280,7 @@ describe("Conversations", () => {
       },
     });
 
-    await wrapper.get(".antdx-conversations-creation").trigger("click");
+    await wrapper.get(".antd-conversations-creation").trigger("click");
     expect(onClick).toHaveBeenCalledTimes(1);
   });
 

@@ -12,12 +12,12 @@ describe("ActionsCopy", () => {
       },
     });
 
-    expect(wrapper.find(".antdx-actions-copy").exists()).toBe(true);
+    expect(wrapper.find(".antd-actions-copy").exists()).toBe(true);
   });
 
   it("renders with no text", () => {
     const wrapper = mount(ActionsCopy);
-    expect(wrapper.find(".antdx-actions-copy").exists()).toBe(true);
+    expect(wrapper.find(".antd-actions-copy").exists()).toBe(true);
   });
 
   it("accepts icon prop", () => {
@@ -28,7 +28,7 @@ describe("ActionsCopy", () => {
       },
     });
 
-    expect(wrapper.find(".antdx-actions-copy").exists()).toBe(true);
+    expect(wrapper.find(".antd-actions-copy").exists()).toBe(true);
   });
 
   it("supports custom class and prefixCls", () => {
@@ -44,11 +44,11 @@ describe("ActionsCopy", () => {
     expect(wrapper.find(".my-prefix-copy").exists()).toBe(true);
   });
 
-  it("supports rootClassName", () => {
+  it("supports rootClass", () => {
     const wrapper = mount(ActionsCopy, {
       props: {
         text: "test",
-        rootClassName: "root-class",
+        rootClass: "root-class",
       },
     });
 

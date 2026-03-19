@@ -19,7 +19,7 @@ const GroupTitle = defineComponent({
   props: {
     prefixCls: {
       type: String,
-      default: "antdx-conversations",
+      default: "antd-conversations",
     },
     groupInfo: {
       type: Object as PropType<GroupInfoType>,

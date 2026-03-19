@@ -12,9 +12,9 @@ describe("Bubble.System", () => {
       },
     });
 
-    expect(wrapper.find(".antdx-bubble").exists()).toBe(true);
-    expect(wrapper.find(".antdx-bubble-system").exists()).toBe(true);
-    expect(wrapper.find(".antdx-bubble-content").text()).toContain("系统消息");
+    expect(wrapper.find(".antd-bubble").exists()).toBe(true);
+    expect(wrapper.find(".antd-bubble-system").exists()).toBe(true);
+    expect(wrapper.find(".antd-bubble-content").text()).toContain("系统消息");
   });
 
   it("supports empty and node content", () => {
@@ -24,7 +24,7 @@ describe("Bubble.System", () => {
       },
     });
 
-    expect(emptyWrapper.find(".antdx-bubble-content").exists()).toBe(true);
+    expect(emptyWrapper.find(".antd-bubble-content").exists()).toBe(true);
 
     const nodeWrapper = mount(SystemBubble, {
       props: {
@@ -54,18 +54,16 @@ describe("Bubble.System", () => {
       },
     });
 
-    expect(wrapper.find(".antdx-bubble-content-shadow").exists()).toBe(true);
+    expect(wrapper.find(".antd-bubble-content-shadow").exists()).toBe(true);
 
     await wrapper.setProps({ variant: "filled" });
-    expect(wrapper.find(".antdx-bubble-content-filled").exists()).toBe(true);
+    expect(wrapper.find(".antd-bubble-content-filled").exists()).toBe(true);
 
     await wrapper.setProps({ variant: "outlined" });
-    expect(wrapper.find(".antdx-bubble-content-outlined").exists()).toBe(true);
+    expect(wrapper.find(".antd-bubble-content-outlined").exists()).toBe(true);
 
     await wrapper.setProps({ variant: "borderless" });
-    expect(wrapper.find(".antdx-bubble-content-borderless").exists()).toBe(
-      true,
-    );
+    expect(wrapper.find(".antd-bubble-content-borderless").exists()).toBe(true);
   });
 
   it("supports different shapes", async () => {
@@ -76,26 +74,26 @@ describe("Bubble.System", () => {
       },
     });
 
-    expect(wrapper.find(".antdx-bubble-content-default").exists()).toBe(true);
+    expect(wrapper.find(".antd-bubble-content-default").exists()).toBe(true);
 
     await wrapper.setProps({ shape: "round" });
-    expect(wrapper.find(".antdx-bubble-content-round").exists()).toBe(true);
+    expect(wrapper.find(".antd-bubble-content-round").exists()).toBe(true);
 
     await wrapper.setProps({ shape: "corner" });
-    expect(wrapper.find(".antdx-bubble-content-corner").exists()).toBe(true);
+    expect(wrapper.find(".antd-bubble-content-corner").exists()).toBe(true);
   });
 
-  it("supports class, style and rootClassName", () => {
+  it("supports class, style and rootClass", () => {
     const wrapper = mount(SystemBubble, {
       props: {
         content: "测试",
         class: "custom-class",
         style: { padding: "10px" },
-        rootClassName: "root-class",
+        rootClass: "root-class",
       },
     });
 
-    const bubble = wrapper.find(".antdx-bubble");
+    const bubble = wrapper.find(".antd-bubble");
     expect(bubble.classes()).toContain("custom-class");
     expect(bubble.classes()).toContain("root-class");
     expect((bubble.element as HTMLElement).style.padding).toBe("10px");

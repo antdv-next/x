@@ -20,7 +20,7 @@ import {
   RobotOutlined,
   UserOutlined,
 } from "@antdv-next/icons";
-import { Actions, Bubble, Conversations, XProvider } from "@antdv-next/x";
+import { Actions, BubbleList, Conversations, XProvider } from "@antdv-next/x";
 import { Card, Divider, Flex, Radio, Typography } from "antdv-next";
 import { h, ref } from "vue";
 
@@ -89,7 +89,7 @@ const actionItems: ActionsProps["items"] = [
         <Divider type="vertical" style="height: 100%" />
 
         <Flex vertical justify="space-between" :style="{ flex: 1 }">
-          <Bubble.List :items="bubbleItems" />
+          <BubbleList :items="bubbleItems" />
           <Actions :items="actionItems" />
         </Flex>
       </Flex>

@@ -96,11 +96,14 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="antdv-home-preview-banner-luminous-bg" aria-hidden="true">
+  <div
+    class="absolute inset-0 overflow-hidden bg-[var(--ant-color-bg-layout)] max-[767px]:hidden"
+    aria-hidden="true"
+  >
     <div
       v-for="(bubble, index) in bubbles"
       :key="`${bubble.color}-${index}`"
-      class="antdv-home-preview-banner-luminous-bubble"
+      class="pointer-events-none absolute rounded-full blur-[100px] transition-all duration-[5000ms] ease-in-out"
       :style="{
         opacity: bubble.opacity,
         width: `${bubble.size}px`,
@@ -113,26 +116,3 @@ onBeforeUnmount(() => {
     />
   </div>
 </template>
-
-<style scoped>
-.antdv-home-preview-banner-luminous-bg {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  background: var(--ant-color-bg-layout);
-}
-
-.antdv-home-preview-banner-luminous-bubble {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(100px);
-  transition: all 5s ease-in-out;
-  pointer-events: none;
-}
-
-@media (max-width: 767px) {
-  .antdv-home-preview-banner-luminous-bg {
-    display: none;
-  }
-}
-</style>

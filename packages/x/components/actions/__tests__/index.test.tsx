@@ -104,7 +104,7 @@ describe("Actions", () => {
       },
     });
 
-    expect(wrapper.find(".antdx-actions-list-danger").exists()).toBe(true);
+    expect(wrapper.find(".antd-actions-list-danger").exists()).toBe(true);
   });
 
   it("renders custom actionRender", () => {
@@ -141,7 +141,7 @@ describe("Actions", () => {
       },
     });
 
-    expect(wrapper.find(".antdx-actions-sub-item").exists()).toBe(true);
+    expect(wrapper.find(".antd-actions-sub-item").exists()).toBe(true);
   });
 });
 

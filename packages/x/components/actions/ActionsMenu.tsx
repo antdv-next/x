@@ -44,7 +44,7 @@ const ActionsMenu = defineComponent({
     },
     prefixCls: {
       type: String,
-      default: "antdx-actions",
+      default: "antd-actions",
     },
     classes: {
       type: Object as PropType<Partial<Record<SemanticType, string>>>,

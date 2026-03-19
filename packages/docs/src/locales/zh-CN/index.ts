@@ -13,6 +13,11 @@ export default {
       tooltip2: "English / 中文",
     },
   },
+  components: {
+    semanticPreview: {
+      usage: "使用示例",
+    },
+  },
   home: {
     desc: "社区共建的 Vue AI 设计体系，让智能应用界面开发更简单。",
     start: "开始使用",

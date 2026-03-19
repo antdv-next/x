@@ -135,7 +135,7 @@ export interface ConversationsProps extends Omit<
   styles?: Partial<Record<SemanticType, CSSProperties>>;
   classes?: Partial<Record<SemanticType, string>>;
   prefixCls?: string;
-  rootClassName?: string;
+  rootClass?: string;
   class?: ClassValue;
   style?: StyleValue;
   shortcutKeys?: {

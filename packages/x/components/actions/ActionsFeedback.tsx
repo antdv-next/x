@@ -23,14 +23,14 @@ export interface ActionsFeedbackProps {
   value?: `${FEEDBACK_VALUE}`;
   onChange?: (value: `${FEEDBACK_VALUE}`) => void;
   prefixCls?: string;
-  rootClassName?: string;
+  rootClass?: string;
   class?: ClassValue;
   style?: StyleValue;
   classes?: Partial<Record<SemanticType, string>>;
   styles?: Partial<Record<SemanticType, CSSProperties>>;
 }
 
-const ActionsFeedback = defineComponent({
+export const XActionsFeedback = defineComponent({
   name: "XActionsFeedback",
   inheritAttrs: false,
   props: {
@@ -44,9 +44,9 @@ const ActionsFeedback = defineComponent({
     },
     prefixCls: {
       type: String,
-      default: "antdx-actions",
+      default: "antd-actions",
     },
-    rootClassName: {
+    rootClass: {
       type: String,
       default: "",
     },
@@ -95,7 +95,7 @@ const ActionsFeedback = defineComponent({
           feedbackCls,
           hashId.value,
           cssVarCls.value,
-          props.rootClassName,
+          props.rootClass,
           props.classes?.root,
           `${props.prefixCls}-list`,
           attrs.class,
@@ -183,4 +183,4 @@ const ActionsFeedback = defineComponent({
   },
 });
 
-export default ActionsFeedback;
+export default XActionsFeedback;

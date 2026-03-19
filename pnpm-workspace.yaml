@@ -42,6 +42,7 @@ catalogs:
     "@mdit-vue/types": ^2.1.4
     "@shikijs/markdown-it": ^3.13.0
     "@shikijs/transformers": ^3.13.0
+    "antdv-style": ^0.1.0-alpha.1
     markdown-it: ^14.1.0
     markdown-it-anchor: ^9.2.0
     markdown-it-async: ^2.2.0

@@ -12,14 +12,14 @@ type SemanticType = "root" | "default" | "running" | "error" | "loading";
 export interface ActionsAudioProps {
   status?: ActionsItemProps["status"];
   prefixCls?: string;
-  rootClassName?: string;
+  rootClass?: string;
   class?: ClassValue;
   style?: StyleValue;
   classes?: Partial<Record<SemanticType, string>>;
   styles?: Partial<Record<SemanticType, CSSProperties>>;
 }
 
-const ActionsAudio = defineComponent({
+export const XActionsAudio = defineComponent({
   name: "XActionsAudio",
   props: {
     status: {
@@ -28,9 +28,9 @@ const ActionsAudio = defineComponent({
     },
     prefixCls: {
       type: String,
-      default: "antdx-actions",
+      default: "antd-actions",
     },
-    rootClassName: {
+    rootClass: {
       type: String,
       default: "",
     },
@@ -68,8 +68,8 @@ const ActionsAudio = defineComponent({
         style={props.style}
         styles={props.styles}
         class={props.class}
-        rootClassName={[
-          props.rootClassName,
+        rootClass={[
+          props.rootClass,
           props.classes?.root,
           props.prefixCls,
           audioCls,
@@ -87,4 +87,4 @@ const ActionsAudio = defineComponent({
   },
 });
 
-export default ActionsAudio;
+export default XActionsAudio;

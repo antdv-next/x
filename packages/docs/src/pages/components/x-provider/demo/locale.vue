@@ -20,12 +20,37 @@ import {
   SignatureOutlined,
 } from "@antdv-next/icons";
 import { Actions, Conversations, XProvider } from "@antdv-next/x";
-import { Card, Flex, Radio, Typography } from "antdv-next";
+import {
+  Card,
+  Flex,
+  Radio,
+  RadioButton,
+  RadioGroup,
+  Typography,
+} from "antdv-next";
 import enUS from "antdv-next/dist/locale/en_US";
 import zhCN from "antdv-next/dist/locale/zh_CN";
-import { computed, h, ref } from "vue";
+import { computed, h, ref, watch } from "vue";
 
-const localeType = ref<"zh" | "en">("zh");
+import { useAppStore } from "@/stores/app";
+
+const appStore = useAppStore();
+
+type DemoLocaleType = "zh" | "en";
+
+function resolveDemoLocaleType(locale?: string): DemoLocaleType {
+  return String(locale).toLowerCase().startsWith("en") ? "en" : "zh";
+}
+
+const localeType = ref<DemoLocaleType>(resolveDemoLocaleType(appStore.locale));
+
+watch(
+  () => appStore.locale,
+  nextLocale => {
+    localeType.value = resolveDemoLocaleType(nextLocale);
+  },
+  { immediate: true },
+);
 
 const itemsLocale = {
   en: {
@@ -94,10 +119,10 @@ const actionItems: ActionsProps["items"] = [
 <template>
   <Flex :gap="12" style="margin-bottom: 16px" align="center">
     <Typography.Text>Change locale of components:</Typography.Text>
-    <Radio.Group v-model:value="localeType">
-      <Radio.Button value="en"> English </Radio.Button>
-      <Radio.Button value="zh"> 中文 </Radio.Button>
-    </Radio.Group>
+    <RadioGroup v-model:value="localeType">
+      <RadioButton value="en"> English </RadioButton>
+      <RadioButton value="zh"> 中文 </RadioButton>
+    </RadioGroup>
   </Flex>
 
   <XProvider :locale="locale">

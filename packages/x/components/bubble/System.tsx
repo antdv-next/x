@@ -15,7 +15,7 @@ export const XBubbleSystem = defineComponent({
   props: {
     prefixCls: {
       type: String,
-      default: "antdx-bubble",
+      default: "antd-bubble",
     },
     content: {
       type: [String, Number, Object, Array] as PropType<BubbleContentType>,
@@ -45,7 +45,7 @@ export const XBubbleSystem = defineComponent({
       type: Object as PropType<SystemBubbleProps["classes"]>,
       default: () => ({}),
     },
-    rootClassName: {
+    rootClass: {
       type: String,
       default: "",
     },
@@ -67,7 +67,7 @@ export const XBubbleSystem = defineComponent({
         content={props.content}
         variant={props.variant}
         shape={props.shape}
-        rootClassName={props.rootClassName}
+        rootClass={props.rootClass}
         style={props.style}
         class={[`${props.prefixCls}-system`, props.class]}
         styles={props.styles}

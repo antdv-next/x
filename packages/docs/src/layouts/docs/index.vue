@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { MenuEmits } from "antdv-next";
 
+import { createStyles } from "antdv-style";
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
@@ -12,10 +13,113 @@ import { useAppStore } from "@/stores/app";
 
 import DocHeader from "./components/doc-header.vue";
 
+const useStyles = createStyles(({ token }) => ({
+  root: {
+    minHeight: "100vh",
+    background: token.colorBgLayout,
+    transition: `background-color ${token.motionDurationSlow}`,
+    ".antd-doc-layout-main": {
+      maxWidth: 1440,
+      margin: "0 auto",
+      padding: "24px 24px 40px",
+      display: "grid",
+      gridTemplateColumns: "240px minmax(0, 1fr) 200px",
+      gap: 40,
+    },
+    ".antd-doc-layout-sider": {
+      position: "sticky",
+      top: 88,
+      alignSelf: "start",
+      maxHeight: "calc(100vh - 96px)",
+      overflow: "hidden",
+      scrollbarWidth: "thin",
+      scrollbarGutter: "stable",
+      paddingRight: 8,
+    },
+    ".antd-doc-layout-sider:hover": {
+      overflowY: "auto",
+    },
+    ".antd-doc-layout-sider-title": {
+      margin: "0 0 12px",
+      fontSize: 16,
+      fontWeight: 600,
+      color: token.colorText,
+    },
+    ".antd-doc-layout-sider .ant-menu": {
+      minHeight: "100%",
+      paddingTop: 0,
+      paddingBottom: `${token.marginXXL}px !important`,
+      paddingInline: token.marginXXS,
+      borderInlineEnd: "none",
+      background: "transparent !important",
+    },
+    ".antd-doc-layout-content": {
+      minWidth: 0,
+      padding: 0,
+    },
+    ".antd-doc-layout-content-header": {
+      marginBottom: 24,
+    },
+    ".antd-doc-layout-content-title": {
+      margin: 0,
+      fontSize: 34,
+      lineHeight: 1.2,
+      display: "inline-flex",
+      alignItems: "baseline",
+      gap: 12,
+    },
+    ".antd-doc-layout-content-subtitle": {
+      fontSize: 16,
+      color: token.colorTextTertiary,
+      fontWeight: 500,
+    },
+    ".antd-doc-layout-content-description": {
+      margin: "12px 0 0",
+      fontSize: 16,
+      color: token.colorTextSecondary,
+    },
+    ".antd-doc-layout-anchor": {
+      position: "sticky",
+      top: 88,
+      alignSelf: "start",
+      maxHeight: "calc(100vh - 96px)",
+      overflow: "auto",
+      scrollbarWidth: "thin",
+      scrollbarGutter: "stable",
+      paddingLeft: 8,
+    },
+    ".antd-doc-layout-anchor .ant-anchor-wrapper": {
+      background: "transparent",
+    },
+    "@media (max-width: 1280px)": {
+      ".antd-doc-layout-main": {
+        gridTemplateColumns: "220px minmax(0, 1fr)",
+        gap: 32,
+      },
+      ".antd-doc-layout-anchor": {
+        display: "none",
+      },
+    },
+    "@media (max-width: 900px)": {
+      ".antd-doc-layout-main": {
+        gridTemplateColumns: "minmax(0, 1fr)",
+        padding: 16,
+      },
+      ".antd-doc-layout-sider": {
+        display: "none",
+      },
+      ".antd-doc-layout-content-title": {
+        fontSize: 28,
+      },
+    },
+  },
+}));
+
 const route = useRoute();
 const router = useRouter();
 const appStore = useAppStore();
 const { pageData, anchorItems } = useDocPage();
+const styleState = useStyles();
 
 function normalizePath(path: string) {
   if (path === "/") return "/";
@@ -177,12 +281,12 @@ const handleSiderMenuClick: MenuEmits["click"] = info => {
 </script>
 
 <template>
-  <div class="antdx-doc-layout">
+  <div class="antd-doc-layout" :class="styleState.styles.root">
     <DocHeader />
 
-    <main class="antdx-doc-layout-main">
-      <aside v-if="siderItems.length" class="antdx-doc-layout-sider">
-        <h2 class="antdx-doc-layout-sider-title">
+    <main class="antd-doc-layout-main">
+      <aside v-if="siderItems.length" class="antd-doc-layout-sider">
+        <h2 class="antd-doc-layout-sider-title">
           {{ sectionTitle }}
         </h2>
         <a-menu
@@ -194,28 +298,28 @@ const handleSiderMenuClick: MenuEmits["click"] = info => {
         />
       </aside>
 
-      <article class="antdx-doc-layout-content">
+      <article class="antd-doc-layout-content">
         <header
           v-if="
             pageData?.frontmatter?.title || pageData?.frontmatter?.description
           "
-          class="antdx-doc-layout-content-header"
+          class="antd-doc-layout-content-header"
         >
           <h1
             v-if="pageData?.frontmatter?.title"
-            class="antdx-doc-layout-content-title"
+            class="antd-doc-layout-content-title"
           >
             {{ pageData?.frontmatter?.title }}
             <small
               v-if="pageData?.frontmatter?.subtitle"
-              class="antdx-doc-layout-content-subtitle"
+              class="antd-doc-layout-content-subtitle"
             >
               {{ pageData?.frontmatter?.subtitle }}
             </small>
           </h1>
           <p
             v-if="pageData?.frontmatter?.description"
-            class="antdx-doc-layout-content-description"
+            class="antd-doc-layout-content-description"
           >
             {{ pageData?.frontmatter?.description }}
           </p>
@@ -223,128 +327,9 @@ const handleSiderMenuClick: MenuEmits["click"] = info => {
         <router-view />
       </article>
 
-      <aside v-if="hasAnchors" class="antdx-doc-layout-anchor">
+      <aside v-if="hasAnchors" class="antd-doc-layout-anchor">
         <a-anchor :items="anchorItems" :offset-top="88" :affix="false" />
       </aside>
     </main>
   </div>
 </template>
-
-<style scoped>
-.antdx-doc-layout {
-  min-height: 100vh;
-  background: var(--ant-color-bg-layout);
-  transition: background-color var(--ant-motion-duration-slow);
-}
-
-.antdx-doc-layout-main {
-  max-width: 1440px;
-  margin: 0 auto;
-  padding: 24px 24px 40px;
-  display: grid;
-  grid-template-columns: 240px minmax(0, 1fr) 200px;
-  gap: 40px;
-}
-
-.antdx-doc-layout-sider {
-  position: sticky;
-  top: 88px;
-  align-self: start;
-  max-height: calc(100vh - 96px);
-  overflow: hidden;
-  scrollbar-width: thin;
-  scrollbar-gutter: stable;
-  padding-right: 8px;
-}
-
-.antdx-doc-layout-sider:hover {
-  overflow-y: auto;
-}
-
-.antdx-doc-layout-sider-title {
-  margin: 0 0 12px;
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--ant-color-text);
-}
-
-.antdx-doc-layout-sider :deep(.ant-menu) {
-  min-height: 100%;
-  padding-top: 0;
-  padding-bottom: var(--ant-margin-xxl) !important;
-  padding-inline: var(--ant-margin-xxs);
-  border-inline-end: none;
-  background: transparent !important;
-}
-
-.antdx-doc-layout-content {
-  min-width: 0;
-  padding: 0;
-}
-
-.antdx-doc-layout-content-header {
-  margin-bottom: 24px;
-}
-
-.antdx-doc-layout-content-title {
-  margin: 0;
-  font-size: 34px;
-  line-height: 1.2;
-  display: inline-flex;
-  align-items: baseline;
-  gap: 12px;
-}
-
-.antdx-doc-layout-content-subtitle {
-  font-size: 16px;
-  color: var(--ant-color-text-tertiary);
-  font-weight: 500;
-}
-
-.antdx-doc-layout-content-description {
-  margin: 12px 0 0;
-  font-size: 16px;
-  color: var(--ant-color-text-secondary);
-}
-
-.antdx-doc-layout-anchor {
-  position: sticky;
-  top: 88px;
-  align-self: start;
-  max-height: calc(100vh - 96px);
-  overflow: auto;
-  scrollbar-width: thin;
-  scrollbar-gutter: stable;
-  padding-left: 8px;
-}
-
-.antdx-doc-layout-anchor :deep(.ant-anchor-wrapper) {
-  background: transparent;
-}
-
-@media (max-width: 1280px) {
-  .antdx-doc-layout-main {
-    grid-template-columns: 220px minmax(0, 1fr);
-    gap: 32px;
-  }
-
-  .antdx-doc-layout-anchor {
-    display: none;
-  }
-}
-
-@media (max-width: 900px) {
-  .antdx-doc-layout-main {
-    grid-template-columns: minmax(0, 1fr);
-    padding: 16px;
-  }
-
-  .antdx-doc-layout-sider {
-    display: none;
-  }
-
-  .antdx-doc-layout-content-title {
-    font-size: 28px;
-  }
-}
-</style>

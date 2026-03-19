@@ -39,7 +39,7 @@ description: Used to switch between multiple agents, update conversation turns, 
 | `creation`         | New conversation configuration                                          | `CreationProps`                                                                                 | -       |
 | `styles`           | Semantic structure styles                                               | `Partial<Record<'root' \| 'creation' \| 'group' \| 'item', CSSProperties>>`                     | -       |
 | `classes`          | Semantic structure class names                                          | `Partial<Record<'root' \| 'creation' \| 'group' \| 'item', string>>`                            | -       |
-| `rootClassName`    | Root node className                                                     | `string`                                                                                        | -       |
+| `rootClass`        | Root node className                                                     | `string`                                                                                        | -       |
 
 ### ItemType
 
@@ -83,3 +83,7 @@ type ItemType = ConversationItemType | DividerItemType;
 | `icon`     | Custom icon           | `VNodeChild \| (() => VNodeChild)`     | -          |
 | `disabled` | Disable create button | `boolean`                              | `false`    |
 | `onClick`  | Click callback        | `(event?: MouseEvent) => void`         | -          |
+
+## Semantic DOM
+
+<demo src="./demo/semantic.vue" simplify>Conversations Semantic DOM</demo>

@@ -87,32 +87,32 @@ export function useTyping(params: {
     }
   };
 
-  const setDone = () => {
-    if (!renderedData.value.length) return;
-    const last = renderedData.value.at(-1);
-    if (!last || last.done) return;
-    renderedData.value = [
-      ...renderedData.value.slice(0, -1),
-      { ...last, done: true },
-    ];
+  const reset = (content: string) => {
+    stop();
+    taskId += 1;
+    renderedText = content;
+    animating.value = false;
+    renderedData.value = content
+      ? [{ id: toUid(), text: content, done: true }]
+      : [];
   };
 
   const finish = (content: string) => {
-    setDone();
+    stop();
+    taskId += 1;
+    renderedText = content;
+    renderedData.value = content
+      ? [{ id: toUid(), text: content, done: true }]
+      : [];
     animating.value = false;
     if (!params.streaming()) params.onTypingComplete?.(content);
   };
 
   const runTyping = (reason: "content" | "streaming") => {
-    const cfg = animationCfg.value;
     const content = params.content();
+    const cfg = animationCfg.value;
     if (!cfg || !content) {
-      stop();
-      animating.value = false;
-      renderedText = content || "";
-      renderedData.value = renderedText
-        ? [{ id: toUid(), text: renderedText, done: true }]
-        : [];
+      reset(content || "");
       return;
     }
 
@@ -136,15 +136,21 @@ export function useTyping(params: {
     const stepOnce = () => {
       if (currentTask !== taskId) return;
 
+      const nextCfg = animationCfg.value;
       const nextContent = params.content();
+      if (!nextCfg || !nextContent) {
+        reset(nextContent || "");
+        return;
+      }
+
       const chunk = nextContent.slice(
         renderedText.length,
-        renderedText.length + getStep(cfg.step),
+        renderedText.length + getStep(nextCfg.step),
       );
 
       if (!chunk) {
         if (params.streaming()) {
-          timer = setTimeout(stepOnce, cfg.interval);
+          timer = setTimeout(stepOnce, nextCfg.interval);
           return;
         }
         finish(nextContent);
@@ -155,26 +161,29 @@ export function useTyping(params: {
       const currentEntry: OutputData = {
         id: toUid(),
         text: chunk,
-        done: cfg.effect !== "fade-in",
+        done: false,
       };
       renderedData.value = [...renderedData.value, currentEntry];
       params.onTyping?.(renderedText, nextContent);
 
-      if (cfg.effect === "fade-in") {
-        requestAnimationFrame(() => {
-          setDone();
-        });
-      }
-
-      timer = setTimeout(stepOnce, cfg.interval);
+      timer = setTimeout(stepOnce, nextCfg.interval);
     };
 
     stepOnce();
   };
 
   watch(
-    () => [params.content(), animationCfg.value] as const,
-    () => runTyping("content"),
+    () => params.content(),
+    content => {
+      const cfg = animationCfg.value;
+      if (!cfg || !content) {
+        reset(content || "");
+        return;
+      }
+      if (content === renderedText) return;
+      if (animating.value && content.startsWith(renderedText)) return;
+      runTyping("content");
+    },
     { immediate: true },
   );
 

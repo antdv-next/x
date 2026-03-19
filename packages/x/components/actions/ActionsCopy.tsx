@@ -17,14 +17,14 @@ export interface ActionsCopyProps {
   text?: string;
   icon?: VNodeChild;
   prefixCls?: string;
-  rootClassName?: string;
+  rootClass?: string;
   class?: ClassValue;
   style?: StyleValue;
   classes?: Partial<Record<SemanticType, string>>;
   styles?: Partial<Record<SemanticType, CSSProperties>>;
 }
 
-const ActionsCopy = defineComponent({
+export const XActionsCopy = defineComponent({
   name: "XActionsCopy",
   inheritAttrs: false,
   props: {
@@ -38,9 +38,9 @@ const ActionsCopy = defineComponent({
     },
     prefixCls: {
       type: String,
-      default: "antdx-actions",
+      default: "antd-actions",
     },
-    rootClassName: {
+    rootClass: {
       type: String,
       default: "",
     },
@@ -82,7 +82,7 @@ const ActionsCopy = defineComponent({
           `${props.prefixCls}-item`,
           hashId.value,
           cssVarCls.value,
-          props.rootClassName,
+          props.rootClass,
           props.classes?.root,
           attrs.class,
           props.class,
@@ -98,4 +98,4 @@ const ActionsCopy = defineComponent({
   },
 });
 
-export default ActionsCopy;
+export default XActionsCopy;

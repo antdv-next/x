@@ -49,9 +49,9 @@ export const XActions = defineComponent({
     },
     prefixCls: {
       type: String,
-      default: "antdx-actions",
+      default: "antd-actions",
     },
-    rootClassName: {
+    rootClass: {
       type: String,
       default: "",
     },
@@ -152,7 +152,7 @@ export const XActions = defineComponent({
           props.prefixCls,
           contextConfig.value.className,
           contextConfig.value.classes?.root,
-          props.rootClassName,
+          props.rootClass,
           props.classes?.root,
           hashId.value,
           cssVarCls.value,

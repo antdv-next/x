@@ -31,7 +31,7 @@ describe("XProvider cssVar", () => {
 
     expect(bubbleStyle).toBeTruthy();
     expect(bubbleStyle?.innerHTML.includes("var(--ant-")).toBe(true);
-    expect(wrapper.get(".antdx-bubble").attributes("class")).toContain(
+    expect(wrapper.get(".antd-bubble").attributes("class")).toContain(
       "css-var-",
     );
   });
@@ -58,7 +58,7 @@ describe("XProvider cssVar", () => {
 
     expect(bubbleStyle).toBeTruthy();
     expect(bubbleStyle?.innerHTML.includes("var(--ant-")).toBe(true);
-    expect(wrapper.get(".antdx-bubble").attributes("class")).toContain(
+    expect(wrapper.get(".antd-bubble").attributes("class")).toContain(
       "css-var-",
     );
   });

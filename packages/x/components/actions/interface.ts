@@ -43,7 +43,7 @@ export interface ActionsProps extends Omit<
   dropdownProps?: DropdownProps;
   variant?: "borderless" | "filled" | "outlined";
   prefixCls?: string;
-  rootClassName?: string;
+  rootClass?: string;
   class?: ClassValue;
   style?: StyleValue;
   classes?: Partial<Record<SemanticType, string>>;

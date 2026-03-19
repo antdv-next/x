@@ -21,7 +21,7 @@ const Creation = defineComponent({
     },
     prefixCls: {
       type: String,
-      default: "antdx-conversations-creation",
+      default: "antd-conversations-creation",
     },
     className: {
       type: [String, Array, Object] as PropType<CreationProps["className"]>,

@@ -7,7 +7,7 @@ import {
   RedoOutlined,
   UserOutlined,
 } from "@antdv-next/icons";
-import { Actions, Bubble } from "@antdv-next/x";
+import { Actions, BubbleList } from "@antdv-next/x";
 import { Avatar, Button, Flex } from "antdv-next";
 import { h, ref } from "vue";
 
@@ -119,7 +119,7 @@ function scrollLast() {
     </Flex>
 
     <div style="display: flex; flex: 1; min-height: 0">
-      <Bubble.List
+      <BubbleList
         ref="listRef"
         style="height: 100%"
         :role="role"
@@ -130,9 +130,9 @@ function scrollLast() {
 </template>
 
 <docs lang="zh-CN">
-可以使用 `ref` 控制列表滚动条。当 **Bubble.List** 内容在不断增长且通过 `ref.scrollTo` 跳转到底部时，`behavior: 'smooth'` 的行为会被 `behavior: 'instant'` 替代。
+可以使用 `ref` 控制列表滚动条。当 **BubbleList** 内容在不断增长且通过 `ref.scrollTo` 跳转到底部时，`behavior: 'smooth'` 的行为会被 `behavior: 'instant'` 替代。
 </docs>
 
 <docs lang="en-US">
-Bubble.List ref. `behavior: 'smooth'` would be replaced by `behavior: 'instant'` when the content of **Bubble.List** growing constantly and you jump to the bottom using `ref.scrollTo`.
+BubbleList ref. `behavior: 'smooth'` would be replaced by `behavior: 'instant'` when the content of **BubbleList** growing constantly and you jump to the bottom using `ref.scrollTo`.
 </docs>

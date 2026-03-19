@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { createStyles } from "antdv-style";
+
 defineProps<{
   pure?: boolean;
   value: 1 | 2;
@@ -9,13 +11,58 @@ defineProps<{
 const emit = defineEmits<{
   click: [value: 1 | 2];
 }>();
+
+const useStyles = createStyles(({ token }) => ({
+  switchBtn: {
+    "--base-size": "1.2em",
+    width: token.controlHeight,
+    ".btn-inner": {
+      display: "flex",
+      transition: "all 0.3s",
+    },
+    img: {
+      width: "var(--base-size)",
+      height: "var(--base-size)",
+    },
+    ".inner-div": {
+      position: "relative",
+      width: "var(--base-size)",
+      height: "var(--base-size)",
+    },
+    ".label-style": {
+      position: "absolute",
+      fontSize: "var(--base-size)",
+      lineHeight: 1,
+      border: `1px solid ${token.colorText}`,
+      color: token.colorText,
+    },
+    ".label1-style": {
+      insetInlineStart: "-5%",
+      top: 0,
+      zIndex: 1,
+      transform: "scale(0.7)",
+      transformOrigin: "0 0",
+      background: token.colorText,
+      color: token.colorBgContainer,
+    },
+    ".label2-style": {
+      insetInlineEnd: "-5%",
+      bottom: 0,
+      zIndex: 0,
+      transform: "scale(0.5)",
+      transformOrigin: "100% 100%",
+    },
+  },
+}));
+
+const styleState = useStyles();
 </script>
 
 <template>
   <a-tooltip :title="value === 1 ? tooltip1 : tooltip2">
     <a-button
       type="text"
-      class="ant-switch-btn"
+      :class="styleState.styles.switchBtn"
       @click="emit('click', value === 1 ? 2 : 1)"
     >
       <div class="btn-inner">
@@ -47,50 +94,3 @@ const emit = defineEmits<{
     </a-button>
   </a-tooltip>
 </template>
-
-<style scoped>
-.ant-switch-btn {
-  --base-size: 1.2em;
-  @apply w-[var(--ant-control-height)];
-
-  .btn-inner {
-    display: flex;
-    transition: all 0.3s;
-  }
-
-  img {
-    width: var(--base-size);
-    height: var(--base-size);
-  }
-
-  .inner-div {
-    position: relative;
-    width: var(--base-size);
-    height: var(--base-size);
-  }
-
-  .label-style {
-    position: absolute;
-    font-size: var(--base-size);
-    line-height: 1;
-    @apply border-1 border-solid a-border-text a-color-text;
-  }
-
-  .label1-style {
-    inset-inline-start: -5%;
-    top: 0;
-    z-index: 1;
-    transform: scale(0.7);
-    transform-origin: 0 0;
-    @apply a-bg-text a-color-container;
-  }
-
-  .label2-style {
-    inset-inline-end: -5%;
-    bottom: 0;
-    z-index: 0;
-    transform: scale(0.5);
-    transform-origin: 100% 100%;
-  }
-}
-</style>

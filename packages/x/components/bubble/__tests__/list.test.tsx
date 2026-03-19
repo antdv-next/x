@@ -53,8 +53,8 @@ describe("Bubble.List", () => {
       },
     });
 
-    expect(wrapper.find(".antdx-bubble-list").exists()).toBe(true);
-    expect(wrapper.findAll(".antdx-bubble")).toHaveLength(2);
+    expect(wrapper.find(".antd-bubble-list").exists()).toBe(true);
+    expect(wrapper.findAll(".antd-bubble")).toHaveLength(2);
     expect((wrapper.vm as any).nativeElement).toBeInstanceOf(HTMLElement);
     expect(typeof (wrapper.vm as any).scrollTo).toBe("function");
   });
@@ -76,11 +76,11 @@ describe("Bubble.List", () => {
         items: mockItems,
         class: "custom-class",
         style: { backgroundColor: "red" },
-        rootClassName: "root-class",
+        rootClass: "root-class",
       },
     });
 
-    const list = wrapper.find(".antdx-bubble-list");
+    const list = wrapper.find(".antd-bubble-list");
     expect(list.classes()).toContain("custom-class");
     expect(list.classes()).toContain("root-class");
     expect((list.element as HTMLElement).style.backgroundColor).toBe("red");
@@ -103,9 +103,9 @@ describe("Bubble.List", () => {
       },
     });
 
-    const bubbles = wrapper.findAll(".antdx-bubble");
-    expect(bubbles[0]?.classes()).toContain("antdx-bubble-end");
-    expect(bubbles[1]?.classes()).toContain("antdx-bubble-start");
+    const bubbles = wrapper.findAll(".antd-bubble");
+    expect(bubbles[0]?.classes()).toContain("antd-bubble-end");
+    expect(bubbles[1]?.classes()).toContain("antd-bubble-start");
   });
 
   it("supports role function configuration", () => {
@@ -121,9 +121,9 @@ describe("Bubble.List", () => {
       },
     });
 
-    const bubbles = wrapper.findAll(".antdx-bubble");
-    expect(bubbles[0]?.classes()).toContain("antdx-bubble-end");
-    expect(bubbles[1]?.classes()).toContain("antdx-bubble-start");
+    const bubbles = wrapper.findAll(".antd-bubble");
+    expect(bubbles[0]?.classes()).toContain("antd-bubble-end");
+    expect(bubbles[1]?.classes()).toContain("antd-bubble-start");
   });
 
   it("lets item props override role config", () => {
@@ -149,7 +149,7 @@ describe("Bubble.List", () => {
       },
     });
 
-    expect(wrapper.find(".antdx-bubble-start").exists()).toBe(true);
+    expect(wrapper.find(".antd-bubble-start").exists()).toBe(true);
   });
 
   it("renders divider and system roles by default", () => {
@@ -171,8 +171,8 @@ describe("Bubble.List", () => {
       },
     });
 
-    expect(wrapper.find(".antdx-bubble-divider").exists()).toBe(true);
-    expect(wrapper.find(".antdx-bubble-system").exists()).toBe(true);
+    expect(wrapper.find(".antd-bubble-divider").exists()).toBe(true);
+    expect(wrapper.find(".antd-bubble-system").exists()).toBe(true);
   });
 
   it("triggers onScroll callback", async () => {
@@ -185,7 +185,7 @@ describe("Bubble.List", () => {
       },
     });
 
-    await wrapper.find(".antdx-bubble-list-scroll-box").trigger("scroll");
+    await wrapper.find(".antd-bubble-list-scroll-box").trigger("scroll");
     expect(onScroll).toHaveBeenCalledTimes(1);
   });
 
@@ -197,10 +197,10 @@ describe("Bubble.List", () => {
       },
     });
 
-    expect(wrapper.find(".antdx-bubble-list-autoscroll").exists()).toBe(true);
+    expect(wrapper.find(".antd-bubble-list-autoscroll").exists()).toBe(true);
 
     await wrapper.setProps({ autoScroll: false });
-    expect(wrapper.find(".antdx-bubble-list-autoscroll").exists()).toBe(false);
+    expect(wrapper.find(".antd-bubble-list-autoscroll").exists()).toBe(false);
   });
 
   it("supports scrollTo by top and alias positions", () => {
@@ -211,7 +211,7 @@ describe("Bubble.List", () => {
       },
     });
 
-    const scrollBox = wrapper.find(".antdx-bubble-list-scroll-box")
+    const scrollBox = wrapper.find(".antd-bubble-list-scroll-box")
       .element as HTMLDivElement;
     Object.defineProperty(scrollBox, "scrollHeight", {
       configurable: true,
@@ -241,7 +241,7 @@ describe("Bubble.List", () => {
       },
     });
 
-    const scrollBox = wrapper.find(".antdx-bubble-list-scroll-box")
+    const scrollBox = wrapper.find(".antd-bubble-list-scroll-box")
       .element as HTMLDivElement;
     Object.defineProperty(scrollBox, "scrollHeight", {
       configurable: true,
@@ -321,7 +321,7 @@ describe("Bubble.List", () => {
       },
     });
 
-    const scrollBox = wrapper.find(".antdx-bubble-list-scroll-box")
+    const scrollBox = wrapper.find(".antd-bubble-list-scroll-box")
       .element as HTMLDivElement;
     Object.defineProperty(scrollBox, "scrollHeight", {
       configurable: true,
@@ -361,7 +361,7 @@ describe("Bubble.List", () => {
       },
     });
 
-    expect(wrapper.find(".antdx-bubble-list").exists()).toBe(true);
-    expect(wrapper.findAll(".antdx-bubble")).toHaveLength(0);
+    expect(wrapper.find(".antd-bubble-list").exists()).toBe(true);
+    expect(wrapper.findAll(".antd-bubble")).toHaveLength(0);
   });
 });

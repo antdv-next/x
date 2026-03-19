@@ -1,12 +1,5 @@
 <template>
-  <div class="antdv-home-preview-banner-group-mask-layer">
+  <div class="z-1 relative">
     <slot />
   </div>
 </template>
-
-<style scoped>
-.antdv-home-preview-banner-group-mask-layer {
-  z-index: 1;
-  position: relative;
-}
-</style>

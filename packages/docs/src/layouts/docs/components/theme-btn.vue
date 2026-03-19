@@ -14,7 +14,7 @@ defineOptions({
   name: "ThemeBtn",
 });
 
-const { darkMode } = useDarkMode();
+const { darkMode, setDarkMode } = useDarkMode();
 const { t } = useLocale();
 
 const blueDot = h("span", {
@@ -53,13 +53,17 @@ const themeMenuItems = computed<MenuProps["items"]>(() => [
   },
 ]);
 
-function handleMenuClick(info: { key: string }) {
+function handleMenuClick(info: {
+  key: string;
+  domEvent: MouseEvent | KeyboardEvent;
+}) {
   const key = info.key;
+  const event = info.domEvent instanceof MouseEvent ? info.domEvent : undefined;
   if (key === "system") {
-    darkMode.value = "auto";
+    setDarkMode("auto", event);
     return;
   }
-  if (key === "light" || key === "dark") darkMode.value = key as DarkMode;
+  if (key === "light" || key === "dark") setDarkMode(key as DarkMode, event);
 }
 </script>
 

@@ -6,7 +6,7 @@ import ActionsFeedback from "../ActionsFeedback";
 describe("ActionsFeedback", () => {
   it("renders feedback component", () => {
     const wrapper = mount(ActionsFeedback);
-    expect(wrapper.find(".antdx-actions-feedback").exists()).toBe(true);
+    expect(wrapper.find(".antd-actions-feedback").exists()).toBe(true);
   });
 
   it("toggles like value", async () => {
@@ -19,12 +19,12 @@ describe("ActionsFeedback", () => {
       },
     });
 
-    await wrapper.find(".antdx-actions-feedback-item-like").trigger("click");
+    await wrapper.find(".antd-actions-feedback-item-like").trigger("click");
     expect(onChange).toHaveBeenCalledWith("like");
 
     await wrapper.setProps({ value: "like" });
     await wrapper
-      .find(".antdx-actions-feedback-item-like-active")
+      .find(".antd-actions-feedback-item-like-active")
       .trigger("click");
     expect(onChange).toHaveBeenCalledWith("default");
     expect(onChange).toHaveBeenCalledTimes(2);
@@ -40,12 +40,12 @@ describe("ActionsFeedback", () => {
       },
     });
 
-    await wrapper.find(".antdx-actions-feedback-item-dislike").trigger("click");
+    await wrapper.find(".antd-actions-feedback-item-dislike").trigger("click");
     expect(onChange).toHaveBeenCalledWith("dislike");
 
     await wrapper.setProps({ value: "dislike" });
     await wrapper
-      .find(".antdx-actions-feedback-item-dislike-active")
+      .find(".antd-actions-feedback-item-dislike-active")
       .trigger("click");
     expect(onChange).toHaveBeenCalledWith("default");
     expect(onChange).toHaveBeenCalledTimes(2);

@@ -7,7 +7,7 @@ import { ACTIONS_ITEM_STATUS } from "../ActionsItem";
 describe("ActionsAudio", () => {
   it("renders default status", () => {
     const wrapper = mount(ActionsAudio);
-    expect(wrapper.find(".antdx-actions-audio").exists()).toBe(true);
+    expect(wrapper.find(".antd-actions-audio").exists()).toBe(true);
   });
 
   it("renders loading status", () => {
@@ -17,7 +17,7 @@ describe("ActionsAudio", () => {
       },
     });
 
-    expect(wrapper.find(".antdx-actions-audio-loading").exists()).toBe(true);
+    expect(wrapper.find(".antd-actions-audio-loading").exists()).toBe(true);
   });
 
   it("renders running status", () => {
@@ -27,7 +27,7 @@ describe("ActionsAudio", () => {
       },
     });
 
-    expect(wrapper.find(".antdx-actions-audio-running").exists()).toBe(true);
+    expect(wrapper.find(".antd-actions-audio-running").exists()).toBe(true);
   });
 
   it("renders error status", () => {
@@ -37,7 +37,7 @@ describe("ActionsAudio", () => {
       },
     });
 
-    expect(wrapper.find(".antdx-actions-audio-error").exists()).toBe(true);
+    expect(wrapper.find(".antd-actions-audio-error").exists()).toBe(true);
   });
 
   it("supports custom class and prefixCls", () => {
@@ -52,10 +52,10 @@ describe("ActionsAudio", () => {
     expect(wrapper.find(".my-prefix-audio").exists()).toBe(true);
   });
 
-  it("supports rootClassName", () => {
+  it("supports rootClass", () => {
     const wrapper = mount(ActionsAudio, {
       props: {
-        rootClassName: "root-audio",
+        rootClass: "root-audio",
       },
     });
 

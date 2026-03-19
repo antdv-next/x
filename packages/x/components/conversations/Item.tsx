@@ -35,7 +35,7 @@ const ConversationsItem = defineComponent({
     },
     prefixCls: {
       type: String,
-      default: "antdx-conversations",
+      default: "antd-conversations",
     },
     direction: {
       type: String as PropType<"ltr" | "rtl">,

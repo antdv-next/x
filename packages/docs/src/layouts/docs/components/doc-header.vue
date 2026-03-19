@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { MenuEmits } from "antdv-next";
 
+import { GithubOutlined } from "@antdv-next/icons";
+import { createStyles } from "antdv-style";
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
@@ -43,6 +45,92 @@ const handleHeaderChange: MenuEmits["click"] = info => {
 
 const localeValue = computed(() => (appStore.locale === "zh-CN" ? 1 : 2));
 
+const useStyles = createStyles(({ token }) => ({
+  header: {
+    position: "sticky",
+    top: 0,
+    zIndex: 1000,
+    height: 64,
+    width: "100%",
+    backgroundColor: `color-mix(in srgb, ${token.colorBgContainer}, transparent 20%)`,
+    backdropFilter: "blur(8px)",
+    boxShadow: token.boxShadowTertiary,
+  },
+  inner: {
+    height: 64,
+    maxWidth: 1440,
+    margin: "0 auto",
+    padding: "0 24px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 16,
+    "@media (max-width: 768px)": {
+      padding: "0 16px",
+    },
+  },
+  logo: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 10,
+    color: token.colorText,
+    textDecoration: "none",
+    fontWeight: 700,
+    fontSize: 18,
+    whiteSpace: "nowrap",
+  },
+  logoImg: {
+    width: 32,
+    height: 32,
+    display: "inline-block",
+  },
+  logoText: {
+    "@media (max-width: 768px)": {
+      display: "none",
+    },
+  },
+  right: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    gap: 16,
+    flexShrink: 0,
+    "@media (max-width: 1024px)": {
+      gap: 10,
+    },
+    "@media (max-width: 768px)": {
+      gap: 8,
+    },
+  },
+  menu: {
+    flex: 1,
+    minWidth: 0,
+    justifyContent: "flex-end",
+    background: "transparent !important",
+    borderBottom: "none !important",
+    flexShrink: 0,
+    ".ant-menu-item": {
+      height: 64,
+      lineHeight: "64px",
+    },
+    "@media (max-width: 1024px)": {
+      ".ant-menu-item": {
+        paddingInline: 12,
+      },
+    },
+    "@media (max-width: 768px)": {
+      ".ant-menu-item": {
+        paddingInline: 8,
+      },
+    },
+  },
+  iconBtn: {
+    fontSize: 16,
+  },
+}));
+
+const styleState = useStyles();
+
 function changeLocale(value: 1 | 2) {
   const nextLocale = value === 1 ? "zh-CN" : "en-US";
   if (appStore.locale === nextLocale) return;
@@ -61,21 +149,21 @@ function changeLocale(value: 1 | 2) {
 </script>
 
 <template>
-  <header class="antdx-doc-header">
-    <div class="antdx-doc-header-inner">
-      <router-link class="antdx-doc-header-logo" to="/">
+  <header :class="styleState.styles.header">
+    <div :class="styleState.styles.inner">
+      <router-link :class="styleState.styles.logo" to="/">
         <img
-          class="antdx-doc-header-logo-img"
+          :class="styleState.styles.logoImg"
           :src="logoUrl"
           draggable="false"
           alt="logo"
         />
-        <span class="antdx-doc-header-logo-text">Antd Next X</span>
+        <span :class="styleState.styles.logoText">Antd Next X</span>
       </router-link>
 
-      <div class="antdx-doc-header-right">
+      <div :class="styleState.styles.right">
         <a-menu
-          class="antdx-doc-header-menu"
+          :class="styleState.styles.menu"
           mode="horizontal"
           :items="headerItems"
           :selected-keys="selectedKeys"
@@ -87,8 +175,6 @@ function changeLocale(value: 1 | 2) {
           </template>
         </a-menu>
 
-        <ThemeBtn />
-
         <SwitchBtn
           :value="localeValue"
           :tooltip1="t('ui.localeBtn.tooltip1')"
@@ -98,102 +184,23 @@ function changeLocale(value: 1 | 2) {
           <template #label1> 中 </template>
           <template #label2> En </template>
         </SwitchBtn>
+
+        <ThemeBtn />
+
+        <a
+          href="https://github.com/antdv-next/x"
+          target="_blank"
+          rel="noreferrer"
+        >
+          <a-tooltip title="GitHub" destroy-on-hidden>
+            <a-button type="text" :class="styleState.styles.iconBtn">
+              <template #icon>
+                <GithubOutlined />
+              </template>
+            </a-button>
+          </a-tooltip>
+        </a>
       </div>
     </div>
   </header>
 </template>
-
-<style scoped>
-.antdx-doc-header {
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-  height: 64px;
-  width: 100%;
-  background-color: color-mix(
-    in srgb,
-    var(--ant-color-bg-container),
-    transparent 20%
-  );
-  backdrop-filter: blur(8px);
-  box-shadow: var(--ant-box-shadow-tertiary);
-}
-
-.antdx-doc-header-inner {
-  height: 64px;
-  max-width: 1440px;
-  margin: 0 auto;
-  padding: 0 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.antdx-doc-header-logo {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  color: var(--ant-color-text);
-  text-decoration: none;
-  font-weight: 700;
-  font-size: 18px;
-  white-space: nowrap;
-}
-
-.antdx-doc-header-logo-img {
-  width: 32px;
-  height: 32px;
-  display: inline-block;
-}
-
-.antdx-doc-header-right {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 16px;
-  flex-shrink: 0;
-}
-
-:deep(.antdx-doc-header-menu) {
-  flex: 1;
-  min-width: 0;
-  justify-content: flex-end;
-  background: transparent !important;
-  border-bottom: none !important;
-  flex-shrink: 0;
-}
-
-:deep(.antdx-doc-header-menu .ant-menu-item) {
-  height: 64px;
-  line-height: 64px;
-}
-
-@media (max-width: 1024px) {
-  .antdx-doc-header-right {
-    gap: 10px;
-  }
-
-  .antdx-doc-header-menu :deep(.ant-menu-item) {
-    padding-inline: 12px;
-  }
-}
-
-@media (max-width: 768px) {
-  .antdx-doc-header-inner {
-    padding: 0 16px;
-  }
-
-  .antdx-doc-header-logo-text {
-    display: none;
-  }
-
-  .antdx-doc-header-right {
-    gap: 8px;
-  }
-
-  .antdx-doc-header-menu :deep(.ant-menu-item) {
-    padding-inline: 8px;
-  }
-}
-</style>

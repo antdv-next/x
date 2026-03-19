@@ -7,18 +7,27 @@ import Actions, {
   ActionsFeedback,
   ActionsItem,
   XActions,
+  XActionsAudio,
+  XActionsCopy,
+  XActionsFeedback,
+  XActionsItem,
 } from "./actions";
 import Bubble, {
+  BubbleDivider,
+  BubbleList,
+  BubbleSystem,
   XBubble,
   XBubbleDivider,
   XBubbleList,
   XBubbleSystem,
 } from "./bubble";
+import CodeHighlighter, { XCodeHighlighter } from "./code-highlighter";
 import Conversations, {
   ConversationsCreation,
   XConversations,
 } from "./conversations";
 import Sources from "./sources";
+import FileCard, { FileCardList, XFileCard, XFileCardList } from "./file-card";
 import XProvider from "./x-provider";
 
 const components = [
@@ -26,21 +35,43 @@ const components = [
   XBubbleList,
   XBubbleSystem,
   XBubbleDivider,
+  XCodeHighlighter,
   XConversations,
   ConversationsCreation,
   XProvider,
   XActions,
-  ActionsAudio,
-  ActionsCopy,
-  ActionsFeedback,
-  ActionsItem,
   Sources,
+  XActionsAudio,
+  XActionsCopy,
+  XActionsFeedback,
+  XActionsItem,
+  XFileCard,
+  XFileCardList,
 ];
+
+const componentAliases = new Map<string, string[]>([
+  ["XBubble", ["ABubble"]],
+  ["XBubbleList", ["ABubbleList"]],
+  ["XBubbleSystem", ["ABubbleSystem"]],
+  ["XBubbleDivider", ["ABubbleDivider"]],
+  ["XActions", ["AActions"]],
+  ["XActionsAudio", ["AActionsAudio"]],
+  ["XActionsCopy", ["AActionsCopy"]],
+  ["XActionsFeedback", ["AActionsFeedback"]],
+  ["XActionsItem", ["AActionsItem"]],
+  ["XFileCard", ["AFileCard"]],
+  ["XFileCardList", ["AFileCardList"]],
+]);
 
 export default {
   install(app: App) {
     components.forEach(component => {
-      if (component.name) app.component(component.name, component);
+      if (!component.name) return;
+
+      app.component(component.name, component);
+      componentAliases.get(component.name)?.forEach(alias => {
+        app.component(alias, component);
+      });
     });
   },
   version,
@@ -53,17 +84,28 @@ export {
   ActionsFeedback,
   ActionsItem,
   Bubble,
+  BubbleDivider,
+  BubbleList,
+  BubbleSystem,
+  CodeHighlighter,
   Conversations,
   ConversationsCreation,
   XProvider,
   version,
   XActions,
+  XActionsAudio,
+  XActionsCopy,
+  XActionsFeedback,
+  XActionsItem,
   XBubble,
   XBubbleDivider,
   XBubbleList,
   XBubbleSystem,
+  XCodeHighlighter,
   XConversations,
   Sources,
+  XFileCard,
+  XFileCardList,
 };
 
 export type {
@@ -85,6 +127,8 @@ export type {
   BubbleRef,
 } from "./bubble";
 
+export type { FileCardListProps, FileCardProps } from "./file-card";
+
 export type {
   ConversationItemType,
   ConversationsProps,
@@ -96,5 +140,10 @@ export type {
 } from "./conversations";
 
 export type { SourcesProps } from "./sources";
+export type {
+  CodeHighlighterProps,
+  CodeHighlighterRef,
+  CodeHighlighterSemanticType,
+} from "./code-highlighter";
 
 export type { XProviderProps } from "./x-provider";

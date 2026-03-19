@@ -5,7 +5,7 @@ export default defineComponent({
   props: {
     prefixCls: {
       type: String,
-      default: "antdx-bubble",
+      default: "antd-bubble",
     },
   },
   setup(props) {

@@ -36,7 +36,7 @@ export const XBubbleList = defineComponent({
   props: {
     prefixCls: {
       type: String,
-      default: "antdx-bubble",
+      default: "antd-bubble",
     },
     styles: {
       type: Object as PropType<BubbleListProps["styles"]>,
@@ -46,7 +46,7 @@ export const XBubbleList = defineComponent({
       type: Object as PropType<BubbleListProps["classes"]>,
       default: () => ({}),
     },
-    rootClassName: {
+    rootClass: {
       type: String,
       default: "",
     },
@@ -206,7 +206,7 @@ export const XBubbleList = defineComponent({
         {...attrs}
         class={[
           listPrefixCls.value,
-          props.rootClassName,
+          props.rootClass,
           props.classes?.root,
           hashId.value,
           cssVarCls.value,
@@ -237,7 +237,7 @@ export const XBubbleList = defineComponent({
                 extraInfo,
                 styles,
                 classes,
-                rootClassName,
+                rootClass,
                 class: itemClass,
                 style: itemStyle,
                 ...rest
@@ -272,7 +272,7 @@ export const XBubbleList = defineComponent({
                 ref: setBubbleRef(key),
                 prefixCls: props.prefixCls,
                 content: (item as Record<string, any>).content,
-                rootClassName: rootClassName || roleRootClassName,
+                rootClass: rootClass || roleRootClassName,
                 style: itemStyle || roleRootStyle,
                 class: itemClass,
                 classes: mergedClassNames,

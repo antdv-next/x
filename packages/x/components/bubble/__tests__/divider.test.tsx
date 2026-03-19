@@ -12,8 +12,8 @@ describe("Bubble.Divider", () => {
       },
     });
 
-    expect(wrapper.find(".antdx-bubble").exists()).toBe(true);
-    expect(wrapper.find(".antdx-bubble-divider").exists()).toBe(true);
+    expect(wrapper.find(".antd-bubble").exists()).toBe(true);
+    expect(wrapper.find(".antd-bubble-divider").exists()).toBe(true);
     expect(wrapper.find(".ant-divider").exists()).toBe(true);
     expect(wrapper.text()).toContain("分割线内容");
   });
@@ -61,7 +61,7 @@ describe("Bubble.Divider", () => {
       },
     });
 
-    const bubble = wrapper.find(".antdx-bubble-divider");
+    const bubble = wrapper.find(".antd-bubble-divider");
     expect(bubble.classes()).toContain("custom-class");
     expect((bubble.element as HTMLElement).style.backgroundColor).toBe("red");
   });

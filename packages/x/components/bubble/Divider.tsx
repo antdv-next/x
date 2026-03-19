@@ -16,13 +16,13 @@ export const XBubbleDivider = defineComponent({
   props: {
     prefixCls: {
       type: String,
-      default: "antdx-bubble",
+      default: "antd-bubble",
     },
     content: {
       type: [String, Number, Object, Array] as PropType<BubbleContentType>,
       default: "",
     },
-    rootClassName: {
+    rootClass: {
       type: String,
       default: "",
     },
@@ -63,7 +63,7 @@ export const XBubbleDivider = defineComponent({
         prefixCls={props.prefixCls}
         content={props.content}
         variant="borderless"
-        rootClassName={props.rootClassName}
+        rootClass={props.rootClass}
         style={props.style}
         class={[`${props.prefixCls}-divider`, props.class]}
         styles={props.styles}

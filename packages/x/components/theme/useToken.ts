@@ -33,7 +33,8 @@ export function useInternalToken(): [
   token: Ref<GlobalToken>,
   cssVar: Ref<DesignTokenProviderProps["cssVar"]>,
 ] {
-  const [theme, token, hashId, realToken, cssVar] = useAntdToken();
+  const [theme, realToken, hashId, token, cssVar] = useAntdToken();
+
   return [
     theme as unknown as Ref<Theme<SeedToken, AliasToken>>,
     realToken as unknown as Ref<GlobalToken>,

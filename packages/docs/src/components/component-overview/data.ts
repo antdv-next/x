@@ -35,6 +35,27 @@ export const componentOverviewItems: ComponentOverviewItem[] = [
       "https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*uaGhTY1-LL0AAAAAAAAAAAAADgCCAQ/original",
   },
   {
+    slug: "code-highlighter",
+    path: "/components/code-highlighter",
+    title: "CodeHighlighter",
+    subtitle: {
+      "zh-CN": "代码高亮",
+    },
+    description: {
+      "zh-CN": "用于展示代码块的语法高亮组件。",
+      "en-US": "A component for displaying syntax-highlighted code blocks.",
+    },
+    group: {
+      "zh-CN": "反馈",
+      "en-US": "Feedback",
+    },
+    groupOrder: 4,
+    cover:
+      "https://mdn.alipayobjects.com/huamei_lkxviz/afts/img/_KKkTrXq7wcAAAAAKuAAAAgADtFMAQFr/original",
+    coverDark:
+      "https://mdn.alipayobjects.com/huamei_lkxviz/afts/img/c62-S4SH1tUAAAAANuAAAAgADtFMAQFr/original",
+  },
+  {
     slug: "conversations",
     path: "/components/conversations",
     title: "Conversations",
@@ -94,10 +115,31 @@ export const componentOverviewItems: ComponentOverviewItem[] = [
       "en-US": "Feedback",
     },
     groupOrder: 4,
-    cover:
+    cover: 
       "https://mdn.alipayobjects.com/huamei_b00jk5/afts/img/A*3nEPRYJbNQgAAAAAQFAAAAgAegitAQ/original",
     coverDark:
       "https://mdn.alipayobjects.com/huamei_b00jk5/afts/img/A*_7mMRrQVcXcAAAAAQEAAAAgAegitAQ/original",
+   }
+   {
+    slug: "file-card",
+    path: "/components/file-card",
+    title: "FileCard",
+    subtitle: {
+      "zh-CN": "文件卡片",
+    },
+    description: {
+      "zh-CN": "用卡片的形式展示文件。",
+      "en-US": "Display files in the form of cards.",
+    },
+    group: {
+      "zh-CN": "反馈",
+      "en-US": "Feedback",
+    },
+    groupOrder: 4,
+    cover:
+      "https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*pJrtTaf-bWAAAAAAAAAAAAAADgCCAQ/original",
+    coverDark:
+      "https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*6ySvTqb7XhkAAAAAAAAAAAAADgCCAQ/original",
   },
   {
     slug: "x-provider",
