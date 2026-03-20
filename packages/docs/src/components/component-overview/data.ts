@@ -142,6 +142,28 @@ export const componentOverviewItems: ComponentOverviewItem[] = [
       "https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*6ySvTqb7XhkAAAAAAAAAAAAADgCCAQ/original",
   },
   {
+    slug: "notification",
+    path: "/components/notification",
+    title: "Notification",
+    subtitle: {
+      "zh-CN": "系统通知",
+    },
+    description: {
+      "zh-CN": "封装浏览器原生 Notification API，推送系统级通知。",
+      "en-US":
+        "A wrapper around the browser's native Notification API for pushing system-level notifications.",
+    },
+    group: {
+      "zh-CN": "唤醒",
+      "en-US": "Wake Up",
+    },
+    groupOrder: 3,
+    cover:
+      "https://mdn.alipayobjects.com/huamei_7uahnr/afts/img/A*NVKORa7BCVwAAAAAAAAAAAAADrJ8AQ/original",
+    coverDark:
+      "https://mdn.alipayobjects.com/huamei_7uahnr/afts/img/A*YC4ERpGAddoAAAAAAAAAAAAADrJ8AQ/original",
+  },
+  {
     slug: "x-provider",
     path: "/components/x-provider",
     title: "XProvider",

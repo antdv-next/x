@@ -11,6 +11,7 @@ import Bubble, { BubbleDivider, BubbleList, BubbleSystem } from "./bubble";
 import CodeHighlighter from "./code-highlighter";
 import Conversations, { ConversationsCreation } from "./conversations";
 import FileCard, { FileCardList } from "./file-card";
+import Notification, { XNotification } from "./notification";
 import Sources from "./sources";
 import XProvider from "./x-provider";
 
@@ -76,6 +77,8 @@ export {
   ConversationsCreation,
   FileCard,
   FileCardList,
+  Notification,
+  XNotification,
   XProvider,
   version,
   Sources,
@@ -119,3 +122,8 @@ export type {
 } from "./code-highlighter";
 
 export type { XProviderProps } from "./x-provider";
+
+export type {
+  UseNotificationType,
+  XNotificationOpenArgs,
+} from "./notification/interface";
