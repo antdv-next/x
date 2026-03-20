@@ -1,3 +1,17 @@
+export { AbstractXRequestClass, XRequest, XStream } from "@ant-design/x-sdk";
+
+export type {
+  SSEFields,
+  SSEOutput,
+  XReadableStream,
+  XRequestCallbacks,
+  XRequestClass,
+  XRequestFunction,
+  XRequestGlobalOptions,
+  XRequestOptions,
+  XStreamOptions,
+} from "@ant-design/x-sdk";
+
 export interface XSdkClientOptions {
   baseURL: string;
   fetcher?: typeof fetch;

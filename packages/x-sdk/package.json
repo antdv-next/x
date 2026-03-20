@@ -21,5 +21,8 @@
   "scripts": {
     "type-check": "tsc --project tsconfig.json --noEmit",
     "build": "tsc --project tsconfig.build.json"
+  },
+  "dependencies": {
+    "@ant-design/x-sdk": "^2.4.0"
   }
 }
