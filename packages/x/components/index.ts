@@ -7,6 +7,7 @@ import Actions, {
   ActionsFeedback,
   ActionsItem,
 } from "./actions";
+import Attachments from "./attachments";
 import Bubble, { BubbleDivider, BubbleList, BubbleSystem } from "./bubble";
 import CodeHighlighter from "./code-highlighter";
 import Conversations, { ConversationsCreation } from "./conversations";
@@ -31,6 +32,7 @@ const components = [
   ActionsItem,
   FileCard,
   FileCardList,
+  Attachments,
 ];
 
 const componentAliases = new Map<string, string[]>([
@@ -45,6 +47,7 @@ const componentAliases = new Map<string, string[]>([
   ["XActionsItem", ["AActionsItem"]],
   ["XFileCard", ["AFileCard"]],
   ["XFileCardList", ["AFileCardList"]],
+  ["XAttachments", ["AAttachments"]],
 ]);
 
 export default {
@@ -67,6 +70,7 @@ export {
   ActionsCopy,
   ActionsFeedback,
   ActionsItem,
+  Attachments,
   Bubble,
   BubbleDivider,
   BubbleList,
@@ -120,3 +124,5 @@ export type {
 } from "./code-highlighter";
 
 export type { XProviderProps } from "./x-provider";
+
+export type { AttachmentsProps, AttachmentsRef } from "./attachments";
