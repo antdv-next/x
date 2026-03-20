@@ -13,6 +13,14 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
+    "./x-request": {
+      "types": "./dist/x-request.d.ts",
+      "import": "./dist/x-request.js"
+    },
+    "./x-stream": {
+      "types": "./dist/x-stream.d.ts",
+      "import": "./dist/x-stream.js"
+    },
     "./package.json": "./package.json"
   },
   "publishConfig": {

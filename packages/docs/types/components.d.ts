@@ -13,6 +13,7 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     AAffix: typeof import('antdv-next')['Affix']
+    AAlert: typeof import('antdv-next')['Alert']
     AAnchor: typeof import('antdv-next')['Anchor']
     AApp: typeof import('antdv-next')['App']
     AButton: typeof import('antdv-next')['Button']
@@ -36,6 +37,7 @@ declare module 'vue' {
     ATooltip: typeof import('antdv-next')['Tooltip']
     ATypography: typeof import('antdv-next')['Typography']
     ATypographyParagraph: typeof import('antdv-next')['TypographyParagraph']
+    ATypographyText: typeof import('antdv-next')['TypographyText']
     ATypographyTitle: typeof import('antdv-next')['TypographyTitle']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
@@ -45,6 +47,7 @@ declare module 'vue' {
 // For TSX support
 declare global {
   const AAffix: typeof import('antdv-next')['Affix']
+  const AAlert: typeof import('antdv-next')['Alert']
   const AAnchor: typeof import('antdv-next')['Anchor']
   const AApp: typeof import('antdv-next')['App']
   const AButton: typeof import('antdv-next')['Button']
@@ -68,6 +71,7 @@ declare global {
   const ATooltip: typeof import('antdv-next')['Tooltip']
   const ATypography: typeof import('antdv-next')['Typography']
   const ATypographyParagraph: typeof import('antdv-next')['TypographyParagraph']
+  const ATypographyText: typeof import('antdv-next')['TypographyText']
   const ATypographyTitle: typeof import('antdv-next')['TypographyTitle']
   const RouterLink: typeof import('vue-router')['RouterLink']
   const RouterView: typeof import('vue-router')['RouterView']
