@@ -5,6 +5,7 @@ import { ref } from "vue";
 const userInput = ref("How are you?");
 const responseText = ref("");
 const requesting = ref(false);
+const requestStatus = ref("");
 
 const request = XRequest<
   { message: string; scene: string },
@@ -40,14 +41,15 @@ const request = XRequest<
   },
   callbacks: {
     onUpdate(chunk) {
-      responseText.value = `${chunk.text}
-headers -> ${JSON.stringify(chunk.headers)}`;
+      responseText.value = `text: ${chunk.text}\nheaders -> ${JSON.stringify(chunk.headers)}`;
     },
     onSuccess() {
       requesting.value = false;
+      requestStatus.value = "success";
     },
     onError(error) {
       requesting.value = false;
+      requestStatus.value = "error";
       responseText.value = `error: ${error.message}`;
     },
   },
@@ -55,6 +57,7 @@ headers -> ${JSON.stringify(chunk.headers)}`;
 
 function run() {
   requesting.value = true;
+  requestStatus.value = "pending";
   request.run({
     message: userInput.value,
     scene: "sdk-docs",

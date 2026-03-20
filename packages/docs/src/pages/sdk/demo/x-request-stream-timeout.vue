@@ -4,27 +4,67 @@ import type { SSEOutput } from "@antdv-next/x-sdk";
 import { XRequest } from "@antdv-next/x-sdk";
 import { computed, ref } from "vue";
 
-import { createMockSSEFetch, parseChunkContent } from "./shared";
-
 const chunks = ref<string[]>([]);
 const errorMessage = ref("");
 const requesting = ref(false);
+const requestStatus = ref("");
+
+// streamTimeout=300ms, mock chunk interval=900ms
+const STREAM_TIMEOUT = 300;
+const CHUNK_INTERVAL = 900;
 
 const request = XRequest<Record<string, string>, SSEOutput>("/api/mock/sse", {
   manual: true,
-  streamTimeout: 300,
-  fetch: createMockSSEFetch({
-    interval: 900,
-  }),
+  streamTimeout: STREAM_TIMEOUT,
+  fetch: async (_baseURL, options) => {
+    const text = "stream timeout demo.";
+    const step = 6;
+    const encoder = new TextEncoder();
+
+    const parts: string[] = [];
+    for (let i = 0; i < text.length; i += step) {
+      const piece = text.slice(i, Math.min(i + step, text.length));
+      const frame = `id: ${Math.floor(i / step) + 1}\nevent: delta\ndata: ${JSON.stringify({ content: piece })}\n\n`;
+      parts.push(frame);
+    }
+
+    let index = 0;
+    return new Response(
+      new ReadableStream<Uint8Array>({
+        start(controller) {
+          const timer = setInterval(() => {
+            if (index >= parts.length) {
+              clearInterval(timer);
+              controller.close();
+              return;
+            }
+            controller.enqueue(encoder.encode(parts[index]));
+            index += 1;
+          }, CHUNK_INTERVAL);
+        },
+      }),
+      {
+        headers: {
+          "Content-Type": "text/event-stream",
+        },
+      },
+    );
+  },
   callbacks: {
     onUpdate(chunk) {
-      chunks.value.push(parseChunkContent(chunk));
+      const content =
+        typeof chunk.data === "string"
+          ? JSON.parse(chunk.data)?.content || chunk.data
+          : "";
+      chunks.value.push(content);
     },
     onSuccess() {
       requesting.value = false;
+      requestStatus.value = "success";
     },
     onError(error) {
       requesting.value = false;
+      requestStatus.value = "error";
       errorMessage.value = error.message;
     },
   },
@@ -36,6 +76,7 @@ function run() {
   chunks.value = [];
   errorMessage.value = "";
   requesting.value = true;
+  requestStatus.value = "pending";
   request.run({ message: "stream timeout demo" });
 }
 </script>
@@ -45,7 +86,7 @@ function run() {
     <a-alert
       type="warning"
       show-icon
-      message="streamTimeout=300ms, mock chunk interval=900ms"
+      :message="`streamTimeout=${STREAM_TIMEOUT}ms, mock chunk interval=${CHUNK_INTERVAL}ms`"
     />
     <a-button type="primary" :loading="requesting" @click="run">
       Trigger Stream Timeout
@@ -57,7 +98,12 @@ function run() {
       :message="errorMessage"
     />
     <a-card size="small" title="Received Before Timeout">
-      <pre style="margin: 0; white-space: pre-wrap">{{ text || "-" }}</pre>
+      <a-typography-paragraph style="margin-bottom: 8px">
+        {{ text || "-" }}
+      </a-typography-paragraph>
+      <a-typography-text type="secondary">
+        chunks: {{ chunks.length }} | status: {{ requestStatus }}
+      </a-typography-text>
     </a-card>
   </a-space>
 </template>

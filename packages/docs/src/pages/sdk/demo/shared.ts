@@ -94,17 +94,25 @@ export function createMockSSEFetch(config?: {
 }): MockFetch {
   return async (_baseURL, options = {}) => {
     const params = (options.params ?? {}) as Record<string, unknown>;
-    const text = String(params.message ?? config?.defaultText ?? "Hello X SDK");
+    const text = String(
+      (params.message as string | undefined) ??
+        config?.defaultText ??
+        "Hello X SDK",
+    );
     const step = Number(params.step ?? config?.step ?? 6);
     const interval = Number(params.interval ?? config?.interval ?? 180);
     const streamSeparator = String(
-      params.streamSeparator ?? config?.streamSeparator ?? "\n\n",
+      (params.streamSeparator as string | undefined) ??
+        config?.streamSeparator ??
+        "\n\n",
     );
     const partSeparator = String(
-      params.partSeparator ?? config?.partSeparator ?? "\n",
+      (params.partSeparator as string | undefined) ??
+        config?.partSeparator ??
+        "\n",
     );
     const kvSeparator = String(
-      params.kvSeparator ?? config?.kvSeparator ?? ":",
+      (params.kvSeparator as string | undefined) ?? config?.kvSeparator ?? ":",
     );
 
     const chunks = splitText(text, step).map((piece, index) =>
@@ -137,11 +145,15 @@ export function createPipeProtocolFetch(config?: {
   return async (_baseURL, options = {}) => {
     const params = (options.params ?? {}) as Record<string, unknown>;
     const text = String(
-      params.message ?? config?.defaultText ?? "custom transform stream demo",
+      (params.message as string | undefined) ??
+        config?.defaultText ??
+        "custom transform stream demo",
     );
     const step = Number(params.step ?? config?.step ?? 5);
     const interval = Number(params.interval ?? config?.interval ?? 160);
-    const separator = String(params.separator ?? config?.separator ?? "|");
+    const separator = String(
+      (params.separator as string | undefined) ?? config?.separator ?? "|",
+    );
 
     const chunks = splitText(text, step).map(part => `${part}${separator}`);
 

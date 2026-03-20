@@ -4,7 +4,8 @@
     // Path mapping for cleaner imports.
     "paths": {
       "@/*": ["./src/*"],
-      "@antdv-next/x": ["../x/components/index.ts"]
+      "@antdv-next/x": ["../x/components/index.ts"],
+      "@antdv-next/x-sdk": ["../x-sdk/src/index.ts"]
     },
     // Extra safety for array and object lookups, but may have false positives.
     "noUncheckedIndexedAccess": true

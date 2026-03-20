@@ -204,7 +204,7 @@ overrides:
   vite: npm:@voidzero-dev/vite-plus-core@latest
   vitest: npm:@voidzero-dev/vite-plus-test@latest
 
-pnpmfileChecksum: sha256-utDF238oWw7t0+ReZvn7zp2qfvyyGKIM8XTT48AVX6w=
+pnpmfileChecksum: sha256-nIWHmWJnbQY1HQ2nAnBFSFH8WB3CvXFWN6vWFIn99EI=
 
 importers:
 

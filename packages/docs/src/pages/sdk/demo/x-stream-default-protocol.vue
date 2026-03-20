@@ -4,19 +4,20 @@ import type { SSEOutput } from "@antdv-next/x-sdk";
 import { XStream } from "@antdv-next/x-sdk";
 import { ref } from "vue";
 
-import { createTimedStream, parseChunkContent } from "./shared";
-
 const chunks = ref<string[]>([]);
 const running = ref(false);
 
+const STREAM_SEP = "\n\n";
+const PART_SEP = "\n";
+const KV_SEP = ":";
+
 function createSSEFrames(text: string, step = 6) {
   const frames: string[] = [];
-  for (let index = 0; index < text.length; index += step) {
-    const content = text.slice(index, Math.min(index + step, text.length));
+  for (let i = 0; i < text.length; i += step) {
+    const content = text.slice(i, Math.min(i + step, text.length));
+    const id = Math.floor(i / step) + 1;
     frames.push(
-      `id: ${Math.floor(index / step) + 1}\n` +
-        "event: delta\n" +
-        `data: ${JSON.stringify({ content })}\n\n`,
+      `id${KV_SEP} ${id}${PART_SEP}event${KV_SEP} delta${PART_SEP}data${KV_SEP} ${JSON.stringify({ content })}${STREAM_SEP}`,
     );
   }
   return frames;
@@ -26,13 +27,34 @@ async function run() {
   chunks.value = [];
   running.value = true;
 
-  const readableStream = createTimedStream(
-    createSSEFrames("x-stream default protocol demo."),
-    160,
-  );
+  const text = "x-stream default protocol demo.";
+  const step = 6;
+  const interval = 160;
+
+  const frames = createSSEFrames(text, step);
+  const encoder = new TextEncoder();
+
+  let index = 0;
+  const readableStream = new ReadableStream<Uint8Array>({
+    start(controller) {
+      const timer = setInterval(() => {
+        if (index >= frames.length) {
+          clearInterval(timer);
+          controller.close();
+          return;
+        }
+        controller.enqueue(encoder.encode(frames[index]));
+        index += 1;
+      }, interval);
+    },
+  });
 
   for await (const chunk of XStream<SSEOutput>({ readableStream })) {
-    chunks.value.push(parseChunkContent(chunk));
+    const content =
+      typeof chunk.data === "string"
+        ? JSON.parse(chunk.data)?.content || chunk.data
+        : "";
+    chunks.value.push(content);
   }
 
   running.value = false;
