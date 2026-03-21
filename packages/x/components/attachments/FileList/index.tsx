@@ -14,8 +14,8 @@ import { computed, defineComponent, inject, ref, watch } from "vue";
 import type { SemanticType as FileCardSemanticType } from "../../file-card/FileCard";
 import type { SemanticType as FileCardListSemanticType } from "../../file-card/List";
 
+import useXComponentConfig from "../../_utils/hooks/use-x-component-config.ts";
 import { FileCardList, type FileCardProps } from "../../file-card";
-import useXComponentConfig from "../../x-provider/hooks/use-x-component-config";
 import { AttachmentContextKey } from "../context";
 import SilentUploader from "../SilentUploader";
 import { previewImage } from "../util";

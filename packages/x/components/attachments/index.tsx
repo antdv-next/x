@@ -15,7 +15,7 @@ import type { SemanticType as FileCardSemanticType } from "../file-card/FileCard
 import type { SemanticType as FileCardListSemanticType } from "../file-card/List";
 import type { Attachment as FileListAttachment } from "./FileList";
 
-import useXComponentConfig from "../x-provider/hooks/use-x-component-config";
+import useXComponentConfig from "../_utils/hooks/use-x-component-config.ts";
 import { AttachmentContextKey } from "./context";
 import DropArea from "./DropArea";
 import FileList from "./FileList";
