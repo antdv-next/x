@@ -16,7 +16,7 @@ export interface ConversationsItemProps {
   direction?: "ltr" | "rtl";
   menu?: ConversationsItemMenu;
   active?: boolean;
-  className?: any;
+  classes?: any;
   style?: any;
   onClick?: ConversationsProps["onActiveChange"];
 }
@@ -49,9 +49,9 @@ const ConversationsItem = defineComponent({
       type: Boolean,
       default: false,
     },
-    className: {
+    classes: {
       type: [String, Array, Object] as PropType<
-        ConversationsItemProps["className"]
+        ConversationsItemProps["classes"]
       >,
       default: undefined,
     },
@@ -67,10 +67,10 @@ const ConversationsItem = defineComponent({
     },
   },
   setup(props) {
-    const mergedClassName = computed(() => {
+    const mergedClasses = computed(() => {
       const disabled = props.info.disabled;
       return [
-        props.className,
+        props.classes,
         `${props.prefixCls}-item`,
         {
           [`${props.prefixCls}-item-active`]: props.active && !disabled,
@@ -109,7 +109,7 @@ const ConversationsItem = defineComponent({
           title={
             typeof props.info.label === "string" ? props.info.label : undefined
           }
-          class={mergedClassName.value}
+          class={mergedClasses.value}
           style={props.style}
           onClick={() => {
             if (!disabled) props.onClick?.(props.info.key, props.info);

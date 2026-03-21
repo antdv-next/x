@@ -7,6 +7,8 @@ import type {
   VNodeChild,
 } from "vue";
 
+import type { CollapsibleOptions } from "../_utils/hooks/useCollapsiable";
+
 export type AnyObject = Record<PropertyKey, any>;
 
 type PrefixKeysInfo = [keyof KeyboardEvent, string, string];
@@ -66,12 +68,6 @@ export type GroupLabel =
 
 export type Collapsible = boolean | ((group: string) => boolean);
 
-export interface CollapsibleOptions {
-  defaultExpandedKeys?: string[];
-  expandedKeys?: string[];
-  onExpand?: (expandedKeys: string[]) => void;
-}
-
 export interface GroupableProps extends CollapsibleOptions {
   label?: GroupLabel;
   collapsible?: Collapsible;
@@ -109,7 +105,7 @@ export interface CreationProps {
   label?: VNodeChild | ((info: CreationLabelInfo) => VNodeChild);
   align?: "start" | "center" | "end";
   prefixCls?: string;
-  className?: ClassValue;
+  classes?: ClassValue;
   style?: CSSProperties;
   shortcutKeyInfo?: ShortcutKeyInfoType;
   disabled?: boolean;

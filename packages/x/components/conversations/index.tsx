@@ -21,6 +21,7 @@ import type {
   ShortcutKeys,
 } from "./interface";
 
+import useCollapsible from "../_utils/hooks/useCollapsiable";
 import useXComponentConfig from "../x-provider/hooks/use-x-component-config";
 import Creation from "./Creation";
 import GroupTitle from "./GroupTitle";
@@ -196,20 +197,11 @@ const XConversations = defineComponent({
       } as ConversationsProps["shortcutKeys"];
     });
 
-    const innerExpandedKeys = ref<string[]>([]);
-
-    watch(
-      () => collapsibleOptions.value.defaultExpandedKeys,
-      keys => {
-        if (collapsibleOptions.value.expandedKeys === undefined)
-          innerExpandedKeys.value = [...(keys ?? [])];
-      },
-      { immediate: true },
-    );
-
-    const mergedExpandedKeys = computed(() => {
-      return collapsibleOptions.value.expandedKeys ?? innerExpandedKeys.value;
-    });
+    const {
+      enableCollapse,
+      expandedKeys: mergedExpandedKeys,
+      onItemExpand,
+    } = useCollapsible(computed(() => collapsibleOptions.value));
 
     const setActiveKey = (key: ConversationItemType["key"]) => {
       if (props.activeKey === undefined) innerActiveKey.value = key;
@@ -231,16 +223,9 @@ const XConversations = defineComponent({
       );
     };
 
-    const onItemExpand = (curKey: string) => {
-      const targetKeys = mergedExpandedKeys.value.includes(curKey)
-        ? mergedExpandedKeys.value.filter(key => key !== curKey)
-        : [...mergedExpandedKeys.value, curKey];
-
-      if (collapsibleOptions.value.expandedKeys === undefined)
-        innerExpandedKeys.value = targetKeys;
-
-      collapsibleOptions.value.onExpand?.(targetKeys);
-      emit("expand", targetKeys);
+    const onExpand = (curKey: string) => {
+      const targetKeys = onItemExpand.value?.(curKey);
+      if (targetKeys) emit("expand", targetKeys);
     };
 
     const creationShortcutInfo = computed(() => {
@@ -368,7 +353,7 @@ const XConversations = defineComponent({
             info={baseConversationInfo}
             prefixCls={props.prefixCls}
             direction={configCtx.value.direction}
-            className={[
+            classes={[
               contextConfig.value.classes?.item,
               props.classes?.item,
               baseConversationInfo.class,
@@ -417,7 +402,7 @@ const XConversations = defineComponent({
       >
         {!!props.creation && (
           <Creation
-            className={[
+            classes={[
               contextConfig.value.classes?.creation,
               props.classes?.creation,
             ]}
@@ -437,13 +422,15 @@ const XConversations = defineComponent({
             <GroupTitle
               key={groupInfo.name || `key-${groupIndex}`}
               prefixCls={props.prefixCls}
+              rootPrefixCls={configCtx.value.getPrefixCls()}
               groupInfo={groupInfo}
-              className={[
+              classes={[
                 contextConfig.value.classes?.group,
                 props.classes?.group,
               ]}
+              enableCollapse={enableCollapse.value}
               expandedKeys={mergedExpandedKeys.value}
-              onItemExpand={onItemExpand}
+              onItemExpand={onExpand}
             >
               <ul
                 class={[

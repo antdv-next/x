@@ -23,8 +23,8 @@ const Creation = defineComponent({
       type: String,
       default: "antd-conversations-creation",
     },
-    className: {
-      type: [String, Array, Object] as PropType<CreationProps["className"]>,
+    classes: {
+      type: [String, Array, Object] as PropType<CreationProps["classes"]>,
       default: undefined,
     },
     style: {
@@ -75,7 +75,7 @@ const Creation = defineComponent({
           style={props.style}
           class={[
             props.prefixCls,
-            props.className,
+            props.classes,
             `${props.prefixCls}-${mergeAlign}`,
             {
               [`${props.prefixCls}-disabled`]: props.disabled,
