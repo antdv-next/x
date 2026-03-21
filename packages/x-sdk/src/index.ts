@@ -1,10 +1,20 @@
+export * from "./chat-providers";
 export {
   AbstractXRequestClass,
   XRequest,
   setXRequestGlobalOptions,
 } from "./x-request";
+export { default as useXChat } from "./x-chat";
+export { default as useXConversations } from "./x-conversations";
 export { XStream } from "./x-stream";
 
+export type { DefaultMessageInfo, MessageInfo } from "./x-chat";
+export type { ConversationData } from "./x-conversations";
+export type {
+  XModelMessage,
+  XModelParams,
+  XModelResponse,
+} from "./chat-providers/types/model";
 export type {
   XRequestCallbacks,
   XRequestClass,

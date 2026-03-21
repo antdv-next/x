@@ -1,7 +1,11 @@
 ---
+group:
+  title: Utilities
+  order: 2
 title: XStream
 subtitle: Stream
 description: Transform readable streams into async iterable outputs.
+order: 4
 ---
 
 ## When To Use
@@ -60,4 +64,3 @@ const stream = XStream({
 ## Notes
 
 - Default output follows SSE fields (`event`, `data`, `id`, `retry`).
-- This page is migrated from Ant Design X SDK docs and adapted to current `@antdv-next/x-sdk` exports.

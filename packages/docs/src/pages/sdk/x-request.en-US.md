@@ -1,7 +1,11 @@
 ---
+group:
+  title: Utilities
+  order: 2
 title: XRequest
 subtitle: Request
 description: Universal streaming request utility for AI chat and SSE scenarios.
+order: 3
 ---
 
 ## When To Use
@@ -103,7 +107,3 @@ type XRequestFunction<
 | `abort`        | Abort request                    | `() => void`               |
 | `run`          | Execute manually (`manual=true`) | `(params?: Input) => void` |
 | `isRequesting` | Current requesting state         | `boolean`                  |
-
-## Notes
-
-- This page is migrated from Ant Design X SDK docs and adapted to current `@antdv-next/x-sdk` exports.

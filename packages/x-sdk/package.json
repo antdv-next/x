@@ -13,6 +13,22 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
+    "./chat-providers": {
+      "types": "./dist/chat-providers/index.d.ts",
+      "import": "./dist/chat-providers/index.js"
+    },
+    "./chat-providers/types/model": {
+      "types": "./dist/chat-providers/types/model.d.ts",
+      "import": "./dist/chat-providers/types/model.js"
+    },
+    "./x-chat": {
+      "types": "./dist/x-chat/index.d.ts",
+      "import": "./dist/x-chat/index.js"
+    },
+    "./x-conversations": {
+      "types": "./dist/x-conversations/index.d.ts",
+      "import": "./dist/x-conversations/index.js"
+    },
     "./x-request": {
       "types": "./dist/x-request.d.ts",
       "import": "./dist/x-request.js"
@@ -32,5 +48,8 @@
   },
   "dependencies": {
     "@ant-design/x-sdk": "^2.4.0"
+  },
+  "peerDependencies": {
+    "vue": ">=3.5.0"
   }
 }

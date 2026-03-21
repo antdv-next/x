@@ -1,7 +1,11 @@
 ---
+group:
+  title: 工具
+  order: 2
 title: XStream
 subtitle: 流
 description: 将可读数据流转换为可迭代输出。
+order: 4
 ---
 
 ## 何时使用
@@ -60,4 +64,3 @@ const stream = XStream({
 ## 说明
 
 - 默认输出符合 SSE 字段规范（如 `event`、`data`、`id`、`retry`）。
-- 本文档内容迁移自 Ant Design X SDK，并按当前 `@antdv-next/x-sdk` 导出能力做了适配。

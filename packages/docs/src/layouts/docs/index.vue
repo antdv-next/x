@@ -8,6 +8,7 @@ import { useRoute, useRouter } from "vue-router";
 import { componentOverviewItems } from "@/components/component-overview/data";
 import { useDocPage } from "@/composables/use-doc-page";
 import { headerLocales } from "@/config/header";
+import { sdkMenuMeta } from "@/config/sdk-menu";
 import { docsRoutes, LOCALE_EN_US, LOCALE_ZH_CN } from "@/router/docs";
 import { useAppStore } from "@/stores/app";
 
@@ -207,14 +208,18 @@ const siderItems = computed<SiderItem[]>(() => {
       slug: lastSegment,
       isSectionIndex,
       label: isSectionIndex
-        ? appStore.locale === LOCALE_ZH_CN
-          ? "概览"
-          : "Overview"
+        ? section === "/sdk"
+          ? appStore.locale === LOCALE_ZH_CN
+            ? "介绍"
+            : "Introduction"
+          : appStore.locale === LOCALE_ZH_CN
+            ? "概览"
+            : "Overview"
         : formatSegmentLabel(lastSegment),
     };
   });
 
-  if (section !== "/components")
+  if (section !== "/components" && section !== "/sdk")
     return baseItems.map(({ key, label }) => ({ key, label }));
 
   const localeKey =
@@ -222,6 +227,67 @@ const siderItems = computed<SiderItem[]>(() => {
   const fallbackGroupLabel =
     localeKey === LOCALE_ZH_CN ? "未分类" : "Ungrouped";
   const overviewItem = baseItems.find(item => item.isSectionIndex);
+
+  if (section === "/sdk") {
+    const groups = new Map<
+      string,
+      {
+        key: string;
+        label: string;
+        order: number;
+        children: (SiderLeafItem & { order: number })[];
+      }
+    >();
+
+    baseItems
+      .filter(item => !item.isSectionIndex)
+      .forEach(item => {
+        const meta = sdkMenuMeta.find(info => info.slug === item.slug);
+        const groupLabel = meta?.group?.[localeKey] ?? fallbackGroupLabel;
+        const groupOrder = meta?.groupOrder ?? Number.MAX_SAFE_INTEGER;
+        const itemOrder = meta?.order ?? Number.MAX_SAFE_INTEGER;
+        const groupKey = `${groupOrder}-${groupLabel}`;
+
+        if (!groups.has(groupKey)) {
+          groups.set(groupKey, {
+            key: groupKey,
+            label: groupLabel,
+            order: groupOrder,
+            children: [],
+          });
+        }
+
+        groups.get(groupKey)!.children.push({
+          key: item.key,
+          label: meta?.title?.[localeKey] ?? item.label,
+          order: itemOrder,
+        });
+      });
+
+    const groupedItems: SiderGroupItem[] = Array.from(groups.values())
+      .sort((left, right) => {
+        if (left.order !== right.order) return left.order - right.order;
+        return left.label.localeCompare(right.label);
+      })
+      .map(group => ({
+        key: group.key,
+        type: "group",
+        label: group.label,
+        children: group.children
+          .sort((left, right) => {
+            if (left.order !== right.order) return left.order - right.order;
+            return left.label.localeCompare(right.label);
+          })
+          .map(({ key, label }) => ({ key, label })),
+      }));
+
+    return [
+      ...(overviewItem
+        ? [{ key: overviewItem.key, label: overviewItem.label }]
+        : []),
+      ...groupedItems,
+    ];
+  }
 
   const groups = new Map<
     string,

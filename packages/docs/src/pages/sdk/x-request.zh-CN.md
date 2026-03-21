@@ -1,7 +1,11 @@
 ---
+group:
+  title: 工具
+  order: 2
 title: XRequest
 subtitle: 请求
 description: 通用流式请求工具，适用于 AI 对话与 SSE 场景。
+order: 3
 ---
 
 ## 何时使用
@@ -103,7 +107,3 @@ type XRequestFunction<
 | `abort`        | 取消请求                         | `() => void`               |
 | `run`          | 手动执行（`manual=true` 时有效） | `(params?: Input) => void` |
 | `isRequesting` | 当前是否请求中                   | `boolean`                  |
-
-## 说明
-
-- 本文档内容迁移自 Ant Design X SDK，并按当前 `@antdv-next/x-sdk` 导出能力做了适配。

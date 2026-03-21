@@ -207,7 +207,7 @@ overrides:
   vite: npm:@voidzero-dev/vite-plus-core@latest
   vitest: npm:@voidzero-dev/vite-plus-test@latest
 
-pnpmfileChecksum: sha256-nIWHmWJnbQY1HQ2nAnBFSFH8WB3CvXFWN6vWFIn99EI=
+pnpmfileChecksum: sha256-pJE5p9UpGCCRtdWLWgKxnaRQ1sAJPQpm5Pqwg/S34e0=
 
 importers:
 
@@ -447,6 +447,9 @@ importers:
       '@ant-design/x-sdk':
         specifier: ^2.4.0
         version: 2.4.0
+      vue:
+        specifier: '>=3.5.0'
+        version: 3.5.29(typescript@5.9.3)
 
   packages/x-skill: {}
 
@@ -1345,9 +1348,6 @@ packages:
 
   '@quansync/fs@1.0.0':
     resolution: {integrity: sha512-4TJ3DFtlf1L5LDMaM6CanJ/0lckGNtJcMjQ1NAV6zDmA0tEHKZtxNKin8EgPaVX1YzljbxckyT2tJrpQKAtngQ==}
-
-  '@rc-component/util@1.10.0':
-    resolution: {integrity: sha512-aY9GLBuiUdpyfIUpAWSYer4Tu3mVaZCo5A0q9NtXcazT3MRiI3/WNHCR+DUn5VAtR6iRRf0ynCqQUcHli5UdYw==}
 
   '@rolldown/pluginutils@1.0.0-rc.2':
     resolution: {integrity: sha512-izyXV/v+cHiRfozX62W9htOAvwMo4/bXKDrQ+vom1L1qRuexPock/7VZDAhnpHCLNejd3NJ6hiab+tO0D44Rgw==}
@@ -2429,9 +2429,6 @@ packages:
     engines: {node: '>=14.16'}
     hasBin: true
 
-  is-mobile@5.0.0:
-    resolution: {integrity: sha512-Tz/yndySvLAEXh+Uk8liFCxOwVH6YutuR74utvOcu7I9Di+DwM0mtdPVZNaVvvBUM2OXxne/NhOs1zAO7riusQ==}
-
   is-potential-custom-element-name@1.0.1:
     resolution: {integrity: sha512-bCYeRA2rVibKZd+s2625gGnGF/t7DSqDs4dP7CrLA1m7jKWz6pps0LpYLJN8Q64HtmPKJ1hrN3nzPNKFEKOUiQ==}
 
@@ -2885,9 +2882,6 @@ packages:
 
   quansync@1.0.0:
     resolution: {integrity: sha512-5xZacEEufv3HSTPQuchrvV6soaiACMFnq1H8wkVioctoH3TRha9Sz66lOxRwPK/qZj7HPiSveih9yAyh98gvqA==}
-
-  react-is@18.3.1:
-    resolution: {integrity: sha512-/LLMVyas0ljjAtoYiPqYiL8VWXzUUdThrmU5+n20DZv+a+ClRoevUzw5JxU+Ieh5/c87ytoTBV9G1FiKfNJdmg==}
 
   read-package-json-fast@4.0.0:
     resolution: {integrity: sha512-qpt8EwugBWDw2cgE2W+/3oxC+KTez2uSVR8JU9Q36TXPAGCaozfQUs59v4j4GFpWTaw0i6hAZSvOmu1J0uOEUg==}
@@ -3414,9 +3408,7 @@ snapshots:
 
   '@ant-design/icons-svg@4.4.2': {}
 
-  '@ant-design/x-sdk@2.4.0':
-    dependencies:
-      '@rc-component/util': 1.10.0
+  '@ant-design/x-sdk@2.4.0': {}
 
   '@antdv-next/auto-import-resolver@1.0.5(unplugin-vue-components@31.0.0(vue@3.5.29(typescript@5.9.3)))':
     dependencies:
@@ -4125,11 +4117,6 @@ snapshots:
   '@quansync/fs@1.0.0':
     dependencies:
       quansync: 1.0.0
-
-  '@rc-component/util@1.10.0':
-    dependencies:
-      is-mobile: 5.0.0
-      react-is: 18.3.1
 
   '@rolldown/pluginutils@1.0.0-rc.2': {}
 
@@ -5340,8 +5327,6 @@ snapshots:
     dependencies:
       is-docker: 3.0.0
 
-  is-mobile@5.0.0: {}
-
   is-potential-custom-element-name@1.0.1: {}
 
   is-what@5.5.0: {}
@@ -5849,8 +5834,6 @@ snapshots:
   quansync@0.2.11: {}
 
   quansync@1.0.0: {}
-
-  react-is@18.3.1: {}
 
   read-package-json-fast@4.0.0:
     dependencies:

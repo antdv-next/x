@@ -21,10 +21,19 @@ function stripReactPeers(pkg) {
 module.exports = {
   hooks: {
     readPackage(pkg) {
-      if (
-        pkg.name === "@ant-design/x-sdk" ||
-        pkg.name === "@rc-component/util"
-      ) {
+      if (pkg.name === "@ant-design/x-sdk") {
+        stripReactPeers(pkg);
+
+        if (pkg.dependencies?.["@rc-component/util"]) {
+          delete pkg.dependencies["@rc-component/util"];
+
+          if (Object.keys(pkg.dependencies).length === 0) {
+            delete pkg.dependencies;
+          }
+        }
+      }
+
+      if (pkg.name === "@rc-component/util") {
         stripReactPeers(pkg);
       }
       return pkg;
