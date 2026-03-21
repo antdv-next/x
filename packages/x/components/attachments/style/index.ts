@@ -139,7 +139,7 @@ const genFileListStyle: GenerateStyle<AttachmentsToken> = token => {
         },
 
         [`${cardCls}-status-uploading, ${cardCls}-status-error`]: {
-          [`${antCls}-image-mask`]: {
+          [`${antCls}-image-cover`]: {
             opacity: 1,
           },
         },
