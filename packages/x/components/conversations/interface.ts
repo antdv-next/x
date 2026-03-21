@@ -7,7 +7,7 @@ import type {
   VNodeChild,
 } from "vue";
 
-import type { CollapsibleOptions } from "../_utils/hooks/useCollapsiable";
+import type { CollapsibleOptions } from "../_utils/hooks/useCollapsible";
 import type { AnyObject, ShortcutKeys } from "../_utils/type";
 
 export type ShortcutKeyInfoType = {
