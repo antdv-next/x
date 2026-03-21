@@ -154,10 +154,10 @@ export const componentOverviewItems: ComponentOverviewItem[] = [
         "A wrapper around the browser's native Notification API for pushing system-level notifications.",
     },
     group: {
-      "zh-CN": "唤醒",
-      "en-US": "Wake Up",
+      "zh-CN": "通用",
+      "en-US": "Common",
     },
-    groupOrder: 3,
+    groupOrder: 0,
     cover:
       "https://mdn.alipayobjects.com/huamei_7uahnr/afts/img/A*NVKORa7BCVwAAAAAAAAAAAAADrJ8AQ/original",
     coverDark:
