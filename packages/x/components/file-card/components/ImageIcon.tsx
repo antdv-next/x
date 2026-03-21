@@ -2,6 +2,8 @@ import type { PropType } from "vue";
 
 import { defineComponent } from "vue";
 
+import type { DirectionType } from "../../_utils/type";
+
 const IMAGE_ICON_SIZE = {
   small: "32px",
   medium: "46px",
@@ -31,7 +33,7 @@ const ImageIcon = defineComponent({
       default: "currentColor",
     },
     direction: {
-      type: String as PropType<"ltr" | "rtl">,
+      type: String as PropType<DirectionType>,
       default: "ltr",
     },
   },

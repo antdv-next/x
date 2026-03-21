@@ -4,6 +4,7 @@ import { EllipsisOutlined } from "@antdv-next/icons";
 import { Dropdown, Typography } from "antdv-next";
 import { computed, defineComponent } from "vue";
 
+import type { DirectionType } from "../_utils/type";
 import type {
   ConversationItemType,
   ConversationsItemMenu,
@@ -13,7 +14,7 @@ import type {
 export interface ConversationsItemProps {
   info: ConversationItemType;
   prefixCls?: string;
-  direction?: "ltr" | "rtl";
+  direction?: DirectionType;
   menu?: ConversationsItemMenu;
   active?: boolean;
   classes?: any;
@@ -38,7 +39,7 @@ const ConversationsItem = defineComponent({
       default: "antd-conversations",
     },
     direction: {
-      type: String as PropType<"ltr" | "rtl">,
+      type: String as PropType<DirectionType>,
       default: "ltr",
     },
     menu: {

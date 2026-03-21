@@ -11,14 +11,13 @@ import {
   watch,
 } from "vue";
 
+import type { ShortcutKeys, PrefixKeysType } from "../_utils/type";
 import type {
   ConversationItemType,
   ConversationsProps,
   ConversationsRef,
   GroupInfoType,
   ItemType,
-  PrefixKeysType,
-  ShortcutKeys,
 } from "./interface";
 
 import useCollapsible from "../_utils/hooks/useCollapsiable";
@@ -469,7 +468,6 @@ export type {
   DividerItemType,
   GroupableProps,
   ItemType,
-  ShortcutKeys,
 } from "./interface";
 
 export { Creation as ConversationsCreation };
