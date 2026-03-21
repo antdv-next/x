@@ -25,7 +25,7 @@ import { Image } from "antdv-next";
 import { useConfig } from "antdv-next/dist/config-provider/context";
 import { computed, defineComponent, useAttrs } from "vue";
 
-import useXComponentConfig from "../x-provider/hooks/use-x-component-config";
+import useXComponentConfig from "../_utils/hooks/use-x-component-config";
 import File from "./components/File";
 import ImageLoading from "./components/ImageLoading";
 import AudioIcon from "./icons/audio";
