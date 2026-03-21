@@ -7,8 +7,8 @@ import { computed, defineComponent, ref, Transition, useAttrs } from "vue";
 
 import type { SourcesItem, SourcesProps, SourcesRef } from "./interface";
 
+import useXComponentConfig from "../_utils/hooks/use-x-component-config";
 import initCollapseTransition from "../_utils/transition";
-import useXComponentConfig from "../x-provider/hooks/use-x-component-config";
 import CarouselCard from "./components/CarouselCard";
 import useSourcesStyle from "./style";
 
