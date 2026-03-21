@@ -113,7 +113,6 @@ export type {
   CreationProps,
   DividerItemType,
   GroupableProps,
-  ShortcutKeys,
 } from "./conversations";
 
 export type { SourcesProps } from "./sources";

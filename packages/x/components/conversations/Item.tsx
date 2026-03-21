@@ -4,6 +4,7 @@ import { EllipsisOutlined } from "@antdv-next/icons";
 import { Dropdown, Typography } from "antdv-next";
 import { computed, defineComponent } from "vue";
 
+import type { DirectionType } from "../_utils/type";
 import type {
   ConversationItemType,
   ConversationsItemMenu,
@@ -13,10 +14,10 @@ import type {
 export interface ConversationsItemProps {
   info: ConversationItemType;
   prefixCls?: string;
-  direction?: "ltr" | "rtl";
+  direction?: DirectionType;
   menu?: ConversationsItemMenu;
   active?: boolean;
-  className?: any;
+  classes?: any;
   style?: any;
   onClick?: ConversationsProps["onActiveChange"];
 }
@@ -38,7 +39,7 @@ const ConversationsItem = defineComponent({
       default: "antd-conversations",
     },
     direction: {
-      type: String as PropType<"ltr" | "rtl">,
+      type: String as PropType<DirectionType>,
       default: "ltr",
     },
     menu: {
@@ -49,9 +50,9 @@ const ConversationsItem = defineComponent({
       type: Boolean,
       default: false,
     },
-    className: {
+    classes: {
       type: [String, Array, Object] as PropType<
-        ConversationsItemProps["className"]
+        ConversationsItemProps["classes"]
       >,
       default: undefined,
     },
@@ -67,10 +68,10 @@ const ConversationsItem = defineComponent({
     },
   },
   setup(props) {
-    const mergedClassName = computed(() => {
+    const mergedClasses = computed(() => {
       const disabled = props.info.disabled;
       return [
-        props.className,
+        props.classes,
         `${props.prefixCls}-item`,
         {
           [`${props.prefixCls}-item-active`]: props.active && !disabled,
@@ -109,7 +110,7 @@ const ConversationsItem = defineComponent({
           title={
             typeof props.info.label === "string" ? props.info.label : undefined
           }
-          class={mergedClassName.value}
+          class={mergedClasses.value}
           style={props.style}
           onClick={() => {
             if (!disabled) props.onClick?.(props.info.key, props.info);

@@ -51,6 +51,12 @@ function dispatchKeyboardEvent(
   document.dispatchEvent(event);
 }
 
+function waitMotionEnd(timeout = 520) {
+  return new Promise(resolve => {
+    setTimeout(resolve, timeout);
+  });
+}
+
 afterEach(() => {
   wrappers.splice(0).forEach(wrapper => wrapper.unmount());
 });
@@ -248,9 +254,43 @@ describe("Conversations", () => {
     );
 
     await wrapper.find(".antd-conversations-group-title").trigger("click");
-    expect(wrapper.find(".antd-conversations-content-hidden").exists()).toBe(
-      true,
+    await waitMotionEnd();
+    expect(wrapper.findAll(".antd-conversations-item")).toHaveLength(3);
+  });
+
+  it("supports controlled expandedKeys", async () => {
+    const onExpand = vi.fn();
+    const wrapper = track(
+      mount(Conversations, {
+        props: {
+          items: [...items],
+          groupable: {
+            collapsible: true,
+            expandedKeys: ["pinned"],
+            onExpand,
+          },
+        },
+      }),
     );
+
+    expect(wrapper.find(".antd-conversations-content-hidden").exists()).toBe(
+      false,
+    );
+
+    await wrapper.find(".antd-conversations-group-title").trigger("click");
+    expect(onExpand).toHaveBeenCalledWith([]);
+    expect(wrapper.findAll(".antd-conversations-item")).toHaveLength(4);
+
+    await wrapper.setProps({
+      groupable: {
+        collapsible: true,
+        expandedKeys: [],
+        onExpand,
+      },
+    });
+
+    await waitMotionEnd();
+    expect(wrapper.findAll(".antd-conversations-item")).toHaveLength(3);
   });
 
   it("supports creation click and disabled state", async () => {
