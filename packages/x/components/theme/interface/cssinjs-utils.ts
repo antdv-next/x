@@ -8,10 +8,9 @@ import type {
   TokenMapKey,
 } from "@antdv-next/cssinjs/cssinjs-utils";
 
+import type { AnyObject } from "../../_utils/type";
 import type { AliasToken } from "./alias";
 import type { ComponentTokenMap } from "./components";
-
-type AnyObject = Record<string, any>;
 
 /** Final token which contains the components level override */
 export type GlobalToken = GlobalTokenTypeUtil<ComponentTokenMap, AliasToken>;

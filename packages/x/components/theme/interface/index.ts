@@ -1,10 +1,9 @@
 import type { CSSInterpolation, DerivativeFunc } from "@antdv-next/cssinjs";
 
+import type { AnyObject } from "../../_utils/type";
 import type { AliasToken } from "./alias";
 import type { MapToken } from "./maps";
 import type { SeedToken } from "./seeds";
-
-type AnyObject = Record<string, any>;
 
 export type { AliasToken } from "./alias";
 

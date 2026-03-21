@@ -6,7 +6,7 @@ import type {
   VNodeChild,
 } from "vue";
 
-export type AnyObject = Record<string, any>;
+import type { AnyObject } from "../_utils/type";
 
 export type BubbleContentType = VNodeChild | AnyObject | string | number;
 

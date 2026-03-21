@@ -8,8 +8,7 @@ import type {
 } from "vue";
 
 import type { CollapsibleOptions } from "../_utils/hooks/useCollapsiable";
-
-export type AnyObject = Record<PropertyKey, any>;
+import type { AnyObject } from "../_utils/type";
 
 type PrefixKeysInfo = [keyof KeyboardEvent, string, string];
 
