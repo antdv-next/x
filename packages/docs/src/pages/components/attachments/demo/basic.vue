@@ -25,6 +25,7 @@
 
 <script setup lang="ts">
 import { CloudUploadOutlined, LinkOutlined } from "@antdv-next/icons";
+import { Attachments } from "@antdv-next/x";
 import { App, Button, Flex, Switch, message } from "antdv-next";
 import { h, ref } from "vue";
 

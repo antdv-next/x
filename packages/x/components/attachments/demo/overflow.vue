@@ -35,7 +35,7 @@
 <script setup lang="ts">
 import { CloudUploadOutlined } from "@antdv-next/icons";
 import { Flex, Segmented, Switch } from "antdv-next";
-import { h, ref, watch } from "vue";
+import { computed, h, ref } from "vue";
 
 interface Attachment {
   uid: string;
@@ -66,12 +66,14 @@ const placeholder = {
 };
 
 const overflow = ref<"wrap" | "scrollX" | "scrollY">("wrap");
-const hasData = ref(true);
 const disabled = ref(false);
 const items = ref<Attachment[]>([...presetFiles]);
 
-watch(hasData, val => {
-  items.value = val ? [...presetFiles] : [];
+const hasData = computed({
+  get: () => items.value.length !== 0,
+  set: checked => {
+    items.value = checked ? [...presetFiles] : [];
+  },
 });
 
 const onChange = ({ fileList }: { fileList: Attachment[] }) => {

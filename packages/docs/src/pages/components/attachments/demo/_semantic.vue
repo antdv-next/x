@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { CloudUploadOutlined } from "@antdv-next/icons";
 import { Attachments } from "@antdv-next/x";
+import { Divider, Flex } from "antdv-next";
 import { computed, h } from "vue";
 
 import { SemanticPreview } from "@/components/semantic";
@@ -76,7 +77,7 @@ const withItemSemantics = computed(() => [
 </script>
 
 <template>
-  <div style="display: flex; flex-direction: column; gap: 16px">
+  <Flex vertical>
     <SemanticPreview
       component-name="Attachments"
       :semantics="[
@@ -96,6 +97,8 @@ const withItemSemantics = computed(() => [
       </template>
     </SemanticPreview>
 
+    <Divider :style="{ margin: 0, padding: 0 }" />
+
     <SemanticPreview
       component-name="Attachments"
       :semantics="withItemSemantics"
@@ -104,7 +107,7 @@ const withItemSemantics = computed(() => [
         <Attachments :items="items" :classes="classes" />
       </template>
     </SemanticPreview>
-  </div>
+  </Flex>
 </template>
 
 <docs lang="zh-CN">

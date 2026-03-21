@@ -51,6 +51,7 @@
 import type { VNodeChild } from "vue";
 
 import { CloudUploadOutlined } from "@antdv-next/icons";
+import { Attachments } from "@antdv-next/x";
 import { App, Button, Flex, Result, theme } from "antdv-next";
 import { h, ref } from "vue";
 

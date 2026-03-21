@@ -59,6 +59,7 @@ import {
   FileWordOutlined,
   LinkOutlined,
 } from "@antdv-next/icons";
+import { Attachments } from "@antdv-next/x";
 import {
   App,
   Badge,
