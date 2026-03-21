@@ -2,14 +2,7 @@ import type { PropType, StyleValue } from "vue";
 
 import { Divider } from "antdv-next";
 import { useConfig } from "antdv-next/dist/config-provider/context";
-import {
-  computed,
-  defineComponent,
-  onBeforeUnmount,
-  ref,
-  useAttrs,
-  watch,
-} from "vue";
+import { computed, defineComponent, ref, useAttrs } from "vue";
 
 import type {
   ConversationItemType,
@@ -17,73 +10,16 @@ import type {
   ConversationsRef,
   GroupInfoType,
   ItemType,
-  PrefixKeysType,
-  ShortcutKeys,
 } from "./interface";
 
-import useXComponentConfig from "../x-provider/hooks/use-x-component-config";
+import useShortcutKeys from "../_utils/hooks/use-shortcut-keys";
+import useXComponentConfig from "../_utils/hooks/use-x-component-config";
+import useCollapsible from "../_utils/hooks/useCollapsiable";
 import Creation from "./Creation";
 import GroupTitle from "./GroupTitle";
-import { getShortcutKeysIcon } from "./hooks/useCreation";
 import useGroupable from "./hooks/useGroupable";
 import ConversationsItem from "./Item";
 import useConversationsStyle from "./style";
-
-const PrefixKeys: PrefixKeysType = {
-  Alt: ["altKey", "Alt", "Alt"],
-  Ctrl: ["ctrlKey", "Ctrl", "Ctrl"],
-  Meta: ["metaKey", "Cmd", "Win"],
-  Shift: ["shiftKey", "Shift", "Shift"],
-};
-
-const NumberKeyCode = Array.from({ length: 9 }, (_, i) => 49 + i);
-
-function getShortcutAction(
-  event: KeyboardEvent,
-  shortcutKey: ShortcutKeys<number | "number">,
-) {
-  const copyShortcutKey = [...shortcutKey];
-  const keyCode = copyShortcutKey.pop();
-  const signKeys = copyShortcutKey as (keyof PrefixKeysType)[];
-
-  const hitSignKeys = signKeys.every(signKey => {
-    const eventKey = PrefixKeys[signKey]?.[0];
-    return !!event[eventKey];
-  });
-
-  if (!hitSignKeys) return false;
-
-  if (keyCode === "number") {
-    const numberIndex = NumberKeyCode.indexOf(event.keyCode);
-
-    if (numberIndex > -1) return { actionKeyCodeNumber: numberIndex };
-
-    return false;
-  }
-
-  if (event.keyCode === keyCode) return { actionKeyCodeNumber: false as const };
-
-  return false;
-}
-
-function getItemsShortcutKeys(
-  shortcutKeys?: ConversationsProps["shortcutKeys"],
-): Array<{ shortcutKey: ShortcutKeys<number | "number">; index?: number }> {
-  const itemsShortcutKeys = shortcutKeys?.items;
-
-  if (!Array.isArray(itemsShortcutKeys)) return [];
-
-  if (itemsShortcutKeys.every(item => Array.isArray(item))) {
-    return (itemsShortcutKeys as ShortcutKeys<number>[]).map(
-      (shortcutKey, index) => ({
-        shortcutKey,
-        index,
-      }),
-    );
-  }
-
-  return [{ shortcutKey: itemsShortcutKeys as ShortcutKeys<"number"> }];
-}
 
 function isTypingTarget(target: EventTarget | null) {
   if (!(target instanceof HTMLElement)) return false;
@@ -189,27 +125,15 @@ const XConversations = defineComponent({
       return rest;
     });
 
-    const mergedShortcutKeys = computed(() => {
-      return {
-        ...contextConfig.value.shortcutKeys,
-        ...props.shortcutKeys,
-      } as ConversationsProps["shortcutKeys"];
-    });
-
-    const innerExpandedKeys = ref<string[]>([]);
-
-    watch(
-      () => collapsibleOptions.value.defaultExpandedKeys,
-      keys => {
-        if (collapsibleOptions.value.expandedKeys === undefined)
-          innerExpandedKeys.value = [...(keys ?? [])];
-      },
-      { immediate: true },
+    const {
+      enableCollapse,
+      expandedKeys: mergedExpandedKeys,
+      onItemExpand,
+      collapseTransition,
+    } = useCollapsible(
+      computed(() => collapsibleOptions.value),
+      computed(() => configCtx.value.getPrefixCls()),
     );
-
-    const mergedExpandedKeys = computed(() => {
-      return collapsibleOptions.value.expandedKeys ?? innerExpandedKeys.value;
-    });
 
     const setActiveKey = (key: ConversationItemType["key"]) => {
       if (props.activeKey === undefined) innerActiveKey.value = key;
@@ -231,108 +155,47 @@ const XConversations = defineComponent({
       );
     };
 
-    const onItemExpand = (curKey: string) => {
-      const targetKeys = mergedExpandedKeys.value.includes(curKey)
-        ? mergedExpandedKeys.value.filter(key => key !== curKey)
-        : [...mergedExpandedKeys.value, curKey];
-
-      if (collapsibleOptions.value.expandedKeys === undefined)
-        innerExpandedKeys.value = targetKeys;
-
-      collapsibleOptions.value.onExpand?.(targetKeys);
-      emit("expand", targetKeys);
+    const onExpand = (curKey: string) => {
+      const targetKeys = onItemExpand.value?.(curKey);
+      if (targetKeys) emit("expand", targetKeys);
     };
 
-    const creationShortcutInfo = computed(() => {
-      const creationShortcutKeys = mergedShortcutKeys.value?.creation;
-      if (!creationShortcutKeys) return undefined;
-
-      return {
-        shortcutKeys: creationShortcutKeys,
-        shortcutKeysIcon: creationShortcutKeys.map(key =>
-          getShortcutKeysIcon(key),
-        ),
-      };
-    });
-
-    const keyLockRef = ref(false);
-
-    const onKeydown = (event: KeyboardEvent) => {
-      if (
-        !mergedShortcutKeys.value ||
-        keyLockRef.value ||
-        isTypingTarget(event.target)
-      )
-        return;
-
-      const creationShortcutKeys = mergedShortcutKeys.value.creation;
-
-      if (creationShortcutKeys) {
-        const creationAction = getShortcutAction(event, creationShortcutKeys);
-
-        if (creationAction) {
-          keyLockRef.value = true;
-
-          if (
-            typeof props.creation?.onClick === "function" &&
-            !props.creation.disabled
-          )
-            props.creation.onClick();
-
-          return;
-        }
-      }
-
-      const itemShortcuts = getItemsShortcutKeys(mergedShortcutKeys.value);
-
-      for (const itemShortcut of itemShortcuts) {
-        const itemAction = getShortcutAction(event, itemShortcut.shortcutKey);
-
-        if (!itemAction) continue;
-
-        keyLockRef.value = true;
-
-        const index =
-          typeof itemAction.actionKeyCodeNumber === "number"
-            ? itemAction.actionKeyCodeNumber
-            : itemShortcut.index;
-
-        if (typeof index === "number") {
-          const keyInfo = keyList.value[index];
-
-          if (keyInfo && !keyInfo.disabled)
-            onConversationItemClick?.(keyInfo.key);
-        }
-
-        return;
-      }
-    };
-
-    const onKeyup = () => {
-      keyLockRef.value = false;
-    };
-
-    watch(
-      () => mergedShortcutKeys.value,
-      shortcutKeys => {
-        if (typeof document === "undefined") return;
-
-        document.removeEventListener("keydown", onKeydown);
-        document.removeEventListener("keyup", onKeyup);
-
-        if (shortcutKeys) {
-          document.addEventListener("keydown", onKeydown);
-          document.addEventListener("keyup", onKeyup);
-        }
+    const [, shortcutKeysInfo, subscribeShortcutAction] = useShortcutKeys(
+      "conversations",
+      computed(() => props.shortcutKeys),
+      {
+        shouldIgnore: event => isTypingTarget(event.target),
       },
-      { immediate: true },
     );
 
-    onBeforeUnmount(() => {
-      if (typeof document === "undefined") return;
+    const creationShortcutInfo = computed(() => {
+      return shortcutKeysInfo.value.creation;
+    });
 
-      document.removeEventListener("keydown", onKeydown);
-      document.removeEventListener("keyup", onKeyup);
+    subscribeShortcutAction(shortcutInfo => {
+      if (!shortcutInfo) return;
+
+      if (shortcutInfo.name === "creation") {
+        if (
+          typeof props.creation?.onClick === "function" &&
+          !props.creation.disabled
+        ) {
+          props.creation.onClick();
+        }
+        return;
+      }
+
+      if (shortcutInfo.name !== "items") return;
+
+      const index =
+        typeof shortcutInfo.actionKeyCodeNumber === "number"
+          ? shortcutInfo.actionKeyCodeNumber
+          : shortcutInfo.index;
+
+      if (typeof index !== "number") return;
+
+      const keyInfo = keyList.value[index];
+      if (keyInfo && !keyInfo.disabled) onConversationItemClick?.(keyInfo.key);
     });
 
     expose<ConversationsRef>({
@@ -368,7 +231,7 @@ const XConversations = defineComponent({
             info={baseConversationInfo}
             prefixCls={props.prefixCls}
             direction={configCtx.value.direction}
-            className={[
+            classes={[
               contextConfig.value.classes?.item,
               props.classes?.item,
               baseConversationInfo.class,
@@ -417,7 +280,7 @@ const XConversations = defineComponent({
       >
         {!!props.creation && (
           <Creation
-            className={[
+            classes={[
               contextConfig.value.classes?.creation,
               props.classes?.creation,
             ]}
@@ -438,12 +301,14 @@ const XConversations = defineComponent({
               key={groupInfo.name || `key-${groupIndex}`}
               prefixCls={props.prefixCls}
               groupInfo={groupInfo}
-              className={[
+              classes={[
                 contextConfig.value.classes?.group,
                 props.classes?.group,
               ]}
+              enableCollapse={enableCollapse.value}
               expandedKeys={mergedExpandedKeys.value}
-              onItemExpand={onItemExpand}
+              onItemExpand={onExpand}
+              collapseTransition={collapseTransition.value}
             >
               <ul
                 class={[
@@ -482,7 +347,6 @@ export type {
   DividerItemType,
   GroupableProps,
   ItemType,
-  ShortcutKeys,
 } from "./interface";
 
 export { Creation as ConversationsCreation };

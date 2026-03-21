@@ -21,6 +21,7 @@
     "@types/jsdom": "catalog:types",
     "@types/node": "catalog:types",
     "@types/picomatch": "catalog:types",
+    "@v-c/util": "catalog:prod",
     "@vitejs/plugin-vue": "catalog:dev",
     "@vitejs/plugin-vue-jsx": "catalog:dev",
     "@vue/language-core": "catalog:dev",

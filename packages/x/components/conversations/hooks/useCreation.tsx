@@ -1,12 +1,8 @@
 import { PlusOutlined } from "@antdv-next/icons";
 import { defineComponent } from "vue";
 
-import type {
-  CodeKeyType,
-  CreationLabelProps,
-  CreationProps,
-  PrefixKeysType,
-} from "../interface";
+import type { CodeKeyType, PrefixKeysType } from "../../_utils/type";
+import type { CreationLabelProps, CreationProps } from "../interface";
 
 import { useLocale } from "../../locale";
 

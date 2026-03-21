@@ -1,17 +1,18 @@
-import type { PropType } from "vue";
+import type { PropType, TransitionProps } from "vue";
 
 import { RightOutlined } from "@antdv-next/icons";
-import { computed, defineComponent } from "vue";
+import { computed, defineComponent, Transition } from "vue";
 
 import type { GroupInfoType } from "./interface";
 
 export interface GroupTitleProps {
   prefixCls?: string;
   groupInfo: GroupInfoType;
-  className?: any;
+  classes?: any;
   enableCollapse?: boolean;
   expandedKeys?: string[];
   onItemExpand?: (curKey: string) => void;
+  collapseTransition?: TransitionProps;
 }
 
 const GroupTitle = defineComponent({
@@ -25,8 +26,8 @@ const GroupTitle = defineComponent({
       type: Object as PropType<GroupInfoType>,
       required: true,
     },
-    className: {
-      type: [String, Array, Object] as PropType<GroupTitleProps["className"]>,
+    classes: {
+      type: [String, Array, Object] as PropType<GroupTitleProps["classes"]>,
       default: undefined,
     },
     enableCollapse: {
@@ -39,6 +40,10 @@ const GroupTitle = defineComponent({
     },
     onItemExpand: {
       type: Function as PropType<GroupTitleProps["onItemExpand"]>,
+      default: undefined,
+    },
+    collapseTransition: {
+      type: Object as PropType<TransitionProps>,
       default: undefined,
     },
   },
@@ -63,7 +68,7 @@ const GroupTitle = defineComponent({
     });
 
     return () => (
-      <li class={props.className}>
+      <li class={props.classes}>
         <div
           class={[
             `${props.prefixCls}-group-title`,
@@ -93,11 +98,15 @@ const GroupTitle = defineComponent({
             </div>
           )}
         </div>
-        <div
-          class={{ [`${props.prefixCls}-content-hidden`]: !groupOpen.value }}
-        >
-          {slots.default?.()}
-        </div>
+        <Transition {...(props.collapseTransition ?? {})}>
+          {mergeCollapsible.value ? (
+            groupOpen.value ? (
+              <div>{slots.default?.()}</div>
+            ) : null
+          ) : (
+            <div>{slots.default?.()}</div>
+          )}
+        </Transition>
       </li>
     );
   },

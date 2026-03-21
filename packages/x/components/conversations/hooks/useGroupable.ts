@@ -2,9 +2,9 @@ import type { ComputedRef } from "vue";
 
 import { computed } from "vue";
 
+import type { CollapsibleOptions } from "../../_utils/hooks/useCollapsiable";
 import type {
   Collapsible,
-  CollapsibleOptions,
   ConversationItemType,
   ConversationsProps,
   GroupInfoType,

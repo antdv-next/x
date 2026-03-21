@@ -13,7 +13,7 @@ import type {
   SemanticType,
 } from "./interface";
 
-import useXComponentConfig from "../x-provider/hooks/use-x-component-config";
+import useXComponentConfig from "../_utils/hooks/use-x-component-config";
 import { EditableContent } from "./EditableContent";
 import Loading from "./loading";
 import useBubbleStyle from "./style";
