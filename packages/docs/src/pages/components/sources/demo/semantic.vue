@@ -49,7 +49,11 @@ const items: SourcesProps["items"] = [
 </script>
 
 <template>
-  <SemanticPreview component-name="Sources" :semantics="semantics">
+  <SemanticPreview
+    component-name="Sources"
+    :semantics="semantics"
+    :motion="true"
+  >
     <template #default="{ classes }">
       <Sources title="Used 3 sources" :items="items" :classes="classes" />
     </template>

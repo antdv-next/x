@@ -200,7 +200,11 @@ const XConversations = defineComponent({
       enableCollapse,
       expandedKeys: mergedExpandedKeys,
       onItemExpand,
-    } = useCollapsible(computed(() => collapsibleOptions.value));
+      collapseTransition,
+    } = useCollapsible(
+      computed(() => collapsibleOptions.value),
+      computed(() => configCtx.value.getPrefixCls()),
+    );
 
     const setActiveKey = (key: ConversationItemType["key"]) => {
       if (props.activeKey === undefined) innerActiveKey.value = key;
@@ -421,7 +425,6 @@ const XConversations = defineComponent({
             <GroupTitle
               key={groupInfo.name || `key-${groupIndex}`}
               prefixCls={props.prefixCls}
-              rootPrefixCls={configCtx.value.getPrefixCls()}
               groupInfo={groupInfo}
               classes={[
                 contextConfig.value.classes?.group,
@@ -430,6 +433,7 @@ const XConversations = defineComponent({
               enableCollapse={enableCollapse.value}
               expandedKeys={mergedExpandedKeys.value}
               onItemExpand={onExpand}
+              collapseTransition={collapseTransition.value}
             >
               <ul
                 class={[

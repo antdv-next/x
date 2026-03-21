@@ -2,6 +2,8 @@ import type { ComputedRef } from "vue";
 
 import { computed, ref, watch } from "vue";
 
+import initCollapseTransition from "../transition";
+
 export type CollapsibleOptions = {
   /**
    * @desc 初始化展开的节点
@@ -33,6 +35,7 @@ const baseConfig: RequiredCollapsibleOptions = {
 
 export default function useCollapsible(
   collapsible: ComputedRef<UseCollapsible | undefined>,
+  rootPrefixCls?: ComputedRef<string | undefined>,
 ) {
   const isUncontrolled = computed(() => {
     return (
@@ -97,5 +100,9 @@ export default function useCollapsible(
     onItemExpand: computed(() =>
       mergedConfig.value.enableCollapse ? onItemExpand : undefined,
     ),
+    collapseTransition: computed(() => {
+      if (!mergedConfig.value.enableCollapse) return undefined;
+      return initCollapseTransition(rootPrefixCls?.value);
+    }),
   };
 }
