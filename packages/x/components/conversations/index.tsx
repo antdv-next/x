@@ -14,7 +14,7 @@ import type {
 
 import useShortcutKeys from "../_utils/hooks/use-shortcut-keys";
 import useXComponentConfig from "../_utils/hooks/use-x-component-config";
-import useCollapsible from "../_utils/hooks/useCollapsiable";
+import useCollapsible from "../_utils/hooks/useCollapsible";
 import Creation from "./Creation";
 import GroupTitle from "./GroupTitle";
 import useGroupable from "./hooks/useGroupable";
