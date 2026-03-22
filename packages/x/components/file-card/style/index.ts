@@ -288,17 +288,6 @@ const genFileCardListStyle: GenerateStyle<FileCardToken> = token => {
         },
       },
 
-      [`${componentCls}-list-motion-leave-active`]: {
-        opacity: 0,
-        marginInlineEnd: calc(marginXS).mul(-1).equal(),
-
-        [`${componentCls}-file, ${componentCls}-image, ${componentCls}-video, ${componentCls}-audio`]:
-          {
-            width: 0,
-            paddingInline: 0,
-          },
-      },
-
       [`${componentCls}-list-motion-move`]: {
         transition: `opacity ${motionDurationSlow}`,
       },
@@ -312,6 +301,18 @@ const genFileCardListStyle: GenerateStyle<FileCardToken> = token => {
               transition: ["width", "padding"]
                 .map(prop => `${prop} ${motionDurationSlow}`)
                 .join(","),
+            },
+        },
+
+      [`${componentCls}-list-motion-enter-from, ${componentCls}-list-motion-leave-to`]:
+        {
+          opacity: 0,
+          marginInlineEnd: calc(marginXS).mul(-1).equal(),
+
+          [`${componentCls}-file, ${componentCls}-image, ${componentCls}-video, ${componentCls}-audio`]:
+            {
+              width: 0,
+              paddingInline: 0,
             },
         },
 
