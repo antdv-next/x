@@ -2,6 +2,8 @@ import { ref } from "vue";
 
 import type { UseNotificationType, XNotificationOpenArgs } from "./interface";
 
+import warning from "../_utils/warning";
+
 let uuid = 0;
 
 // Shared reactive permission state across all useNotification() calls
@@ -15,11 +17,11 @@ class XNotification {
 
   constructor() {
     XNotification.permissible = !!globalThis?.Notification;
-    if (!XNotification.permissible) {
-      console.warn(
-        "[XNotification] Notification API is not supported in this environment.",
-      );
-    }
+    warning(
+      XNotification.permissible,
+      "XNotification",
+      "Notification API is not supported in this environment.",
+    );
   }
 
   public get permission(): NotificationPermission {
