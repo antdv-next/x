@@ -12,6 +12,7 @@ import CodeHighlighter from "./code-highlighter";
 import Conversations, { ConversationsCreation } from "./conversations";
 import FileCard, { FileCardList } from "./file-card";
 import Notification, { XNotification } from "./notification";
+import Sender, { SenderHeader, SenderSwitch } from "./sender";
 import Sources from "./sources";
 import XProvider from "./x-provider";
 
@@ -32,6 +33,9 @@ const components = [
   ActionsItem,
   FileCard,
   FileCardList,
+  Sender,
+  SenderHeader,
+  SenderSwitch,
 ];
 
 const componentAliases = new Map<string, string[]>([
@@ -46,6 +50,9 @@ const componentAliases = new Map<string, string[]>([
   ["XActionsItem", ["AActionsItem"]],
   ["XFileCard", ["AFileCard"]],
   ["XFileCardList", ["AFileCardList"]],
+  ["XSender", ["ASender"]],
+  ["XSenderHeader", ["ASenderHeader"]],
+  ["XSenderSwitch", ["ASenderSwitch"]],
 ]);
 
 export default {
@@ -79,6 +86,9 @@ export {
   FileCardList,
   Notification,
   XNotification,
+  Sender,
+  SenderHeader,
+  SenderSwitch,
   XProvider,
   version,
   Sources,
@@ -121,6 +131,7 @@ export type {
   CodeHighlighterSemanticType,
 } from "./code-highlighter";
 
+export type { SenderProps, SenderRef } from "./sender";
 export type { XProviderProps } from "./x-provider";
 
 export type {
