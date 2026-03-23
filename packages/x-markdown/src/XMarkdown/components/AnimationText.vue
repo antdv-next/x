@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onMounted } from "vue";
+import { ref, watch } from "vue";
 
 interface Props {
   text: string;
@@ -15,47 +15,43 @@ const props = withDefaults(defineProps<Props>(), {
 interface TextChunk {
   id: number;
   text: string;
-  fading: boolean;
 }
 
 const chunks = ref<TextChunk[]>([]);
+const previousText = ref("");
 let chunkId = 0;
 
-function updateChunks(newText: string, oldText: string) {
-  if (newText === oldText) return;
-
-  if (newText.length > oldText.length && oldText.length > 0) {
-    const delta = newText.slice(oldText.length);
-    chunks.value.push({
-      id: chunkId++,
-      text: delta,
-      fading: true,
-    });
-
-    setTimeout(() => {
-      const chunk = chunks.value.find(c => c.id === chunkId - 1);
-      if (chunk) {
-        chunk.fading = false;
-      }
-    }, props.fadeDuration);
-  } else {
-    chunks.value = [{ id: chunkId++, text: newText, fading: false }];
-  }
+function resetChunks(nextText: string) {
+  chunks.value = nextText ? [{ id: chunkId++, text: nextText }] : [];
+  previousText.value = nextText;
 }
 
-watch(
-  () => props.text,
-  (newVal, oldVal) => {
-    updateChunks(newVal, oldVal || "");
-  },
-  { immediate: true },
-);
+function appendChunk(nextText: string) {
+  chunks.value.push({
+    id: chunkId++,
+    text: nextText,
+  });
+}
 
-onMounted(() => {
-  if (props.text) {
-    chunks.value = [{ id: chunkId++, text: props.text, fading: false }];
+function updateChunks(nextText: string) {
+  if (nextText === previousText.value) return;
+
+  const isAppend = Boolean(
+    previousText.value && nextText.startsWith(previousText.value),
+  );
+  if (!isAppend) {
+    resetChunks(nextText);
+    return;
   }
-});
+
+  const delta = nextText.slice(previousText.value.length);
+  if (!delta) return;
+
+  appendChunk(delta);
+  previousText.value = nextText;
+}
+
+watch(() => props.text, updateChunks, { immediate: true });
 </script>
 
 <template>
@@ -63,7 +59,7 @@ onMounted(() => {
     <span
       v-for="chunk in chunks"
       :key="chunk.id"
-      :class="['xmd-animation-text-chunk', { 'xmd-fading': chunk.fading }]"
+      class="xmd-animation-text-chunk"
       :style="{
         '--fade-duration': `${fadeDuration}ms`,
         '--easing': easing,
@@ -81,9 +77,6 @@ onMounted(() => {
 
 .xmd-animation-text-chunk {
   display: inline;
-}
-
-.xmd-animation-text-chunk.xmd-fading {
   animation: xmd-fade-in var(--fade-duration) var(--easing) forwards;
 }
 

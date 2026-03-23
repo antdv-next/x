@@ -3,15 +3,16 @@ order: 1
 title: Introduction
 ---
 
-`@antdv-next/x-markdown` is a streaming-friendly Markdown renderer for Vue 3, designed for LLM chat, knowledge QA, and document preview scenarios.
+`@antdv-next/x-markdown` is a streaming-friendly, extensible, and high-performance Markdown renderer for Vue 3, designed for LLM chat, knowledge QA, and document preview scenarios.
 
 ## ✨ Features
 
-- 🚀 Lightweight and fast: built on [`marked`](https://github.com/markedjs/marked)
-- 🤖 Streaming-friendly: supports incremental rendering and incomplete syntax handling
-- 🔐 Secure by default: built-in DOMPurify sanitization for XSS protection
-- 🎨 Extensible: map tags to custom Vue components
-- 🌗 Theme support: built-in light / dark theme styles
+- 🚀 Built on [`marked`](https://github.com/markedjs/marked) with lightweight and fast rendering
+- 🤖 Native streaming support for incremental LLM output
+- 🔐 DOMPurify sanitization enabled by default for XSS mitigation
+- 🎨 Component mapping to replace any tag with custom Vue components
+- 🔧 Syntax preprocessing and plugin-style extension workflow
+- 🌗 Built-in light / dark themes
 
 ## Compatibility
 
@@ -19,6 +20,34 @@ title: Introduction
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | >= 92                                                                                                                                                                                                  | >= 90                                                                                                                                                                                                              | >= 92                                                                                                                                                                                                          | >= 15.4                                                                                                                                                                                                        | >= 78                                                                                                                                                                                                      |
 
+## Supported Markdown Specifications
+
+- [Markdown 1.0.0](https://daringfireball.net/projects/markdown/)
+- [CommonMark](https://github.com/commonmark/commonmark-spec/wiki/Markdown-Flavors)
+- [GitHub Flavored Markdown (GFM)](https://github.github.com/gfm/)
+
 ## Installation
 
 <InstallDependencies npm='npm install @antdv-next/x-markdown' yarn='yarn add @antdv-next/x-markdown' pnpm='pnpm install @antdv-next/x-markdown' bun='bun add @antdv-next/x-markdown'></InstallDependencies>
+
+## Quick Start
+
+```vue
+<script setup>
+import { XMarkdown } from "@antdv-next/x-markdown";
+
+const content = `# Hello XMarkdown\n\nThis is a streaming-friendly Markdown renderer.`;
+</script>
+
+<template>
+  <XMarkdown :content="content" />
+</template>
+```
+
+## See Also
+
+- [Code Examples](/markdown/examples-en)
+- [Streaming Rendering](/markdown/streaming-en)
+- [Component Extension](/markdown/components-en)
+- [Plugins](/markdown/plugins-en)
+- [Themes](/markdown/themes-en)

@@ -156,60 +156,64 @@ type SiderItem = SiderLeafItem | SiderGroupItem;
 
 type LocaleKey = typeof LOCALE_ZH_CN | typeof LOCALE_EN_US;
 
-const markdownSiderLabelMap: Record<string, Record<LocaleKey, string>> = {
-  "/markdown": {
-    [LOCALE_ZH_CN]: "介绍",
-    [LOCALE_EN_US]: "Introduction",
-  },
-  "/markdown/examples": {
-    [LOCALE_ZH_CN]: "使用示例",
-    [LOCALE_EN_US]: "Examples",
-  },
-  "/markdown/api": {
-    [LOCALE_ZH_CN]: "API 参考",
-    [LOCALE_EN_US]: "API Reference",
-  },
-  "/markdown/streaming": {
-    [LOCALE_ZH_CN]: "流式渲染",
-    [LOCALE_EN_US]: "Streaming",
-  },
-  "/markdown/components": {
-    [LOCALE_ZH_CN]: "组件扩展",
-    [LOCALE_EN_US]: "Component Extensions",
-  },
-  "/markdown/themes": {
-    [LOCALE_ZH_CN]: "主题",
-    [LOCALE_EN_US]: "Themes",
-  },
-  "/markdown/rich-text": {
-    [LOCALE_ZH_CN]: "富文本增强",
-    [LOCALE_EN_US]: "Rich Text",
-  },
-  "/markdown/data-display": {
-    [LOCALE_ZH_CN]: "数据展示",
-    [LOCALE_EN_US]: "Data Display",
-  },
-  "/markdown/chat-enhancement": {
-    [LOCALE_ZH_CN]: "聊天增强",
-    [LOCALE_EN_US]: "Chat Enhancement",
-  },
-  "/markdown/plugins": {
-    [LOCALE_ZH_CN]: "插件扩展",
-    [LOCALE_EN_US]: "Plugin Extensions",
-  },
-  "/markdown/custom-plugin": {
-    [LOCALE_ZH_CN]: "自定义插件",
-    [LOCALE_EN_US]: "Custom Plugins",
-  },
-  "/markdown/plugin-latex": {
-    [LOCALE_ZH_CN]: "LaTeX 公式",
-    [LOCALE_EN_US]: "LaTeX",
-  },
-  "/markdown/playground": {
-    [LOCALE_ZH_CN]: "在线体验",
-    [LOCALE_EN_US]: "Playground",
-  },
-};
+interface ParsedPageMeta {
+  title?: string;
+  order?: number;
+  groupTitle?: string;
+  groupOrder?: number;
+}
+
+const markdownRawPages = import.meta.glob("../../pages/markdown/**/*.md", {
+  query: "?raw",
+  import: "default",
+  eager: true,
+}) as Record<string, string>;
+
+function normalizeSourcePath(path: string) {
+  return path.replace(/^(\.\.\/)+/, "");
+}
+
+function toOptionalNumber(value?: string) {
+  if (!value) return undefined;
+  const parsed = Number(value.trim().replace(/^['"]|['"]$/g, ""));
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function toOptionalText(value?: string) {
+  if (!value) return undefined;
+  return value.trim().replace(/^['"]|['"]$/g, "");
+}
+
+function parseFrontmatterMeta(markdown: string): ParsedPageMeta {
+  const frontmatterMatch = markdown.match(/^---\n([\s\S]*?)\n---/);
+  if (!frontmatterMatch) return {};
+
+  const frontmatter = frontmatterMatch[1];
+  const title = toOptionalText(frontmatter.match(/^title:\s*(.+)$/m)?.[1]);
+  const order = toOptionalNumber(frontmatter.match(/^order:\s*(.+)$/m)?.[1]);
+
+  const groupBlock = frontmatter.match(/^group:\s*\n((?:[ \t].*\n?)*)/m)?.[1];
+  const groupTitle = toOptionalText(
+    groupBlock?.match(/^[ \t]+title:\s*(.+)$/m)?.[1],
+  );
+  const groupOrder = toOptionalNumber(
+    groupBlock?.match(/^[ \t]+order:\s*(.+)$/m)?.[1],
+  );
+
+  return {
+    title,
+    order,
+    groupTitle,
+    groupOrder,
+  };
+}
+
+const markdownMetaBySource = new Map<string, ParsedPageMeta>(
+  Object.entries(markdownRawPages).map(([source, markdown]) => [
+    normalizeSourcePath(source),
+    parseFrontmatterMeta(markdown),
+  ]),
+);
 
 const normalizedCurrentPath = computed(() => normalizePath(route.path));
 const currentPathWithoutLocale = computed(() =>
@@ -258,25 +262,84 @@ const siderItems = computed<SiderItem[]>(() => {
     const segments = withoutLocale.split("/").filter(Boolean);
     const lastSegment = segments.at(-1) || "";
     const isSectionIndex = withoutLocale === section;
+    const source = normalizeSourcePath(String(item.meta?.source || ""));
+    const pageMeta = markdownMetaBySource.get(source);
 
     return {
       key: normalizePath(item.path),
       pathWithoutLocale: withoutLocale,
       slug: lastSegment,
       isSectionIndex,
+      order: pageMeta?.order ?? Number.MAX_SAFE_INTEGER,
+      groupTitle: pageMeta?.groupTitle,
+      groupOrder: pageMeta?.groupOrder ?? Number.MAX_SAFE_INTEGER,
       label: isSectionIndex
-        ? localeKey === LOCALE_ZH_CN
-          ? "概览"
-          : "Overview"
-        : formatSegmentLabel(lastSegment),
+        ? pageMeta?.title || (localeKey === LOCALE_ZH_CN ? "概览" : "Overview")
+        : pageMeta?.title || formatSegmentLabel(lastSegment),
     };
   });
 
-  if (section === "/markdown")
-    return baseItems.map(({ key, label, pathWithoutLocale }) => ({
-      key,
-      label: markdownSiderLabelMap[pathWithoutLocale]?.[localeKey] ?? label,
-    }));
+  if (section === "/markdown") {
+    const ungrouped = baseItems
+      .filter(item => !item.groupTitle)
+      .sort((left, right) => {
+        if (left.order !== right.order) return left.order - right.order;
+        return left.label.localeCompare(right.label);
+      })
+      .map(({ key, label }) => ({ key, label }));
+
+    const groups = new Map<
+      string,
+      {
+        key: string;
+        label: string;
+        order: number;
+        children: Array<{ key: string; label: string; order: number }>;
+      }
+    >();
+
+    baseItems
+      .filter(item => item.groupTitle)
+      .forEach(item => {
+        const groupLabel = item.groupTitle!;
+        const groupOrder = item.groupOrder;
+        const groupKey = `${groupOrder}-${groupLabel}`;
+
+        if (!groups.has(groupKey)) {
+          groups.set(groupKey, {
+            key: groupKey,
+            label: groupLabel,
+            order: groupOrder,
+            children: [],
+          });
+        }
+
+        groups.get(groupKey)!.children.push({
+          key: item.key,
+          label: item.label,
+          order: item.order,
+        });
+      });
+
+    const groupedItems: SiderGroupItem[] = Array.from(groups.values())
+      .sort((left, right) => {
+        if (left.order !== right.order) return left.order - right.order;
+        return left.label.localeCompare(right.label);
+      })
+      .map(group => ({
+        key: group.key,
+        type: "group",
+        label: group.label,
+        children: group.children
+          .sort((left, right) => {
+            if (left.order !== right.order) return left.order - right.order;
+            return left.label.localeCompare(right.label);
+          })
+          .map(({ key, label }) => ({ key, label })),
+      }));
+
+    return [...ungrouped, ...groupedItems];
+  }
 
   if (section !== "/components")
     return baseItems.map(({ key, label }) => ({ key, label }));

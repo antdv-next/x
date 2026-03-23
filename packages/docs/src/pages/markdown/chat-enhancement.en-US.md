@@ -6,36 +6,17 @@ title: Chat Enhancement
 order: 2
 ---
 
-For AI chat scenarios, map specific tags to business components to improve readability and interaction.
+Map Markdown or custom tags to chat-oriented components. The current demos focus on:
 
-## Typical Cases
+- Reasoning steps (Think)
+- References and citations (Sources)
 
-- Reasoning section rendering (`think`)
-- Citation/source rendering (`sources`)
+<!-- prettier-ignore -->
+<demo src="./demo/think.vue">Think (Reasoning Steps)</demo>
+<demo src="./demo/sources.vue">Sources (References)</demo>
 
-## Example
+## See also
 
-```vue
-<script setup>
-import { XMarkdown } from "@antdv-next/x-markdown";
-import ThinkBlock from "./ThinkBlock.vue";
-import SourcesBlock from "./SourcesBlock.vue";
-
-const components = {
-  think: ThinkBlock,
-  sources: SourcesBlock,
-};
-
-const content = `<think>Search first, then summarize.</think>\n\n<sources>[1] https://example.com</sources>`;
-</script>
-
-<template>
-  <XMarkdown :content="content" :components="components" />
-</template>
-```
-
-## See Also
-
-- [Overview](./components-en)
-- [Data Display](./data-display-en)
-- [Rich Text Enhancement](./rich-text-en)
+- [Overview](/markdown/components-en)
+- [Data Display](/markdown/data-display-en)
+- [Rich Text Enhancement](/markdown/rich-text-en)

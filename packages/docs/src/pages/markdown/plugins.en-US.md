@@ -6,19 +6,29 @@ title: Overview
 order: 1
 ---
 
-The current `x-markdown` release does not ship a standalone built-in plugin package, but you can still implement plugin-like extensions with:
+Plugin-style extension enables `@antdv-next/x-markdown` to support more capabilities, such as formulas, custom syntax, and domain-specific tags.
 
-1. `components` mapping for custom tag rendering
-2. Markdown preprocessing before passing content to `XMarkdown`
-3. `streaming.incompleteMarkdownComponentMap` for loading placeholders
+## Extension Strategies
 
-## Extension Paths
+### 1. Syntax Preprocessing (Recommended)
 
-- [LaTeX](./plugin-latex-en)
-- [Custom Plugin Flow](./custom-plugin-en)
+Transform extended syntax into standard Markdown or custom tags before rendering.
 
-## Recommended Practices
+```ts
+const transformed = computed(() =>
+  raw.value.replace(/:::note\n([\s\S]*?)\n:::/g, '<x-note text="$1"></x-note>'),
+);
+```
 
-- Keep extension logic as pure functions for reuse and testability.
-- Use preprocessing for syntax transformation only; keep rendering in components.
-- In streaming scenarios, prioritize readability before heavy visual polish.
+### 2. Component Mapping
+
+Map custom tags to Vue components via `components` and centralize rendering behavior.
+
+```vue
+<XMarkdown :content="content" :components="components" />
+```
+
+## Plugin Docs
+
+- [Latex](/markdown/plugin-latex-en)
+- [Custom Plugins](/markdown/custom-plugin-en)

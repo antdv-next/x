@@ -6,29 +6,15 @@ title: 富文本增强
 order: 4
 ---
 
-富文本增强通常用于代码高亮、行号、复制按钮等体验优化。
+将 Markdown 映射为富文本组件，当前示例聚焦：
 
-## 示例
+- 代码高亮（CodeHighlighter）
 
-```vue
-<script setup>
-import { XMarkdown } from "@antdv-next/x-markdown";
-import CodeHighlighter from "./CodeHighlighter.vue";
-
-const components = {
-  pre: CodeHighlighter,
-};
-
-const content = `\`\`\`ts\nconst msg = 'hello markdown'\n\`\`\``;
-</script>
-
-<template>
-  <XMarkdown :content="content" :components="components" />
-</template>
-```
+<!-- prettier-ignore -->
+<demo src="./demo/code-highlighter.vue">CodeHighlighter</demo>
 
 ## 相关
 
-- [总览](./components)
-- [聊天增强](./chat-enhancement)
-- [数据展示](./data-display)
+- [总览](/markdown/components)
+- [聊天增强](/markdown/chat-enhancement)
+- [数据展示](/markdown/data-display)

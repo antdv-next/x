@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { ref, computed, watch, shallowRef } from "vue";
+import type { Component } from "vue";
+
+import { computed, defineComponent, h, shallowRef, watch } from "vue";
 
 import type { XMarkdownProps } from "./interface";
 
@@ -14,7 +16,7 @@ const props = withDefaults(defineProps<XMarkdownProps>(), {
   content: "",
   components: () => ({}),
   streaming: undefined,
-  config: () => ({}),
+  config: () => ({ gfm: true }),
   debug: false,
   protectCustomTagNewlines: true,
   escapeRawHtml: false,
@@ -24,9 +26,36 @@ const props = withDefaults(defineProps<XMarkdownProps>(), {
 
 const contentRef = computed(() => props.content || "");
 const streamingRef = computed(() => props.streaming);
+const componentsRef = computed(() => props.components);
 
-const { processedContent } = useStreaming(contentRef, streamingRef);
-const { tailContent, showTail } = useTail(streamingRef);
+const { processedContent } = useStreaming(
+  contentRef,
+  streamingRef,
+  componentsRef,
+);
+const { tailContent, tailComponent, showTail } = useTail(streamingRef);
+
+const mergedComponents = computed<Record<string, Component>>(() => {
+  const baseComponents = { ...props.components };
+
+  if (!showTail.value || !tailContent.value) {
+    return baseComponents;
+  }
+
+  const resolvedTailComponent = tailComponent.value || TailIndicator;
+  const content = tailContent.value;
+  const TailBridge = defineComponent({
+    name: "XmdTailBridge",
+    setup() {
+      return () => h(resolvedTailComponent, { content });
+    },
+  });
+
+  return {
+    ...baseComponents,
+    "xmd-tail": TailBridge,
+  };
+});
 
 const parser = shallowRef(
   new Parser({
@@ -34,22 +63,23 @@ const parser = shallowRef(
     paragraphTag: props.paragraphTag,
     protectCustomTags: props.protectCustomTagNewlines,
     escapeRawHtml: props.escapeRawHtml,
+    config: props.config,
+    components: props.components,
   }),
 );
 
 const renderer = shallowRef(
   new VueRenderer({
-    components: {
-      ...props.components,
-      "xmd-tail": TailIndicator,
-    },
+    components: mergedComponents.value,
     enableAnimation: props.streaming?.enableAnimation ?? true,
     animationConfig: props.streaming?.animationConfig,
   }),
 );
 
 const htmlOutput = computed(() => {
-  return parser.value.parse(processedContent.value);
+  return parser.value.parse(processedContent.value, {
+    injectTail: showTail.value,
+  });
 });
 
 const vNode = computed(() => {
@@ -74,13 +104,30 @@ watch(
 );
 
 watch(
+  () => props.config,
+  newConfig => {
+    parser.value.setOptions({
+      config: newConfig,
+    });
+  },
+  { deep: true },
+);
+
+watch(
   () => props.components,
   newComponents => {
+    parser.value.setOptions({
+      components: newComponents,
+    });
+  },
+  { deep: true },
+);
+
+watch(
+  mergedComponents,
+  newComponents => {
     renderer.value.setOptions({
-      components: {
-        ...newComponents,
-        "xmd-tail": TailIndicator,
-      },
+      components: newComponents,
     });
   },
   { deep: true },

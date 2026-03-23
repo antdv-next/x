@@ -3,9 +3,11 @@ title: 主题
 order: 3
 ---
 
-通过主题可以统一 Markdown 的字体、颜色、间距等视觉风格。当前内置 `light` / `dark` 两套主题。
+通过主题可以统一 Markdown 的字体、颜色、间距等视觉风格，内置 light / dark，也可通过 CSS 变量或覆盖样式做自定义。
 
 ## 快速使用
+
+引入对应主题样式并为根节点设置主题类名即可：
 
 ```vue
 <script setup>
@@ -17,24 +19,11 @@ import "@antdv-next/x-markdown/themes/light.css";
 </template>
 ```
 
-## 主题切换
+## 代码示例
 
-```vue
-<script setup>
-import { ref, computed } from "vue";
-import "@antdv-next/x-markdown/themes/light.css";
-import "@antdv-next/x-markdown/themes/dark.css";
-
-const dark = ref(false);
-const themeClass = computed(() =>
-  dark.value ? "x-markdown-dark" : "x-markdown-light",
-);
-</script>
-
-<template>
-  <XMarkdown :class="themeClass" content="# Theme Demo" />
-</template>
-```
+<!-- prettier-ignore -->
+<demo src="./demo/switch.vue">主题切换</demo>
+<demo src="./demo/custom.vue">自定义主题</demo>
 
 ## 自定义主题（最小步骤）
 
@@ -52,4 +41,4 @@ const themeClass = computed(() =>
 }
 ```
 
-完整变量名请参考内置主题 CSS 文件。
+完整变量名请参考 `packages/x-markdown/src/themes/light.css` 与 `packages/x-markdown/src/themes/dark.css`。

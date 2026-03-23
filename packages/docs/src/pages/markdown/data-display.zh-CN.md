@@ -6,36 +6,17 @@ title: 数据展示
 order: 3
 ---
 
-你可以把结构化内容映射为图表或卡片组件，实现更强的数据可视化展示。
+将 Markdown 内容映射为数据展示组件，当前示例聚焦：
 
-## 常见场景
+- Mermaid 图表渲染
+- 信息图卡片渲染
 
-- Mermaid 图渲染
-- 统计卡片 / 指标面板
-
-## 示例
-
-```vue
-<script setup>
-import { XMarkdown } from "@antdv-next/x-markdown";
-import MermaidBlock from "./MermaidBlock.vue";
-import MetricCard from "./MetricCard.vue";
-
-const components = {
-  mermaid: MermaidBlock,
-  metric: MetricCard,
-};
-
-const content = `<mermaid>graph TD; A-->B</mermaid>\n\n<metric title="QPS" value="1290" />`;
-</script>
-
-<template>
-  <XMarkdown :content="content" :components="components" />
-</template>
-```
+<!-- prettier-ignore -->
+<demo src="./demo/mermaid.vue">Mermaid</demo>
+<demo src="./demo/infographic.vue">Infographic</demo>
 
 ## 相关
 
-- [总览](./components)
-- [聊天增强](./chat-enhancement)
-- [富文本增强](./rich-text)
+- [总览](/markdown/components)
+- [聊天增强](/markdown/chat-enhancement)
+- [富文本增强](/markdown/rich-text)

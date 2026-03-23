@@ -6,19 +6,29 @@ title: 总览
 order: 1
 ---
 
-`x-markdown` 当前版本没有独立发布内置插件包，但可以通过以下方式实现“插件化扩展”：
+使用插件化方案可以让 `@antdv-next/x-markdown` 支持更多扩展能力，比如：公式、自定义语法、业务标签等。
 
-1. 通过 `components` 把标签映射到业务组件
-2. 在传给 `XMarkdown` 前预处理 Markdown 文本
-3. 结合 `streaming.incompleteMarkdownComponentMap` 做加载占位
+## 插件扩展方式
 
-## 扩展路径
+### 1. 语法预处理（推荐）
 
-- [公式（LaTeX）](./plugin-latex)
-- [自定义插件流程](./custom-plugin)
+在渲染前先将扩展语法转换为标准 Markdown 或自定义标签，再交给 `XMarkdown` 渲染。
 
-## 推荐实践
+```ts
+const transformed = computed(() =>
+  raw.value.replace(/:::note\n([\s\S]*?)\n:::/g, '<x-note text="$1"></x-note>'),
+);
+```
 
-- 扩展逻辑尽量做成纯函数，便于复用和测试。
-- 预处理只做语法层转换，渲染逻辑放在组件中。
-- 流式场景下优先保证可读性，再做复杂美化。
+### 2. 组件映射
+
+通过 `components` 将自定义标签映射成 Vue 组件，统一承接渲染逻辑。
+
+```vue
+<XMarkdown :content="content" :components="components" />
+```
+
+## 插件文档
+
+- [公式（LaTeX）](/markdown/plugin-latex)
+- [自定义插件](/markdown/custom-plugin)

@@ -1,7 +1,7 @@
 import DOMPurify from "dompurify";
 import { Marked } from "marked";
 
-import type { ParserOptions } from "../interface";
+import type { MarkedConfig, ParserOptions } from "../interface";
 
 const escapeReplacements: Record<string, string> = {
   "&": "&amp;",
@@ -30,54 +30,66 @@ export class Parser {
       injectTail: options.injectTail ?? false,
       protectCustomTags: options.protectCustomTags ?? true,
       escapeRawHtml: options.escapeRawHtml ?? false,
+      config: {
+        gfm: true,
+        ...options.config,
+      },
+      components: options.components ?? {},
       streamStatus: options.streamStatus ?? "done",
       codeBlockStatus: options.codeBlockStatus ?? {},
     };
 
-    this.markdownInstance = new Marked();
+    this.markdownInstance = new Marked(this.options.config);
+    this.configureRenderers();
+  }
+
+  private updateMarkedConfig(config: MarkedConfig): void {
+    this.options.config = {
+      ...this.options.config,
+      ...config,
+    };
+    this.markdownInstance = new Marked(this.options.config);
     this.configureRenderers();
   }
 
   private configureRenderers() {
-    const self = this;
-
     this.markdownInstance.use({
       renderer: {
-        html(html: string): string {
-          if (self.options.escapeRawHtml) {
+        html: (html: string): string => {
+          if (this.options.escapeRawHtml) {
             return escapeHtml(html);
           }
           return html;
         },
 
-        link(
+        link: (
           href: string,
           title: string | null | undefined,
           text: string,
-        ): string {
+        ): string => {
           const titleAttr = title ? ` title="${title}"` : "";
-          const targetAttr = self.options.openLinksInNewTab
+          const targetAttr = this.options.openLinksInNewTab
             ? ` target="_blank" rel="noopener noreferrer"`
             : "";
           return `<a href="${href}"${titleAttr}${targetAttr}>${text}</a>`;
         },
 
-        paragraph(text: string): string {
-          if (self.options.paragraphTag === "p") {
+        paragraph: (text: string): string => {
+          if (this.options.paragraphTag === "p") {
             return `<p>${text}</p>`;
           }
-          return `<${self.options.paragraphTag}>${text}</${self.options.paragraphTag}>`;
+          return `<${this.options.paragraphTag}>${text}</${this.options.paragraphTag}>`;
         },
 
-        code(
+        code: (
           code: string,
           infostring: string | undefined,
           escaped: boolean,
-        ): string {
+        ): string => {
           const lang = infostring || "";
           const langAttr = lang ? ` data-lang="${lang}"` : "";
           const blockAttr = ' data-block="true"';
-          const state = self.getCodeBlockState(lang);
+          const state = this.getCodeBlockState(lang);
           const stateAttr = ` data-state="${state}"`;
           const escapedCode = escaped ? code : escapeHtml(code);
           return `<pre><code class="language-${lang}"${langAttr}${blockAttr}${stateAttr}>${escapedCode}</code></pre>`;
@@ -90,7 +102,8 @@ export class Parser {
     return this.options.codeBlockStatus[lang] ?? this.options.streamStatus;
   }
 
-  parse(markdown: string): string {
+  parse(markdown: string, parseOptions?: { injectTail?: boolean }): string {
+    this.injectTail = parseOptions?.injectTail ?? false;
     let processed = markdown;
 
     if (this.options.protectCustomTags) {
@@ -116,9 +129,22 @@ export class Parser {
   }
 
   private sanitize(html: string): string {
+    const customTags = Object.keys(this.options.components);
+
     return DOMPurify.sanitize(html, {
-      ADD_ATTR: ["target", "data-lang", "data-block", "data-state", "rel"],
-      ADD_TAGS: ["xmd-tail"],
+      ADD_ATTR: [
+        "target",
+        "data-lang",
+        "data-block",
+        "data-state",
+        "data-raw",
+        "data-icon",
+        "data-description",
+        "icon",
+        "description",
+        "rel",
+      ],
+      ADD_TAGS: ["xmd-tail", ...customTags],
     });
   }
 
@@ -129,7 +155,7 @@ export class Parser {
     let result = markdown;
     let placeholderIndex = 0;
 
-    result = result.replace(customTagPattern, match => {
+    result = result.replace(customTagPattern, () => {
       const placeholder = `__CUSTOM_TAG_${placeholderIndex}__`;
       placeholderIndex++;
       return placeholder;
@@ -152,19 +178,55 @@ export class Parser {
       return html;
     }
 
-    const textClosePattern = /<\/([a-z]+)>\s*$/;
-    const match = html.match(textClosePattern);
+    const container = document.createElement("div");
+    container.innerHTML = html;
 
-    if (match) {
-      const lastTag = match[1];
-      const beforeClose = html.slice(0, html.lastIndexOf(`</${lastTag}>`));
-      return `${beforeClose}${tailMarker}</${lastTag}>`;
+    const findLastMeaningfulNode = (root: Node): Node | null => {
+      const children = Array.from(root.childNodes);
+      for (let i = children.length - 1; i >= 0; i--) {
+        const node = children[i];
+        if (node.nodeType === Node.TEXT_NODE) {
+          if ((node.textContent || "").trim()) {
+            return node;
+          }
+          continue;
+        }
+
+        if (node.nodeType !== Node.ELEMENT_NODE) {
+          continue;
+        }
+
+        const nested = findLastMeaningfulNode(node);
+        if (nested) {
+          return nested;
+        }
+
+        return node;
+      }
+      return null;
+    };
+
+    const lastMeaningfulNode = findLastMeaningfulNode(container);
+
+    if (!lastMeaningfulNode || lastMeaningfulNode.nodeType !== Node.TEXT_NODE) {
+      return html;
     }
 
-    return html + tailMarker;
+    const marker = document.createElement("xmd-tail");
+    lastMeaningfulNode.parentNode?.insertBefore(
+      marker,
+      lastMeaningfulNode.nextSibling,
+    );
+
+    return container.innerHTML;
   }
 
   setOptions(options: Partial<ParserOptions>): void {
-    Object.assign(this.options, options);
+    const { config, ...rest } = options;
+    Object.assign(this.options, rest);
+
+    if (config) {
+      this.updateMarkedConfig(config);
+    }
   }
 }

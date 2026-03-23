@@ -1,113 +1,63 @@
 ---
-title: Examples
-order: 2.1
-tag: 2.0.0
-category: Components
-componentName: XMarkdown
-packageName: x-markdown
+title: Code Examples
+order: 2
 ---
 
 ## When to Use
 
-Use these examples to roll out Markdown rendering first, then add streaming, custom components, and safety controls.
+Use this page for a quick setup to render LLM Markdown output, then scale to streaming, component mapping, and syntax extension.
 
-## Example Catalog
+## Code Examples
 
-### 1. Minimal Setup
+<!-- prettier-ignore -->
+<demo src="./demo/basic.vue">Basic Rendering</demo>
+<demo src="./streaming/demo/combined.vue">Streaming Rendering</demo>
+<demo src="./demo/code-highlighter.vue">Component Extension</demo>
+<demo src="./demo/custom-plugin.vue">Plugin Extension</demo>
+<demo src="./demo/escape-raw-html.vue">Security & Links</demo>
 
-```vue
-<script setup>
-import { XMarkdown } from "@antdv-next/x-markdown";
+## API
 
-const content = "# Hello\n\n- item 1\n- item 2";
-</script>
+| Property                 | Description                             | Type                        | Default         |
+| ------------------------ | --------------------------------------- | --------------------------- | --------------- |
+| content                  | Markdown content to render              | `string`                    | `''`            |
+| components               | Map HTML nodes to custom Vue components | `Record<string, Component>` | `{}`            |
+| streaming                | Streaming behavior config               | `StreamingOption`           | -               |
+| config                   | Marked parse config                     | `MarkedConfig`              | `{ gfm: true }` |
+| className                | Extra CSS class for root container      | `string`                    | -               |
+| style                    | Inline styles for root container        | `Record<string, string>`    | -               |
+| paragraphTag             | HTML tag for paragraphs                 | `string`                    | `'p'`           |
+| openLinksInNewTab        | Add `target="_blank"` to all links      | `boolean`                   | `true`          |
+| protectCustomTagNewlines | Preserve newlines inside custom tags    | `boolean`                   | `true`          |
+| escapeRawHtml            | Escape raw HTML as plain text           | `boolean`                   | `false`         |
+| debug                    | Enable debug mode                       | `boolean`                   | `false`         |
 
-<template>
-  <XMarkdown :content="content" />
-</template>
-```
+### StreamingOption
 
-### 2. Streaming Output
+| Field                          | Description                                    | Type                                                             | Default |
+| ------------------------------ | ---------------------------------------------- | ---------------------------------------------------------------- | ------- |
+| hasNextChunk                   | Whether more chunks are expected               | `boolean`                                                        | `false` |
+| enableAnimation                | Whether to enable fade-in animation            | `boolean`                                                        | `true`  |
+| animationConfig                | Animation options                              | `AnimationConfig`                                                | -       |
+| tail                           | Enable tail indicator                          | `boolean \| TailConfig`                                          | `false` |
+| incompleteMarkdownComponentMap | Map incomplete fragments to loading components | `Partial<Record<Exclude<StreamCacheTokenType, 'text'>, string>>` | -       |
 
-```vue
-<script setup>
-import { ref } from 'vue'
-import { XMarkdown } from '@antdv-next/x-markdown'
+### TailConfig
 
-const content = ref('')
-const streaming = ref({
-  hasNextChunk: true,
-  tail: true,
-  enableAnimation: true,
-})
+| Property  | Description                                          | Type        | Default |
+| --------- | ---------------------------------------------------- | ----------- | ------- |
+| content   | Content to display as tail                           | `string`    | `'▋'`   |
+| component | Custom tail component, takes precedence over content | `Component` | -       |
 
-function onChunk(chunk: string, done: boolean) {
-  content.value += chunk
-  streaming.value.hasNextChunk = !done
-}
-</script>
+### AnimationConfig
 
-<template>
-  <XMarkdown :content="content" :streaming="streaming" />
-</template>
-```
-
-### 3. Custom Code Block Rendering
-
-```vue
-<script setup>
-import { XMarkdown } from "@antdv-next/x-markdown";
-import CodeBlock from "./CodeBlock.vue";
-
-const components = { pre: CodeBlock };
-const content = `\`\`\`ts\nconst answer = 42\n\`\`\``;
-</script>
-
-<template>
-  <XMarkdown :content="content" :components="components" />
-</template>
-```
-
-### 4. Security and Link Strategy
-
-```vue
-<script setup>
-import { XMarkdown } from '@antdv-next/x-markdown'
-
-const content = '<script>alert(1)</script>\n\n[Docs](https://example.com)'
-</script>
-
-<template>
-  <XMarkdown
-    :content="content"
-    :escape-raw-html="true"
-    :open-links-in-new-tab="true"
-  />
-</template>
-```
-
-### 5. Theme Switching
-
-```vue
-<script setup>
-import { ref, computed } from "vue";
-import { XMarkdown } from "@antdv-next/x-markdown";
-import "@antdv-next/x-markdown/themes/light.css";
-import "@antdv-next/x-markdown/themes/dark.css";
-
-const dark = ref(false);
-const themeClass = computed(() =>
-  dark.value ? "x-markdown-dark" : "x-markdown-light",
-);
-const content = "# Theme Demo";
-</script>
-
-<template>
-  <XMarkdown :class="themeClass" :content="content" />
-</template>
-```
+| Property     | Description         | Type     | Default      |
+| ------------ | ------------------- | -------- | ------------ |
+| fadeDuration | Duration in ms      | `number` | `300`        |
+| easing       | CSS easing function | `string` | `'ease-out'` |
 
 ## Related Docs
 
-- [Playground](./playground-en)
-- [API](./api-en)
+- [Component Extension](/markdown/components-en)
+- [Streaming Rendering](/markdown/streaming-en)
+- [Plugins](/markdown/plugins-en)

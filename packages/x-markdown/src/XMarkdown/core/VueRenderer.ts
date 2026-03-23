@@ -1,11 +1,13 @@
 import DOMPurify from "dompurify";
-import { h, Fragment, type Component, type VNode } from "vue";
+import { h, Fragment, createTextVNode, type Component, type VNode } from "vue";
 
 import type { RendererOptions, ComponentProps } from "../interface";
 
+import AnimationText from "../components/AnimationText.vue";
 import { detectUnclosedComponentTags } from "./detectUnclosedComponentTags";
 
 const DEFAULT_ANIMATION_DURATION = 300;
+const NON_WHITESPACE_REGEX = /[^\r\n\s]+/;
 
 export class VueRenderer {
   private options: Required<RendererOptions>;
@@ -86,6 +88,11 @@ export class VueRenderer {
         "data-lang",
         "data-block",
         "data-state",
+        "data-raw",
+        "data-icon",
+        "data-description",
+        "icon",
+        "description",
         "class",
       ],
     });
@@ -110,10 +117,22 @@ export class VueRenderer {
   private convertNode(domNode: Node, unclosedTags: Set<string>): VNode | null {
     if (domNode.nodeType === Node.TEXT_NODE) {
       const text = domNode.textContent || "";
-      if (this.options.enableAnimation) {
+      const parentTagName =
+        domNode.parentNode instanceof Element
+          ? domNode.parentNode.tagName.toLowerCase()
+          : "";
+      const isParentCustomComponent = Boolean(
+        parentTagName && this.options.components[parentTagName],
+      );
+      const shouldAnimate =
+        this.options.enableAnimation &&
+        NON_WHITESPACE_REGEX.test(text) &&
+        !isParentCustomComponent;
+
+      if (shouldAnimate) {
         return this.wrapWithAnimation(text);
       }
-      return h("span", text);
+      return createTextVNode(text);
     }
 
     if (domNode.nodeType !== Node.ELEMENT_NODE) {
@@ -123,10 +142,6 @@ export class VueRenderer {
     const element = domNode as Element;
     const tagName = element.tagName.toLowerCase();
 
-    if (tagName === "xmd-tail") {
-      return h("span", { class: "xmd-tail" }, "▋");
-    }
-
     const customComponent = this.options.components[tagName];
     if (customComponent) {
       const componentProps = this.extractComponentProps(
@@ -135,6 +150,10 @@ export class VueRenderer {
         unclosedTags,
       );
       return h(customComponent as Component, componentProps);
+    }
+
+    if (tagName === "xmd-tail") {
+      return h("span", { class: "xmd-tail" }, "▋");
     }
 
     return this.convertNativeElement(element, tagName, unclosedTags);
@@ -201,17 +220,11 @@ export class VueRenderer {
   }
 
   private wrapWithAnimation(text: string): VNode {
-    return h(
-      "span",
-      {
-        class: "xmd-animated-text",
-        style: {
-          "--fade-duration": `${this.options.animationConfig.fadeDuration}ms`,
-          "--easing": this.options.animationConfig.easing,
-        },
-      },
+    return h(AnimationText, {
       text,
-    );
+      fadeDuration: this.options.animationConfig.fadeDuration,
+      easing: this.options.animationConfig.easing,
+    });
   }
 
   setOptions(options: Partial<RendererOptions>): void {

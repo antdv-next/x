@@ -1,46 +1,17 @@
 ---
 group:
   title: Plugins
+  order: 6
 title: Custom Plugins
 order: 5
 ---
 
 ## When to Use
 
-Use this when built-in behavior is not enough and you need domain-specific Markdown transforms.
+Use this when you need syntax extensions (for example `:::note` or `==highlight==`) and want to map them to domain-specific components.
 
-## Extension Flow
+## Code Demo
 
-1. Define a domain syntax (for example `:::warning`)
-2. Preprocess markdown text before passing it to `XMarkdown`
-3. Render transformed tags via `components`
-
-## Example
-
-```ts
-export function transformCustomSyntax(input: string): string {
-  return input
-    .replace(/:::warning\n([\s\S]*?)\n:::/g, "<x-warning>$1</x-warning>")
-    .replace(/@@([^@]+)@@/g, "<kbd>$1</kbd>");
-}
-```
-
-```vue
-<script setup>
-import { computed, ref } from "vue";
-import { XMarkdown } from "@antdv-next/x-markdown";
-import WarningBlock from "./WarningBlock.vue";
-import { transformCustomSyntax } from "./transformCustomSyntax";
-
-const raw = ref(":::warning\nCheck this config carefully\n:::");
-const content = computed(() => transformCustomSyntax(raw.value));
-
-const components = {
-  "x-warning": WarningBlock,
-};
-</script>
-
-<template>
-  <XMarkdown :content="content" :components="components" />
-</template>
-```
+<!-- prettier-ignore -->
+<demo src="./demo/custom-plugin.vue">Custom Plugin</demo>
+<demo src="./demo/marked-plugin.vue">Marked-style Plugin</demo>

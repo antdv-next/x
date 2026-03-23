@@ -1,40 +1,21 @@
 ---
 group:
   title: Plugins
+  order: 6
 title: Latex
 order: 2
 ---
 
 ## When to Use
 
-Use this when you need math formulas in Markdown.
+Use this when you need to render formula content or formula placeholders in Markdown.
 
-## Recommended Approach
+## Code Demo
 
-1. Define formula syntax (for example fenced code with `math`)
-2. Integrate KaTeX or MathJax in a custom code component
-3. Map `pre` or `code` to that component
+<demo src="./demo/latex-basic.vue">Latex Basic Demo</demo>
 
-## Example
+## Recommended Workflow
 
-```vue
-<script setup>
-import { XMarkdown } from "@antdv-next/x-markdown";
-import MathCodeBlock from "./MathCodeBlock.vue";
-
-const components = {
-  pre: MathCodeBlock,
-};
-
-const content = `\`\`\`math\n\\int_0^1 x^2 dx\n\`\`\``;
-</script>
-
-<template>
-  <XMarkdown :content="content" :components="components" />
-</template>
-```
-
-## Notes
-
-- Prefer KaTeX for static formulas (smaller bundle).
-- Choose MathJax when you need broader TeX compatibility.
+1. Convert formula syntax (for example `$...$` or `$$...$$`) into custom tags in a preprocess step.
+2. Map those tags to your formula component in `components` (KaTeX/MathJax, etc.).
+3. In streaming mode, prefer recalculating formulas after `streamStatus === 'done'`.

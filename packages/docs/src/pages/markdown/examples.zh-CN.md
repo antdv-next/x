@@ -1,113 +1,63 @@
 ---
-title: 使用示例
-order: 2.1
-tag: 2.0.0
-category: Components
-componentName: XMarkdown
-packageName: x-markdown
+title: 代码示例
+order: 2
 ---
 
 ## 何时使用
 
-当你希望快速落地 Markdown 渲染，并逐步叠加流式、组件扩展、安全策略时。
+用于快速接入 LLM 的 Markdown 输出渲染，并逐步扩展到流式、组件化和语法增强场景。
 
-## 示例目录
+## 代码演示
 
-### 1. 最小可用
+<!-- prettier-ignore -->
+<demo src="./demo/basic.vue">基础渲染</demo>
+<demo src="./streaming/demo/combined.vue">流式渲染</demo>
+<demo src="./demo/code-highlighter.vue">组件扩展</demo>
+<demo src="./demo/custom-plugin.vue">插件扩展</demo>
+<demo src="./demo/escape-raw-html.vue">安全与链接</demo>
 
-```vue
-<script setup>
-import { XMarkdown } from "@antdv-next/x-markdown";
+## API
 
-const content = "# Hello\n\n- item 1\n- item 2";
-</script>
+| 属性                     | 说明                                 | 类型                        | 默认值          |
+| ------------------------ | ------------------------------------ | --------------------------- | --------------- |
+| content                  | 需要渲染的 Markdown 内容             | `string`                    | `''`            |
+| components               | 将 HTML 节点映射为自定义 Vue 组件    | `Record<string, Component>` | `{}`            |
+| streaming                | 流式渲染行为配置                     | `StreamingOption`           | -               |
+| config                   | Marked 解析配置                      | `MarkedConfig`              | `{ gfm: true }` |
+| className                | 根容器的额外 CSS 类名                | `string`                    | -               |
+| style                    | 根容器的内联样式                     | `Record<string, string>`    | -               |
+| paragraphTag             | 段落使用的 HTML 标签                 | `string`                    | `'p'`           |
+| openLinksInNewTab        | 是否为所有链接添加 `target="_blank"` | `boolean`                   | `true`          |
+| protectCustomTagNewlines | 是否保留自定义标签内部的换行         | `boolean`                   | `true`          |
+| escapeRawHtml            | 是否将原始 HTML 转义为纯文本         | `boolean`                   | `false`         |
+| debug                    | 是否开启调试模式                     | `boolean`                   | `false`         |
 
-<template>
-  <XMarkdown :content="content" />
-</template>
-```
+### StreamingOption
 
-### 2. 流式输出
+| 字段                           | 说明                            | 类型                                                             | 默认值  |
+| ------------------------------ | ------------------------------- | ---------------------------------------------------------------- | ------- |
+| hasNextChunk                   | 是否还有后续内容块              | `boolean`                                                        | `false` |
+| enableAnimation                | 是否启用淡入动画                | `boolean`                                                        | `true`  |
+| animationConfig                | 动画配置                        | `AnimationConfig`                                                | -       |
+| tail                           | 是否启用尾部指示器              | `boolean \| TailConfig`                                          | `false` |
+| incompleteMarkdownComponentMap | 将未闭合片段映射到 loading 组件 | `Partial<Record<Exclude<StreamCacheTokenType, 'text'>, string>>` | -       |
 
-```vue
-<script setup>
-import { ref } from 'vue'
-import { XMarkdown } from '@antdv-next/x-markdown'
+### TailConfig
 
-const content = ref('')
-const streaming = ref({
-  hasNextChunk: true,
-  tail: true,
-  enableAnimation: true,
-})
+| 属性      | 说明                               | 类型        | 默认值 |
+| --------- | ---------------------------------- | ----------- | ------ |
+| content   | 尾部显示的内容                     | `string`    | `'▋'`  |
+| component | 自定义尾部组件，优先级高于 content | `Component` | -      |
 
-function onChunk(chunk: string, done: boolean) {
-  content.value += chunk
-  streaming.value.hasNextChunk = !done
-}
-</script>
+### AnimationConfig
 
-<template>
-  <XMarkdown :content="content" :streaming="streaming" />
-</template>
-```
-
-### 3. 自定义代码块渲染
-
-```vue
-<script setup>
-import { XMarkdown } from "@antdv-next/x-markdown";
-import CodeBlock from "./CodeBlock.vue";
-
-const components = { pre: CodeBlock };
-const content = `\`\`\`ts\nconst answer = 42\n\`\`\``;
-</script>
-
-<template>
-  <XMarkdown :content="content" :components="components" />
-</template>
-```
-
-### 4. 安全与链接策略
-
-```vue
-<script setup>
-import { XMarkdown } from '@antdv-next/x-markdown'
-
-const content = '<script>alert(1)</script>\n\n[官网](https://example.com)'
-</script>
-
-<template>
-  <XMarkdown
-    :content="content"
-    :escape-raw-html="true"
-    :open-links-in-new-tab="true"
-  />
-</template>
-```
-
-### 5. 主题切换
-
-```vue
-<script setup>
-import { ref, computed } from "vue";
-import { XMarkdown } from "@antdv-next/x-markdown";
-import "@antdv-next/x-markdown/themes/light.css";
-import "@antdv-next/x-markdown/themes/dark.css";
-
-const dark = ref(false);
-const themeClass = computed(() =>
-  dark.value ? "x-markdown-dark" : "x-markdown-light",
-);
-const content = "# Theme Demo";
-</script>
-
-<template>
-  <XMarkdown :class="themeClass" :content="content" />
-</template>
-```
+| 属性         | 说明             | 类型     | 默认值       |
+| ------------ | ---------------- | -------- | ------------ |
+| fadeDuration | 动画时长（毫秒） | `number` | `300`        |
+| easing       | 缓动函数         | `string` | `'ease-out'` |
 
 ## 相关文档
 
-- [Playground](./playground)
-- [API](./api)
+- [组件扩展](/markdown/components)
+- [流式渲染](/markdown/streaming)
+- [插件集](/markdown/plugins)

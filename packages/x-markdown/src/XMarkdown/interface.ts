@@ -1,4 +1,4 @@
-import type { Component, VNode } from "vue";
+import type { Component } from "vue";
 
 export enum StreamCacheTokenType {
   Text = "text",
@@ -78,6 +78,8 @@ export interface ParserOptions {
   injectTail?: boolean;
   protectCustomTags?: boolean;
   escapeRawHtml?: boolean;
+  config?: MarkedConfig;
+  components?: Record<string, Component>;
   streamStatus?: "loading" | "done";
   codeBlockStatus?: Record<string, "loading" | "done">;
 }

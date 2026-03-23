@@ -1,40 +1,21 @@
 ---
 group:
   title: 插件集
+  order: 6
 title: 公式
 order: 2
 ---
 
 ## 何时使用
 
-当你需要在 Markdown 中展示数学公式时。
+当你需要在 Markdown 中展示数学公式或公式占位组件时使用。
 
-## 推荐方案
+## 代码演示
 
-1. 约定公式语法（例如 fenced code 的 `math`）
-2. 在自定义代码块组件中接入 KaTeX 或 MathJax
-3. 将 `pre` 或 `code` 映射到该组件
+<demo src="./demo/latex-basic.vue">LaTeX 基础示例</demo>
 
-## 示例
+## 建议实践
 
-```vue
-<script setup>
-import { XMarkdown } from "@antdv-next/x-markdown";
-import MathCodeBlock from "./MathCodeBlock.vue";
-
-const components = {
-  pre: MathCodeBlock,
-};
-
-const content = `\`\`\`math\n\\int_0^1 x^2 dx\n\`\`\``;
-</script>
-
-<template>
-  <XMarkdown :content="content" :components="components" />
-</template>
-```
-
-## 说明
-
-- 若只需要静态公式展示，优先选择 KaTeX（体积更小）。
-- 若需要更完整 TeX 特性，可考虑 MathJax。
+1. 在预处理阶段把公式语法（如 `$...$`、`$$...$$`）转成自定义标签。
+2. 在 `components` 中映射为你的公式组件（KaTeX/MathJax 等）。
+3. 流式场景下建议在 `streamStatus === 'done'` 后再做重计算，避免频繁重渲染。

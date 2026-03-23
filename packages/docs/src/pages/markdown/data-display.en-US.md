@@ -6,36 +6,17 @@ title: Data Display
 order: 3
 ---
 
-You can map structured content to charts or cards for richer data visualization.
-
-## Typical Cases
+Map Markdown content to data-display components. The current demos focus on:
 
 - Mermaid diagram rendering
-- Metric cards / KPI panels
+- Infographic card rendering
 
-## Example
+<!-- prettier-ignore -->
+<demo src="./demo/mermaid.vue">Mermaid</demo>
+<demo src="./demo/infographic.vue">Infographic</demo>
 
-```vue
-<script setup>
-import { XMarkdown } from "@antdv-next/x-markdown";
-import MermaidBlock from "./MermaidBlock.vue";
-import MetricCard from "./MetricCard.vue";
+## See also
 
-const components = {
-  mermaid: MermaidBlock,
-  metric: MetricCard,
-};
-
-const content = `<mermaid>graph TD; A-->B</mermaid>\n\n<metric title="QPS" value="1290" />`;
-</script>
-
-<template>
-  <XMarkdown :content="content" :components="components" />
-</template>
-```
-
-## See Also
-
-- [Overview](./components-en)
-- [Chat Enhancement](./chat-enhancement-en)
-- [Rich Text Enhancement](./rich-text-en)
+- [Overview](/markdown/components-en)
+- [Chat Enhancement](/markdown/chat-enhancement-en)
+- [Rich Text Enhancement](/markdown/rich-text-en)

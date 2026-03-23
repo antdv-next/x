@@ -6,29 +6,15 @@ title: Rich Text Enhancement
 order: 4
 ---
 
-Rich text enhancement is commonly used for code highlighting, line numbers, and copy actions.
+Map Markdown to rich-text components. The current demo focuses on:
 
-## Example
+- Code highlighting (CodeHighlighter)
 
-```vue
-<script setup>
-import { XMarkdown } from "@antdv-next/x-markdown";
-import CodeHighlighter from "./CodeHighlighter.vue";
+<!-- prettier-ignore -->
+<demo src="./demo/code-highlighter.vue">CodeHighlighter</demo>
 
-const components = {
-  pre: CodeHighlighter,
-};
+## See also
 
-const content = `\`\`\`ts\nconst msg = 'hello markdown'\n\`\`\``;
-</script>
-
-<template>
-  <XMarkdown :content="content" :components="components" />
-</template>
-```
-
-## See Also
-
-- [Overview](./components-en)
-- [Chat Enhancement](./chat-enhancement-en)
-- [Data Display](./data-display-en)
+- [Overview](/markdown/components-en)
+- [Chat Enhancement](/markdown/chat-enhancement-en)
+- [Data Display](/markdown/data-display-en)

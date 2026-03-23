@@ -3,9 +3,11 @@ title: Themes
 order: 3
 ---
 
-Themes keep Markdown typography, colors, and spacing consistent. Built-in themes are `light` and `dark`.
+Themes let you keep Markdown typography, colors, and spacing consistent. Built-in options are light and dark; you can also customize via CSS variables or overrides.
 
 ## Quick Usage
+
+Import the theme stylesheet and set the theme class on the root:
 
 ```vue
 <script setup>
@@ -17,30 +19,17 @@ import "@antdv-next/x-markdown/themes/light.css";
 </template>
 ```
 
-## Theme Switching
+## Code Examples
 
-```vue
-<script setup>
-import { ref, computed } from "vue";
-import "@antdv-next/x-markdown/themes/light.css";
-import "@antdv-next/x-markdown/themes/dark.css";
-
-const dark = ref(false);
-const themeClass = computed(() =>
-  dark.value ? "x-markdown-dark" : "x-markdown-light",
-);
-</script>
-
-<template>
-  <XMarkdown :class="themeClass" content="# Theme Demo" />
-</template>
-```
+<!-- prettier-ignore -->
+<demo src="./demo/switch.vue">Theme Switch</demo>
+<demo src="./demo/custom.vue">Custom Theme</demo>
 
 ## Custom Theme (Minimal Steps)
 
-1. Start from a built-in class (`x-markdown-light` recommended) and add your custom class.
-2. Override only the CSS variables you need.
-3. Keep the rest inherited from the built-in theme.
+1. Start from a built-in class (`x-markdown-light` is recommended) and add your own class.
+2. Override only the CSS variables you need in that custom class.
+3. Keep untouched variables inherited from the built-in theme.
 
 ```css
 .x-markdown-light.x-markdown-custom {
@@ -52,4 +41,4 @@ const themeClass = computed(() =>
 }
 ```
 
-See the built-in theme CSS files for the full variable list.
+See full variable names in `packages/x-markdown/src/themes/light.css` and `packages/x-markdown/src/themes/dark.css`.
