@@ -22,6 +22,13 @@
     "type-check": "tsc --project tsconfig.json --noEmit",
     "build": "tsc --project tsconfig.build.json"
   },
+  "dependencies": {
+    "dompurify": "^3.1.0",
+    "marked": "^12.0.0"
+  },
+  "devDependencies": {
+    "@types/dompurify": "^3.0.5"
+  },
   "peerDependencies": {
     "vue": ">=3.5.0"
   }

@@ -43,6 +43,9 @@ export default defineConfig({
       "@antdv-next/x": fileURLToPath(
         new URL("../x/components/index.ts", import.meta.url),
       ),
+      "@antdv-next/x-markdown": fileURLToPath(
+        new URL("../x-markdown/src/index.ts", import.meta.url),
+      ),
     },
   },
   server: {

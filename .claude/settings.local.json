@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm install:*)",
+      "Bash(pnpm build:*)",
+      "Bash(pkill -f \"vp dev\")",
+      "Bash(pnpm list:*)",
+      "Bash(node:*)",
+      "Bash(curl -s http://localhost:6999/)",
+      "Bash(curl -s \"http://localhost:6999/markdown/playground\")",
+      "Bash(curl -s \"http://localhost:6999/src/pages/markdown/demo/playground/index.vue\")",
+      "Bash(curl -s \"http://localhost:6999/src/pages/markdown/demo/playground/index.vue?demo=true\")",
+      "Bash(pkill -f 'vp dev')",
+      "Bash(pkill -f vite)",
+      "Bash(xargs kill:*)",
+      "Bash(curl -s \"http://localhost:6999/src/pages/markdown/demo/playground/index.vue?raw\")",
+      "Bash(pkill -f \"node.*6999\")",
+      "Bash(kill -9 11403)"
+    ]
+  }
+}

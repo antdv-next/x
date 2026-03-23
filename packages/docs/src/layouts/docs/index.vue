@@ -154,6 +154,63 @@ interface SiderGroupItem {
 
 type SiderItem = SiderLeafItem | SiderGroupItem;
 
+type LocaleKey = typeof LOCALE_ZH_CN | typeof LOCALE_EN_US;
+
+const markdownSiderLabelMap: Record<string, Record<LocaleKey, string>> = {
+  "/markdown": {
+    [LOCALE_ZH_CN]: "介绍",
+    [LOCALE_EN_US]: "Introduction",
+  },
+  "/markdown/examples": {
+    [LOCALE_ZH_CN]: "使用示例",
+    [LOCALE_EN_US]: "Examples",
+  },
+  "/markdown/api": {
+    [LOCALE_ZH_CN]: "API 参考",
+    [LOCALE_EN_US]: "API Reference",
+  },
+  "/markdown/streaming": {
+    [LOCALE_ZH_CN]: "流式渲染",
+    [LOCALE_EN_US]: "Streaming",
+  },
+  "/markdown/components": {
+    [LOCALE_ZH_CN]: "组件扩展",
+    [LOCALE_EN_US]: "Component Extensions",
+  },
+  "/markdown/themes": {
+    [LOCALE_ZH_CN]: "主题",
+    [LOCALE_EN_US]: "Themes",
+  },
+  "/markdown/rich-text": {
+    [LOCALE_ZH_CN]: "富文本增强",
+    [LOCALE_EN_US]: "Rich Text",
+  },
+  "/markdown/data-display": {
+    [LOCALE_ZH_CN]: "数据展示",
+    [LOCALE_EN_US]: "Data Display",
+  },
+  "/markdown/chat-enhancement": {
+    [LOCALE_ZH_CN]: "聊天增强",
+    [LOCALE_EN_US]: "Chat Enhancement",
+  },
+  "/markdown/plugins": {
+    [LOCALE_ZH_CN]: "插件扩展",
+    [LOCALE_EN_US]: "Plugin Extensions",
+  },
+  "/markdown/custom-plugin": {
+    [LOCALE_ZH_CN]: "自定义插件",
+    [LOCALE_EN_US]: "Custom Plugins",
+  },
+  "/markdown/plugin-latex": {
+    [LOCALE_ZH_CN]: "LaTeX 公式",
+    [LOCALE_EN_US]: "LaTeX",
+  },
+  "/markdown/playground": {
+    [LOCALE_ZH_CN]: "在线体验",
+    [LOCALE_EN_US]: "Playground",
+  },
+};
+
 const normalizedCurrentPath = computed(() => normalizePath(route.path));
 const currentPathWithoutLocale = computed(() =>
   stripLocaleSuffix(normalizedCurrentPath.value),
@@ -179,6 +236,7 @@ const siderItems = computed<SiderItem[]>(() => {
   if (!section) return [];
 
   const locale = appStore.locale;
+  const localeKey = locale === LOCALE_EN_US ? LOCALE_EN_US : LOCALE_ZH_CN;
   const routesInSection = docsRoutes
     .filter(item => {
       if (item.meta?.locale !== locale) return false;
@@ -207,18 +265,22 @@ const siderItems = computed<SiderItem[]>(() => {
       slug: lastSegment,
       isSectionIndex,
       label: isSectionIndex
-        ? appStore.locale === LOCALE_ZH_CN
+        ? localeKey === LOCALE_ZH_CN
           ? "概览"
           : "Overview"
         : formatSegmentLabel(lastSegment),
     };
   });
 
+  if (section === "/markdown")
+    return baseItems.map(({ key, label, pathWithoutLocale }) => ({
+      key,
+      label: markdownSiderLabelMap[pathWithoutLocale]?.[localeKey] ?? label,
+    }));
+
   if (section !== "/components")
     return baseItems.map(({ key, label }) => ({ key, label }));
 
-  const localeKey =
-    appStore.locale === LOCALE_EN_US ? LOCALE_EN_US : LOCALE_ZH_CN;
   const fallbackGroupLabel =
     localeKey === LOCALE_ZH_CN ? "未分类" : "Ungrouped";
   const overviewItem = baseItems.find(item => item.isSectionIndex);

@@ -1,0 +1,52 @@
+.x-markdown-dark {
+  color: #e8e8e8;
+  background-color: #141414;
+}
+
+.x-markdown-dark a {
+  color: #40a9ff;
+}
+
+.x-markdown-dark a:hover {
+  color: #69c0ff;
+}
+
+.x-markdown-dark code {
+  background-color: #303030;
+  color: #e8e8e8;
+}
+
+.x-markdown-dark pre {
+  background-color: #303030;
+}
+
+.x-markdown-dark pre code {
+  background-color: transparent;
+}
+
+.x-markdown-dark blockquote {
+  border-left-color: #434343;
+  color: #b8b8b8;
+}
+
+.x-markdown-dark table {
+  border-color: #434343;
+}
+
+.x-markdown-dark th {
+  background-color: #1f1f1f;
+  border-color: #434343;
+}
+
+.x-markdown-dark td {
+  border-color: #434343;
+}
+
+.x-markdown-dark hr {
+  border-color: #434343;
+}
+
+.x-markdown-dark img {
+  max-width: 100%;
+  height: auto;
+}
