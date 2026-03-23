@@ -1,11 +1,15 @@
 <script setup lang="ts">
 import { XMarkdown } from "@antdv-next/x-markdown";
-import { computed, ref } from "vue";
+import { computed } from "vue";
 
-const raw = ref("Use ==highlight== syntax with a Marked-like extension.");
+const source = `
+### Use [marked extensions](https://marked.js.org/using_advanced#extensions)
+
+I :heart: XMarkdown! :tada:
+`;
 
 const transformed = computed(() =>
-  raw.value.replace(/==([^=]+)==/g, "<mark>$1</mark>"),
+  source.replace(/:heart:/g, "❤️").replace(/:tada:/g, "🎉"),
 );
 </script>
 
@@ -14,9 +18,9 @@ const transformed = computed(() =>
 </template>
 
 <docs lang="zh-CN">
-Marked 插件思路示例：先做语法转换，再交给 XMarkdown 渲染。
+Marked 风格插件示例：对齐 antdx 的 emoji 扩展场景，演示预处理后渲染。
 </docs>
 
 <docs lang="en-US">
-Marked-plugin style demo: transform syntax first, then render with XMarkdown.
+Marked-style plugin demo aligned with antdx emoji-extension scenario, rendering transformed content.
 </docs>

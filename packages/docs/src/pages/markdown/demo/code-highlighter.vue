@@ -1,67 +1,216 @@
 <script setup lang="ts">
+import { Bubble, CodeHighlighter } from "@antdv-next/x";
 import { XMarkdown } from "@antdv-next/x-markdown";
-import { defineComponent, h } from "vue";
+import { Button, Flex } from "antdv-next";
+import {
+  computed,
+  defineComponent,
+  h,
+  nextTick,
+  onBeforeUnmount,
+  ref,
+  watch,
+  type VNode,
+} from "vue";
 
-const content = `<code-highlighter lang="ts" code="const answer: number = 42;"></code-highlighter>`;
+import { useDarkMode } from "@/composables/use-dark-mode";
 
-const CodeHighlighter = defineComponent({
-  name: "CodeHighlighterDemo",
-  props: {
-    lang: {
-      type: String,
-      default: "text",
-    },
-    code: {
-      type: String,
-      default: "",
-    },
-  },
-  setup(props) {
-    return () =>
-      h("div", { class: "hl-wrap" }, [
-        h("div", { class: "hl-lang" }, props.lang),
-        h("pre", { class: "hl-code" }, props.code),
-      ]);
+const text = `
+Here's a Python code block example that demonstrates how to calculate Fibonacci numbers:
+
+\`\`\`python
+def fibonacci(n):
+    """
+    Calculate the nth Fibonacci number
+    :param n: The position in the Fibonacci sequence (must be a positive integer)
+    :return: The value at position n
+    """
+    if n <= 0:
+        return 0
+    elif n == 1:
+        return 1
+    else:
+        a, b = 0, 1
+        for _ in range(2, n+1):
+            a, b = b, a + b
+        return b
+
+if __name__ == "__main__":
+    for i in range(1, 11):
+        print(fibonacci(i), end=" ")
+\`\`\`
+
+This code includes:
+
+1. A function to compute Fibonacci numbers
+2. Docstring documentation
+3. A small output loop for verification
+`;
+
+function extractText(nodes: VNode[]): string {
+  return nodes
+    .map(node => {
+      const children = node.children;
+      if (typeof children === "string") return children;
+      if (Array.isArray(children)) return extractText(children as VNode[]);
+      return "";
+    })
+    .join("");
+}
+
+const CodeRenderer = defineComponent({
+  name: "CodeRenderer",
+  setup(_, { attrs, slots }) {
+    const lang = computed(() => {
+      const dataLang =
+        typeof attrs["data-lang"] === "string" ? attrs["data-lang"] : "";
+      const dataLangCamel =
+        typeof attrs.dataLang === "string" ? attrs.dataLang : "";
+      const langAttr = typeof attrs.lang === "string" ? attrs.lang : "";
+      const className = typeof attrs.class === "string" ? attrs.class : "";
+      const classLang = className.match(/(?:^|\s)language-([^\s]+)/)?.[1] ?? "";
+      return dataLang || dataLangCamel || langAttr || classLang;
+    });
+
+    const isBlock = computed(() => {
+      const dataBlock = attrs["data-block"];
+      const dataBlockCamel = attrs.dataBlock;
+      const block = attrs.block;
+
+      return (
+        dataBlock === "true" ||
+        dataBlock === true ||
+        dataBlockCamel === "true" ||
+        dataBlockCamel === true ||
+        block === "true" ||
+        block === true
+      );
+    });
+
+    return () => {
+      const code = extractText(slots.default?.() ?? []);
+      if (!isBlock.value && !lang.value) {
+        return h("code", code);
+      }
+      return h(CodeHighlighter, {
+        content: code,
+        language: lang.value || "text",
+      });
+    };
   },
 });
 
+const { isDark } = useDarkMode();
+const markdownClass = computed(() =>
+  isDark.value ? "x-markdown-dark" : "x-markdown-light",
+);
+
+const index = ref(0);
+const contentRef = ref<HTMLElement | null>(null);
+let timerRef: ReturnType<typeof setTimeout> | null = null;
+
+const clearTimer = () => {
+  if (timerRef !== null) {
+    clearTimeout(timerRef);
+    timerRef = null;
+  }
+};
+
+watch(
+  index,
+  () => {
+    clearTimer();
+
+    if (index.value >= text.length) {
+      return;
+    }
+
+    timerRef = setTimeout(() => {
+      index.value = Math.min(index.value + 5, text.length);
+    }, 20);
+  },
+  { immediate: true },
+);
+
+function resolveScrollContainer(): HTMLElement | null {
+  const node = contentRef.value as
+    | HTMLElement
+    | { $el?: Element | null }
+    | null;
+
+  if (!node) return null;
+  if (node instanceof HTMLElement) return node;
+  if (node.$el instanceof HTMLElement) return node.$el;
+  return null;
+}
+
+watch(
+  index,
+  async () => {
+    if (index.value <= 0 || index.value >= text.length) {
+      return;
+    }
+
+    await nextTick();
+    const container = resolveScrollContainer();
+    if (!container) {
+      return;
+    }
+
+    const { scrollHeight, clientHeight } = container;
+    if (scrollHeight > clientHeight) {
+      container.scrollTo({
+        top: scrollHeight,
+        behavior: "smooth",
+      });
+    }
+  },
+  { flush: "post" },
+);
+
+onBeforeUnmount(clearTimer);
+
 const components = {
-  "code-highlighter": CodeHighlighter,
+  code: CodeRenderer,
+};
+
+const renderMarkdown = (content: string) =>
+  h(XMarkdown, {
+    content,
+    components,
+    paragraphTag: "div",
+  });
+
+const rerender = () => {
+  clearTimer();
+  index.value = 0;
 };
 </script>
 
 <template>
-  <XMarkdown :content="content" :components="components" />
+  <Flex
+    vertical
+    :gap="8"
+    style="height: 600px; overflow: auto"
+    :class="markdownClass"
+    ref="contentRef"
+  >
+    <Flex justify="flex-end">
+      <Button @click="rerender">Re-Render</Button>
+    </Flex>
+
+    <Bubble
+      :content="text.slice(0, index)"
+      :content-render="renderMarkdown"
+      variant="outlined"
+    />
+  </Flex>
 </template>
 
-<style scoped>
-.hl-wrap {
-  border: 1px solid #1f2937;
-  border-radius: 8px;
-  overflow: hidden;
-  width: 320px;
-}
-
-.hl-lang {
-  background: #111827;
-  color: #9ca3af;
-  padding: 4px 8px;
-  font-size: 12px;
-}
-
-.hl-code {
-  margin: 0;
-  padding: 10px;
-  background: #0b1220;
-  color: #e5e7eb;
-  overflow: auto;
-}
-</style>
-
 <docs lang="zh-CN">
-CodeHighlighter 示例：将富文本代码块映射为自定义高亮展示。
+CodeHighlighter 示例：对齐 antdx，流式输出代码并使用组件替换默认代码块渲染。
 </docs>
 
 <docs lang="en-US">
-CodeHighlighter demo: map rich text code blocks to custom rendering.
+CodeHighlighter demo aligned with antdx: stream content and replace default code rendering with the component.
 </docs>

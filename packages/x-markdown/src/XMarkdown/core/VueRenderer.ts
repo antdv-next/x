@@ -149,7 +149,22 @@ export class VueRenderer {
         tagName,
         unclosedTags,
       );
-      return h(customComponent as Component, componentProps);
+
+      const children: VNode[] = [];
+      Array.from(element.childNodes).forEach(child => {
+        const childVNode = this.convertNode(child, unclosedTags);
+        if (childVNode) {
+          children.push(childVNode);
+        }
+      });
+
+      if (children.length === 0) {
+        return h(customComponent as Component, componentProps);
+      }
+
+      return h(customComponent as Component, componentProps, {
+        default: () => children,
+      });
     }
 
     if (tagName === "xmd-tail") {
