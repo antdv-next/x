@@ -15,6 +15,8 @@ import FileCard, { FileCardList } from "./file-card";
 import Notification, { XNotification } from "./notification";
 import Sender, { SenderHeader, SenderSwitch } from "./sender";
 import Sources from "./sources";
+import Think from "./think";
+import ThoughtChain, { ThoughtChainItem } from "./thought-chain";
 import XProvider from "./x-provider";
 
 const components = [
@@ -38,6 +40,9 @@ const components = [
   Sender,
   SenderHeader,
   SenderSwitch,
+  Think,
+  ThoughtChain,
+  ThoughtChainItem,
 ];
 
 const componentAliases = new Map<string, string[]>([
@@ -56,6 +61,9 @@ const componentAliases = new Map<string, string[]>([
   ["XSender", ["ASender"]],
   ["XSenderHeader", ["ASenderHeader"]],
   ["XSenderSwitch", ["ASenderSwitch"]],
+  ["XThink", ["AThink"]],
+  ["XThoughtChain", ["AThoughtChain"]],
+  ["XThoughtChainItem", ["AThoughtChainItem"]],
 ]);
 
 export default {
@@ -93,9 +101,12 @@ export {
   Sender,
   SenderHeader,
   SenderSwitch,
+  Sources,
+  Think,
+  ThoughtChain,
+  ThoughtChainItem,
   XProvider,
   version,
-  Sources,
 };
 
 export type {
@@ -118,6 +129,16 @@ export type {
 } from "./bubble";
 
 export type { FileCardListProps, FileCardProps } from "./file-card";
+
+export type { ThinkProps, ThinkRef } from "./think";
+
+export type {
+  ThoughtChainItemProps,
+  ThoughtChainItemStatus,
+  ThoughtChainItemType,
+  ThoughtChainProps,
+  ThoughtChainRef,
+} from "./thought-chain";
 
 export type {
   ConversationItemType,
