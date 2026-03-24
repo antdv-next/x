@@ -41,4 +41,4 @@ import "@antdv-next/x-markdown/themes/light.css";
 }
 ```
 
-See full variable names in `packages/x-markdown/src/themes/light.css` and `packages/x-markdown/src/themes/dark.css`.
+See full variable names in `@antdv-next/x-markdown/themes/light.css` and `@antdv-next/x-markdown/themes/dark.css`.

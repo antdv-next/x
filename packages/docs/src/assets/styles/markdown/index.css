@@ -10,6 +10,15 @@
 }
 
 /*
+ * Keep XMarkdown subtree isolated from docs markdown-layer styles.
+ * This ensures VP typography/custom-block/code rules do not override XMarkdown themes.
+ */
+.vp-doc .x-markdown,
+.vp-doc .x-markdown * {
+  all: revert-layer;
+}
+
+/*
  * Keep demo content (`vp-raw`) isolated from markdown layer typography/code styles.
  * This prevents markdown rules from leaking into rendered component demos.
  */
@@ -57,7 +66,7 @@
  * Normalize native button UI inside docs content to avoid UA defaults like `buttonface`.
  * Antd component styles are in a higher layer, so they are not affected.
  */
-.vp-doc :where(button) {
+.vp-doc :where(button):not(.x-markdown):not(.x-markdown *) {
   appearance: none;
   -webkit-appearance: none;
   border: 0;

@@ -41,4 +41,4 @@ import "@antdv-next/x-markdown/themes/light.css";
 }
 ```
 
-完整变量名请参考 `packages/x-markdown/src/themes/light.css` 与 `packages/x-markdown/src/themes/dark.css`。
+完整变量名请参考 `@antdv-next/x-markdown/themes/light.css` 与 `@antdv-next/x-markdown/themes/dark.css`。

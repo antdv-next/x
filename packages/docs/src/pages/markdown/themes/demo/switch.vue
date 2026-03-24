@@ -2,6 +2,8 @@
 import { XMarkdown } from "@antdv-next/x-markdown";
 import { Segmented } from "antdv-next";
 import { computed, ref } from "vue";
+import "@antdv-next/x-markdown/themes/light.css";
+import "@antdv-next/x-markdown/themes/dark.css";
 
 const mode = ref<"light" | "dark">("light");
 

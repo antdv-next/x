@@ -13,6 +13,8 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
+    "./themes/light.css": "./src/themes/light.css",
+    "./themes/dark.css": "./src/themes/dark.css",
     "./package.json": "./package.json"
   },
   "publishConfig": {
