@@ -39,6 +39,103 @@ export type NodeRender = (
   },
 ) => BaseNode;
 
+// ===================== SlotConfig =====================
+
+export interface SlotConfigBaseType {
+  type: "text" | "input" | "select" | "tag" | "custom" | "content" | "skill";
+  formatResult?: (value: any) => string;
+}
+
+interface SlotConfigTextType extends SlotConfigBaseType {
+  type: "text";
+  value?: string;
+  editable?: boolean;
+  placeholder?: string;
+  key?: string;
+}
+
+interface SlotConfigContentType extends SlotConfigBaseType {
+  type: "content";
+  key: string;
+  props?: {
+    defaultValue?: any;
+    placeholder?: string;
+  };
+}
+
+interface SlotConfigInputType extends SlotConfigBaseType {
+  type: "input";
+  key: string;
+  props?: {
+    defaultValue?: string;
+    placeholder?: string;
+  };
+}
+
+interface SlotConfigSelectType extends SlotConfigBaseType {
+  type: "select";
+  key: string;
+  props?: {
+    defaultValue?: string;
+    options: string[];
+    placeholder?: string;
+  };
+}
+
+interface SlotConfigTagType extends SlotConfigBaseType {
+  type: "tag";
+  key: string;
+  props?: {
+    label: VNodeChild;
+    value?: string;
+  };
+}
+
+interface SlotConfigCustomType extends SlotConfigBaseType {
+  type: "custom";
+  key: string;
+  props?: {
+    defaultValue?: any;
+    [key: string]: any;
+  };
+  customRender?: (
+    value: any,
+    onChange: (value: any) => void,
+    props: {
+      disabled?: boolean;
+      readOnly?: boolean;
+    },
+    item: SlotConfigType,
+  ) => VNodeChild;
+}
+
+export type SlotConfigType =
+  | SlotConfigTextType
+  | SlotConfigInputType
+  | SlotConfigSelectType
+  | SlotConfigTagType
+  | SlotConfigCustomType
+  | SlotConfigContentType;
+
+// ===================== Skill =====================
+
+export interface SkillType {
+  title?: VNodeChild;
+  value: string;
+  toolTip?: {
+    title?: VNodeChild;
+  };
+  closable?:
+    | boolean
+    | {
+        closeIcon?: VNodeChild;
+        onClose?: (event: MouseEvent) => void;
+        disabled?: boolean;
+      };
+}
+
+// ===================== SenderProps =====================
+
 export interface SenderProps {
   prefixCls?: string;
   defaultValue?: string;
@@ -47,8 +144,19 @@ export interface SenderProps {
   readOnly?: boolean;
   submitType?: SubmitType;
   disabled?: boolean;
-  onSubmit?: (message: string) => void;
-  onChange?: (value: string, event?: Event) => void;
+  slotConfig?: Readonly<SlotConfigType[]>;
+  skill?: SkillType;
+  onSubmit?: (
+    message: string,
+    slotConfig?: SlotConfigType[],
+    skill?: SkillType,
+  ) => void;
+  onChange?: (
+    value: string,
+    event?: Event,
+    slotConfig?: SlotConfigType[],
+    skill?: SkillType,
+  ) => void;
   onCancel?: () => void;
   onKeyDown?: (event: KeyboardEvent) => void | false;
   onKeyUp?: (event: KeyboardEvent) => void;
@@ -79,6 +187,10 @@ export interface SenderRef {
   focus: (options?: SenderFocusOptions) => void;
   blur: () => void;
   clear: () => void;
-  insert: (text: string, position?: InsertPosition) => void;
-  getValue: () => { value: string };
+  insert: (value: string | SlotConfigType[], position?: InsertPosition) => void;
+  getValue: () => {
+    value: string;
+    slotConfig?: SlotConfigType[];
+    skill?: SkillType;
+  };
 }

@@ -25,16 +25,16 @@ export default defineComponent({
     const inputRef = ref<InstanceType<typeof ATextarea>>();
     const isComposing = ref(false);
 
-    const getTextAreaEl = (): HTMLTextAreaElement | null => {
-      return (inputRef.value as any)?.$el?.querySelector?.("textarea") ?? null;
+    const getNativeEl = (): HTMLTextAreaElement | null => {
+      return (inputRef.value as any)?.nativeElement ?? null;
     };
 
     expose<TextAreaRef>({
       get nativeElement() {
-        return getTextAreaEl();
+        return getNativeEl();
       },
       focus(options?: SenderFocusOptions) {
-        const el = getTextAreaEl();
+        const el = getNativeEl();
         if (!el) return;
         const { cursor, ...nativeOptions } = options ?? {};
         el.focus(nativeOptions);
@@ -50,7 +50,7 @@ export default defineComponent({
         }
       },
       blur() {
-        getTextAreaEl()?.blur();
+        getNativeEl()?.blur();
       },
       clear() {
         senderCtx.value.onChange?.("", undefined);
@@ -59,7 +59,7 @@ export default defineComponent({
         return { value: senderCtx.value.value ?? "" };
       },
       insert(text: string, position: InsertPosition = "cursor") {
-        const el = getTextAreaEl();
+        const el = getNativeEl();
         const currentValue = senderCtx.value.value ?? "";
         let newValue: string;
 

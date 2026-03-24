@@ -33,6 +33,7 @@ export default defineComponent({
       default: () => ({}),
     },
     closable: { type: Boolean, default: true },
+    forceRender: { type: Boolean, default: false },
   },
   setup(props, { slots }) {
     const configCtx = useConfig();
@@ -52,38 +53,44 @@ export default defineComponent({
       return (
         <Transition
           name={`${headerCls}-motion`}
-          onBeforeEnter={(el) => {
+          onBeforeEnter={el => {
             (el as HTMLElement).style.height = "0px";
             (el as HTMLElement).style.overflow = "hidden";
           }}
-          onEnter={(el) => {
-            (el as HTMLElement).style.height = `${(el as HTMLElement).scrollHeight}px`;
+          onEnter={el => {
+            (el as HTMLElement).style.height =
+              `${(el as HTMLElement).scrollHeight}px`;
           }}
-          onAfterEnter={(el) => {
+          onAfterEnter={el => {
             (el as HTMLElement).style.height = "";
             (el as HTMLElement).style.overflow = "";
           }}
-          onBeforeLeave={(el) => {
-            (el as HTMLElement).style.height = `${(el as HTMLElement).offsetHeight}px`;
+          onBeforeLeave={el => {
+            (el as HTMLElement).style.height =
+              `${(el as HTMLElement).offsetHeight}px`;
             (el as HTMLElement).style.overflow = "hidden";
           }}
-          onLeave={(el) => {
+          onLeave={el => {
             // Force reflow
             // eslint-disable-next-line @typescript-eslint/no-unused-expressions
             (el as HTMLElement).offsetHeight;
             (el as HTMLElement).style.height = "0px";
           }}
-          onAfterLeave={(el) => {
+          onAfterLeave={el => {
             (el as HTMLElement).style.height = "";
             (el as HTMLElement).style.overflow = "";
           }}
         >
-          {props.open && (
+          {(props.open || props.forceRender) && (
             <div
               class={[
                 headerCls,
                 props.class,
-                { [`${headerCls}-rtl`]: direction.value === "rtl" },
+                {
+                  [`${headerCls}-rtl`]: direction.value === "rtl",
+                  [`${headerCls}-motion-hidden`]:
+                    props.forceRender && !props.open,
+                },
               ]}
               style={props.style}
             >
@@ -100,9 +107,7 @@ export default defineComponent({
                         type="text"
                         icon={<CloseOutlined />}
                         size="small"
-                        onClick={() =>
-                          props.onOpenChange?.(!props.open)
-                        }
+                        onClick={() => props.onOpenChange?.(!props.open)}
                       />
                     </div>
                   )}
@@ -112,10 +117,7 @@ export default defineComponent({
               {/* Content */}
               {slots.default && (
                 <div
-                  class={[
-                    `${headerCls}-content`,
-                    props.classNames.content,
-                  ]}
+                  class={[`${headerCls}-content`, props.classNames.content]}
                   style={props.styles.content}
                 >
                   {slots.default()}

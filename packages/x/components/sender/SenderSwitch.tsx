@@ -21,8 +21,14 @@ export default defineComponent({
       type: [String, Object, Array] as PropType<StyleValue>,
       default: undefined,
     },
-    checkedChildren: { type: [String, Object] as PropType<VNodeChild>, default: undefined },
-    unCheckedChildren: { type: [String, Object] as PropType<VNodeChild>, default: undefined },
+    checkedChildren: {
+      type: [String, Object] as PropType<VNodeChild>,
+      default: undefined,
+    },
+    unCheckedChildren: {
+      type: [String, Object] as PropType<VNodeChild>,
+      default: undefined,
+    },
     value: { type: Boolean, default: undefined },
     defaultValue: { type: Boolean, default: false },
     icon: { type: Object as PropType<VNodeChild>, default: undefined },
@@ -70,7 +76,7 @@ export default defineComponent({
 
     watch(
       () => props.value,
-      (val) => {
+      val => {
         if (val !== undefined) innerChecked.value = val;
       },
       { immediate: true },
@@ -116,13 +122,23 @@ export default defineComponent({
             loading={props.loading}
             class={[`${cls}-content`, props.classNames.content]}
             style={props.styles.content as any}
+            {...{
+              classNames: {
+                icon: props.classNames.icon,
+                content: props.classNames.title,
+              },
+              styles: {
+                icon: props.styles.icon,
+                content: props.styles.title,
+              },
+            }}
             variant="outlined"
             color={
               mergedChecked.value
                 ? ("primary" as ButtonProps["color"])
                 : ("default" as ButtonProps["color"])
             }
-            icon={props.icon}
+            icon={props.icon as any}
             onClick={() => {
               const newValue = !mergedChecked.value;
               innerChecked.value = newValue;
