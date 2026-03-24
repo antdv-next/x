@@ -78,13 +78,20 @@ type ActionsComponents = {
 
 ### Sender Ref
 
-| 属性          | 说明     | 类型                                                              |
-| ------------- | -------- | ----------------------------------------------------------------- |
-| nativeElement | 外层容器 | `HTMLDivElement`                                                  |
-| focus         | 获取焦点 | `(options?: FocusOptions) => void`                                |
-| blur          | 取消焦点 | `() => void`                                                      |
-| clear         | 清空内容 | `() => void`                                                      |
-| insert        | 插入文本 | `(text: string, position?: 'start' \| 'end' \| 'cursor') => void` |
+| 属性          | 说明                       | 类型                                                              |
+| ------------- | -------------------------- | ----------------------------------------------------------------- |
+| nativeElement | 外层容器                   | `HTMLDivElement`                                                  |
+| focus         | 获取焦点，支持 cursor 定位 | `(options?: SenderFocusOptions) => void`                          |
+| blur          | 取消焦点                   | `() => void`                                                      |
+| clear         | 清空内容                   | `() => void`                                                      |
+| insert        | 插入文本                   | `(text: string, position?: 'start' \| 'end' \| 'cursor') => void` |
+| getValue      | 获取当前值                 | `() => { value: string }`                                         |
+
+```typescript
+interface SenderFocusOptions extends FocusOptions {
+  cursor?: "start" | "end" | "all";
+}
+```
 
 ### Sender.Header
 

@@ -5,9 +5,13 @@ import { useSenderContext } from "../context";
 
 export type InsertPosition = "start" | "end" | "cursor";
 
+export interface SenderFocusOptions extends FocusOptions {
+  cursor?: "start" | "end" | "all";
+}
+
 export interface TextAreaRef {
   nativeElement: HTMLTextAreaElement | null;
-  focus: (options?: FocusOptions) => void;
+  focus: (options?: SenderFocusOptions) => void;
   blur: () => void;
   clear: () => void;
   getValue: () => { value: string };
@@ -29,8 +33,21 @@ export default defineComponent({
       get nativeElement() {
         return getTextAreaEl();
       },
-      focus(options?: FocusOptions) {
-        getTextAreaEl()?.focus(options);
+      focus(options?: SenderFocusOptions) {
+        const el = getTextAreaEl();
+        if (!el) return;
+        const { cursor, ...nativeOptions } = options ?? {};
+        el.focus(nativeOptions);
+        if (cursor) {
+          const len = el.value.length;
+          if (cursor === "start") {
+            el.setSelectionRange(0, 0);
+          } else if (cursor === "end") {
+            el.setSelectionRange(len, len);
+          } else if (cursor === "all") {
+            el.setSelectionRange(0, len);
+          }
+        }
       },
       blur() {
         getTextAreaEl()?.blur();

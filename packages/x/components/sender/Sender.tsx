@@ -5,6 +5,7 @@ import { useConfig } from "antdv-next/dist/config-provider/context";
 import { computed, defineComponent, ref, useAttrs } from "vue";
 
 import type { TextAreaRef } from "./components/TextArea";
+import type { SenderFocusOptions } from "./components/TextArea";
 import type {
   AllowSpeech,
   BaseNode,
@@ -179,7 +180,7 @@ export default defineComponent({
       get nativeElement() {
         return containerRef.value as HTMLDivElement;
       },
-      focus(options?: FocusOptions) {
+      focus(options?: SenderFocusOptions) {
         inputRef.value?.focus(options);
       },
       blur() {
@@ -190,6 +191,9 @@ export default defineComponent({
       },
       insert(text: string, position?: InsertPosition) {
         inputRef.value?.insert(text, position);
+      },
+      getValue() {
+        return inputRef.value?.getValue() ?? { value: "" };
       },
     });
 

@@ -15,15 +15,22 @@ const senderRef = ref<InstanceType<typeof Sender>>();
       <Button @click="senderRef?.insert(' World', 'end')">
         Insert at End
       </Button>
-      <Button @click="senderRef?.insert('� ', 'cursor')">
+      <Button @click="senderRef?.insert('🐛 ', 'cursor')">
         Insert at Cursor
       </Button>
-      <Button @click="senderRef?.focus()">Focus</Button>
+      <Button @click="senderRef?.focus()"> Focus </Button>
+      <Button @click="senderRef?.focus({ cursor: 'start' })">
+        Focus at Start
+      </Button>
+      <Button @click="senderRef?.focus({ cursor: 'end' })">
+        Focus at End
+      </Button>
+      <Button @click="senderRef?.focus({ cursor: 'all' })"> Select All </Button>
       <Button @click="senderRef?.focus({ preventScroll: true })">
         Focus (Prevent Scroll)
       </Button>
-      <Button @click="senderRef?.blur()">Blur</Button>
-      <Button @click="senderRef?.clear()">Clear</Button>
+      <Button @click="senderRef?.blur()"> Blur </Button>
+      <Button @click="senderRef?.clear()"> Clear </Button>
     </Flex>
     <Sender ref="senderRef" />
   </Flex>

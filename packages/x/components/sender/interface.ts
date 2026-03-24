@@ -70,10 +70,15 @@ export interface SenderProps {
   placeholder?: string;
 }
 
+export interface SenderFocusOptions extends FocusOptions {
+  cursor?: "start" | "end" | "all";
+}
+
 export interface SenderRef {
   nativeElement: HTMLDivElement;
-  focus: (options?: FocusOptions) => void;
+  focus: (options?: SenderFocusOptions) => void;
   blur: () => void;
   clear: () => void;
   insert: (text: string, position?: InsertPosition) => void;
+  getValue: () => { value: string };
 }

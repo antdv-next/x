@@ -62,13 +62,20 @@ description: A chat input component for sending messages.
 
 ### Sender Ref
 
-| Property      | Description    | Type                                                              |
-| ------------- | -------------- | ----------------------------------------------------------------- |
-| nativeElement | Root container | `HTMLDivElement`                                                  |
-| focus         | Focus input    | `(options?: FocusOptions) => void`                                |
-| blur          | Blur input     | `() => void`                                                      |
-| clear         | Clear content  | `() => void`                                                      |
-| insert        | Insert text    | `(text: string, position?: 'start' \| 'end' \| 'cursor') => void` |
+| Property      | Description                         | Type                                                              |
+| ------------- | ----------------------------------- | ----------------------------------------------------------------- |
+| nativeElement | Root container                      | `HTMLDivElement`                                                  |
+| focus         | Focus input with cursor positioning | `(options?: SenderFocusOptions) => void`                          |
+| blur          | Blur input                          | `() => void`                                                      |
+| clear         | Clear content                       | `() => void`                                                      |
+| insert        | Insert text                         | `(text: string, position?: 'start' \| 'end' \| 'cursor') => void` |
+| getValue      | Get current value                   | `() => { value: string }`                                         |
+
+```typescript
+interface SenderFocusOptions extends FocusOptions {
+  cursor?: "start" | "end" | "all";
+}
+```
 
 ### Sender.Header
 
