@@ -164,6 +164,27 @@ export const componentOverviewItems: ComponentOverviewItem[] = [
       "https://mdn.alipayobjects.com/huamei_7uahnr/afts/img/A*YC4ERpGAddoAAAAAAAAAAAAADrJ8AQ/original",
   },
   {
+    slug: "sender",
+    path: "/components/sender",
+    title: "Sender",
+    subtitle: {
+      "zh-CN": "输入框",
+    },
+    description: {
+      "zh-CN": "用于聊天的输入框组件。",
+      "en-US": "A input component for chat.",
+    },
+    group: {
+      "zh-CN": "表达",
+      "en-US": "Expression",
+    },
+    groupOrder: 2,
+    cover:
+      "https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*OwTOS6wqFIsAAAAAAAAAAAAADgCCAQ/original",
+    coverDark:
+      "https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*cOfrS4fVkOMAAAAAAAAAAAAADgCCAQ/original",
+  },
+  {
     slug: "x-provider",
     path: "/components/x-provider",
     title: "XProvider",
