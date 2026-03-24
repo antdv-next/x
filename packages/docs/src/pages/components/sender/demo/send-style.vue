@@ -9,7 +9,7 @@ const loading = ref(false);
 
 let timer: ReturnType<typeof setTimeout> | undefined;
 
-watch(loading, (val) => {
+watch(loading, val => {
   if (val) {
     timer = setTimeout(() => {
       loading.value = false;
@@ -50,11 +50,7 @@ function renderSend(opts: {
     suffix: (_: any, info: any) => {
       const { SendButton, LoadingButton } = info.components;
       if (!ignoreLoading && loading.value) {
-        return h(
-          Tooltip,
-          { title: "Click to cancel" },
-          () => h(LoadingButton),
-        );
+        return h(Tooltip, { title: "Click to cancel" }, () => h(LoadingButton));
       }
       const node = h(SendButton, { ...btnProps });
       if (!ignoreLoading) {

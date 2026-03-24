@@ -8,11 +8,7 @@ export default defineComponent({
   inheritAttrs: false,
   setup(_, { attrs }) {
     return () => (
-      <ActionButton
-        icon={<ClearOutlined />}
-        {...attrs}
-        action="onClear"
-      />
+      <ActionButton icon={<ClearOutlined />} {...attrs} action="onClear" />
     );
   },
 });

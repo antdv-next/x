@@ -7,6 +7,7 @@ import Actions, {
   ActionsFeedback,
   ActionsItem,
 } from "./actions";
+import Attachments from "./attachments";
 import Bubble, { BubbleDivider, BubbleList, BubbleSystem } from "./bubble";
 import CodeHighlighter from "./code-highlighter";
 import Conversations, { ConversationsCreation } from "./conversations";
@@ -33,6 +34,7 @@ const components = [
   ActionsItem,
   FileCard,
   FileCardList,
+  Attachments,
   Sender,
   SenderHeader,
   SenderSwitch,
@@ -50,6 +52,7 @@ const componentAliases = new Map<string, string[]>([
   ["XActionsItem", ["AActionsItem"]],
   ["XFileCard", ["AFileCard"]],
   ["XFileCardList", ["AFileCardList"]],
+  ["XAttachments", ["AAttachments"]],
   ["XSender", ["ASender"]],
   ["XSenderHeader", ["ASenderHeader"]],
   ["XSenderSwitch", ["ASenderSwitch"]],
@@ -75,6 +78,7 @@ export {
   ActionsCopy,
   ActionsFeedback,
   ActionsItem,
+  Attachments,
   Bubble,
   BubbleDivider,
   BubbleList,
@@ -134,6 +138,7 @@ export type {
 export type { SenderProps, SenderRef } from "./sender";
 export type { XProviderProps } from "./x-provider";
 
+export type { AttachmentsProps, AttachmentsRef } from "./attachments";
 export type {
   UseNotificationType,
   XNotificationOpenArgs,

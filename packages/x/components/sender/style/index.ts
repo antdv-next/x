@@ -24,7 +24,7 @@ export interface SenderToken extends FullToken<"Sender"> {
   SenderContentMaxWidth: number | string;
 }
 
-const genSenderStyle: GenerateStyle<SenderToken> = (token) => {
+const genSenderStyle: GenerateStyle<SenderToken> = token => {
   const {
     antCls,
     componentCls,
@@ -121,15 +121,13 @@ const genSenderStyle: GenerateStyle<SenderToken> = (token) => {
   };
 };
 
-export const prepareComponentToken: GetDefaultToken<"Sender"> = (token) => {
+export const prepareComponentToken: GetDefaultToken<"Sender"> = token => {
   const { colorPrimary, colorFillTertiary } = token;
 
   const colorBorderInput = new FastColor(colorFillTertiary)
     .setA(0.1)
     .toRgbString();
-  const switchCheckedBg = new FastColor(colorPrimary)
-    .setA(0.08)
-    .toRgbString();
+  const switchCheckedBg = new FastColor(colorPrimary).setA(0.08).toRgbString();
   const switchCheckedHoverBg = new FastColor(colorPrimary)
     .setA(0.1)
     .toRgbString();
@@ -153,7 +151,7 @@ export const prepareComponentToken: GetDefaultToken<"Sender"> = (token) => {
 
 export default genStyleHooks<"Sender">(
   "Sender",
-  (token) => {
+  token => {
     const { paddingXS, calc } = token;
     const senderToken = mergeToken<SenderToken>(token, {
       SenderContentMaxWidth: `calc(100% - ${calc(paddingXS).add(32).equal()}px)`,

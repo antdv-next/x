@@ -8,7 +8,7 @@ const loading = ref(false);
 
 let timer: ReturnType<typeof setTimeout> | undefined;
 
-watch(loading, (val) => {
+watch(loading, val => {
   if (val) {
     timer = setTimeout(() => {
       loading.value = false;
@@ -43,7 +43,12 @@ onBeforeUnmount(() => {
         }
       "
     />
-    <Sender value="Force as loading" :loading="true" :read-only="true" :auto-size="true" />
+    <Sender
+      value="Force as loading"
+      :loading="true"
+      :read-only="true"
+      :auto-size="true"
+    />
     <Sender :disabled="true" value="Set to disabled" :allow-speech="true" />
   </Flex>
 </template>

@@ -4,6 +4,7 @@ import type { ComputedRef, CSSProperties, StyleValue } from "vue";
 import { computed, inject } from "vue";
 
 import type { ActionsProps } from "../actions";
+import type { AttachmentsProps } from "../attachments";
 import type { BubbleProps } from "../bubble";
 import type { ConversationsProps } from "../conversations";
 import type { FileCardProps } from "../file-card";
@@ -22,6 +23,7 @@ export interface XComponentConfig extends BaseComponentConfig {
 }
 
 export interface XComponentsConfig {
+  attachments?: Pick<AttachmentsProps, "style" | "styles" | "classes">;
   bubble?: Pick<BubbleProps, "style" | "styles" | "classes">;
   conversations?: Pick<
     ConversationsProps,
