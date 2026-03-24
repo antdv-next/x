@@ -3,14 +3,16 @@ import type { ThoughtChainProps } from "@antdv-next/x";
 
 import { CodeOutlined, EditOutlined } from "@antdv-next/icons";
 import { ThoughtChain } from "@antdv-next/x";
-import { Card, Flex, Typography } from "antdv-next";
-import { h } from "vue";
+import { Button, Card, Flex, Typography } from "antdv-next";
+import { h, ref } from "vue";
+
+const expandedKeys = ref(["create_task"]);
 
 const items: ThoughtChainProps["items"] = [
   {
     key: "create_task",
-    title: "Create Task: Write New Component",
-    description: "Execute files needed for creating new component",
+    title: "Create Task: Develop New Component",
+    description: "Execute files needed for new component creation",
     collapsible: true,
     content: h(Flex, { gap: "small", vertical: true }, () => [
       h(
@@ -35,35 +37,14 @@ const items: ThoughtChainProps["items"] = [
         title: "Creating file",
         description: "component/index.tsx",
       }),
-      h(
-        Typography.Text,
-        { type: "secondary" },
-        () => "Creating Chinese description file for new component",
-      ),
-      h(ThoughtChain.Item, {
-        variant: "solid",
-        icon: h(EditOutlined),
-        title: "Creating file",
-        description: "component/index.zh-CN.md",
-      }),
-      h(
-        Typography.Text,
-        { type: "secondary" },
-        () => "Creating English description file for new component",
-      ),
-      h(ThoughtChain.Item, {
-        variant: "solid",
-        icon: h(EditOutlined),
-        title: "Creating file",
-        description: "component/index.en-US.md",
-      }),
     ]),
     status: "success",
   },
   {
     key: "check_task",
-    title: "Checking Task Execution Steps",
-    description: "Verify overall task execution logic and feasibility",
+    title: "Check Task Execution Steps Completion",
+    collapsible: true,
+    description: "Verify the overall task execution logic and feasibility",
     content: h(Flex, { gap: "small", vertical: true }, () => [
       h(ThoughtChain.Item, {
         variant: "solid",
@@ -77,17 +58,19 @@ const items: ThoughtChainProps["items"] = [
         title: "File created",
         description: "component/index.tsx",
       }),
+    ]),
+    status: "success",
+  },
+  {
+    key: "used_task",
+    title: "Using the New Component",
+    description: "Using the generated component to complete the task",
+    content: h(Flex, { gap: "small", vertical: true }, () => [
       h(ThoughtChain.Item, {
         variant: "solid",
         status: "success",
         title: "File created",
-        description: "component/index.zh-CN.md",
-      }),
-      h(ThoughtChain.Item, {
-        variant: "solid",
-        status: "success",
-        title: "File created",
-        description: "component/index.en-US.md",
+        description: "component",
       }),
     ]),
     status: "loading",
@@ -97,14 +80,20 @@ const items: ThoughtChainProps["items"] = [
 
 <template>
   <Card :style="{ width: '500px' }">
-    <ThoughtChain :default-expanded-keys="['create_task']" :items="items" />
+    <Button
+      :style="{ marginBottom: '16px' }"
+      @click="expandedKeys = ['check_task']"
+    >
+      Open "check_task" details
+    </Button>
+    <ThoughtChain v-model:expanded-keys="expandedKeys" :items="items" />
   </Card>
 </template>
 
 <docs lang="zh-CN">
-配置 `collapsible` 可开启对思维链节点内容区域的折叠功能。
+受控的思维链节点内容区域的折叠功能。
 </docs>
 
 <docs lang="en-US">
-Configure `collapsible` to enable the expand for the content area of thought chain nodes.
+Controlled collapsible function for thought chain node content area.
 </docs>

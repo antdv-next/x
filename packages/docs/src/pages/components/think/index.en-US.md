@@ -1,42 +1,34 @@
 ---
 title: Think
-subtitle: Think
-description: A collapsible panel for displaying AI deep thinking processes.
+description: Show deep thinking process.
 ---
 
 ## When To Use
 
-Use when you need to display AI reasoning or chain-of-thought content.
+Used to show deep thinking process.
 
 ## Examples
 
 <demo src="./demo/basic.vue">Basic</demo>
-<demo src="./demo/status.vue">Status Control</demo>
-<demo src="./demo/expand.vue">Controlled Expand</demo>
+<demo src="./demo/status.vue">Status</demo>
+<demo src="./demo/expand.vue">Expand</demo>
 
 ## API
 
-### Think
+### ThinkProps
 
-| Property               | Description                                                       | Type                                                              | Default               |
-| ---------------------- | ----------------------------------------------------------------- | ----------------------------------------------------------------- | --------------------- |
-| `title`                | Title displayed in the status header                              | `VNodeChild`                                                      | -                     |
-| `icon`                 | Custom icon when not loading                                      | `VNodeChild`                                                      | Built-in sparkle icon |
-| `loading`              | Loading state. `true` shows spinner, VNode shows custom indicator | `VNodeChild`                                                      | `false`               |
-| `expanded` (`v-model`) | Whether content is expanded (controlled)                          | `boolean`                                                         | -                     |
-| `defaultExpanded`      | Initial expanded state (uncontrolled)                             | `boolean`                                                         | `true`                |
-| `blink`                | Enable shimmer animation on title text                            | `boolean`                                                         | `false`               |
-| `prefixCls`            | CSS class prefix                                                  | `string`                                                          | `'antd-think'`        |
-| `rootClass`            | Root CSS class name                                               | `string`                                                          | -                     |
-| `classes`              | Semantic class overrides                                          | `Partial<Record<'root' \| 'status' \| 'content', string>>`        | -                     |
-| `styles`               | Semantic style overrides                                          | `Partial<Record<'root' \| 'status' \| 'content', CSSProperties>>` | -                     |
-
-### Think Events
-
-| Event             | Description                     | Parameters                    |
-| ----------------- | ------------------------------- | ----------------------------- |
-| `expand`          | Fired on expand/collapse        | `(expanded: boolean) => void` |
-| `update:expanded` | Expanded state change (v-model) | `(expanded: boolean) => void` |
+| Property           | Description                  | Type                                                  | Default | Version |
+| ------------------ | ---------------------------- | ----------------------------------------------------- | ------- | ------- |
+| classes            | Semantic DOM class           | [Record\<SemanticDOM, string\>](#semantic-dom)        | -       | -       |
+| styles             | Semantic DOM style           | [Record\<SemanticDOM, CSSProperties\>](#semantic-dom) | -       | -       |
+| default            | Content (default slot)       | `VNodeChild`                                          | -       | -       |
+| title              | Text of status               | `VNodeChild`                                          | -       | -       |
+| icon               | Show icon                    | `VNodeChild`                                          | -       | -       |
+| loading            | Loading                      | `boolean \| VNodeChild`                               | `false` | -       |
+| defaultExpanded    | Default Expand state         | `boolean`                                             | `true`  | -       |
+| expanded (v-model) | Expand state                 | `boolean`                                             | -       | -       |
+| onExpand           | Callback when expand changes | `(expand: boolean) => void`                           | -       | -       |
+| blink              | Blink mode                   | `boolean`                                             | -       | -       |
 
 ### Think Slots
 
@@ -46,23 +38,6 @@ Use when you need to display AI reasoning or chain-of-thought content.
 | `title`   | Custom title (overrides prop) |
 | `icon`    | Custom icon (overrides prop)  |
 
-### Think Ref
-
-| Property        | Description      | Type             |
-| --------------- | ---------------- | ---------------- |
-| `nativeElement` | Root DOM element | `HTMLDivElement` |
-
 ## Semantic DOM
 
-```
-<div class="antd-think">                       <!-- root -->
-  <div class="antd-think-status-wrapper">       <!-- status -->
-    <div class="antd-think-status-icon">...</div>
-    <div class="antd-think-status-text">...</div>
-    <span class="antd-think-status-down-icon">▶</span>
-  </div>
-  <div class="antd-think-content">              <!-- content -->
-    <!-- slot: default -->
-  </div>
-</div>
-```
+<demo src="./demo/semantic.vue" simplify>Think Semantic Structure</demo>

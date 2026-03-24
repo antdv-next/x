@@ -1,101 +1,72 @@
 ---
 title: ThoughtChain
-subtitle: Thought Chain
-description: Visualize and track AI Agent's call chain and tool invocations.
+description: The ThoughtChain component is used to visualize and track the call chain of an Agent to Actions and Tools.
 ---
 
 ## When To Use
 
-Use when you need to visualize and track an AI Agent's reasoning chain.
+- To debug and trace the call chain in a complex Agent System.
+- For use in similar chain-like scenarios.
 
 ## Examples
 
-<demo src="./demo/basic.vue">Basic</demo>
+<demo src="./demo/basic.vue">Basic Usage</demo>
+<demo src="./demo/status.vue">Node Status</demo>
+<demo src="./demo/simple.vue">Simple ThoughtChain</demo>
 <demo src="./demo/collapsible.vue">Collapsible</demo>
-<demo src="./demo/line-style.vue">Line Style</demo>
-<demo src="./demo/item.vue">Item Sub-component</demo>
+<demo src="./demo/controlled-collapsible.vue">Controlled Collapsible</demo>
+<demo src="./demo/customization.vue">Customization</demo>
+<demo src="./demo/nested.vue">Nested Usage</demo>
+<demo src="./demo/single-row.vue">Single Row</demo>
 
 ## API
 
-### ThoughtChain
+### ThoughtChainProps
 
-| Property                   | Description                                 | Type                                           | Default                |
-| -------------------------- | ------------------------------------------- | ---------------------------------------------- | ---------------------- |
-| `items`                    | Collection of thought nodes                 | `ThoughtChainItemType[]`                       | `[]`                   |
-| `expandedKeys` (`v-model`) | Currently expanded node keys (controlled)   | `string[]`                                     | -                      |
-| `defaultExpandedKeys`      | Initially expanded node keys (uncontrolled) | `string[]`                                     | `[]`                   |
-| `line`                     | Connector line style, `false` hides lines   | `boolean \| 'solid' \| 'dashed' \| 'dotted'`   | `'solid'`              |
-| `prefixCls`                | CSS class prefix                            | `string`                                       | `'antd-thought-chain'` |
-| `rootClass`                | Root CSS class name                         | `string`                                       | -                      |
-| `classes`                  | Semantic class overrides                    | `Partial<Record<SemanticType, string>>`        | -                      |
-| `styles`                   | Semantic style overrides                    | `Partial<Record<SemanticType, CSSProperties>>` | -                      |
-
-`SemanticType` = `'root' | 'item' | 'itemHeader' | 'itemIcon' | 'itemContent' | 'itemFooter'`
-
-### ThoughtChain Events
-
-| Event                 | Description                    | Parameters                         |
-| --------------------- | ------------------------------ | ---------------------------------- |
-| `expand`              | Fired on expand/collapse       | `(expandedKeys: string[]) => void` |
-| `update:expandedKeys` | Expanded keys change (v-model) | `(expandedKeys: string[]) => void` |
+| Property               | Description                               | Type                                                                                           | Default   | Version |
+| ---------------------- | ----------------------------------------- | ---------------------------------------------------------------------------------------------- | --------- | ------- |
+| items                  | Collection of thought nodes               | `ThoughtChainItemType[]`                                                                       | -         | -       |
+| defaultExpandedKeys    | Initially expanded nodes                  | `string[]`                                                                                     | -         | -       |
+| expandedKeys (v-model) | Currently expanded nodes                  | `string[]`                                                                                     | -         | -       |
+| onExpand               | Callback for when expanded nodes change   | `(expandedKeys: string[]) => void`                                                             | -         | -       |
+| line                   | Line style, no line is shown when `false` | `boolean \| 'solid' \| 'dashed' \| 'dotted'`                                                   | `'solid'` | -       |
+| classes                | Class names for semantic structure        | `Record<'root'\|'item'\|'itemIcon'\|'itemHeader'\|'itemContent'\|'itemFooter', string>`        | -         | -       |
+| prefixCls              | Custom prefix                             | `string`                                                                                       | -         | -       |
+| styles                 | Styles for semantic structure             | `Record<'root'\|'item'\|'itemIcon'\|'itemHeader'\|'itemContent'\|'itemFooter', CSSProperties>` | -         | -       |
+| rootClass              | Root element class name                   | `string`                                                                                       | -         | -       |
 
 ### ThoughtChainItemType
 
-| Property      | Description                      | Type                                           | Default                |
-| ------------- | -------------------------------- | ---------------------------------------------- | ---------------------- |
-| `key`         | Unique node identifier           | `string`                                       | Auto-generated (index) |
-| `title`       | Node title                       | `VNodeChild`                                   | -                      |
-| `description` | Node description                 | `VNodeChild`                                   | -                      |
-| `content`     | Main content (collapsible)       | `VNodeChild`                                   | -                      |
-| `footer`      | Footer area                      | `VNodeChild`                                   | -                      |
-| `icon`        | Custom icon, `false` hides it    | `false \| VNodeChild`                          | Numbered index         |
-| `status`      | Node status                      | `'loading' \| 'success' \| 'error' \| 'abort'` | -                      |
-| `collapsible` | Whether content can be collapsed | `boolean`                                      | `false`                |
-| `blink`       | Enable blink animation on title  | `boolean`                                      | -                      |
+| Property    | Description                                          | Type                                           | Default     | Version |
+| ----------- | ---------------------------------------------------- | ---------------------------------------------- | ----------- | ------- |
+| content     | Content of the thought node                          | `VNodeChild`                                   | -           | -       |
+| description | Description of the thought node                      | `VNodeChild`                                   | -           | -       |
+| footer      | Footer of the thought node                           | `VNodeChild`                                   | -           | -       |
+| icon        | Icon of the thought node, not displayed when `false` | `false \| VNodeChild`                          | DefaultIcon | -       |
+| key         | Unique identifier for the thought node               | `string`                                       | -           | -       |
+| status      | Status of the thought node                           | `'loading' \| 'success' \| 'error' \| 'abort'` | -           | -       |
+| title       | Title of the thought node                            | `VNodeChild`                                   | -           | -       |
+| collapsible | Whether the thought node is collapsible              | `boolean`                                      | `false`     | -       |
+| blink       | Blink mode                                           | `boolean`                                      | -           | -       |
 
 ### ThoughtChain.Item
 
-Inline chip/badge sub-component for displaying tool calls within ThoughtChain content.
-
-| Property      | Description              | Type                                                                           | Default   |
-| ------------- | ------------------------ | ------------------------------------------------------------------------------ | --------- |
-| `title`       | Title                    | `VNodeChild`                                                                   | -         |
-| `description` | Description text         | `VNodeChild`                                                                   | -         |
-| `icon`        | Custom icon              | `VNodeChild`                                                                   | -         |
-| `status`      | Status indicator         | `'loading' \| 'success' \| 'error' \| 'abort'`                                 | -         |
-| `variant`     | Visual variant           | `'solid' \| 'outlined' \| 'text'`                                              | `'solid'` |
-| `blink`       | Enable blink animation   | `boolean`                                                                      | `false`   |
-| `disabled`    | Disabled state           | `boolean`                                                                      | `false`   |
-| `onClick`     | Click handler            | `(e: MouseEvent) => void`                                                      | -         |
-| `classes`     | Semantic class overrides | `Partial<Record<'root' \| 'icon' \| 'title' \| 'description', string>>`        | -         |
-| `styles`      | Semantic style overrides | `Partial<Record<'root' \| 'icon' \| 'title' \| 'description', CSSProperties>>` | -         |
-
-### ThoughtChain Ref
-
-| Property        | Description      | Type             |
-| --------------- | ---------------- | ---------------- |
-| `nativeElement` | Root DOM element | `HTMLDivElement` |
+| Property    | Description                      | Type                                           | Default | Version |
+| ----------- | -------------------------------- | ---------------------------------------------- | ------- | ------- |
+| prefixCls   | Custom prefix                    | `string`                                       | -       | -       |
+| icon        | Icon of the thought chain        | `VNodeChild`                                   | -       | -       |
+| title       | Title of the thought chain       | `VNodeChild`                                   | -       | -       |
+| description | Description of the thought chain | `VNodeChild`                                   | -       | -       |
+| status      | Status of the thought chain      | `'loading' \| 'success' \| 'error' \| 'abort'` | -       | -       |
+| variant     | Variant configuration            | `'solid' \| 'outlined' \| 'text'`              | -       | -       |
+| blink       | Blink mode                       | `boolean`                                      | -       | -       |
 
 ## Semantic DOM
 
-```
-<div class="antd-thought-chain">                              <!-- root -->
-  <div class="antd-thought-chain-node">                       <!-- item -->
-    <div class="antd-thought-chain-node-icon">                <!-- itemIcon -->
-      <span class="antd-thought-chain-node-index-icon">1</span>
-    </div>
-    <div class="antd-thought-chain-node-box">
-      <div class="antd-thought-chain-node-header">            <!-- itemHeader -->
-        <span class="antd-thought-chain-node-title">...</span>
-        <span class="antd-thought-chain-node-description">...</span>
-      </div>
-      <div class="antd-thought-chain-node-content">           <!-- itemContent -->
-        <div class="antd-thought-chain-node-content-box">...</div>
-      </div>
-      <div class="antd-thought-chain-node-footer">            <!-- itemFooter -->
-        ...
-      </div>
-    </div>
-  </div>
-</div>
-```
+### ThoughtChain
+
+<demo src="./demo/semantic.vue" simplify>ThoughtChain Semantic Structure</demo>
+
+### ThoughtChain.Item
+
+<demo src="./demo/semantic-item.vue" simplify>ThoughtChain.Item Semantic Structure</demo>
