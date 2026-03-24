@@ -4,7 +4,6 @@ group:
   order: 5
 title: 聊天增强
 order: 2
-hidden: true
 ---
 
 将 Markdown / 自定义标签映射为聊天场景增强组件，当前示例聚焦：

@@ -4,7 +4,10 @@ import { h, Fragment, createTextVNode, type Component, type VNode } from "vue";
 import type { RendererOptions, ComponentProps } from "../interface";
 
 import AnimationText from "../components/AnimationText.vue";
-import { detectUnclosedComponentTags } from "./detectUnclosedComponentTags";
+import {
+  detectUnclosedComponentTags,
+  getTagInstanceId,
+} from "./detectUnclosedComponentTags";
 
 const DEFAULT_ANIMATION_DURATION = 200;
 const NON_WHITESPACE_REGEX = /[^\r\n\s]+/;
@@ -70,11 +73,11 @@ export class VueRenderer {
   }
 
   render(html: string): VNode {
-    const sanitized = this.sanitize(html);
     const unclosedTags = detectUnclosedComponentTags(
-      sanitized,
+      html,
       Object.keys(this.options.components),
     );
+    const sanitized = this.sanitize(html);
     const nodes = this.parseToVNodes(sanitized, unclosedTags);
     if (nodes.length === 0) {
       return h("span", "");
@@ -155,10 +158,11 @@ export class VueRenderer {
     const template = `<div>${html}</div>`;
     const container = document.createElement("div");
     container.innerHTML = template;
+    const cidRef = { tagIndexes: {} as Record<string, number> };
 
     const nodes: VNode[] = [];
     Array.from(container.childNodes).forEach(node => {
-      const vnode = this.convertNode(node as Element, unclosedTags);
+      const vnode = this.convertNode(node, unclosedTags, cidRef);
       if (vnode) {
         nodes.push(vnode);
       }
@@ -167,7 +171,11 @@ export class VueRenderer {
     return nodes;
   }
 
-  private convertNode(domNode: Node, unclosedTags: Set<string>): VNode | null {
+  private convertNode(
+    domNode: Node,
+    unclosedTags: Set<string>,
+    cidRef: { tagIndexes: Record<string, number> },
+  ): VNode | null {
     if (domNode.nodeType === Node.TEXT_NODE) {
       const text = domNode.textContent || "";
       const parentTagName =
@@ -201,11 +209,12 @@ export class VueRenderer {
         element,
         tagName,
         unclosedTags,
+        cidRef,
       );
 
       const children: VNode[] = [];
       Array.from(element.childNodes).forEach(child => {
-        const childVNode = this.convertNode(child, unclosedTags);
+        const childVNode = this.convertNode(child, unclosedTags, cidRef);
         if (childVNode) {
           children.push(childVNode);
         }
@@ -224,13 +233,14 @@ export class VueRenderer {
       return h("span", { class: "xmd-tail" }, "▋");
     }
 
-    return this.convertNativeElement(element, tagName, unclosedTags);
+    return this.convertNativeElement(element, tagName, unclosedTags, cidRef);
   }
 
   private convertNativeElement(
     element: Element,
     tagName: string,
     unclosedTags: Set<string>,
+    cidRef: { tagIndexes: Record<string, number> },
   ): VNode {
     const children: VNode[] = [];
     const props: Record<string, unknown> = {};
@@ -240,7 +250,7 @@ export class VueRenderer {
     });
 
     Array.from(element.childNodes).forEach(child => {
-      const childVNode = this.convertNode(child, unclosedTags);
+      const childVNode = this.convertNode(child, unclosedTags, cidRef);
       if (childVNode) {
         children.push(childVNode);
       }
@@ -253,13 +263,13 @@ export class VueRenderer {
     element: Element,
     tagName: string,
     unclosedTags: Set<string>,
+    cidRef: { tagIndexes: Record<string, number> },
   ): ComponentProps {
     const props: ComponentProps = {};
 
-    const instanceId = Array.from(unclosedTags).find(tag =>
-      tag.startsWith(tagName),
-    );
-    props.streamStatus = instanceId ? "loading" : "done";
+    cidRef.tagIndexes[tagName] = (cidRef.tagIndexes[tagName] ?? 0) + 1;
+    const instanceId = getTagInstanceId(tagName, cidRef.tagIndexes[tagName]);
+    props.streamStatus = unclosedTags.has(instanceId) ? "loading" : "done";
 
     Array.from(element.attributes).forEach(attr => {
       props[attr.name] = attr.value;

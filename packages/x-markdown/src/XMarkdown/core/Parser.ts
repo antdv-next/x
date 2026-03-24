@@ -1,4 +1,3 @@
-import DOMPurify from "dompurify";
 import { Marked } from "marked";
 
 import type { MarkedConfig, ParserOptions } from "../interface";
@@ -115,37 +114,16 @@ export class Parser {
     }
 
     const html = this.markedParse(processed);
-    const sanitized = this.sanitize(html);
 
     if (this.injectTail) {
-      return this.injectTailMarker(sanitized);
+      return this.injectTailMarker(html);
     }
 
-    return sanitized;
+    return html;
   }
 
   private markedParse(markdown: string): string {
     return this.markdownInstance.parse(markdown) as string;
-  }
-
-  private sanitize(html: string): string {
-    const customTags = Object.keys(this.options.components);
-
-    return DOMPurify.sanitize(html, {
-      ADD_ATTR: [
-        "target",
-        "data-lang",
-        "data-block",
-        "data-state",
-        "data-raw",
-        "data-icon",
-        "data-description",
-        "icon",
-        "description",
-        "rel",
-      ],
-      ADD_TAGS: ["xmd-tail", ...customTags],
-    });
   }
 
   private protectCustomTags(markdown: string): string {

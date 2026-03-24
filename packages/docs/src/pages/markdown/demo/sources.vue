@@ -14,8 +14,6 @@ import {
   type VNode,
 } from "vue";
 
-import { useDarkMode } from "@/composables/use-dark-mode";
-
 const text = `Ant Financial has a large number of enterprise-level products.<sup>1</sup> With complex scenarios, designers and developers often need to respond fast due to frequent changes in product demands and concurrent R & D workflow.<sup>2</sup> Many similar contents exist in the process. Through abstraction, we could obtain some stable and highly reusable components and pages.<sup>3</sup>`;
 
 function extractText(nodes: VNode[]): string {
@@ -33,36 +31,34 @@ const items: SourcesProps["items"] = [
   {
     title: "1. Data source",
     key: 1,
-    url: "https://x.antdv-next.com/components/overview",
+    url: "https://x.ant.design/components/overview",
     description:
       "Artificial Intelligence, often abbreviated as AI, is a broad branch of computer science concerned with building smart machines capable of performing tasks that typically require human intelligence.",
   },
   {
     title: "2. Data source",
     key: 2,
-    url: "https://x.antdv-next.com/components/overview",
+    url: "https://x.ant.design/components/overview",
   },
   {
     title: "3. Data source",
     key: 3,
-    url: "https://x.antdv-next.com/components/overview",
+    url: "https://x.ant.design/components/overview",
   },
 ];
 
 const SupComponent = defineComponent({
-  name: "SourcesSup",
+  name: "SupComponent",
   setup(_, { slots }) {
+    const title = computed(() => extractText(slots.default?.() ?? []));
     const activeKey = computed(() => {
-      const value = Number(extractText(slots.default?.() ?? []));
-      return Number.isFinite(value) ? value : 0;
+      return Number.parseInt(`${title.value || "0"}`, 10);
     });
-
-    const title = computed(() => String(activeKey.value || ""));
 
     return () =>
       h(Sources, {
         activeKey: activeKey.value,
-        title: title.value,
+        title: title.value || 0,
         items,
         inline: true,
       });
@@ -72,11 +68,6 @@ const SupComponent = defineComponent({
 const components = {
   sup: SupComponent,
 };
-
-const { isDark } = useDarkMode();
-const markdownClass = computed(() =>
-  isDark.value ? "x-markdown-dark" : "x-markdown-light",
-);
 
 const index = ref(0);
 const contentRef = ref<HTMLElement | null>(null);
@@ -126,6 +117,9 @@ const renderMarkdown = (content: string) =>
     content,
     components,
     paragraphTag: "div",
+    streaming: {
+      hasNextChunk: index.value < text.length,
+    },
   });
 
 const rerender = () => {
@@ -138,8 +132,7 @@ const rerender = () => {
   <Flex
     vertical
     :gap="8"
-    style="height: 260px; overflow: auto"
-    :class="markdownClass"
+    style="height: 240px; overflow: auto"
     ref="contentRef"
   >
     <Flex justify="flex-end">
