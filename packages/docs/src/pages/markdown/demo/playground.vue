@@ -17,6 +17,8 @@ import {
   theme,
 } from "antdv-next";
 import { computed, defineComponent, h, onUnmounted, ref, watch } from "vue";
+import "@antdv-next/x-markdown/themes/light.css";
+import "@antdv-next/x-markdown/themes/dark.css";
 
 const { Text } = Typography;
 const { TextArea } = Input;
