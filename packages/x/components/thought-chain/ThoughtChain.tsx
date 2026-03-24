@@ -154,6 +154,7 @@ export const XThoughtChain = defineComponent({
           {...domAttrs.value}
           class={[
             prefixCls.value,
+            `${prefixCls.value}-box`,
             contextConfig.value.classes?.root,
             props.rootClass,
             props.classes?.root,

@@ -113,21 +113,23 @@ export const XThoughtChainItem = defineComponent({
         >
           {/* Icon */}
           {(props.icon || props.status) && (
-            <span
-              class={[`${cls}-icon`, props.classes?.icon]}
+            <Status
               style={props.styles?.icon}
-            >
-              {props.status ? (
-                <Status status={props.status} prefixCls={props.prefixCls} />
-              ) : (
-                props.icon
-              )}
-            </span>
+              class={props.classes?.icon}
+              prefixCls={props.prefixCls}
+              icon={props.icon}
+              status={props.status}
+            />
           )}
 
           {/* Content */}
           {(props.title || props.description) && (
-            <div class={`${cls}-content`}>
+            <div
+              class={[
+                `${cls}-content`,
+                { [`${props.prefixCls}-motion-blink`]: props.blink },
+              ]}
+            >
               {props.title && (
                 <div
                   class={[
@@ -135,7 +137,6 @@ export const XThoughtChainItem = defineComponent({
                     props.classes?.title,
                     {
                       [`${cls}-title-with-description`]: !!props.description,
-                      [`${props.prefixCls}-motion-blink`]: props.blink,
                     },
                   ]}
                   style={props.styles?.title}

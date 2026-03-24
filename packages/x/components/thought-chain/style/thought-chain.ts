@@ -5,194 +5,161 @@ import type { FullToken, GenerateStyle } from "../../theme/interface";
 export interface ThoughtChainToken extends FullToken<"ThoughtChain"> {}
 
 const genThoughtChainStyle: GenerateStyle<ThoughtChainToken> = token => {
-  const {
-    componentCls,
-    paddingXS,
-    marginXS,
-    fontSize,
-    fontSizeSM,
-    fontSizeHeading5,
-    lineHeight,
-    colorTextSecondary,
-    colorTextDescription,
-    colorBorder,
-    colorPrimary,
-    colorSuccess,
-    colorError,
-    colorTextQuaternary,
-    colorFillTertiary,
-    motionDurationMid,
-    motionEaseInOut,
-  } = token;
-
-  const nodeCls = `${componentCls}-node`;
+  const { componentCls, calc } = token;
+  const iconSize = (token as any).iconSize ?? token.fontSize;
 
   return {
     [componentCls]: {
-      display: "flex",
-      flexDirection: "column",
+      // Root box
+      [`&${componentCls}-box`]: {
+        display: "flex",
+        flexDirection: "column",
+
+        // Last node: hide connector line
+        [`& ${componentCls}-node:last-of-type`]: {
+          [`> ${componentCls}-node-icon`]: {
+            "&:after": {
+              display: "none",
+            },
+          },
+        },
+      },
+
+      // Node
+      [`${componentCls}-node`]: {
+        position: "relative",
+        display: "flex",
+        alignItems: "baseline",
+        gap: token.marginSM,
+
+        // Status colors inside node
+        [`${componentCls}-status-error`]: {
+          color: token.colorError,
+        },
+        [`${componentCls}-status-success`]: {
+          color: token.colorSuccess,
+        },
+        [`${componentCls}-status-loading`]: {
+          color: token.colorPrimary,
+        },
+      },
+
+      // Header (column layout: title above description)
+      [`${componentCls}-node-header`]: {
+        display: "flex",
+        flexDirection: "column",
+      },
+
+      // Title
+      [`${componentCls}-node-title`]: {
+        fontWeight: 500,
+        display: "flex",
+        gap: token.marginXS,
+      },
+
+      // Collapsible title
+      [`${componentCls}-node-collapsible`]: {
+        paddingInlineEnd: token.padding,
+        cursor: "pointer",
+      },
+
+      // Footer
+      [`${componentCls}-node-footer`]: {
+        marginBottom: token.margin,
+      },
+
+      // Content box
+      [`${componentCls}-node-content-box`]: {
+        marginBottom: token.margin,
+      },
+
+      // Collapse icon
+      [`${componentCls}-node-collapse-icon`]: {
+        "& svg": {
+          transition: `transform ${token.motionDurationMid} ${token.motionEaseInOut}`,
+        },
+      },
+
+      // Description
+      [`${componentCls}-node-description`]: {
+        color: token.colorTextDescription,
+        fontSize: token.fontSize,
+        lineHeight: token.lineHeight,
+        marginBlockEnd: token.margin,
+      },
+
+      // Icon container with connector line
+      [`${componentCls}-node-icon`]: {
+        lineHeight: 1,
+        fontSize: iconSize,
+
+        "&:after": {
+          content: '""',
+          position: "absolute",
+          height: unit(
+            calc("100%").sub(calc(iconSize).mul(token.lineHeight)).equal(),
+          ),
+          borderInlineStart: `${unit(token.lineWidth)} solid ${token.colorFillContent}`,
+          insetInlineStart: unit(calc(iconSize).sub(1).div(2).equal()),
+          top: unit(calc(iconSize).mul(token.lineHeight).equal()),
+        },
+      },
+
+      // Dashed line
+      [`${componentCls}-node-icon-dashed`]: {
+        "&:after": {
+          borderInlineStart: `${unit(token.lineWidth)} dashed ${token.colorFillContent}`,
+        },
+      },
+
+      // Dotted line
+      [`${componentCls}-node-icon-dotted`]: {
+        "&:after": {
+          borderInlineStart: `${unit(token.lineWidth)} dotted ${token.colorFillContent}`,
+        },
+      },
+
+      // Default index icon (numbered circle)
+      [`${componentCls}-node-index-icon`]: {
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        lineHeight: 1,
+        color: token.colorTextSecondary,
+        fontSize: token.fontSizeSM,
+        width: iconSize,
+        height: iconSize,
+        backgroundColor: token.colorFillContent,
+        borderRadius: unit(calc(iconSize).div(2).equal()),
+      },
+
+      // Status
+      [`${componentCls}-status`]: {
+        display: "inline-flex",
+        alignItems: "center",
+        fontSize: iconSize,
+      },
+
+      [`${componentCls}-status-abort`]: {
+        color: token.colorTextQuaternary,
+      },
 
       // Collapse transition
       [`${componentCls}-collapse-enter-active, ${componentCls}-collapse-leave-active`]:
         {
-          transition: `height ${motionDurationMid} ${motionEaseInOut}, opacity ${motionDurationMid} ${motionEaseInOut}`,
+          transition: `height ${token.motionDurationMid} ${token.motionEaseInOut}, opacity ${token.motionDurationMid} ${token.motionEaseInOut}`,
           overflow: "hidden",
         },
-
-      // Node
-      [nodeCls]: {
-        display: "flex",
-        position: "relative",
-
-        // Icon column
-        [`${nodeCls}-icon`]: {
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          flexShrink: 0,
-          width: unit(fontSizeHeading5 + paddingXS * 2),
-          height: unit(fontSizeHeading5 + paddingXS * 2),
-          fontSize: fontSizeHeading5,
-          position: "relative",
-
-          // Connector line via ::after
-          "&::after": {
-            content: '""',
-            position: "absolute",
-            top: "100%",
-            insetInlineStart: "50%",
-            transform: "translateX(-50%)",
-            width: 2,
-            bottom: unit(
-              token
-                .calc(fontSizeHeading5 + paddingXS * 2)
-                .mul(-1)
-                .equal(),
-            ),
-            backgroundColor: colorBorder,
-          },
-
-          [`&${nodeCls}-icon-dashed::after`]: {
-            backgroundColor: "transparent",
-            borderInlineStart: `2px dashed ${colorBorder}`,
-          },
-
-          [`&${nodeCls}-icon-dotted::after`]: {
-            backgroundColor: "transparent",
-            borderInlineStart: `2px dotted ${colorBorder}`,
-          },
-
-          [`&${nodeCls}-icon-none::after`]: {
-            display: "none",
-          },
-        },
-
-        // Default index icon (numbered circle)
-        [`${nodeCls}-index-icon`]: {
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-          width: unit(fontSizeHeading5 + paddingXS),
-          height: unit(fontSizeHeading5 + paddingXS),
-          borderRadius: "50%",
-          backgroundColor: colorFillTertiary,
-          color: colorTextSecondary,
-          fontSize: fontSizeSM,
-          fontWeight: 500,
-        },
-
-        // Box (header + content + footer)
-        [`${nodeCls}-box`]: {
-          flex: 1,
-          minWidth: 0,
-          paddingInlineStart: paddingXS,
-          paddingTop: paddingXS,
-        },
-
-        // Header
-        [`${nodeCls}-header`]: {
-          display: "flex",
-          flexDirection: "column",
-        },
-
-        [`${nodeCls}-title`]: {
-          display: "flex",
-          alignItems: "center",
-          gap: marginXS,
-          fontSize,
-          lineHeight,
-          fontWeight: 500,
-        },
-
-        [`${nodeCls}-collapsible`]: {
-          paddingInlineEnd: token.padding,
-          cursor: "pointer",
-          userSelect: "none",
-        },
-
-        [`${nodeCls}-collapse-icon`]: {
-          display: "inline-flex",
-          marginInlineStart: paddingXS / 2,
-          fontSize: fontSizeSM,
-          transition: `transform ${motionDurationMid} ${motionEaseInOut}`,
-        },
-
-        [`${nodeCls}-description`]: {
-          fontSize,
-          lineHeight,
-          color: colorTextDescription,
-          marginBlockEnd: token.margin,
-        },
-
-        // Content
-        [`${nodeCls}-content`]: {
-          marginTop: marginXS,
-        },
-
-        [`${nodeCls}-content-box`]: {
-          fontSize,
-          color: colorTextDescription,
-        },
-
-        // Footer
-        [`${nodeCls}-footer`]: {
-          marginTop: marginXS,
-        },
-
-        // Last node: hide connector line
-        "&:last-child": {
-          [`${nodeCls}-icon::after`]: {
-            display: "none",
-          },
-        },
-      },
-
-      // Status colors
-      [`${componentCls}-status`]: {
-        display: "inline-flex",
-        alignItems: "center",
-        fontSize: fontSizeHeading5,
-      },
-
-      [`${componentCls}-status-loading`]: {
-        color: colorPrimary,
-      },
-
-      [`${componentCls}-status-success`]: {
-        color: colorSuccess,
-      },
-
-      [`${componentCls}-status-error`]: {
-        color: colorError,
-      },
-
-      [`${componentCls}-status-abort`]: {
-        color: colorTextQuaternary,
-      },
 
       // RTL
       [`&${componentCls}-rtl`]: {
         direction: "rtl",
+        [`${componentCls}-node-icon`]: {
+          "&:after": {
+            insetInlineStart: "unset",
+            insetInlineEnd: unit(calc(iconSize).sub(1).div(2).equal()),
+          },
+        },
       },
     },
   };

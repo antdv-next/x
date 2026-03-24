@@ -67,28 +67,26 @@ export default defineComponent({
 
       if (item.icon === false) return null;
 
-      const iconContent = item.icon ?? (
+      const defaultIcon = (
         <span class={`${nodePrefixCls.value}-index-icon`}>{index + 1}</span>
       );
 
       return (
-        <div
+        <Status
           class={[
             `${nodePrefixCls.value}-icon`,
             props.classes?.itemIcon,
             {
               [`${nodePrefixCls.value}-icon-${resolvedLineStyle.value}`]:
+                typeof props.lineStyle !== "boolean" &&
                 resolvedLineStyle.value !== "none",
             },
           ]}
           style={props.styles?.itemIcon}
-        >
-          {item.status ? (
-            <Status status={item.status} prefixCls={props.prefixCls} />
-          ) : (
-            iconContent
-          )}
-        </div>
+          prefixCls={props.prefixCls}
+          icon={item.icon ?? defaultIcon}
+          status={item.status}
+        />
       );
     };
 

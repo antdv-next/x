@@ -1,4 +1,4 @@
-import type { VNodeChild } from "vue";
+import type { CSSProperties, PropType, VNodeChild } from "vue";
 
 import {
   CheckCircleOutlined,
@@ -21,27 +21,47 @@ export default defineComponent({
   name: "ThoughtChainStatus",
   props: {
     status: {
-      type: String as () => ThoughtChainItemStatus | undefined,
+      type: String as PropType<ThoughtChainItemStatus | undefined>,
+      default: undefined,
+    },
+    icon: {
+      type: [String, Object, Array] as PropType<VNodeChild>,
       default: undefined,
     },
     prefixCls: {
       type: String,
       required: true,
     },
+    class: {
+      type: [String, Array, Object] as PropType<any>,
+      default: undefined,
+    },
+    style: {
+      type: [String, Object, Array] as PropType<CSSProperties>,
+      default: undefined,
+    },
   },
   setup(props) {
     return () => {
-      if (!props.status) return null;
+      const iconNode = props.status
+        ? STATUS_ICON_MAP[props.status]
+        : props.icon;
+
+      if (!iconNode) return null;
+
+      const statusCls = `${props.prefixCls}-status`;
 
       return (
-        <span
+        <div
           class={[
-            `${props.prefixCls}-status`,
-            `${props.prefixCls}-status-${props.status}`,
+            statusCls,
+            props.class,
+            { [`${statusCls}-${props.status}`]: props.status },
           ]}
+          style={props.style}
         >
-          {STATUS_ICON_MAP[props.status]}
-        </span>
+          {iconNode}
+        </div>
       );
     };
   },
