@@ -206,6 +206,49 @@ export const componentOverviewItems: ComponentOverviewItem[] = [
       "https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*cOfrS4fVkOMAAAAAAAAAAAAADgCCAQ/original",
   },
   {
+    slug: "think",
+    path: "/components/think",
+    title: "Think",
+    subtitle: {
+      "zh-CN": "思考",
+    },
+    description: {
+      "zh-CN": "用于展示 AI 深度思考过程的可折叠面板。",
+      "en-US": "A collapsible panel for displaying AI deep thinking processes.",
+    },
+    group: {
+      "zh-CN": "反馈",
+      "en-US": "Feedback",
+    },
+    groupOrder: 4,
+    cover:
+      "https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*rHIYQIL1X-QAAAAAAAAAAAAADgCCAQ/original",
+    coverDark:
+      "https://mdn.alipayobjects.com/huamei_lkxviz/afts/img/OMCvQZVW3eUAAAAAQCAAAAgADtFMAQFr/original",
+  },
+  {
+    slug: "thought-chain",
+    path: "/components/thought-chain",
+    title: "ThoughtChain",
+    subtitle: {
+      "zh-CN": "思维链",
+    },
+    description: {
+      "zh-CN": "用于展示 AI Agent 的思维链路和工具调用过程。",
+      "en-US":
+        "Visualize and track AI Agent's call chain and tool invocations.",
+    },
+    group: {
+      "zh-CN": "反馈",
+      "en-US": "Feedback",
+    },
+    groupOrder: 4,
+    cover:
+      "https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*GaspS5T6proAAAAAAAAAAAAADgCCAQ/original",
+    coverDark:
+      "https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*siL-Qpl794sAAAAAAAAAAAAADgCCAQ/original",
+  },
+  {
     slug: "x-provider",
     path: "/components/x-provider",
     title: "XProvider",
