@@ -161,6 +161,7 @@ interface ParsedPageMeta {
   order?: number;
   groupTitle?: string;
   groupOrder?: number;
+  hidden?: boolean;
 }
 
 const markdownRawPages = import.meta.glob("../../pages/markdown/**/*.md", {
@@ -184,6 +185,17 @@ function toOptionalText(value?: string) {
   return value.trim().replace(/^['"]|['"]$/g, "");
 }
 
+function toOptionalBoolean(value?: string) {
+  if (!value) return undefined;
+  const normalized = value
+    .trim()
+    .replace(/^['"]|['"]$/g, "")
+    .toLowerCase();
+  if (normalized === "true") return true;
+  if (normalized === "false") return false;
+  return undefined;
+}
+
 function parseFrontmatterMeta(markdown: string): ParsedPageMeta {
   const frontmatterMatch = markdown.match(/^---\n([\s\S]*?)\n---/);
   if (!frontmatterMatch) return {};
@@ -191,6 +203,7 @@ function parseFrontmatterMeta(markdown: string): ParsedPageMeta {
   const frontmatter = frontmatterMatch[1];
   const title = toOptionalText(frontmatter.match(/^title:\s*(.+)$/m)?.[1]);
   const order = toOptionalNumber(frontmatter.match(/^order:\s*(.+)$/m)?.[1]);
+  const hidden = toOptionalBoolean(frontmatter.match(/^hidden:\s*(.+)$/m)?.[1]);
 
   const groupBlock = frontmatter.match(/^group:\s*\n((?:[ \t].*\n?)*)/m)?.[1];
   const groupTitle = toOptionalText(
@@ -205,6 +218,7 @@ function parseFrontmatterMeta(markdown: string): ParsedPageMeta {
     order,
     groupTitle,
     groupOrder,
+    hidden,
   };
 }
 
@@ -270,6 +284,7 @@ const siderItems = computed<SiderItem[]>(() => {
       pathWithoutLocale: withoutLocale,
       slug: lastSegment,
       isSectionIndex,
+      hidden: pageMeta?.hidden ?? false,
       order: pageMeta?.order ?? Number.MAX_SAFE_INTEGER,
       groupTitle: pageMeta?.groupTitle,
       groupOrder: pageMeta?.groupOrder ?? Number.MAX_SAFE_INTEGER,
@@ -281,7 +296,7 @@ const siderItems = computed<SiderItem[]>(() => {
 
   if (section === "/markdown") {
     const ungrouped = baseItems
-      .filter(item => !item.groupTitle)
+      .filter(item => !item.hidden && !item.groupTitle)
       .sort((left, right) => {
         if (left.order !== right.order) return left.order - right.order;
         return left.label.localeCompare(right.label);
@@ -299,7 +314,7 @@ const siderItems = computed<SiderItem[]>(() => {
     >();
 
     baseItems
-      .filter(item => item.groupTitle)
+      .filter(item => !item.hidden && item.groupTitle)
       .forEach(item => {
         const groupLabel = item.groupTitle!;
         const groupOrder = item.groupOrder;

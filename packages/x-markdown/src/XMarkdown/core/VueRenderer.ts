@@ -8,6 +8,51 @@ import { detectUnclosedComponentTags } from "./detectUnclosedComponentTags";
 
 const DEFAULT_ANIMATION_DURATION = 200;
 const NON_WHITESPACE_REGEX = /[^\r\n\s]+/;
+const MATHML_TAGS = [
+  "math",
+  "maction",
+  "maligngroup",
+  "malignmark",
+  "menclose",
+  "merror",
+  "mfenced",
+  "mfrac",
+  "mglyph",
+  "mi",
+  "mlabeledtr",
+  "mlongdiv",
+  "mmultiscripts",
+  "mn",
+  "mo",
+  "mover",
+  "mpadded",
+  "mphantom",
+  "mprescripts",
+  "mroot",
+  "mrow",
+  "ms",
+  "mscarries",
+  "mscarry",
+  "msgroup",
+  "msline",
+  "mspace",
+  "msqrt",
+  "msrow",
+  "mstack",
+  "mstyle",
+  "msub",
+  "msup",
+  "msubsup",
+  "mtable",
+  "mtd",
+  "mtext",
+  "mtr",
+  "munder",
+  "munderover",
+  "semantics",
+  "annotation",
+  "annotation-xml",
+] as const;
 
 export class VueRenderer {
   private options: Required<RendererOptions>;
@@ -74,15 +119,24 @@ export class VueRenderer {
         "td",
         "hr",
         "xmd-tail",
+        ...MATHML_TAGS,
       ]),
     ];
 
     return DOMPurify.sanitize(html, {
       ALLOWED_TAGS: allowedTags,
       ALLOWED_ATTR: [
+        "class",
+        "style",
+        "aria-hidden",
+        "aria-label",
+        "role",
+        "xmlns",
+        "encoding",
         "href",
         "src",
         "title",
+        "alt",
         "target",
         "rel",
         "data-lang",
@@ -93,7 +147,6 @@ export class VueRenderer {
         "data-description",
         "icon",
         "description",
-        "class",
       ],
     });
   }
@@ -182,28 +235,9 @@ export class VueRenderer {
     const children: VNode[] = [];
     const props: Record<string, unknown> = {};
 
-    if (tagName === "a") {
-      const href = element.getAttribute("href");
-      const target = element.getAttribute("target");
-      const rel = element.getAttribute("rel");
-      if (href) props.href = href;
-      if (target) props.target = target;
-      if (rel) props.rel = rel;
-    } else if (tagName === "img") {
-      const src = element.getAttribute("src");
-      const alt = element.getAttribute("alt");
-      const title = element.getAttribute("title");
-      if (src) props.src = src;
-      if (alt) props.alt = alt;
-      if (title) props.title = title;
-    } else if (tagName === "code") {
-      const block = element.getAttribute("data-block");
-      const lang = element.getAttribute("data-lang");
-      const state = element.getAttribute("data-state");
-      if (block) props.block = block === "true";
-      if (lang) props.lang = lang;
-      if (state) props.streamStatus = state;
-    }
+    Array.from(element.attributes).forEach(attr => {
+      props[attr.name] = attr.value;
+    });
 
     Array.from(element.childNodes).forEach(child => {
       const childVNode = this.convertNode(child, unclosedTags);

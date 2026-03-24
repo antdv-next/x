@@ -1,3 +1,4 @@
+import type { TokenizerAndRendererExtension } from "marked";
 import type { Component } from "vue";
 
 export enum StreamCacheTokenType {
@@ -48,6 +49,7 @@ export interface XMarkdownProps {
 export interface MarkedConfig {
   breaks?: boolean;
   gfm?: boolean;
+  extensions?: TokenizerAndRendererExtension[] | null;
 }
 
 export interface ComponentProps {

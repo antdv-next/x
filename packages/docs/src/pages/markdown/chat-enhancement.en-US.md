@@ -4,6 +4,7 @@ group:
   order: 5
 title: Chat Enhancement
 order: 2
+hidden: true
 ---
 
 Map Markdown or custom tags to chat-oriented components. The current demos focus on:

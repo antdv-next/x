@@ -8,14 +8,15 @@ order: 2
 
 ## When to Use
 
-Use this when you need to render formula content or formula placeholders in Markdown.
+When you need to render formulas in Markdown.
 
 ## Code Demo
 
 <demo src="./demo/latex-basic.vue">Latex Basic Demo</demo>
 
-## Recommended Workflow
+## API
 
-1. Convert formula syntax (for example `$...$` or `$$...$$`) into custom tags in a preprocess step.
-2. Map those tags to your formula component in `components` (KaTeX/MathJax, etc.).
-3. In streaming mode, prefer recalculating formulas after `streamStatus === 'done'`.
+| Property          | Description                                                                                                                    | Type                                             | Default                |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------ | ---------------------- |
+| replaceAlignStart | Whether to replace align* with aligned in formulas, [katex doesn't support align*](https://github.com/KaTeX/KaTeX/issues/1007) | `boolean`                                        | `true`                 |
+| katexOptions      | Katex configuration                                                                                                            | [`KatexOptions`](https://katex.org/docs/options) | `{ output: 'mathml' }` |

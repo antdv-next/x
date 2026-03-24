@@ -16,5 +16,3 @@ order: 4
 ## 相关
 
 - [总览](/markdown/components)
-- [聊天增强](/markdown/chat-enhancement)
-- [数据展示](/markdown/data-display)

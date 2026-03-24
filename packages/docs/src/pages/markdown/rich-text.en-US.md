@@ -16,5 +16,3 @@ Map Markdown to rich-text components. The current demo focuses on:
 ## See also
 
 - [Overview](/markdown/components-en)
-- [Chat Enhancement](/markdown/chat-enhancement-en)
-- [Data Display](/markdown/data-display-en)

@@ -13,6 +13,10 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
+    "./plugins/Latex": {
+      "types": "./dist/plugins/Latex/index.d.ts",
+      "import": "./dist/plugins/Latex/index.js"
+    },
     "./themes/light.css": "./src/themes/light.css",
     "./themes/dark.css": "./src/themes/dark.css",
     "./package.json": "./package.json"
@@ -26,6 +30,7 @@
   },
   "dependencies": {
     "dompurify": "^3.1.0",
+    "katex": "^0.16.25",
     "marked": "^12.0.0"
   },
   "devDependencies": {

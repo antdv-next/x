@@ -446,6 +446,9 @@ importers:
       dompurify:
         specifier: ^3.1.0
         version: 3.3.3
+      katex:
+        specifier: ^0.16.25
+        version: 0.16.40
       marked:
         specifier: ^12.0.0
         version: 12.0.2
@@ -2459,6 +2462,10 @@ packages:
     resolution: {integrity: sha512-y4Mg2tXshplEbSGzx7amzPwKKOCGuoSRP/CjEdwwk0FOGlUbq6lKuoyDZTNZkmxHdJtp54hdfY/JUrdL7Xfdug==}
     engines: {node: '>=14'}
 
+  commander@8.3.0:
+    resolution: {integrity: sha512-OkTL9umf+He2DZkUq8f8J9of7yL6RJKI24dVITBmNfZBmri9zYZQrKkuXiKhyfPSu8tUhnVBB1iKXevvnlR4Ww==}
+    engines: {node: '>= 12'}
+
   compare-versions@6.1.1:
     resolution: {integrity: sha512-4hm4VPpIecmlg59CHXnRDnqGplJFrbLG4aFEl5vl6cK1u76ws3LLvX7ikFnTDl5vo39sjWD6AaDPYodJp/NNHg==}
 
@@ -2811,6 +2818,10 @@ packages:
   json5@2.2.3:
     resolution: {integrity: sha512-XmOWe7eyHYH14cLdVPoyg+GOH3rYX++KpzrylJwSW98t3Nk+U8XOl8FWKOgwtzdb8lXGf6zYwDUzeHMWfxasyg==}
     engines: {node: '>=6'}
+    hasBin: true
+
+  katex@0.16.40:
+    resolution: {integrity: sha512-1DJcK/L05k1Y9Gf7wMcyuqFOL6BiY3vY0CFcAM/LPRN04NALxcl6u7lOWNsp3f/bCHWxigzQl6FbR95XJ4R84Q==}
     hasBin: true
 
   kind-of@6.0.3:
@@ -5563,6 +5574,8 @@ snapshots:
 
   commander@10.0.1: {}
 
+  commander@8.3.0: {}
+
   compare-versions@6.1.1: {}
 
   compute-scroll-into-view@3.1.1: {}
@@ -5919,6 +5932,10 @@ snapshots:
   json-parse-even-better-errors@4.0.0: {}
 
   json5@2.2.3: {}
+
+  katex@0.16.40:
+    dependencies:
+      commander: 8.3.0
 
   kind-of@6.0.3: {}
 
