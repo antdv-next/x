@@ -1,3 +1,5 @@
+@import "../../../../../x-markdown/src/themes/light.css";
+@import "../../../../../x-markdown/src/themes/dark.css";
 @import "vars.css";
 @import "vp-doc.css";
 @import "vp-code.css";

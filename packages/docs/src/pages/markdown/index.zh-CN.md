@@ -32,22 +32,4 @@ title: 介绍
 
 ## 快速开始
 
-```vue
-<script setup>
-import { XMarkdown } from "@antdv-next/x-markdown";
-
-const content = `# Hello XMarkdown\n\n这是一个流式友好的 Markdown 渲染器。`;
-</script>
-
-<template>
-  <XMarkdown :content="content" />
-</template>
-```
-
-## 继续阅读
-
-- [代码示例](/markdown/examples)
-- [流式渲染](/markdown/streaming)
-- [组件扩展](/markdown/components)
-- [插件集](/markdown/plugins)
-- [主题](/markdown/themes)
+<demo src="./demo/quick-start.vue">Quick Start Demo</demo>

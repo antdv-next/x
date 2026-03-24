@@ -32,22 +32,4 @@ title: Introduction
 
 ## Quick Start
 
-```vue
-<script setup>
-import { XMarkdown } from "@antdv-next/x-markdown";
-
-const content = `# Hello XMarkdown\n\nThis is a streaming-friendly Markdown renderer.`;
-</script>
-
-<template>
-  <XMarkdown :content="content" />
-</template>
-```
-
-## See Also
-
-- [Code Examples](/markdown/examples-en)
-- [Streaming Rendering](/markdown/streaming-en)
-- [Component Extension](/markdown/components-en)
-- [Plugins](/markdown/plugins-en)
-- [Themes](/markdown/themes-en)
+<demo src="./demo/quick-start.vue">Quick Start Demo</demo>

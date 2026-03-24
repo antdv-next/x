@@ -11,6 +11,7 @@ import { useStreaming } from "./composables/useStreaming";
 import { useTail } from "./composables/useTail";
 import { Parser } from "./core/Parser";
 import { VueRenderer } from "./core/VueRenderer";
+import "./index.css";
 
 const props = withDefaults(defineProps<XMarkdownProps>(), {
   content: "",
@@ -151,66 +152,3 @@ watch(
     <DebugPanel v-if="debug" />
   </div>
 </template>
-
-<style scoped>
-.x-markdown {
-  line-height: 1.6;
-  word-wrap: break-word;
-}
-
-.x-markdown :deep(a) {
-  color: #1890ff;
-  text-decoration: none;
-}
-
-.x-markdown :deep(a:hover) {
-  text-decoration: underline;
-}
-
-.x-markdown :deep(code) {
-  background: #f5f5f5;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-family: monospace;
-}
-
-.x-markdown :deep(pre) {
-  background: #f5f5f5;
-  padding: 16px;
-  border-radius: 8px;
-  overflow-x: auto;
-}
-
-.x-markdown :deep(pre code) {
-  background: none;
-  padding: 0;
-}
-
-.x-markdown :deep(blockquote) {
-  border-left: 4px solid #d9d9d9;
-  padding-left: 16px;
-  margin-left: 0;
-  color: #666;
-}
-
-.x-markdown :deep(ul),
-.x-markdown :deep(ol) {
-  padding-left: 24px;
-}
-
-.x-markdown :deep(table) {
-  border-collapse: collapse;
-  width: 100%;
-}
-
-.x-markdown :deep(th),
-.x-markdown :deep(td) {
-  border: 1px solid #d9d9d9;
-  padding: 8px 16px;
-  text-align: left;
-}
-
-.x-markdown :deep(th) {
-  background: #fafafa;
-}
-</style>
