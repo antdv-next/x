@@ -8,6 +8,10 @@
     "build": "vp build .",
     "preview": "vp preview ."
   },
+  "dependencies": {
+    "@antdv-next/icons": "catalog:prod",
+    "@antdv-next/x-markdown": "workspace:*"
+  },
   "devDependencies": {
     "@antdv-next/auto-import-resolver": "catalog:dev",
     "@mdit-vue/plugin-frontmatter": "catalog:docs",

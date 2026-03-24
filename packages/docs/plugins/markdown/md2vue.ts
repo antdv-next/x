@@ -106,6 +106,15 @@ export function md2VuePlugin(
     return vueCode;
   }
 
+  function shouldSkipTransform(id: string) {
+    if (id.includes("?vue")) return true;
+
+    const query = id.split("?")[1];
+    if (!query) return false;
+    const params = new URLSearchParams(query);
+    return params.has("raw") || params.has("url");
+  }
+
   return {
     enforce: "pre",
     name: "vite:md2vue",
@@ -118,7 +127,7 @@ export function md2VuePlugin(
     transform: {
       filter: { id: /\.md($|\?)/ },
       async handler(code, id) {
-        if (id.includes("?vue")) return null;
+        if (shouldSkipTransform(id)) return null;
         return transform(code, id);
       },
     },

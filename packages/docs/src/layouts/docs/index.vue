@@ -153,6 +153,81 @@ interface SiderGroupItem {
 
 type SiderItem = SiderLeafItem | SiderGroupItem;
 
+type LocaleKey = typeof LOCALE_ZH_CN | typeof LOCALE_EN_US;
+
+interface ParsedPageMeta {
+  title?: string;
+  order?: number;
+  groupTitle?: string;
+  groupOrder?: number;
+  hidden?: boolean;
+}
+
+const markdownRawPages = import.meta.glob("../../pages/markdown/**/*.md", {
+  query: "?raw",
+  import: "default",
+  eager: true,
+}) as Record<string, string>;
+
+function normalizeSourcePath(path: string) {
+  return path.replace(/^(\.\.\/)+/, "");
+}
+
+function toOptionalNumber(value?: string) {
+  if (!value) return undefined;
+  const parsed = Number(value.trim().replace(/^['"]|['"]$/g, ""));
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function toOptionalText(value?: string) {
+  if (!value) return undefined;
+  return value.trim().replace(/^['"]|['"]$/g, "");
+}
+
+function toOptionalBoolean(value?: string) {
+  if (!value) return undefined;
+  const normalized = value
+    .trim()
+    .replace(/^['"]|['"]$/g, "")
+    .toLowerCase();
+  if (normalized === "true") return true;
+  if (normalized === "false") return false;
+  return undefined;
+}
+
+function parseFrontmatterMeta(markdown: string): ParsedPageMeta {
+  const frontmatterMatch = markdown.match(/^---\n([\s\S]*?)\n---/);
+  if (!frontmatterMatch) return {};
+
+  const frontmatter = frontmatterMatch[1];
+  const title = toOptionalText(frontmatter.match(/^title:\s*(.+)$/m)?.[1]);
+  const order = toOptionalNumber(frontmatter.match(/^order:\s*(.+)$/m)?.[1]);
+  const hidden = toOptionalBoolean(frontmatter.match(/^hidden:\s*(.+)$/m)?.[1]);
+
+  const groupBlock = frontmatter.match(/^group:\s*\n((?:[ \t].*\n?)*)/m)?.[1];
+  const groupTitle = toOptionalText(
+    groupBlock?.match(/^[ \t]+title:\s*(.+)$/m)?.[1],
+  );
+  const groupOrder = toOptionalNumber(
+    groupBlock?.match(/^[ \t]+order:\s*(.+)$/m)?.[1],
+  );
+
+  return {
+    title,
+    order,
+    groupTitle,
+    groupOrder,
+    hidden,
+  };
+}
+
+const markdownMetaBySource = new Map<string, ParsedPageMeta>(
+  Object.entries(markdownRawPages).map(([source, markdown]) => [
+    normalizeSourcePath(source),
+    parseFrontmatterMeta(markdown),
+  ]),
+);
+
 const normalizedCurrentPath = computed(() => normalizePath(route.path));
 const currentPathWithoutLocale = computed(() =>
   stripLocaleSuffix(normalizedCurrentPath.value),
@@ -178,6 +253,7 @@ const siderItems = computed<SiderItem[]>(() => {
   if (!section) return [];
 
   const locale = appStore.locale;
+  const localeKey = locale === LOCALE_EN_US ? LOCALE_EN_US : LOCALE_ZH_CN;
   const routesInSection = docsRoutes
     .filter(item => {
       if (item.meta?.locale !== locale) return false;
@@ -199,29 +275,89 @@ const siderItems = computed<SiderItem[]>(() => {
     const segments = withoutLocale.split("/").filter(Boolean);
     const lastSegment = segments.at(-1) || "";
     const isSectionIndex = withoutLocale === section;
+    const source = normalizeSourcePath(String(item.meta?.source || ""));
+    const pageMeta = markdownMetaBySource.get(source);
 
     return {
       key: normalizePath(item.path),
       pathWithoutLocale: withoutLocale,
       slug: lastSegment,
       isSectionIndex,
+      hidden: pageMeta?.hidden ?? false,
+      order: pageMeta?.order ?? Number.MAX_SAFE_INTEGER,
+      groupTitle: pageMeta?.groupTitle,
+      groupOrder: pageMeta?.groupOrder ?? Number.MAX_SAFE_INTEGER,
       label: isSectionIndex
-        ? section === "/sdk"
-          ? appStore.locale === LOCALE_ZH_CN
-            ? "介绍"
-            : "Introduction"
-          : appStore.locale === LOCALE_ZH_CN
-            ? "概览"
-            : "Overview"
-        : formatSegmentLabel(lastSegment),
+        ? pageMeta?.title || (localeKey === LOCALE_ZH_CN ? "概览" : "Overview")
+        : pageMeta?.title || formatSegmentLabel(lastSegment),
     };
   });
 
-  if (section !== "/components" && section !== "/sdk")
+  if (section === "/markdown") {
+    const ungrouped = baseItems
+      .filter(item => !item.hidden && !item.groupTitle)
+      .sort((left, right) => {
+        if (left.order !== right.order) return left.order - right.order;
+        return left.label.localeCompare(right.label);
+      })
+      .map(({ key, label }) => ({ key, label }));
+
+    const groups = new Map<
+      string,
+      {
+        key: string;
+        label: string;
+        order: number;
+        children: Array<{ key: string; label: string; order: number }>;
+      }
+    >();
+
+    baseItems
+      .filter(item => !item.hidden && item.groupTitle)
+      .forEach(item => {
+        const groupLabel = item.groupTitle!;
+        const groupOrder = item.groupOrder;
+        const groupKey = `${groupOrder}-${groupLabel}`;
+
+        if (!groups.has(groupKey)) {
+          groups.set(groupKey, {
+            key: groupKey,
+            label: groupLabel,
+            order: groupOrder,
+            children: [],
+          });
+        }
+
+        groups.get(groupKey)!.children.push({
+          key: item.key,
+          label: item.label,
+          order: item.order,
+        });
+      });
+
+    const groupedItems: SiderGroupItem[] = Array.from(groups.values())
+      .sort((left, right) => {
+        if (left.order !== right.order) return left.order - right.order;
+        return left.label.localeCompare(right.label);
+      })
+      .map(group => ({
+        key: group.key,
+        type: "group",
+        label: group.label,
+        children: group.children
+          .sort((left, right) => {
+            if (left.order !== right.order) return left.order - right.order;
+            return left.label.localeCompare(right.label);
+          })
+          .map(({ key, label }) => ({ key, label })),
+      }));
+
+    return [...ungrouped, ...groupedItems];
+  }
+
+  if (section !== "/components")
     return baseItems.map(({ key, label }) => ({ key, label }));
 
-  const localeKey =
-    appStore.locale === LOCALE_EN_US ? LOCALE_EN_US : LOCALE_ZH_CN;
   const fallbackGroupLabel =
     localeKey === LOCALE_ZH_CN ? "未分类" : "Ungrouped";
   const overviewItem = baseItems.find(item => item.isSectionIndex);
