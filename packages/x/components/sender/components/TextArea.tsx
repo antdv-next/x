@@ -1,9 +1,9 @@
-import { Input } from "antdv-next";
-
-const ATextarea = Input.TextArea;
+import { TextArea as ATextarea } from "antdv-next";
 import { defineComponent, ref } from "vue";
 
 import { useSenderContext } from "../context";
+
+export type InsertPosition = "start" | "end" | "cursor";
 
 export interface TextAreaRef {
   nativeElement: HTMLTextAreaElement | null;
@@ -11,13 +11,14 @@ export interface TextAreaRef {
   blur: () => void;
   clear: () => void;
   getValue: () => { value: string };
+  insert: (text: string, position?: InsertPosition) => void;
 }
 
 export default defineComponent({
   name: "SenderTextArea",
   setup(_, { expose }) {
     const senderCtx = useSenderContext();
-    const inputRef = ref<InstanceType<typeof ATextarea> | null>(null);
+    const inputRef = ref<InstanceType<typeof ATextarea>>();
     const isComposing = ref(false);
 
     const getTextAreaEl = (): HTMLTextAreaElement | null => {
@@ -39,6 +40,24 @@ export default defineComponent({
       },
       getValue() {
         return { value: senderCtx.value.value ?? "" };
+      },
+      insert(text: string, position: InsertPosition = "cursor") {
+        const el = getTextAreaEl();
+        const currentValue = senderCtx.value.value ?? "";
+        let newValue: string;
+
+        if (position === "start") {
+          newValue = text + currentValue;
+        } else if (position === "end") {
+          newValue = currentValue + text;
+        } else {
+          const cursorPos = el?.selectionStart ?? currentValue.length;
+          newValue =
+            currentValue.slice(0, cursorPos) +
+            text +
+            currentValue.slice(cursorPos);
+        }
+        senderCtx.value.onChange?.(newValue, undefined);
       },
     });
 
@@ -97,7 +116,7 @@ export default defineComponent({
             isComposing.value = false;
           }}
           onKeydown={onInternalKeyDown}
-          onPaste={onInternalPaste}
+          {...{ onPaste: onInternalPaste }}
           variant="borderless"
           readonly={ctx.readOnly}
           placeholder={ctx.placeholder}

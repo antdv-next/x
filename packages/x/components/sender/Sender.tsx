@@ -1,7 +1,18 @@
 import type { PropType, StyleValue } from "vue";
+import type { CSSProperties } from "vue";
 
 import { useConfig } from "antdv-next/dist/config-provider/context";
 import { computed, defineComponent, ref, useAttrs } from "vue";
+
+import type { TextAreaRef } from "./components/TextArea";
+import type {
+  AllowSpeech,
+  BaseNode,
+  InsertPosition,
+  NodeRender,
+  SenderRef,
+  SubmitType,
+} from "./interface";
 
 import useXComponentConfig from "../_utils/hooks/use-x-component-config";
 import {
@@ -13,19 +24,9 @@ import LoadingButton from "./components/LoadingButton";
 import SendButton from "./components/SendButton";
 import SpeechButton from "./components/SpeechButton";
 import TextArea from "./components/TextArea";
-import type { TextAreaRef } from "./components/TextArea";
 import { provideSenderContext } from "./context";
 import useSpeech from "./hooks/use-speech";
-import type {
-  AllowSpeech,
-  BaseNode,
-  NodeRender,
-  SenderRef,
-  SubmitType,
-} from "./interface";
 import useStyle from "./style";
-
-import type { CSSProperties } from "vue";
 
 const sharedRenderComponents = {
   SendButton,
@@ -155,7 +156,7 @@ export default defineComponent({
 
     // Speech
     const [speechPermission, triggerSpeech, speechRecording] = useSpeech(
-      (transcript) => {
+      transcript => {
         triggerValueChange(`${mergedValue.value} ${transcript}`);
       },
       () => props.allowSpeech,
@@ -186,6 +187,9 @@ export default defineComponent({
       },
       clear() {
         triggerClear();
+      },
+      insert(text: string, position?: InsertPosition) {
+        inputRef.value?.insert(text, position);
       },
     });
 
@@ -256,8 +260,7 @@ export default defineComponent({
         </div>
       );
 
-      const suffixNode =
-        renderNode(props.suffix, actionNode) ?? actionNode;
+      const suffixNode = renderNode(props.suffix, actionNode) ?? actionNode;
       const prefixNode = renderNode(props.prefix, actionNode);
       const headerNode = renderNode(props.header, actionNode);
       const footerNode = renderNode(props.footer, actionNode);
@@ -296,8 +299,7 @@ export default defineComponent({
             style={props.styles.content}
             onMousedown={(e: MouseEvent) => {
               if (
-                e.target !==
-                containerRef.value?.querySelector(`.${cls}-input`)
+                e.target !== containerRef.value?.querySelector(`.${cls}-input`)
               ) {
                 e.preventDefault();
               }
@@ -350,10 +352,7 @@ export default defineComponent({
                 contextConfig.value.classes?.footer,
                 props.classNames.footer,
               ]}
-              style={[
-                contextConfig.value.styles?.footer,
-                props.styles.footer,
-              ]}
+              style={[contextConfig.value.styles?.footer, props.styles.footer]}
             >
               {footerNode}
             </div>

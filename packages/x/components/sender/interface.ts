@@ -8,6 +8,8 @@ import type {
 
 import type { AllowSpeech } from "./hooks/use-speech";
 
+export type { AllowSpeech };
+
 export type SubmitType = "enter" | "shiftEnter";
 
 export type SemanticType =
@@ -73,4 +75,5 @@ export interface SenderRef {
   focus: (options?: FocusOptions) => void;
   blur: () => void;
   clear: () => void;
+  insert: (text: string, position?: InsertPosition) => void;
 }
