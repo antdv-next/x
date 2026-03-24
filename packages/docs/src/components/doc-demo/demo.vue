@@ -37,7 +37,7 @@ const useStyles = createStyles(({ token }) => ({
     overflow: "hidden",
     position: "relative",
     boxSizing: "border-box",
-    borderRadius: 8,
+    borderRadius: token.borderRadiusLG,
     background: token.colorBgContainer,
     transition:
       "border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease",
