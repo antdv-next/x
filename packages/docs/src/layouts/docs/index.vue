@@ -19,7 +19,7 @@ const useStyles = createStyles(({ token }) => ({
     background: token.colorBgLayout,
     transition: `background-color ${token.motionDurationSlow}`,
     ".antd-doc-layout-main": {
-      maxWidth: 1440,
+      maxWidth: 1680,
       margin: "0 auto",
       padding: "24px 24px 40px",
       display: "grid",

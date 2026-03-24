@@ -6,7 +6,7 @@ import type { RendererOptions, ComponentProps } from "../interface";
 import AnimationText from "../components/AnimationText.vue";
 import { detectUnclosedComponentTags } from "./detectUnclosedComponentTags";
 
-const DEFAULT_ANIMATION_DURATION = 300;
+const DEFAULT_ANIMATION_DURATION = 200;
 const NON_WHITESPACE_REGEX = /[^\r\n\s]+/;
 
 export class VueRenderer {
@@ -19,7 +19,7 @@ export class VueRenderer {
       animationConfig: {
         fadeDuration:
           options.animationConfig?.fadeDuration ?? DEFAULT_ANIMATION_DURATION,
-        easing: options.animationConfig?.easing ?? "ease-out",
+        easing: options.animationConfig?.easing ?? "ease-in-out",
       },
     };
   }

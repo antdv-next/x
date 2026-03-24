@@ -51,7 +51,7 @@ Use this page for a quick setup to render LLM Markdown output, then scale to str
 
 ### AnimationConfig
 
-| Property     | Description         | Type     | Default      |
-| ------------ | ------------------- | -------- | ------------ |
-| fadeDuration | Duration in ms      | `number` | `300`        |
-| easing       | CSS easing function | `string` | `'ease-out'` |
+| Property     | Description         | Type     | Default         |
+| ------------ | ------------------- | -------- | --------------- |
+| fadeDuration | Duration in ms      | `number` | `200`           |
+| easing       | CSS easing function | `string` | `'ease-in-out'` |

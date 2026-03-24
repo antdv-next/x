@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Component } from "vue";
+import type { Component, PropType, VNode } from "vue";
 
 import { computed, defineComponent, h, ref, shallowRef, watch } from "vue";
 
@@ -56,6 +56,19 @@ const mergedComponents = computed<Record<string, Component>>(() => {
     ...baseComponents,
     "xmd-tail": TailBridge,
   };
+});
+
+const VNodeRenderer = defineComponent({
+  name: "XmdVNodeRenderer",
+  props: {
+    node: {
+      type: Object as PropType<VNode>,
+      required: true,
+    },
+  },
+  setup(props) {
+    return () => props.node;
+  },
 });
 
 const parser = shallowRef(
@@ -161,7 +174,7 @@ watch(
 
 <template>
   <div :class="['x-markdown', className]" :style="style">
-    <component :is="vNode" />
+    <VNodeRenderer :node="vNode" />
     <DebugPanel v-if="debug" />
   </div>
 </template>

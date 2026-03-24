@@ -8,13 +8,14 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  fadeDuration: 300,
-  easing: "ease-out",
+  fadeDuration: 200,
+  easing: "ease-in-out",
 });
 
 interface TextChunk {
   id: number;
   text: string;
+  animate: boolean;
 }
 
 const chunks = ref<TextChunk[]>([]);
@@ -22,7 +23,9 @@ const previousText = ref("");
 let chunkId = 0;
 
 function resetChunks(nextText: string) {
-  chunks.value = nextText ? [{ id: chunkId++, text: nextText }] : [];
+  chunks.value = nextText
+    ? [{ id: chunkId++, text: nextText, animate: false }]
+    : [];
   previousText.value = nextText;
 }
 
@@ -30,6 +33,7 @@ function appendChunk(nextText: string) {
   chunks.value.push({
     id: chunkId++,
     text: nextText,
+    animate: true,
   });
 }
 
@@ -59,7 +63,10 @@ watch(() => props.text, updateChunks, { immediate: true });
     <span
       v-for="chunk in chunks"
       :key="chunk.id"
-      class="xmd-animation-text-chunk"
+      :class="[
+        'xmd-animation-text-chunk',
+        chunk.animate && 'xmd-animation-text-chunk-animate',
+      ]"
       :style="{
         '--fade-duration': `${fadeDuration}ms`,
         '--easing': easing,
@@ -77,6 +84,9 @@ watch(() => props.text, updateChunks, { immediate: true });
 
 .xmd-animation-text-chunk {
   display: inline;
+}
+
+.xmd-animation-text-chunk-animate {
   animation: xmd-fade-in var(--fade-duration) var(--easing) forwards;
 }
 

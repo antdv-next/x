@@ -13,13 +13,13 @@ Handle **LLM streamed Markdown** output: syntax completion and caching, animatio
 
 ### streaming
 
-| Parameter                      | Description                             | Type                                                             | Default                                     |
-| ------------------------------ | --------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------- |
-| hasNextChunk                   | Whether more chunks are coming          | `boolean`                                                        | `false`                                     |
-| incompleteMarkdownComponentMap | Component mapping for incomplete syntax | `Partial<Record<Exclude<StreamCacheTokenType, 'text'>, string>>` | `{}`                                        |
-| enableAnimation                | Enable fade-in animation                | `boolean`                                                        | `true`                                      |
-| animationConfig                | Animation config                        | `AnimationConfig`                                                | `{ fadeDuration: 300, easing: 'ease-out' }` |
-| tail                           | Enable tail indicator                   | `boolean \| TailConfig`                                          | `false`                                     |
+| Parameter                      | Description                             | Type                                                             | Default                                        |
+| ------------------------------ | --------------------------------------- | ---------------------------------------------------------------- | ---------------------------------------------- |
+| hasNextChunk                   | Whether more chunks are coming          | `boolean`                                                        | `false`                                        |
+| incompleteMarkdownComponentMap | Component mapping for incomplete syntax | `Partial<Record<Exclude<StreamCacheTokenType, 'text'>, string>>` | `{}`                                           |
+| enableAnimation                | Enable fade-in animation                | `boolean`                                                        | `true`                                         |
+| animationConfig                | Animation config                        | `AnimationConfig`                                                | `{ fadeDuration: 200, easing: 'ease-in-out' }` |
+| tail                           | Enable tail indicator                   | `boolean \| TailConfig`                                          | `false`                                        |
 
 ### TailConfig
 
@@ -30,10 +30,10 @@ Handle **LLM streamed Markdown** output: syntax completion and caching, animatio
 
 ### AnimationConfig
 
-| Property     | Description         | Type     | Default      |
-| ------------ | ------------------- | -------- | ------------ |
-| fadeDuration | Duration in ms      | `number` | `300`        |
-| easing       | CSS easing function | `string` | `'ease-out'` |
+| Property     | Description         | Type     | Default         |
+| ------------ | ------------------- | -------- | --------------- |
+| fadeDuration | Duration in ms      | `number` | `200`           |
+| easing       | CSS easing function | `string` | `'ease-in-out'` |
 
 > The tail displays `▋` by default. You can customize the character via `content`, or pass a custom Vue component via `component` for animations, delayed display, and other effects.
 >

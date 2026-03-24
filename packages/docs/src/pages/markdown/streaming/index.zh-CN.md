@@ -13,13 +13,13 @@ order: 4
 
 ### streaming
 
-| 参数                           | 说明                 | 类型                                                             | 默认值                                      |
-| ------------------------------ | -------------------- | ---------------------------------------------------------------- | ------------------------------------------- |
-| hasNextChunk                   | 是否还有后续 chunk   | `boolean`                                                        | `false`                                     |
-| incompleteMarkdownComponentMap | 未完成语法的组件映射 | `Partial<Record<Exclude<StreamCacheTokenType, 'text'>, string>>` | `{}`                                        |
-| enableAnimation                | 是否启用淡入动画     | `boolean`                                                        | `true`                                      |
-| animationConfig                | 动画参数             | `AnimationConfig`                                                | `{ fadeDuration: 300, easing: 'ease-out' }` |
-| tail                           | 是否启用尾部指示器   | `boolean \| TailConfig`                                          | `false`                                     |
+| 参数                           | 说明                 | 类型                                                             | 默认值                                         |
+| ------------------------------ | -------------------- | ---------------------------------------------------------------- | ---------------------------------------------- |
+| hasNextChunk                   | 是否还有后续 chunk   | `boolean`                                                        | `false`                                        |
+| incompleteMarkdownComponentMap | 未完成语法的组件映射 | `Partial<Record<Exclude<StreamCacheTokenType, 'text'>, string>>` | `{}`                                           |
+| enableAnimation                | 是否启用淡入动画     | `boolean`                                                        | `true`                                         |
+| animationConfig                | 动画参数             | `AnimationConfig`                                                | `{ fadeDuration: 200, easing: 'ease-in-out' }` |
+| tail                           | 是否启用尾部指示器   | `boolean \| TailConfig`                                          | `false`                                        |
 
 ### TailConfig
 
@@ -30,10 +30,10 @@ order: 4
 
 ### AnimationConfig
 
-| 属性         | 说明             | 类型     | 默认值       |
-| ------------ | ---------------- | -------- | ------------ |
-| fadeDuration | 动画时长（毫秒） | `number` | `300`        |
-| easing       | 缓动函数         | `string` | `'ease-out'` |
+| 属性         | 说明             | 类型     | 默认值          |
+| ------------ | ---------------- | -------- | --------------- |
+| fadeDuration | 动画时长（毫秒） | `number` | `200`           |
+| easing       | 缓动函数         | `string` | `'ease-in-out'` |
 
 > 尾部默认显示 `▋`。可通过 `content` 自定义字符，或通过 `component` 传入自定义 Vue 组件实现动画、延迟显示等效果。
 >

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { Component } from "vue";
+
 import { SettingOutlined } from "@antdv-next/icons";
 import { XMarkdown } from "@antdv-next/x-markdown";
 import {
@@ -12,11 +14,13 @@ import {
   Space,
   Switch,
   Typography,
+  theme,
 } from "antdv-next";
-import { computed, onUnmounted, ref, watch } from "vue";
+import { computed, defineComponent, h, onUnmounted, ref, watch } from "vue";
 
 const { Text } = Typography;
 const { TextArea } = Input;
+const { token } = theme.useToken();
 
 const DEFAULT_SOURCE = `# XMarkdown Playground
 
@@ -28,24 +32,138 @@ Type Markdown in the editor and see real-time rendering.
 - Streaming-friendly rendering
 - Safe HTML handling with configurable escaping
 
-## Code Block
-
 \`\`\`tsx
 const message = 'Hello, XMarkdown';
 console.log(message);
 \`\`\`
 
-## Table
+## Streaming Preview
+
+1. Click "Run Stream"
+2. Observe incomplete syntax handling
+3. Continue typing in the editor for instant full preview
 
 | Step | Status |
 | --- | --- |
 | Parse | Done |
 | Render | Running |
 
-## Link
+[Link example](https://x.ant.design/x-markdowns/introduce)
 
-[Link example](https://github.com/antdv-next/antdv-next-x)
+## HTML and Security
+<div style="padding: 8px; border: 1px solid #aaa;">
+  Inline raw HTML block
+</div>
+
+Try toggling \`escapeRawHtml\` to compare behavior.
 `;
+
+const safeDecodeURIComponent = (value: string): string => {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+};
+
+const getDataRaw = (attrs: Record<string, unknown>): string => {
+  const raw = attrs["data-raw"];
+  return typeof raw === "string" ? safeDecodeURIComponent(raw) : "";
+};
+
+const LoadingLink = defineComponent({
+  name: "LoadingLink",
+  inheritAttrs: false,
+  setup(_, { attrs }) {
+    return () =>
+      h(
+        "span",
+        {
+          style: {
+            opacity: "0.6",
+            borderBottom: "1px dashed #999",
+          },
+        },
+        getDataRaw(attrs) || "...",
+      );
+  },
+});
+
+const LoadingImage = defineComponent({
+  name: "LoadingImage",
+  setup() {
+    return () =>
+      h(
+        "span",
+        {
+          style: {
+            opacity: "0.6",
+            display: "inline-block",
+            width: "96px",
+            height: "24px",
+          },
+        },
+        "Loading image...",
+      );
+  },
+});
+
+const LoadingTable = defineComponent({
+  name: "LoadingTable",
+  setup() {
+    return () =>
+      h(
+        "span",
+        {
+          style: {
+            opacity: "0.6",
+            display: "inline-block",
+            width: "96px",
+            height: "24px",
+          },
+        },
+        "Loading table...",
+      );
+  },
+});
+
+const LoadingHtml = defineComponent({
+  name: "LoadingHtml",
+  inheritAttrs: false,
+  setup(_, { attrs }) {
+    return () =>
+      h(
+        "span",
+        {
+          style: {
+            opacity: "0.6",
+          },
+        },
+        getDataRaw(attrs) || "<html />",
+      );
+  },
+});
+
+const incompleteLoadingComponents: Record<string, Component> = {
+  "loading-link": LoadingLink,
+  "loading-image": LoadingImage,
+  "loading-table": LoadingTable,
+  "loading-html": LoadingHtml,
+};
+
+const CustomTail = defineComponent({
+  name: "CustomTail",
+  props: {
+    content: {
+      type: String,
+      default: "...",
+    },
+  },
+  setup(props) {
+    return () =>
+      h("span", { class: "xmd-playground-custom-tail" }, props.content);
+  },
+});
 
 const source = ref(DEFAULT_SOURCE);
 const cursor = ref(source.value.length);
@@ -71,23 +189,50 @@ const markdownClassName = computed(() =>
   themeMode.value === "light" ? "x-markdown-light" : "x-markdown-dark",
 );
 const isDarkMode = computed(() => themeMode.value === "dark");
-const viewportHeight = computed(() => "clamp(440px, 68vh, 760px)");
+const viewportHeight = "clamp(440px, 68vh, 760px)";
+
+const containerStyle = computed(() => ({
+  padding: `${token.value.padding}px`,
+  maxWidth: "1400px",
+  margin: "0 auto",
+}));
+
+const controlCardStyle = computed(() => ({
+  borderRadius: `${token.value.borderRadiusLG}px`,
+  borderColor: token.value.colorBorderSecondary,
+}));
+
+const previewShellStyle = computed(() => ({
+  background: isDarkMode.value ? "#141414" : token.value.colorBgContainer,
+  height: viewportHeight,
+  display: "flex",
+  flexDirection: "column",
+}));
 
 watch(source, () => {
   clearTimer();
   cursor.value = source.value.length;
 });
 
-watch(isStreaming, streaming => {
-  if (!streaming) return;
-  if (cursor.value >= source.value.length) {
-    isStreaming.value = false;
-    return;
-  }
-  timerRef = window.setTimeout(() => {
-    cursor.value = Math.min(source.value.length, cursor.value + 6);
-  }, 45);
-});
+watch(
+  [isStreaming, cursor, () => source.value.length],
+  ([streaming, currentCursor, sourceLength]) => {
+    clearTimer();
+
+    if (!streaming) {
+      return;
+    }
+
+    if (currentCursor >= sourceLength) {
+      isStreaming.value = false;
+      return;
+    }
+
+    timerRef = window.setTimeout(() => {
+      cursor.value = Math.min(sourceLength, currentCursor + 6);
+    }, 45);
+  },
+);
 
 const runStream = () => {
   clearTimer();
@@ -95,9 +240,7 @@ const runStream = () => {
   isStreaming.value = true;
 };
 
-onUnmounted(() => {
-  clearTimer();
-});
+onUnmounted(clearTimer);
 
 const previewContent = computed(() =>
   isStreaming.value ? source.value.slice(0, cursor.value) : source.value,
@@ -106,17 +249,23 @@ const hasNextChunk = computed(
   () => isStreaming.value && cursor.value < source.value.length,
 );
 
-const tailConfig = computed(() => {
-  if (tailMode.value === "off") return false;
-  if (tailMode.value === "caret") return { content: "▋" };
-  if (tailMode.value === "dot") return { content: "●" };
-  return { content: "..." };
-});
-
 const streamingConfig = computed(() => ({
   hasNextChunk: hasNextChunk.value,
   enableAnimation: enableAnimation.value,
-  tail: tailConfig.value,
+  tail:
+    tailMode.value === "off"
+      ? false
+      : tailMode.value === "caret"
+        ? { content: "▋" }
+        : tailMode.value === "dot"
+          ? { content: "●" }
+          : { content: "...", component: CustomTail },
+  incompleteMarkdownComponentMap: {
+    link: "loading-link",
+    image: "loading-image",
+    table: "loading-table",
+    html: "loading-html",
+  },
 }));
 
 const tailOptions = [
@@ -133,9 +282,14 @@ const themeOptions = [
 </script>
 
 <template>
-  <div style="padding: 24px; max-width: 1400px; margin: 0 auto">
-    <Flex vertical gap="middle">
-      <Card size="small" title="Control Panel" :bodyStyle="{ padding: 12 }">
+  <div :style="containerStyle">
+    <Flex vertical :gap="14">
+      <Card
+        size="small"
+        title="Control Panel"
+        :style="controlCardStyle"
+        :bodyStyle="{ padding: 12 }"
+      >
         <Flex align="center" justify="space-between" wrap :gap="12">
           <Segmented
             size="small"
@@ -146,102 +300,134 @@ const themeOptions = [
           <Space size="small">
             <Popover trigger="click" placement="bottomRight">
               <template #content>
-                <Flex gap="large" wrap>
-                  <Flex vertical gap="small">
-                    <Text strong style="font-size: 12px; margin-bottom: 4px">
-                      Streaming
-                    </Text>
-                    <Flex
-                      align="center"
-                      justify="space-between"
-                      :gap="16"
-                      style="min-width: 140px"
-                    >
-                      <Text
-                        style="font-size: 12px; margin: 0; white-space: nowrap"
-                        >Animation</Text
+                <div style="padding: 8px">
+                  <Flex :gap="24" wrap>
+                    <Flex vertical :gap="10">
+                      <Text strong style="font-size: 12px; margin-bottom: 4px">
+                        Streaming
+                      </Text>
+                      <Flex
+                        align="center"
+                        justify="space-between"
+                        :gap="16"
+                        style="min-width: 140px"
                       >
-                      <Switch size="small" v-model:checked="enableAnimation" />
-                    </Flex>
-                    <Flex
-                      align="center"
-                      justify="space-between"
-                      :gap="16"
-                      style="min-width: 140px"
-                    >
-                      <Text
-                        style="font-size: 12px; margin: 0; white-space: nowrap"
-                        >Tail</Text
+                        <Text
+                          style="
+                            font-size: 12px;
+                            margin: 0;
+                            white-space: nowrap;
+                          "
+                          >Animation</Text
+                        >
+                        <Switch
+                          size="small"
+                          v-model:checked="enableAnimation"
+                        />
+                      </Flex>
+                      <Flex
+                        align="center"
+                        justify="space-between"
+                        :gap="16"
+                        style="min-width: 140px"
                       >
-                      <Select
-                        size="small"
-                        style="width: 80px"
-                        v-model:value="tailMode"
-                        :options="tailOptions"
-                      />
-                    </Flex>
-                    <Flex
-                      align="center"
-                      justify="space-between"
-                      :gap="16"
-                      style="min-width: 140px"
-                    >
-                      <Text
-                        style="font-size: 12px; margin: 0; white-space: nowrap"
-                        >Debug Panel</Text
+                        <Text
+                          style="
+                            font-size: 12px;
+                            margin: 0;
+                            white-space: nowrap;
+                          "
+                          >Tail</Text
+                        >
+                        <Select
+                          size="small"
+                          style="width: 96px"
+                          v-model:value="tailMode"
+                          :options="tailOptions"
+                        />
+                      </Flex>
+                      <Flex
+                        align="center"
+                        justify="space-between"
+                        :gap="16"
+                        style="min-width: 140px"
                       >
-                      <Switch size="small" v-model:checked="enableDebugPanel" />
+                        <Text
+                          style="
+                            font-size: 12px;
+                            margin: 0;
+                            white-space: nowrap;
+                          "
+                          >Debug Panel</Text
+                        >
+                        <Switch
+                          size="small"
+                          v-model:checked="enableDebugPanel"
+                        />
+                      </Flex>
                     </Flex>
-                  </Flex>
 
-                  <Flex vertical gap="small">
-                    <Text strong style="font-size: 12px; margin-bottom: 4px">
-                      Parsing & Safety
-                    </Text>
-                    <Flex
-                      align="center"
-                      justify="space-between"
-                      :gap="16"
-                      style="min-width: 180px"
-                    >
-                      <Text
-                        style="font-size: 12px; margin: 0; white-space: nowrap"
-                        >Escape Raw HTML</Text
+                    <Flex vertical :gap="10">
+                      <Text strong style="font-size: 12px; margin-bottom: 4px">
+                        Parsing & Safety
+                      </Text>
+                      <Flex
+                        align="center"
+                        justify="space-between"
+                        :gap="16"
+                        style="min-width: 140px"
                       >
-                      <Switch size="small" v-model:checked="escapeRawHtml" />
-                    </Flex>
-                    <Flex
-                      align="center"
-                      justify="space-between"
-                      :gap="16"
-                      style="min-width: 180px"
-                    >
-                      <Text
-                        style="font-size: 12px; margin: 0; white-space: nowrap"
-                        >Open Links In New Tab</Text
+                        <Text
+                          style="
+                            font-size: 12px;
+                            margin: 0;
+                            white-space: nowrap;
+                          "
+                          >Escape Raw HTML</Text
+                        >
+                        <Switch size="small" v-model:checked="escapeRawHtml" />
+                      </Flex>
+                      <Flex
+                        align="center"
+                        justify="space-between"
+                        :gap="16"
+                        style="min-width: 140px"
                       >
-                      <Switch
-                        size="small"
-                        v-model:checked="openLinksInNewTab"
-                      />
-                    </Flex>
-                    <Flex
-                      align="center"
-                      justify="space-between"
-                      :gap="16"
-                      style="min-width: 180px"
-                    >
-                      <Text
-                        style="font-size: 12px; margin: 0; white-space: nowrap"
-                        >Protect Custom Tag Newlines</Text
+                        <Text
+                          style="
+                            font-size: 12px;
+                            margin: 0;
+                            white-space: nowrap;
+                          "
+                          >Open Links In New Tab</Text
+                        >
+                        <Switch
+                          size="small"
+                          v-model:checked="openLinksInNewTab"
+                        />
+                      </Flex>
+                      <Flex
+                        align="center"
+                        justify="space-between"
+                        :gap="16"
+                        style="min-width: 140px"
                       >
-                      <Switch
-                        size="small"
-                        v-model:checked="protectCustomTagNewlines"
-                      />
+                        <Text
+                          style="
+                            font-size: 12px;
+                            margin: 0;
+                            white-space: nowrap;
+                          "
+                          >Protect Custom Tag Newlines</Text
+                        >
+                        <Switch
+                          size="small"
+                          v-model:checked="protectCustomTagNewlines"
+                        />
+                      </Flex>
                     </Flex>
                   </Flex>
-                </Flex>
+                </div>
               </template>
               <Button type="default" size="small">
                 <template #icon>
@@ -262,57 +448,80 @@ const themeOptions = [
         </Flex>
       </Card>
 
-      <Flex gap="middle" wrap>
-        <Card
-          title="Markdown Input"
-          :style="{ flex: '1 1 420px', minWidth: '320px' }"
-        >
-          <TextArea
-            v-model:value="source"
-            :bordered="false"
-            :spell-check="false"
-            :style="{
-              padding: '12px',
-              height: viewportHeight,
-              resize: 'none',
-              overflowY: 'auto',
-              fontFamily: 'Menlo, Monaco, Consolas, monospace',
-            }"
-          />
-        </Card>
-
-        <Card
-          title="Preview"
-          :style="{ flex: '1 1 420px', minWidth: '320px' }"
-          :bodyStyle="{ padding: 0 }"
-        >
-          <div
-            :style="{
-              background: isDarkMode ? '#141414' : '#fff',
-              height: viewportHeight,
-              display: 'flex',
-              flexDirection: 'column',
-            }"
+      <div class="xmd-playground-panels">
+        <Flex :gap="12" :wrap="false" class="xmd-playground-panels-inner">
+          <Card
+            title="Markdown Input"
+            :style="{ flex: '1 1 0', minWidth: '0' }"
           >
-            <div
-              :class="markdownClassName"
-              :style="{ padding: '12px', flex: '1', overflowY: 'auto' }"
-            >
-              <XMarkdown
-                :content="previewContent"
-                :debug="enableDebugPanel"
-                :escape-raw-html="escapeRawHtml"
-                :open-links-in-new-tab="openLinksInNewTab"
-                :protect-custom-tag-newlines="protectCustomTagNewlines"
-                :streaming="streamingConfig"
-              />
+            <TextArea
+              v-model:value="source"
+              :bordered="false"
+              :spell-check="false"
+              :style="{
+                padding: '12px',
+                height: viewportHeight,
+                resize: 'none',
+                overflowY: 'auto',
+                fontFamily: 'Menlo, Monaco, Consolas, monospace',
+              }"
+            />
+          </Card>
+
+          <Card
+            title="Preview"
+            :style="{ flex: '1 1 0', minWidth: '0' }"
+            :bodyStyle="{ padding: '1px' }"
+          >
+            <div :style="previewShellStyle">
+              <div
+                :class="markdownClassName"
+                :style="{ padding: '12px', flex: '1', overflowY: 'auto' }"
+              >
+                <XMarkdown
+                  :content="previewContent"
+                  :debug="enableDebugPanel"
+                  :class-name="markdownClassName"
+                  :escape-raw-html="escapeRawHtml"
+                  :open-links-in-new-tab="openLinksInNewTab"
+                  :protect-custom-tag-newlines="protectCustomTagNewlines"
+                  :streaming="streamingConfig"
+                  :components="incompleteLoadingComponents"
+                />
+              </div>
             </div>
-          </div>
-        </Card>
-      </Flex>
+          </Card>
+        </Flex>
+      </div>
     </Flex>
   </div>
 </template>
+
+<style scoped>
+.xmd-playground-panels {
+  overflow-x: auto;
+}
+
+.xmd-playground-panels-inner {
+  min-width: 900px;
+}
+
+.xmd-playground-custom-tail {
+  animation: xmd-playground-pulse 1s ease-in-out infinite;
+  color: #1890ff;
+}
+
+@keyframes xmd-playground-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.4;
+  }
+}
+</style>
 
 <docs lang="zh-CN">
 XMarkdown 在线体验，可实时预览 Markdown 渲染效果，支持流式渲染配置。
