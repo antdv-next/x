@@ -38,17 +38,16 @@ const genSenderHeaderStyle: GenerateStyle<SenderToken> = token => {
           padding: token.padding,
         },
       },
-      [`${headerCls}-motion`]: {
+      [`${headerCls}-motion-enter-active, ${headerCls}-motion-leave-active`]: {
         transition: ["height", "border"]
           .map(prop => `${prop} ${token.motionDurationSlow}`)
           .join(","),
-        overflow: "hidden",
-        "&-enter-start, &-leave-active": {
-          borderBottomColor: "transparent",
-        },
-        "&-hidden": {
-          display: "none",
-        },
+      },
+      [`${headerCls}-motion-enter-from, ${headerCls}-motion-leave-active`]: {
+        borderBottomColor: "transparent",
+      },
+      [`${headerCls}-motion-hidden`]: {
+        display: "none",
       },
     },
   };

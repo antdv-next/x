@@ -3,7 +3,13 @@ import type { CSSProperties, PropType } from "vue";
 import { CloseOutlined } from "@antdv-next/icons";
 import { Button } from "antdv-next";
 import { useConfig } from "antdv-next/dist/config-provider/context";
-import { computed, defineComponent, Transition } from "vue";
+import {
+  computed,
+  defineComponent,
+  Transition,
+  vShow,
+  withDirectives,
+} from "vue";
 
 import { useSenderContext } from "./context";
 
@@ -50,7 +56,48 @@ export default defineComponent({
 
     return () => {
       const headerCls = prefixCls.value;
+      const contentNode = (
+        <div
+          class={[
+            headerCls,
+            props.class,
+            {
+              [`${headerCls}-rtl`]: direction.value === "rtl",
+            },
+          ]}
+          style={props.style}
+        >
+          {/* Header bar */}
+          {(props.closable || props.title) && (
+            <div
+              class={[`${headerCls}-header`, props.classNames.header]}
+              style={props.styles.header}
+            >
+              <div class={`${headerCls}-title`}>{props.title}</div>
+              {props.closable && (
+                <div class={`${headerCls}-close`}>
+                  <Button
+                    type="text"
+                    icon={<CloseOutlined />}
+                    size="small"
+                    onClick={() => props.onOpenChange?.(!props.open)}
+                  />
+                </div>
+              )}
+            </div>
+          )}
 
+          {/* Content */}
+          {slots.default && (
+            <div
+              class={[`${headerCls}-content`, props.classNames.content]}
+              style={props.styles.content}
+            >
+              {slots.default()}
+            </div>
+          )}
+        </div>
+      );
       return (
         <Transition
           name={`${headerCls}-motion`}
@@ -68,7 +115,7 @@ export default defineComponent({
           }}
           onBeforeLeave={el => {
             (el as HTMLElement).style.height =
-              `${(el as HTMLElement).offsetHeight}px`;
+              `${(el as HTMLElement).scrollHeight}px`;
             (el as HTMLElement).style.overflow = "hidden";
           }}
           onLeave={el => {
@@ -82,50 +129,9 @@ export default defineComponent({
             (el as HTMLElement).style.overflow = "";
           }}
         >
-          {(props.open || props.forceRender) && (
-            <div
-              class={[
-                headerCls,
-                props.class,
-                {
-                  [`${headerCls}-rtl`]: direction.value === "rtl",
-                  [`${headerCls}-motion-hidden`]:
-                    props.forceRender && !props.open,
-                },
-              ]}
-              style={props.style}
-            >
-              {/* Header bar */}
-              {(props.closable || props.title) && (
-                <div
-                  class={[`${headerCls}-header`, props.classNames.header]}
-                  style={props.styles.header}
-                >
-                  <div class={`${headerCls}-title`}>{props.title}</div>
-                  {props.closable && (
-                    <div class={`${headerCls}-close`}>
-                      <Button
-                        type="text"
-                        icon={<CloseOutlined />}
-                        size="small"
-                        onClick={() => props.onOpenChange?.(!props.open)}
-                      />
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Content */}
-              {slots.default && (
-                <div
-                  class={[`${headerCls}-content`, props.classNames.content]}
-                  style={props.styles.content}
-                >
-                  {slots.default()}
-                </div>
-              )}
-            </div>
-          )}
+          {props.forceRender
+            ? withDirectives(contentNode, [[vShow, props.open]])
+            : props.open && contentNode}
         </Transition>
       );
     };
