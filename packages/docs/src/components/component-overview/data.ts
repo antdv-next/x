@@ -163,6 +163,49 @@ export const componentOverviewItems: ComponentOverviewItem[] = [
       "https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*6ySvTqb7XhkAAAAAAAAAAAAADgCCAQ/original",
   },
   {
+    slug: "notification",
+    path: "/components/notification",
+    title: "Notification",
+    subtitle: {
+      "zh-CN": "系统通知",
+    },
+    description: {
+      "zh-CN": "封装浏览器原生 Notification API，推送系统级通知。",
+      "en-US":
+        "A wrapper around the browser's native Notification API for pushing system-level notifications.",
+    },
+    group: {
+      "zh-CN": "通用",
+      "en-US": "Common",
+    },
+    groupOrder: 0,
+    cover:
+      "https://mdn.alipayobjects.com/huamei_7uahnr/afts/img/A*NVKORa7BCVwAAAAAAAAAAAAADrJ8AQ/original",
+    coverDark:
+      "https://mdn.alipayobjects.com/huamei_7uahnr/afts/img/A*YC4ERpGAddoAAAAAAAAAAAAADrJ8AQ/original",
+  },
+  {
+    slug: "sender",
+    path: "/components/sender",
+    title: "Sender",
+    subtitle: {
+      "zh-CN": "输入框",
+    },
+    description: {
+      "zh-CN": "用于聊天的输入框组件。",
+      "en-US": "A input component for chat.",
+    },
+    group: {
+      "zh-CN": "表达",
+      "en-US": "Expression",
+    },
+    groupOrder: 2,
+    cover:
+      "https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*OwTOS6wqFIsAAAAAAAAAAAAADgCCAQ/original",
+    coverDark:
+      "https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*cOfrS4fVkOMAAAAAAAAAAAAADgCCAQ/original",
+  },
+  {
     slug: "x-provider",
     path: "/components/x-provider",
     title: "XProvider",
