@@ -1,5 +1,15 @@
 /* Base styles for XMarkdown; theme colors come from .x-markdown-light/.x-markdown-dark */
 
+@keyframes x-markdown-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
 .x-markdown {
   --text-color: inherit;
   --font-size: inherit;

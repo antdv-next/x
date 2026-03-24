@@ -4,3 +4,5 @@
 @import "antdv-next/dist/antd.css" layer(antd);
 @import "./markdown/index.css" layer(markdown);
 @import "./common.css" layer(common);
+@import "../../../../x-markdown/src/themes/light.css";
+@import "../../../../x-markdown/src/themes/dark.css";

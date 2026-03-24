@@ -1,5 +1,3 @@
-@import "../../../../../x-markdown/src/themes/light.css";
-@import "../../../../../x-markdown/src/themes/dark.css";
 @import "vars.css";
 @import "vp-doc.css";
 @import "vp-code.css";
@@ -46,12 +44,12 @@
     .custom-block,
     .custom-block *,
     .header-anchor
-  ) {
+  ):not(.x-markdown):not(.x-markdown *) {
   all: revert-layer;
 }
 
 /* Hover-state table rows need an explicit override because :where(...) has zero specificity. */
-.vp-doc .vp-raw tbody tr:hover {
+.vp-doc .vp-raw tbody tr:hover:not(.x-markdown *):not(.x-markdown) {
   all: revert-layer;
 }
 
