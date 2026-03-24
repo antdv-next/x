@@ -27,10 +27,13 @@ function handleSubmit() {
     :on-cancel="() => (loading = false)"
     :suffix="
       (_: any, info: any) => {
-        const { SendButton, LoadingButton, ClearButton, SpeechButton } = info.components;
+        const { SendButton, LoadingButton, ClearButton, SpeechButton } =
+          info.components;
         return h(Space, { size: 'small' }, () => [
-          h(Typography.Text, { type: 'secondary', style: { whiteSpace: 'nowrap' } }, () =>
-            h('small', null, '`Shift + Enter` to submit'),
+          h(
+            Typography.Text,
+            { type: 'secondary', style: { whiteSpace: 'nowrap' } },
+            () => h('small', null, '`Shift + Enter` to submit'),
           ),
           h(ClearButton),
           h(SpeechButton),

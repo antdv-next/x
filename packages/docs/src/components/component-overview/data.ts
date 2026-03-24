@@ -100,6 +100,27 @@ export const componentOverviewItems: ComponentOverviewItem[] = [
       "https://mdn.alipayobjects.com/huamei_lkxviz/afts/img/bcXhRphVOuIAAAAAQFAAAAgADtFMAQFr/original",
   },
   {
+    slug: "attachments",
+    path: "/components/attachments",
+    title: "Attachments",
+    subtitle: {
+      "zh-CN": "输入附件",
+    },
+    description: {
+      "zh-CN": "用于展示一组附件信息集合。",
+      "en-US": "Display the collection of attachment information.",
+    },
+    group: {
+      "zh-CN": "表达",
+      "en-US": "Express",
+    },
+    groupOrder: 2,
+    cover:
+      "https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*5l2oSKBXatAAAAAAAAAAAAAADgCCAQ/original",
+    coverDark:
+      "https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*N8QHQJhgfbEAAAAAAAAAAAAADgCCAQ/original",
+  },
+  {
     slug: "sources",
     path: "/components/sources",
     title: "Sources",

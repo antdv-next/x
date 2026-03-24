@@ -23,11 +23,15 @@ const controlled = ref(false);
     </Flex>
     <Flex align="center" gap="small">
       Disabled:
-      <Sender.Switch :disabled="true" :icon="h(SearchOutlined)">Deep Search</Sender.Switch>
+      <Sender.Switch :disabled="true" :icon="h(SearchOutlined)"
+        >Deep Search</Sender.Switch
+      >
     </Flex>
     <Flex align="center" gap="small">
       Loading:
-      <Sender.Switch :loading="true" :icon="h(SearchOutlined)">Deep Search</Sender.Switch>
+      <Sender.Switch :loading="true" :icon="h(SearchOutlined)"
+        >Deep Search</Sender.Switch
+      >
     </Flex>
     <Flex align="center" gap="small">
       DefaultValue:

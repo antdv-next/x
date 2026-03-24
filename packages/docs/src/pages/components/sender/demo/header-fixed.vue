@@ -11,7 +11,11 @@ function headerRender() {
     open: hasRef.value,
     title: h(Space, null, () => [
       h(EnterOutlined),
-      h(Typography.Text, { type: "secondary" }, () => '"Tell more about Ant Design X"'),
+      h(
+        Typography.Text,
+        { type: "secondary" },
+        () => '"Tell more about Ant Design X"',
+      ),
     ]),
     onOpenChange: (val: boolean) => {
       hasRef.value = val;

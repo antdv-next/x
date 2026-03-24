@@ -9,7 +9,7 @@ const value = ref("");
 
 let timer: ReturnType<typeof setTimeout> | undefined;
 
-watch(loading, (val) => {
+watch(loading, val => {
   if (val) {
     timer = setTimeout(() => {
       loading.value = false;

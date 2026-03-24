@@ -189,8 +189,8 @@ export default defineComponent({
       clear() {
         triggerClear();
       },
-      insert(text: string, position?: InsertPosition) {
-        inputRef.value?.insert(text, position);
+      insert(text, position?: InsertPosition) {
+        inputRef.value?.insert(text as string, position);
       },
       getValue() {
         return inputRef.value?.getValue() ?? { value: "" };

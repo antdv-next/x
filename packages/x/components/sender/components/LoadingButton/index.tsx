@@ -1,3 +1,4 @@
+import { classNames } from "@v-c/util";
 import { defineComponent } from "vue";
 
 import ActionButton, { useActionButtonContext } from "../ActionButton";
@@ -19,7 +20,10 @@ export default defineComponent({
           variant="text"
           shape="circle"
           {...attrs}
-          class={[attrs.class as string, `${prefixCls}-loading-button`]}
+          class={classNames([
+            attrs.class as string,
+            `${prefixCls}-loading-button`,
+          ])}
           action="onCancel"
         />
       );

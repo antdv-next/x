@@ -1,7 +1,7 @@
 import { defineComponent } from "vue";
 
-import useLocale from "../../../locale/useLocale";
 import enUS from "../../../locale/en_US";
+import useLocale from "../../../locale/useLocale";
 
 const SIZE = 1000;
 const COUNT = 4;

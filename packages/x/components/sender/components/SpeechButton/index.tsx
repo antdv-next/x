@@ -1,5 +1,6 @@
-import { AudioMutedOutlined, AudioOutlined } from "@antdv-next/icons";
 import type { VNodeChild } from "vue";
+
+import { AudioMutedOutlined, AudioOutlined } from "@antdv-next/icons";
 import { computed, defineComponent } from "vue";
 
 import ActionButton, { useActionButtonContext } from "../ActionButton";
@@ -32,7 +33,7 @@ export default defineComponent({
 
     return () => (
       <ActionButton
-        icon={icon.value}
+        icon={icon.value as any}
         variant="text"
         color="primary"
         {...attrs}

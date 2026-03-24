@@ -20,7 +20,12 @@ function headerRender() {
       default: () =>
         h(
           Flex,
-          { vertical: true, align: "center", gap: "small", style: { marginBlock: "24px" } },
+          {
+            vertical: true,
+            align: "center",
+            gap: "small",
+            style: { marginBlock: "24px" },
+          },
           () => [
             h(CloudUploadOutlined, { style: { fontSize: "4em" } }),
             h(

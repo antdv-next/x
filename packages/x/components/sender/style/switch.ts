@@ -1,7 +1,7 @@
-import type { GenerateStyle } from "../../theme/interface";
 import type { SenderToken } from ".";
+import type { GenerateStyle } from "../../theme/interface";
 
-const genSenderSwitchStyle: GenerateStyle<SenderToken> = (token) => {
+const genSenderSwitchStyle: GenerateStyle<SenderToken> = token => {
   const { componentCls, antCls } = token;
   const switchCls = `${componentCls}-switch`;
 
@@ -18,12 +18,11 @@ const genSenderSwitchStyle: GenerateStyle<SenderToken> = (token) => {
           color: token.colorText,
         },
         [`&${switchCls}-checked`]: {
-          [`${antCls}-btn:not(:disabled):not(${antCls}-btn-disabled):hover`]:
-            {
-              background: token.switchCheckedHoverBg,
-              borderColor: token.colorPrimary,
-              color: token.colorPrimaryText,
-            },
+          [`${antCls}-btn:not(:disabled):not(${antCls}-btn-disabled):hover`]: {
+            background: token.switchCheckedHoverBg,
+            borderColor: token.colorPrimary,
+            color: token.colorPrimaryText,
+          },
           [`${switchCls}-content`]: {
             background: token.switchCheckedBg,
           },
