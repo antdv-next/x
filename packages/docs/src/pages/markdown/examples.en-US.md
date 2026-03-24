@@ -55,9 +55,3 @@ Use this page for a quick setup to render LLM Markdown output, then scale to str
 | ------------ | ------------------- | -------- | ------------ |
 | fadeDuration | Duration in ms      | `number` | `300`        |
 | easing       | CSS easing function | `string` | `'ease-out'` |
-
-## Related Docs
-
-- [Component Extension](/markdown/components-en)
-- [Streaming Rendering](/markdown/streaming-en)
-- [Plugins](/markdown/plugins-en)

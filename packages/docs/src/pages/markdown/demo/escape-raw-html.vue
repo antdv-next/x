@@ -15,6 +15,7 @@ const markdownClass = computed(() =>
 
 const escapeRawHtml = ref(true);
 const openLinksInNewTab = ref(true);
+const scriptCloseTag = "<" + "/script>";
 
 const markdown = `
 ### Links & raw HTML
@@ -28,7 +29,7 @@ Raw HTML (when not escaped, is rendered as DOM):
 
 <div>Block div</div>
 
-<script>alert('script')<\\/script>
+<script>alert('script')${scriptCloseTag}
 
 <img src=x onerror="alert(1)">
 `;

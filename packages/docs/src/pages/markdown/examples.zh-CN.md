@@ -55,9 +55,3 @@ order: 2
 | ------------ | ---------------- | -------- | ------------ |
 | fadeDuration | 动画时长（毫秒） | `number` | `300`        |
 | easing       | 缓动函数         | `string` | `'ease-out'` |
-
-## 相关文档
-
-- [组件扩展](/markdown/components)
-- [流式渲染](/markdown/streaming)
-- [插件集](/markdown/plugins)

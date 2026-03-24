@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Component } from "vue";
 
-import { computed, defineComponent, h, shallowRef, watch } from "vue";
+import { computed, defineComponent, h, ref, shallowRef, watch } from "vue";
 
 import type { XMarkdownProps } from "./interface";
 
@@ -77,13 +77,21 @@ const renderer = shallowRef(
   }),
 );
 
+const optionsVersion = ref(0);
+
+const bumpOptionsVersion = () => {
+  optionsVersion.value += 1;
+};
+
 const htmlOutput = computed(() => {
+  void optionsVersion.value;
   return parser.value.parse(processedContent.value, {
     injectTail: showTail.value,
   });
 });
 
 const vNode = computed(() => {
+  void optionsVersion.value;
   return renderer.value.render(htmlOutput.value);
 });
 
@@ -101,6 +109,7 @@ watch(
       protectCustomTags: props.protectCustomTagNewlines,
       escapeRawHtml: props.escapeRawHtml,
     });
+    bumpOptionsVersion();
   },
 );
 
@@ -110,6 +119,7 @@ watch(
     parser.value.setOptions({
       config: newConfig,
     });
+    bumpOptionsVersion();
   },
   { deep: true },
 );
@@ -120,6 +130,7 @@ watch(
     parser.value.setOptions({
       components: newComponents,
     });
+    bumpOptionsVersion();
   },
   { deep: true },
 );
@@ -130,6 +141,7 @@ watch(
     renderer.value.setOptions({
       components: newComponents,
     });
+    bumpOptionsVersion();
   },
   { deep: true },
 );
@@ -141,6 +153,7 @@ watch(
       enableAnimation: newStreaming?.enableAnimation ?? true,
       animationConfig: newStreaming?.animationConfig,
     });
+    bumpOptionsVersion();
   },
   { deep: true },
 );
