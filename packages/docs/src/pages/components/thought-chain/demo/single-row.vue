@@ -43,6 +43,28 @@ const items: ThoughtChainProps["items"] = [
         title: "Creating file",
         description: "component/index.tsx",
       }),
+      h(
+        Typography.Text,
+        { type: "secondary" },
+        () => "Creating Chinese description file for new component",
+      ),
+      h(ThoughtChain.Item, {
+        variant: "solid",
+        icon: h(EditOutlined),
+        title: "Creating file",
+        description: "component/index.zh-CN.md",
+      }),
+      h(
+        Typography.Text,
+        { type: "secondary" },
+        () => "Creating English description file for new component",
+      ),
+      h(ThoughtChain.Item, {
+        variant: "solid",
+        icon: h(EditOutlined),
+        title: "Creating file",
+        description: "component/index.en-US.md",
+      }),
     ]),
   },
 ];

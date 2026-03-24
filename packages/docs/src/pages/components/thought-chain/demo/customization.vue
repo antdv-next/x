@@ -46,6 +46,28 @@ const items: ThoughtChainItemType[] = [
         title: "Creating file",
         description: "component/index.tsx",
       }),
+      h(
+        Typography.Text,
+        { type: "secondary" },
+        () => "Creating Chinese documentation file for new component",
+      ),
+      h(ThoughtChain.Item, {
+        variant: "solid",
+        icon: h(EditOutlined),
+        title: "Continue creating file",
+        description: "component/index.zh-CN.md",
+      }),
+      h(
+        Typography.Text,
+        { type: "secondary" },
+        () => "Creating English description file for new component",
+      ),
+      h(ThoughtChain.Item, {
+        variant: "solid",
+        icon: h(EditOutlined),
+        title: "Continue creating file",
+        description: "component/index.en-US.md",
+      }),
     ]),
   },
   {
@@ -67,6 +89,18 @@ const items: ThoughtChainItemType[] = [
         title: "File creation completed",
         description: "component/index.tsx",
       }),
+      h(ThoughtChain.Item, {
+        variant: "solid",
+        status: "success",
+        title: "File creation completed",
+        description: "component/index.zh-CN.md",
+      }),
+      h(ThoughtChain.Item, {
+        variant: "solid",
+        status: "success",
+        title: "File creation completed",
+        description: "component/index.en-US.md",
+      }),
     ]),
   },
   {
@@ -85,6 +119,18 @@ const items: ThoughtChainItemType[] = [
         status: "success",
         title: "File creation completed",
         description: "component/index.tsx",
+      }),
+      h(ThoughtChain.Item, {
+        variant: "solid",
+        status: "success",
+        title: "File creation completed",
+        description: "component/index.zh-CN.md",
+      }),
+      h(ThoughtChain.Item, {
+        variant: "solid",
+        status: "success",
+        title: "File creation completed",
+        description: "component/index.en-US.md",
       }),
     ]),
     status: "error",
