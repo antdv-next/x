@@ -28,11 +28,11 @@ export default defineConfig({
     dayjs(),
     autoImport({
       dirs: ["./src/stores"],
-      dts: "types/auto-imports.d.ts",
+      dts: "../../types/auto-imports.d.ts",
       imports: ["vue", "vue-router", "@vueuse/core", "pinia", "vue-i18n"],
     }),
     components({
-      dts: "types/components.d.ts",
+      dts: "../../types/components.d.ts",
       dirs: [],
       resolvers: [AntdvNextResolver()],
     }),
