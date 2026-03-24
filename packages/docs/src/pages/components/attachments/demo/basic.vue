@@ -2,16 +2,7 @@
   <App>
     <div ref="containerRef">
       <Flex vertical gap="middle" align="flex-start">
-        <Attachments
-          :before-upload="() => false"
-          :get-drop-container="getDropContainer"
-          :placeholder="placeholder"
-          @change="onChange"
-        >
-          <Button type="text">
-            <LinkOutlined />
-          </Button>
-        </Attachments>
+        <Sender :prefix="prefixRender" />
 
         <Switch
           v-model:checked="fullScreenDrop"
@@ -25,7 +16,7 @@
 
 <script setup lang="ts">
 import { CloudUploadOutlined, LinkOutlined } from "@antdv-next/icons";
-import { Attachments } from "@antdv-next/x";
+import { Attachments, Sender } from "@antdv-next/x";
 import { App, Button, Flex, Switch, message } from "antdv-next";
 import { h, ref } from "vue";
 
@@ -46,4 +37,18 @@ const onChange = ({ file }: { file?: { name?: string } }) => {
     message.info(`Mock upload: ${file.name}`);
   }
 };
+
+const prefixRender = () =>
+  h(
+    Attachments,
+    {
+      beforeUpload: () => false,
+      onChange,
+      getDropContainer,
+      placeholder,
+    },
+    {
+      default: () => h(Button, { type: "text", icon: h(LinkOutlined) }),
+    },
+  );
 </script>

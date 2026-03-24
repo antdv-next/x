@@ -154,6 +154,23 @@ describe("Sender", () => {
 });
 
 describe("Sender.Header", () => {
+  it("should use sender default prefix class", () => {
+    const wrapper = mount(Sender.Header, {
+      props: { open: true },
+    });
+    expect(wrapper.find(".antd-sender-header").exists()).toBe(true);
+  });
+
+  it("should inherit prefix class from Sender context", () => {
+    const wrapper = mount(Sender, {
+      props: {
+        prefixCls: "custom-sender",
+        header: () => h(Sender.Header, { open: true, title: "Header Title" }),
+      },
+    });
+    expect(wrapper.find(".custom-sender-header").exists()).toBe(true);
+  });
+
   it("should render when open", () => {
     const wrapper = mount(Sender.Header, {
       props: { open: true, title: "Header Title" },

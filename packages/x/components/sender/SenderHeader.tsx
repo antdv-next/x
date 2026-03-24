@@ -5,6 +5,8 @@ import { Button } from "antdv-next";
 import { useConfig } from "antdv-next/dist/config-provider/context";
 import { computed, defineComponent, Transition } from "vue";
 
+import { useSenderContext } from "./context";
+
 export type HeaderSemanticType = "header" | "content";
 
 export default defineComponent({
@@ -37,11 +39,10 @@ export default defineComponent({
   },
   setup(props, { slots }) {
     const configCtx = useConfig();
+    const senderCtx = useSenderContext();
     const prefixCls = computed(() => {
-      const base =
-        configCtx.value.getPrefixCls?.("sender", props.prefixCls) ??
-        props.prefixCls ??
-        "antd-sender";
+      const senderPrefix = senderCtx.value.prefixCls;
+      const base = props.prefixCls ?? senderPrefix ?? "antd-sender";
       return `${base}-header`;
     });
 
