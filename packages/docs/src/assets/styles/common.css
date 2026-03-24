@@ -14,7 +14,7 @@ body,
 
 html,
 body {
-  background: #fff;
+  background: var(--ant-color-bg-layout, #fff);
   color: var(--ant-color-text, rgba(0, 0, 0, 0.88));
   transition:
     background-color var(--ant-motion-duration-slow),
@@ -28,9 +28,13 @@ body {
     transparent;
 }
 
+html.dark {
+  color-scheme: dark;
+}
+
 html.dark,
 html.dark body {
-  background: #141414;
+  background: var(--ant-color-bg-layout, #000);
 }
 
 .custom-carousel-item {

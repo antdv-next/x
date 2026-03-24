@@ -16,12 +16,10 @@ import DocHeader from "./components/doc-header.vue";
 const useStyles = createStyles(({ token }) => ({
   root: {
     minHeight: "100vh",
-    background: token.colorBgLayout,
+    background: token.colorBgContainer,
     transition: `background-color ${token.motionDurationSlow}`,
     ".antd-doc-layout-main": {
-      maxWidth: 1440,
-      margin: "0 auto",
-      padding: "24px 24px 40px",
+      padding: "24px 48px 40px",
       display: "grid",
       gridTemplateColumns: "240px minmax(0, 1fr) 200px",
       gap: 40,
