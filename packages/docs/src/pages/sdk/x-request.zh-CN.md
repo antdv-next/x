@@ -13,14 +13,6 @@ order: 3
 - 需要向后端模型服务发起流式请求（SSE / chunked response）。
 - 需要统一处理超时、中断、重试与回调更新。
 
-## 代码演示
-
-<demo src="./demo/x-request-basic.vue">基础流式请求</demo>
-<demo src="./demo/x-request-custom-params-headers.vue">请求参数与请求头</demo>
-<demo src="./demo/x-request-custom-transformer.vue">自定义转换器</demo>
-<demo src="./demo/x-request-stream-separator.vue">流分隔符配置</demo>
-<demo src="./demo/x-request-stream-timeout.vue">Stream 超时</demo>
-
 ## 基础示例代码
 
 ```ts

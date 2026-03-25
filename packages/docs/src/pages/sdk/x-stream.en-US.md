@@ -13,11 +13,6 @@ order: 4
 - You need to parse SSE `ReadableStream` into structured objects.
 - You need to decode custom streaming protocols and consume them with `for await...of`.
 
-## Examples
-
-<demo src="./demo/x-stream-default-protocol.vue">Default Protocol - SSE</demo>
-<demo src="./demo/x-stream-custom-protocol.vue">Custom Protocol</demo>
-
 ## Basic Example Code
 
 ```ts

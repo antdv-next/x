@@ -14,19 +14,6 @@ description: 单对话的数据管理。
 
 通过 Agent 进行会话数据管理，并产出供页面渲染使用的数据。
 
-## 代码演示
-
-<!-- prettier-ignore -->
-<demo src="./demo/use-x-chat-openai.vue">OpenAI 模型接入</demo>
-<demo src="./demo/use-x-chat-deepseek.vue">DeepSeek 思考模型接入</demo>
-<demo src="./demo/use-x-chat-default-messages.vue">历史消息设置</demo>
-<demo src="./demo/use-x-chat-async-default-messages.vue">请求远程历史消息</demo>
-<demo src="./demo/use-x-chat-developer.vue">系统提示词设置</demo>
-<demo src="./demo/use-x-chat-openai-callback.vue">模型的请求回调</demo>
-<demo src="./demo/use-x-chat-custom-request-fetch.vue">自定义 XRequest.fetch</demo>
-<demo src="./demo/use-x-chat-request-openai-node.vue">自定义 request</demo>
-<demo src="./demo/use-x-chat-session-key.vue">SessionId - ConversationKey</demo>
-
 ## API
 
 ### useXChat

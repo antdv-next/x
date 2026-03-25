@@ -307,10 +307,6 @@ onRequest({
 - 建议提供文件大小信息，提升用户体验
 - 下载链接需要确保用户有权限访问
 
-## 代码演示
-
-<demo src="./demo/chat-provider-custom-with-ui.vue">基础</demo>
-
 ## 贡献 Chat Provider
 
 我们欢迎社区贡献新的 Chat Provider！请按照以下规范进行 Chat Provider 开发。

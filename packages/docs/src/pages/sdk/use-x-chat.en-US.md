@@ -15,19 +15,6 @@ packageName: x-sdk
 
 Manage conversation data through Agent and produce data for page rendering.
 
-## Code Examples
-
-<!-- prettier-ignore -->
-<demo src="./demo/use-x-chat-openai.vue">OpenAI Model Integration</demo>
-<demo src="./demo/use-x-chat-deepseek.vue">Thinking Model Integration</demo>
-<demo src="./demo/use-x-chat-default-messages.vue">Historical Messages Setup</demo>
-<demo src="./demo/use-x-chat-async-default-messages.vue">Request Remote Historical Messages</demo>
-<demo src="./demo/use-x-chat-developer.vue">System Prompt Setup</demo>
-<demo src="./demo/use-x-chat-openai-callback.vue">Model Request Callback</demo>
-<demo src="./demo/use-x-chat-custom-request-fetch.vue">Custom XRequest.fetch</demo>
-<demo src="./demo/use-x-chat-request-openai-node.vue">Custom request</demo>
-<demo src="./demo/use-x-chat-session-key.vue">SessionId - ConversationKey</demo>
-
 ## API
 
 ### useXChat

@@ -304,10 +304,6 @@ onRequest({
 - Providing file size information is recommended to improve user experience
 - Download links need to ensure users have access permissions
 
-## Usage Example
-
-<demo src="./demo/chat-provider-custom-with-ui.vue">Basic</demo>
-
 ## Contributing Chat Provider
 
 We welcome community contributions for new Chat Providers! Please follow these specifications for Chat Provider development.

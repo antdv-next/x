@@ -48,6 +48,3 @@ const { onRequest, messages, isRequesting } = useXChat({
 ## DefaultChatProvider
 
 `DefaultChatProvider` 是一个默认的 `Chat Provider`，几乎没有对数据进行转换，直接将请求参数和响应数据返回给 `useXChat`。它兼容了普通请求和stream请求（你需要做流拼接）的数据格式，你可以直接使用。
-
-<demo src="./demo/chat-provider-default.vue">基本</demo>
-<demo src="./demo/chat-provider-default-with-ui.vue">配合组件</demo>

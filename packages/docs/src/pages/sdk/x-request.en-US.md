@@ -13,14 +13,6 @@ order: 3
 - You need to send streaming requests to model services (SSE / chunked response).
 - You need unified timeout, abort, retry, and incremental update callbacks.
 
-## Examples
-
-<demo src="./demo/x-request-basic.vue">Basic Streaming Request</demo>
-<demo src="./demo/x-request-custom-params-headers.vue">Custom Params & Headers</demo>
-<demo src="./demo/x-request-custom-transformer.vue">Custom Transformer</demo>
-<demo src="./demo/x-request-stream-separator.vue">Stream Separator Config</demo>
-<demo src="./demo/x-request-stream-timeout.vue">Stream Timeout</demo>
-
 ## Basic Example Code
 
 ```ts

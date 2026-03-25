@@ -13,11 +13,6 @@ order: 4
 - 需要把 SSE 协议 `ReadableStream` 解析成结构化对象。
 - 需要对任意协议流进行解码，并通过 `for await...of` 消费。
 
-## 代码演示
-
-<demo src="./demo/x-stream-default-protocol.vue">默认协议 - SSE</demo>
-<demo src="./demo/x-stream-custom-protocol.vue">自定义协议</demo>
-
 ## 基础示例代码
 
 ```ts
