@@ -14,6 +14,28 @@ export interface ComponentOverviewItem {
 
 export const componentOverviewItems: ComponentOverviewItem[] = [
   {
+    slug: "prompts",
+    path: "/components/prompts",
+    title: "Prompts",
+    subtitle: {
+      "zh-CN": "提示集",
+    },
+    description: {
+      "zh-CN": "用于显示一组与当前上下文相关的预定义的问题或建议。",
+      "en-US":
+        "Display a predefined set of questions or suggestions relevant to the current context.",
+    },
+    group: {
+      "zh-CN": "唤醒",
+      "en-US": "Wake",
+    },
+    groupOrder: 1,
+    cover:
+      "https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*UfhXRamlAf0AAAAAAAAAAAAADgCCAQ/original",
+    coverDark:
+      "https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*3CN5RLKP0X4AAAAAAAAAAAAADgCCAQ/original",
+  },
+  {
     slug: "bubble",
     path: "/components/bubble",
     title: "Bubble",
