@@ -23,4 +23,7 @@ export default {
     start: "开始使用",
     design: "设计语言",
   },
+  contributors: {
+    title: "文档贡献者",
+  },
 };

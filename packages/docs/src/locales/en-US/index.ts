@@ -23,4 +23,7 @@ export default {
     start: "Get Started",
     design: "Get Design",
   },
+  contributors: {
+    title: "contributors",
+  },
 };
