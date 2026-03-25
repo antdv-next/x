@@ -18,15 +18,15 @@ Manage conversation data through Agent and produce data for page rendering.
 ## Code Examples
 
 <!-- prettier-ignore -->
-<code src="./demos/x-chat/openai.tsx">OpenAI Model Integration</code>
-<code src="./demos/x-chat/deepSeek.tsx">Thinking Model Integration</code>
-<code src="./demos/x-chat/defaultMessages.tsx">Historical Messages Setup</code>
-<code src="./demos/x-chat/async-defaultMessages.tsx">Request Remote Historical Messages</code>
-<code src="./demos/x-chat/developer.tsx">System Prompt Setup</code>
-<code src="./demos/x-chat/openai-callback.tsx">Model Request Callback</code>
-<code src="./demos/x-chat/custom-request-fetch.tsx">Custom XRequest.fetch</code>
-<code src="./demos/x-chat/request-openai-node.tsx">Custom request</code>
-<code src="./demos/x-conversations/session-key.tsx">SessionId - ConversationKey</code>
+<demo src="./demo/use-x-chat-openai.vue">OpenAI Model Integration</demo>
+<demo src="./demo/use-x-chat-deepseek.vue">Thinking Model Integration</demo>
+<demo src="./demo/use-x-chat-default-messages.vue">Historical Messages Setup</demo>
+<demo src="./demo/use-x-chat-async-default-messages.vue">Request Remote Historical Messages</demo>
+<demo src="./demo/use-x-chat-developer.vue">System Prompt Setup</demo>
+<demo src="./demo/use-x-chat-openai-callback.vue">Model Request Callback</demo>
+<demo src="./demo/use-x-chat-custom-request-fetch.vue">Custom XRequest.fetch</demo>
+<demo src="./demo/use-x-chat-request-openai-node.vue">Custom request</demo>
+<demo src="./demo/use-x-chat-session-key.vue">SessionId - ConversationKey</demo>
 
 ## API
 
