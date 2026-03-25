@@ -53,7 +53,6 @@ const useStyles = createStyles(({ token }) => ({
       background: token.colorBgContainer,
     },
     "&.ant-doc-demo-box-simplify": {
-      border: "none",
       borderRadius: 0,
       background: "transparent",
     },
