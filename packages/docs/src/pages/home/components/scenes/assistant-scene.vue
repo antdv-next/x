@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import type { BubbleItemType } from "@antdv-next/x";
 
-import { BubbleList, Sender } from "@antdv-next/x";
-import { Avatar, Skeleton } from "antdv-next";
+import { BubbleList, Sender, Welcome } from "@antdv-next/x";
+import { Skeleton } from "antdv-next";
 import { createStyles } from "antdv-style";
 import { computed, h } from "vue";
 
@@ -10,31 +10,46 @@ import { useLocale } from "@/composables/use-locale";
 
 import { useMockChat } from "../../composables/use-mock-chat";
 
-const { t } = useLocale();
+const { t, locale } = useLocale();
 const chat = useMockChat(
   t("home.scenes.assistantGreeting"),
   t("home.scenes.waiting"),
 );
+
+const SEND_ICON =
+  "https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*4e5sTY9lU3sAAAAAAAAAAAAADgCCAQ/original";
+
+const presets = computed(() => [
+  t("home.scenes.question1"),
+  t("home.scenes.question2"),
+  t("home.scenes.question3"),
+  t("home.scenes.question4"),
+]);
+const helpLabel = computed(() =>
+  locale.value === "zh-CN" ? "我可以帮您:" : "I can assist you with:",
+);
+
 const chatItems = computed(() =>
   chat.items.value.filter(item => item.role !== "system"),
 );
-const SEND_ICON =
-  "https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*4e5sTY9lU3sAAAAAAAAAAAAADgCCAQ/original";
 
 const role = computed<any>(() => ({
   ai: {
     placement: "start",
-    typing: { effect: "typing", step: 5, interval: 18 },
-    avatar: () => h(Avatar, { size: 28 }, () => "AI"),
-    style: { maxWidth: "90%" },
+    typing: { effect: "typing", step: 5, interval: 20 },
+    style: { maxWidth: "600px" },
+    styles: {
+      content: {
+        borderRadius: 16,
+      },
+    },
   },
   user: {
     placement: "end",
-    avatar: () => h(Avatar, { size: 28 }, () => "U"),
     styles: {
       content: {
+        borderRadius: 16,
         background: "#3877FF",
-        color: "#fff",
       },
     },
   },
@@ -47,90 +62,149 @@ const useStyles = createStyles(({ token, css }) => ({
     justify-content: space-between;
   `,
   left: css`
-    padding: 32px;
+    padding: ${token.paddingXL}px;
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: ${token.padding}px;
   `,
   right: css`
+    display: flex;
+    box-sizing: border-box;
+    flex-direction: column;
+    gap: ${token.paddingSM}px;
+    height: 100%;
     width: 350px;
     background: #0000001a;
-    padding: 24px 0;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+    padding: ${token.paddingXL}px 12px;
     min-height: 0;
   `,
-  listWrap: css`
+  bubble_list: css`
     flex: 1;
-    min-height: 0;
-    padding-inline: 20px;
   `,
-  list: css`
-    height: 100%;
+  placeholder_bubble: css`
+    .antd-welcome,
+    .ant-welcome {
+      padding: 0;
+    }
+
+    .antd-welcome-title,
+    .ant-welcome-title {
+      font-size: 16px !important;
+      font-weight: 500 !important;
+      opacity: 0.9;
+    }
+
+    .antd-welcome-description,
+    .ant-welcome-description {
+      font-size: 12px;
+      opacity: 0.65;
+    }
+
+    .antd-welcome-icon img,
+    .ant-welcome-icon img {
+      transform: scale(1.2);
+      margin-inline-end: 10px;
+    }
   `,
-  skeleton: css`
-    background: rgba(255, 255, 255, 0.02);
-    border-radius: 12px;
-    padding: 12px;
-    margin-bottom: 12px;
-  `,
-  placeholder: css`
+  placeholder_content: css`
     overflow: hidden;
-    background: linear-gradient(135deg, #ffffff26 14%, #ffffff0d 59%);
-    border-radius: 16px;
-    padding: 20px;
-  `,
-  placeholderTitle: css`
-    margin: 0;
-    color: #fff;
-    font-size: 16px;
-    font-weight: 500;
-    opacity: 0.9;
-  `,
-  placeholderDesc: css`
-    margin: 6px 0 0;
-    color: #fff;
-    font-size: 12px;
-    opacity: 0.65;
-  `,
-  sender: css`
-    margin-inline: ${token.paddingSM * 2}px;
-    width: calc(100% - ${token.paddingSM * 4}px);
     background: linear-gradient(
       135deg,
       #ffffff26 14%,
       #ffffff0d 59%
     ) !important;
-    border-radius: 40px !important;
+    border-radius: 16px;
+    padding: 24px;
+  `,
+  promptWrap: css`
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  `,
+  promptTitle: css`
+    margin: 0;
+    color: rgba(255, 255, 255, 0.66);
+    font-size: 12px;
+    line-height: 20px;
+  `,
+  promptItem: css`
+    width: 100%;
+    background: rgba(255, 255, 255, 0.05);
+    box-sizing: border-box;
+    padding: 8px 16px;
+    font-size: 12px;
+    line-height: 20px;
+    border: none !important;
+    border-radius: 10px;
+    color: rgba(255, 255, 255, 0.9);
+    text-align: left;
+    cursor: pointer;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.08);
+    }
+  `,
+  sender: css`
+    margin-inline: auto;
+    width: calc(100% - 48px);
+    background: linear-gradient(
+      135deg,
+      #ffffff26 14%,
+      #ffffff0d 59%
+    ) !important;
+    border-radius: 10px !important;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    cursor: pointer;
     overflow: hidden;
     position: relative;
-    border: none;
 
-    .antd-sender-content {
-      padding: 0 ${token.paddingSM}px;
+    .antd-sender-main,
+    .ant-sender-main {
       min-height: 44px;
-      background: transparent !important;
     }
 
+    .antd-sender-content,
+    .ant-sender-content {
+      min-height: 44px;
+      padding: 0 ${token.paddingSM}px;
+      background: transparent !important;
+      align-items: center;
+    }
+
+    .antd-sender-input,
+    .ant-sender-input,
+    .ant-input,
     .antd-input,
     textarea {
       background: transparent !important;
       color: rgba(255, 255, 255, 0.92) !important;
+      font-size: 16px;
+      line-height: 24px;
     }
 
+    .antd-sender-input::placeholder,
+    .ant-sender-input::placeholder,
+    .ant-input::placeholder,
     .antd-input::placeholder,
     textarea::placeholder {
       color: rgba(255, 255, 255, 0.45) !important;
     }
 
-    .antd-btn {
+    .antd-sender-actions-btn,
+    .ant-sender-actions-btn {
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
       background: transparent !important;
       border: none !important;
       box-shadow: none !important;
-      color: #fff !important;
+      padding: 0 !important;
+      min-width: 30px;
+      width: 30px;
+      height: 30px;
     }
 
     &::after {
@@ -145,7 +219,7 @@ const useStyles = createStyles(({ token, css }) => ({
       inset-inline-start: 0;
       inset-inline-end: 0;
       padding: ${token.lineWidth}px;
-      background: linear-gradient(180deg, #ffffff26 0%, #ffffff00 100%);
+      background: linear-gradient(180deg, #ffffff24 0%, #ffffff00 72%);
       mask:
         linear-gradient(#fff 0 0) content-box,
         linear-gradient(#fff 0 0);
@@ -161,6 +235,46 @@ const useStyles = createStyles(({ token, css }) => ({
 
 const styleState = useStyles();
 
+const placeholderMessage = computed<BubbleItemType>(() => ({
+  role: "system",
+  key: "placeholder",
+  variant: "borderless",
+  class: styleState.styles.placeholder_bubble,
+  classes: {
+    root: styleState.styles.placeholder_bubble,
+    content: styleState.styles.placeholder_content,
+  },
+  content: h(Welcome, {
+    icon: h("img", {
+      src: "https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*s5sNRo5LjfQAAAAAAAAAAAAADgCCAQ/fmt.webp",
+      alt: "Ant Design X",
+    }),
+    variant: "borderless",
+    title: t("home.scenes.greetingShort"),
+    description: t("home.scenes.helpDesc"),
+  }),
+  footer: h("div", { class: styleState.styles.promptWrap }, [
+    h("p", { class: styleState.styles.promptTitle }, helpLabel.value),
+    ...presets.value.map((prompt, index) =>
+      h(
+        "button",
+        {
+          key: `assistant_prompt_${index}`,
+          type: "button",
+          class: styleState.styles.promptItem,
+          onClick: () => chat.submitPreset(prompt),
+        },
+        prompt,
+      ),
+    ),
+  ]),
+}));
+
+const bubbleItems = computed<BubbleItemType[]>(() => [
+  placeholderMessage.value,
+  ...(chatItems.value as unknown as BubbleItemType[]),
+]);
+
 function handleChange(value: string) {
   chat.input.value = value;
 }
@@ -173,7 +287,7 @@ function senderSuffix(_: unknown, info: any) {
     icon: h("img", {
       src: SEND_ICON,
       alt: "send",
-      style: "width: 20px; height: 20px;",
+      style: "width: 22px; height: 22px; display: block;",
     }),
   });
 }
@@ -182,45 +296,24 @@ function senderSuffix(_: unknown, info: any) {
 <template>
   <div :class="styleState.styles.root">
     <div :class="styleState.styles.left">
-      <div :class="styleState.styles.skeleton">
-        <Skeleton active :title="{ width: '70%' }" :paragraph="{ rows: 3 }" />
-      </div>
-      <div :class="styleState.styles.skeleton">
-        <Skeleton active :title="{ width: '60%' }" :paragraph="{ rows: 2 }" />
-      </div>
-      <div :class="styleState.styles.skeleton">
-        <Skeleton active :title="{ width: '80%' }" :paragraph="{ rows: 4 }" />
-      </div>
+      <Skeleton active />
+      <Skeleton active />
+      <Skeleton active />
     </div>
 
     <div :class="styleState.styles.right">
-      <div :class="styleState.styles.listWrap">
-        <BubbleList
-          :class="styleState.styles.list"
-          :items="[
-            {
-              key: 'placeholder',
-              role: 'system',
-              variant: 'borderless',
-              content: h('div', { class: styleState.styles.placeholder }, [
-                h(
-                  'h4',
-                  { class: styleState.styles.placeholderTitle },
-                  t('home.scenes.greeting'),
-                ),
-                h(
-                  'p',
-                  { class: styleState.styles.placeholderDesc },
-                  t('home.scenes.helpDesc'),
-                ),
-              ]),
-            },
-            ...(chatItems as unknown as BubbleItemType[]),
-          ]"
-          :role="role"
-        />
-      </div>
+      <BubbleList
+        :class="styleState.styles.bubble_list"
+        :role="role"
+        :items="bubbleItems"
+        :styles="{
+          root: { height: 'calc(100% - 56px)' },
+          scroll: { paddingInline: 20 },
+        }"
+      />
+
       <Sender
+        prefix-cls="antd-sender"
         :class="styleState.styles.sender"
         :value="chat.input.value"
         :loading="chat.loading.value"

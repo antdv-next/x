@@ -43,6 +43,12 @@ const tabItems = computed(() => [
 
 const mobileItems = computed(() => tabItems.value.filter(item => !!item.img));
 const active = ref("independent");
+const activeScene = computed(() => {
+  if (active.value === "independent") return IndependentScene;
+  if (active.value === "assistant") return AssistantScene;
+  if (active.value === "nest") return NestScene;
+  return null;
+});
 
 const useStyles = createStyles(({ token, css }) => ({
   container: css`
@@ -72,7 +78,8 @@ const useStyles = createStyles(({ token, css }) => ({
     gap: ${token.margin}px;
   `,
   tabContent: css`
-    width: 890px;
+    flex: 1;
+    max-width: 890px;
     height: 600px;
     box-sizing: border-box;
     background-image: url("https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*RxJMSbQRvTUAAAAAAAAAAAAADgCCAQ/fmt.avif");
@@ -80,6 +87,7 @@ const useStyles = createStyles(({ token, css }) => ({
     background-size: cover;
     z-index: 2;
     overflow: hidden;
+    border-radius: 8px;
   `,
   item: css`
     position: relative;
@@ -223,10 +231,25 @@ const styleState = useStyles();
         </Button>
       </div>
       <div v-if="active !== 'app'" :class="styleState.styles.tabContent">
-        <IndependentScene v-if="active === 'independent'" />
-        <AssistantScene v-else-if="active === 'assistant'" />
-        <NestScene v-else-if="active === 'nest'" />
+        <Transition name="scene-fade" mode="out-in">
+          <component :is="activeScene" :key="active" />
+        </Transition>
       </div>
     </div>
   </HomeContainer>
 </template>
+
+<style scoped>
+.scene-fade-enter-active,
+.scene-fade-leave-active {
+  transition:
+    opacity 0.24s ease,
+    transform 0.24s ease;
+}
+
+.scene-fade-enter-from,
+.scene-fade-leave-to {
+  opacity: 0;
+  transform: translateY(8px);
+}
+</style>

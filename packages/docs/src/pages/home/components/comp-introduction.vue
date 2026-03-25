@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { Bubble, Conversations, Sender } from "@antdv-next/x";
+import { DeleteOutlined, EditOutlined, EnterOutlined } from "@antdv-next/icons";
+import { Bubble, Sender, Welcome } from "@antdv-next/x";
 import { useMediaQuery } from "@vueuse/core";
 import { createStyles } from "antdv-style";
 import { computed } from "vue";
@@ -124,11 +125,7 @@ const useStyles = createStyles(({ token, css }) => ({
     position: relative;
     text-decoration: none;
     color: #fff;
-    transition: transform ${token.motionDurationMid};
-
-    &:hover {
-      transform: translateY(-2px);
-    }
+    transition: all ${token.motionDurationMid};
 
     &:hover::after {
       content: "";
@@ -156,9 +153,6 @@ const useStyles = createStyles(({ token, css }) => ({
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 18px;
-    background: linear-gradient(180deg, #1f252b 0%, #171b1f 100%);
-    overflow: hidden;
 
     img {
       width: auto;
@@ -174,21 +168,67 @@ const useStyles = createStyles(({ token, css }) => ({
   `,
   previewSender: css`
     width: min(330px, 100%);
-    border-radius: 20px;
+    border-radius: 40px;
     overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  `,
+  previewWelcome: css`
+    width: min(290px, 100%);
+    background: linear-gradient(135deg, #ffffff26 14%, #ffffff0d 59%);
+    border-radius: 20px;
+    padding: 18px;
+  `,
+  previewPrompts: css`
+    width: min(290px, 100%);
+    background: linear-gradient(135deg, #ffffff26 14%, #ffffff0d 59%);
+    border-radius: 20px;
+    padding: 16px;
+  `,
+  previewPromptsTitle: css`
+    margin: 0;
+    color: rgba(255, 255, 255, 0.92);
+    font-size: 14px;
+    line-height: 22px;
+    font-weight: 500;
+  `,
+  previewPromptsDesc: css`
+    margin: 4px 0 10px;
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 12px;
+    line-height: 20px;
+  `,
+  previewPromptItem: css`
+    width: 100%;
+    border: none;
+    border-radius: 12px;
+    padding: 8px 12px;
+    margin-top: 8px;
+    text-align: left;
+    color: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.06);
+    font-size: 12px;
+    line-height: 20px;
+    cursor: pointer;
   `,
   previewBubble: css`
     width: min(320px, 100%);
   `,
   previewConversations: css`
-    width: min(320px, 100%);
-    height: 220px;
+    width: min(290px, 100%);
+  `,
+  actionFooter: css`
+    width: 230px;
+    display: flex;
+    align-items: end;
+    justify-content: end;
+    gap: ${token.paddingSM}px;
+    opacity: 0.65;
   `,
   content: css`
     display: flex;
     align-items: center;
     gap: ${token.paddingSM}px;
-    margin-top: ${token.paddingSM}px;
   `,
   title: css`
     display: flex;
@@ -227,6 +267,32 @@ const useStyles = createStyles(({ token, css }) => ({
 }));
 
 const styleState = useStyles();
+const welcomeIcon =
+  "https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*s5sNRo5LjfQAAAAAAAAAAAAADgCCAQ/fmt.webp";
+const previewWelcomeTitle = computed(() =>
+  locale.value === "zh-CN"
+    ? "你好，我是全新 AI 产品创造助手"
+    : "Hello, I am your AI Product Design Assistant",
+);
+const previewWelcomeDesc = computed(() =>
+  locale.value === "zh-CN"
+    ? "基于 Ant Design 的 AGI 产品智能解决方案，创造更美好的智能视界。"
+    : "Powered by Ant Design's AGI solution to create better intelligent experiences.",
+);
+const previewPromptsTitle = computed(() =>
+  locale.value === "zh-CN" ? "我可以帮您：" : "I can assist you with:",
+);
+const previewPromptsDesc = computed(() =>
+  locale.value === "zh-CN"
+    ? "点击问题可直接发起请求"
+    : "Click a question to send it immediately",
+);
+const previewPromptItems = computed(() => [
+  t("home.scenes.question1"),
+  t("home.scenes.question2"),
+  t("home.scenes.question3"),
+  t("home.scenes.question4"),
+]);
 
 const gridColumns = computed(() => {
   if (isMobile.value) return "1fr";
@@ -275,9 +341,39 @@ function goto(path: string) {
           <Sender
             v-else-if="item.previewType === 'suggestion'"
             :class="styleState.styles.previewSender"
-            :value="t('home.scenes.question1')"
+            :value="'/'"
             :read-only="true"
+            :placeholder="t('home.scenes.sendPlaceholder')"
           />
+
+          <Welcome
+            v-else-if="item.previewType === 'welcome'"
+            :class="styleState.styles.previewWelcome"
+            :icon="welcomeIcon"
+            :title="previewWelcomeTitle"
+            :description="previewWelcomeDesc"
+            variant="borderless"
+          />
+
+          <div
+            v-else-if="item.previewType === 'prompts'"
+            :class="styleState.styles.previewPrompts"
+          >
+            <p :class="styleState.styles.previewPromptsTitle">
+              {{ previewPromptsTitle }}
+            </p>
+            <p :class="styleState.styles.previewPromptsDesc">
+              {{ previewPromptsDesc }}
+            </p>
+            <button
+              v-for="(prompt, index) in previewPromptItems"
+              :key="`comp_prompt_${index}`"
+              type="button"
+              :class="styleState.styles.previewPromptItem"
+            >
+              {{ prompt }}
+            </button>
+          </div>
 
           <Bubble
             v-else-if="item.previewType === 'bubble'"
@@ -286,32 +382,19 @@ function goto(path: string) {
             :typing="{ effect: 'typing', step: 5, interval: 20 }"
           />
 
-          <Conversations
-            v-else-if="item.previewType === 'conversations'"
-            :class="styleState.styles.previewConversations"
-            :items="[
-              { key: '1', label: 'UI Design' },
-              { key: '2', label: 'Copilot' },
-              { key: '3', label: 'Data Insight' },
-            ]"
-            default-active-key="1"
-          />
-
           <Bubble
             v-else-if="item.previewType === 'actions'"
             :class="styleState.styles.previewBubble"
             content="Result actions: copy, retry, feedback"
-          />
-
-          <Bubble
-            v-else
-            :class="styleState.styles.previewBubble"
-            :content="
-              item.previewType === 'welcome'
-                ? t('home.scenes.greeting')
-                : t('home.scenes.helpText')
-            "
-          />
+          >
+            <template #footer>
+              <div :class="styleState.styles.actionFooter">
+                <EditOutlined />
+                <DeleteOutlined />
+                <EnterOutlined />
+              </div>
+            </template>
+          </Bubble>
         </div>
 
         <div :class="styleState.styles.content">

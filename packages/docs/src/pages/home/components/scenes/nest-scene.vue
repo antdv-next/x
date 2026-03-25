@@ -11,61 +11,81 @@ const SEND_ICON =
 
 const useStyles = createStyles(({ token, css }) => ({
   root: css`
-    height: 100%;
     display: flex;
-    flex-direction: column;
-    align-items: stretch;
+    height: 100%;
+    width: 100%;
+    align-items: center;
     justify-content: center;
-    gap: ${token.marginXL}px;
-    padding: 0 ${token.paddingXL}px;
+    flex-direction: column;
+    gap: ${token.paddingLG}px;
   `,
   title: css`
     margin: 0;
-    text-align: center;
-    font-size: 60px;
-    line-height: 1.15;
-    font-weight: 500;
+    font-size: 42px;
     color: #ffffff3f;
-
-    @media (max-width: 900px) {
-      font-size: 36px;
-    }
+    line-height: 50px;
+    font-weight: 500;
+    text-align: center;
   `,
   sender: css`
-    width: calc(100% - 96px);
+    width: 580px;
+    max-width: calc(100% - 96px);
     margin-inline: auto;
     background: linear-gradient(
       135deg,
       #ffffff26 14%,
       #ffffff0d 59%
     ) !important;
-    border-radius: 32px !important;
+    border-radius: 10px !important;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
     overflow: hidden;
     position: relative;
-    border: none;
 
-    .antd-sender-content {
+    .antd-sender-main,
+    .ant-sender-main {
+      min-height: 44px;
+    }
+
+    .antd-sender-content,
+    .ant-sender-content {
       padding: 0 ${token.paddingSM}px;
       min-height: 44px;
       background: transparent !important;
+      align-items: center;
     }
 
+    .antd-sender-input,
+    .ant-sender-input,
+    .ant-input,
     .antd-input,
     textarea {
       background: transparent !important;
       color: rgba(255, 255, 255, 0.92) !important;
+      font-size: 16px;
+      line-height: 24px;
     }
 
+    .antd-sender-input::placeholder,
+    .ant-sender-input::placeholder,
+    .ant-input::placeholder,
     .antd-input::placeholder,
     textarea::placeholder {
       color: rgba(255, 255, 255, 0.45) !important;
     }
 
-    .antd-btn {
+    .antd-sender-actions-btn,
+    .ant-sender-actions-btn {
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
       background: transparent !important;
       border: none !important;
       box-shadow: none !important;
-      color: #fff !important;
+      padding: 0 !important;
+      min-width: 30px;
+      width: 30px;
+      height: 30px;
     }
 
     &::after {
@@ -80,7 +100,7 @@ const useStyles = createStyles(({ token, css }) => ({
       inset-inline-start: 0;
       inset-inline-end: 0;
       padding: ${token.lineWidth}px;
-      background: linear-gradient(180deg, #ffffff26 0%, #ffffff00 100%);
+      background: linear-gradient(180deg, #ffffff24 0%, #ffffff00 72%);
       mask:
         linear-gradient(#fff 0 0) content-box,
         linear-gradient(#fff 0 0);
@@ -103,7 +123,7 @@ function senderSuffix(_: unknown, info: any) {
     icon: h("img", {
       src: SEND_ICON,
       alt: "send",
-      style: "width: 20px; height: 20px;",
+      style: "width: 22px; height: 22px; display: block;",
     }),
   });
 }
@@ -115,6 +135,7 @@ function senderSuffix(_: unknown, info: any) {
       {{ t("home.scenes.greetingShort") }}
     </h3>
     <Sender
+      prefix-cls="antd-sender"
       :class="styleState.styles.sender"
       :value="t('home.scenes.question1')"
       :read-only="true"
