@@ -4,11 +4,15 @@ import type { ComputedRef, CSSProperties, StyleValue } from "vue";
 import { computed, inject } from "vue";
 
 import type { ActionsProps } from "../actions";
+import type { AttachmentsProps } from "../attachments";
 import type { BubbleProps } from "../bubble";
 import type { ConversationsProps } from "../conversations";
 import type { FileCardProps } from "../file-card";
+import type { SenderProps } from "../sender";
 import type { SourcesProps } from "../sources";
 import type { DesignTokenProviderProps } from "../theme/context";
+import type { ThinkProps } from "../think";
+import type { ThoughtChainProps } from "../thought-chain";
 import type { WelcomeProps } from "../welcome";
 
 export interface BaseComponentConfig {
@@ -22,6 +26,7 @@ export interface XComponentConfig extends BaseComponentConfig {
 }
 
 export interface XComponentsConfig {
+  attachments?: Pick<AttachmentsProps, "style" | "styles" | "classes">;
   bubble?: Pick<BubbleProps, "style" | "styles" | "classes">;
   conversations?: Pick<
     ConversationsProps,
@@ -30,6 +35,9 @@ export interface XComponentsConfig {
   actions?: Pick<ActionsProps, "style" | "styles" | "classes">;
   sources?: Pick<SourcesProps, "style" | "styles" | "classes">;
   fileCard?: Pick<FileCardProps, "style" | "styles" | "classes">;
+  sender?: Pick<SenderProps, "style" | "styles" | "classNames">;
+  think?: Pick<ThinkProps, "style" | "styles" | "classes">;
+  thoughtChain?: Pick<ThoughtChainProps, "style" | "styles" | "classes">;
   welcome?: Pick<WelcomeProps, "style" | "styles" | "classes">;
 }
 

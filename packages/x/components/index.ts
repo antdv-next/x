@@ -7,12 +7,16 @@ import Actions, {
   ActionsFeedback,
   ActionsItem,
 } from "./actions";
+import Attachments from "./attachments";
 import Bubble, { BubbleDivider, BubbleList, BubbleSystem } from "./bubble";
 import CodeHighlighter from "./code-highlighter";
 import Conversations, { ConversationsCreation } from "./conversations";
 import FileCard, { FileCardList } from "./file-card";
 import Notification, { XNotification } from "./notification";
+import Sender, { SenderHeader, SenderSwitch } from "./sender";
 import Sources from "./sources";
+import Think from "./think";
+import ThoughtChain, { ThoughtChainItem } from "./thought-chain";
 import Welcome from "./welcome";
 import XProvider from "./x-provider";
 
@@ -34,6 +38,13 @@ const components = [
   ActionsItem,
   FileCard,
   FileCardList,
+  Attachments,
+  Sender,
+  SenderHeader,
+  SenderSwitch,
+  Think,
+  ThoughtChain,
+  ThoughtChainItem,
 ];
 
 const componentAliases = new Map<string, string[]>([
@@ -48,6 +59,13 @@ const componentAliases = new Map<string, string[]>([
   ["XActionsItem", ["AActionsItem"]],
   ["XFileCard", ["AFileCard"]],
   ["XFileCardList", ["AFileCardList"]],
+  ["XAttachments", ["AAttachments"]],
+  ["XSender", ["ASender"]],
+  ["XSenderHeader", ["ASenderHeader"]],
+  ["XSenderSwitch", ["ASenderSwitch"]],
+  ["XThink", ["AThink"]],
+  ["XThoughtChain", ["AThoughtChain"]],
+  ["XThoughtChainItem", ["AThoughtChainItem"]],
 ]);
 
 export default {
@@ -70,6 +88,7 @@ export {
   ActionsCopy,
   ActionsFeedback,
   ActionsItem,
+  Attachments,
   Bubble,
   BubbleDivider,
   BubbleList,
@@ -81,9 +100,15 @@ export {
   FileCardList,
   Notification,
   XNotification,
+  Sender,
+  SenderHeader,
+  SenderSwitch,
   XProvider,
   version,
   Sources,
+  Think,
+  ThoughtChain,
+  ThoughtChainItem,
   Welcome,
 };
 
@@ -107,6 +132,14 @@ export type {
 } from "./bubble";
 
 export type { FileCardListProps, FileCardProps } from "./file-card";
+export type { ThinkProps, ThinkRef } from "./think";
+export type {
+  ThoughtChainItemProps,
+  ThoughtChainItemStatus,
+  ThoughtChainItemType,
+  ThoughtChainProps,
+  ThoughtChainRef,
+} from "./thought-chain";
 
 export type {
   ConversationItemType,
@@ -125,7 +158,9 @@ export type {
   CodeHighlighterSemanticType,
 } from "./code-highlighter";
 
+export type { SenderProps, SenderRef } from "./sender";
 export type { XProviderProps } from "./x-provider";
+export type { AttachmentsProps, AttachmentsRef } from "./attachments";
 
 export type {
   UseNotificationType,
