@@ -14,10 +14,6 @@ const XProvider = defineComponent({
   name: "XProvider",
   inheritAttrs: false,
   props: {
-    attachments: {
-      type: Object as PropType<XProviderProps["attachments"]>,
-      default: undefined,
-    },
     actions: {
       type: Object as PropType<XProviderProps["actions"]>,
       default: undefined,
@@ -32,6 +28,10 @@ const XProvider = defineComponent({
     },
     fileCard: {
       type: Object as PropType<XProviderProps["fileCard"]>,
+      default: undefined,
+    },
+    welcome: {
+      type: Object as PropType<XProviderProps["welcome"]>,
       default: undefined,
     },
     theme: {
@@ -52,11 +52,11 @@ const XProvider = defineComponent({
 
     const xProviderConfig = computed(() => {
       return {
-        attachments: props.attachments,
         actions: props.actions,
         bubble: props.bubble,
         conversations: props.conversations,
         fileCard: props.fileCard,
+        welcome: props.welcome,
       };
     });
 
