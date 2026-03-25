@@ -15,6 +15,11 @@ packageName: x-sdk
 
 Manage conversation data through Agent and produce data for page rendering.
 
+## Code Examples
+
+<!-- prettier-ignore -->
+<demo src="./demo/openai.vue">OpenAI Model Integration</demo>
+
 ## API
 
 ### useXChat

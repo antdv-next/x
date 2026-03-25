@@ -14,6 +14,11 @@ description: 单对话的数据管理。
 
 通过 Agent 进行会话数据管理，并产出供页面渲染使用的数据。
 
+## 代码演示
+
+<!-- prettier-ignore -->
+<demo src="./demo/openai.vue">OpenAI 模型接入</demo>
+
 ## API
 
 ### useXChat
