@@ -1,5 +1,5 @@
 import type { ButtonProps } from "antdv-next";
-import type { ComputedRef, InjectionKey, PropType } from "vue";
+import type { ComputedRef, InjectionKey, PropType, VNodeChild } from "vue";
 
 import { Button } from "antdv-next";
 import { computed, defineComponent, inject, provide } from "vue";

@@ -309,6 +309,81 @@ function createGroupedSiderItems(
   ] satisfies MenuItemType[];
 }
 
+type LocaleKey = typeof LOCALE_ZH_CN | typeof LOCALE_EN_US;
+
+interface ParsedPageMeta {
+  title?: string;
+  order?: number;
+  groupTitle?: string;
+  groupOrder?: number;
+  hidden?: boolean;
+}
+
+const markdownRawPages = import.meta.glob("../../pages/markdown/**/*.md", {
+  query: "?raw",
+  import: "default",
+  eager: true,
+}) as Record<string, string>;
+
+function normalizeSourcePath(path: string) {
+  return path.replace(/^(\.\.\/)+/, "");
+}
+
+function toOptionalNumber(value?: string) {
+  if (!value) return undefined;
+  const parsed = Number(value.trim().replace(/^['"]|['"]$/g, ""));
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function toOptionalText(value?: string) {
+  if (!value) return undefined;
+  return value.trim().replace(/^['"]|['"]$/g, "");
+}
+
+function toOptionalBoolean(value?: string) {
+  if (!value) return undefined;
+  const normalized = value
+    .trim()
+    .replace(/^['"]|['"]$/g, "")
+    .toLowerCase();
+  if (normalized === "true") return true;
+  if (normalized === "false") return false;
+  return undefined;
+}
+
+function parseFrontmatterMeta(markdown: string): ParsedPageMeta {
+  const frontmatterMatch = markdown.match(/^---\n([\s\S]*?)\n---/);
+  if (!frontmatterMatch) return {};
+
+  const frontmatter = frontmatterMatch[1];
+  const title = toOptionalText(frontmatter.match(/^title:\s*(.+)$/m)?.[1]);
+  const order = toOptionalNumber(frontmatter.match(/^order:\s*(.+)$/m)?.[1]);
+  const hidden = toOptionalBoolean(frontmatter.match(/^hidden:\s*(.+)$/m)?.[1]);
+
+  const groupBlock = frontmatter.match(/^group:\s*\n((?:[ \t].*\n?)*)/m)?.[1];
+  const groupTitle = toOptionalText(
+    groupBlock?.match(/^[ \t]+title:\s*(.+)$/m)?.[1],
+  );
+  const groupOrder = toOptionalNumber(
+    groupBlock?.match(/^[ \t]+order:\s*(.+)$/m)?.[1],
+  );
+
+  return {
+    title,
+    order,
+    groupTitle,
+    groupOrder,
+    hidden,
+  };
+}
+
+const markdownMetaBySource = new Map<string, ParsedPageMeta>(
+  Object.entries(markdownRawPages).map(([source, markdown]) => [
+    normalizeSourcePath(source),
+    parseFrontmatterMeta(markdown),
+  ]),
+);
+
 const normalizedCurrentPath = computed(() => normalizePath(route.path));
 const currentPathWithoutLocale = computed(() =>
   stripLocaleSuffix(normalizedCurrentPath.value),
