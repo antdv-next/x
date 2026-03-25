@@ -17,18 +17,4 @@ description: Request and stream utilities for AI applications.
 
 ## Installation
 
-```bash
-npm install @antdv-next/x-sdk
-```
-
-```bash
-yarn add @antdv-next/x-sdk
-```
-
-```bash
-pnpm add @antdv-next/x-sdk
-```
-
-```bash
-bun add @antdv-next/x-sdk
-```
+<InstallDependencies npm='npm install @antdv-next/x-sdk' yarn='yarn add @antdv-next/x-sdk' pnpm='pnpm install @antdv-next/x-sdk' bun='bun add @antdv-next/x-sdk'></InstallDependencies>

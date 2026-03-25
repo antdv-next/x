@@ -17,18 +17,4 @@ description: 面向 AI 场景的请求与流处理工具集。
 
 ## 安装
 
-```bash
-npm install @antdv-next/x-sdk
-```
-
-```bash
-yarn add @antdv-next/x-sdk
-```
-
-```bash
-pnpm add @antdv-next/x-sdk
-```
-
-```bash
-bun add @antdv-next/x-sdk
-```
+<InstallDependencies npm='npm install @antdv-next/x-sdk' yarn='yarn add @antdv-next/x-sdk' pnpm='pnpm install @antdv-next/x-sdk' bun='bun add @antdv-next/x-sdk'></InstallDependencies>
