@@ -9,6 +9,7 @@ import type { ComponentToken as SenderComponentToken } from "../../sender/style"
 import type { ComponentToken as SourcesComponentToken } from "../../sources/style";
 import type { ComponentToken as ThinkComponentToken } from "../../think/style";
 import type { ComponentToken as ThoughtChainComponentToken } from "../../thought-chain/style";
+import type { ComponentToken as WelcomeComponentToken } from "../../welcome/style";
 
 type EmptyComponentToken = Record<string, never>;
 
@@ -21,7 +22,7 @@ export interface ComponentTokenMap {
   Suggestion?: EmptyComponentToken;
   Think?: ThinkComponentToken;
   ThoughtChain?: ThoughtChainComponentToken;
-  Welcome?: EmptyComponentToken;
+  Welcome?: WelcomeComponentToken;
   Actions?: ActionsToken;
   FileCard?: FileCardComponentToken;
   Folder?: EmptyComponentToken;

@@ -18,6 +18,7 @@ import Sender, { SenderHeader, SenderSwitch } from "./sender";
 import Sources from "./sources";
 import Think from "./think";
 import ThoughtChain, { ThoughtChainItem } from "./thought-chain";
+import Welcome from "./welcome";
 import XProvider from "./x-provider";
 
 const components = [
@@ -32,6 +33,7 @@ const components = [
   Actions,
   Prompts,
   Sources,
+  Welcome,
   ActionsAudio,
   ActionsCopy,
   ActionsFeedback,
@@ -104,12 +106,13 @@ export {
   SenderHeader,
   SenderSwitch,
   Prompts,
+  XProvider,
+  version,
   Sources,
   Think,
   ThoughtChain,
   ThoughtChainItem,
-  XProvider,
-  version,
+  Welcome,
 };
 
 export type {
@@ -143,7 +146,6 @@ export type {
 } from "./prompts";
 
 export type { ThinkProps, ThinkRef } from "./think";
-
 export type {
   ThoughtChainItemProps,
   ThoughtChainItemStatus,
@@ -162,6 +164,7 @@ export type {
 } from "./conversations";
 
 export type { SourcesProps } from "./sources";
+export type { WelcomeProps, WelcomeRef } from "./welcome";
 export type {
   CodeHighlighterProps,
   CodeHighlighterRef,
@@ -170,8 +173,8 @@ export type {
 
 export type { SenderProps, SenderRef } from "./sender";
 export type { XProviderProps } from "./x-provider";
-
 export type { AttachmentsProps, AttachmentsRef } from "./attachments";
+
 export type {
   UseNotificationType,
   XNotificationOpenArgs,

@@ -185,28 +185,6 @@ export const componentOverviewItems: ComponentOverviewItem[] = [
       "https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*6ySvTqb7XhkAAAAAAAAAAAAADgCCAQ/original",
   },
   {
-    slug: "notification",
-    path: "/components/notification",
-    title: "Notification",
-    subtitle: {
-      "zh-CN": "系统通知",
-    },
-    description: {
-      "zh-CN": "封装浏览器原生 Notification API，推送系统级通知。",
-      "en-US":
-        "A wrapper around the browser's native Notification API for pushing system-level notifications.",
-    },
-    group: {
-      "zh-CN": "通用",
-      "en-US": "Common",
-    },
-    groupOrder: 0,
-    cover:
-      "https://mdn.alipayobjects.com/huamei_7uahnr/afts/img/A*NVKORa7BCVwAAAAAAAAAAAAADrJ8AQ/original",
-    coverDark:
-      "https://mdn.alipayobjects.com/huamei_7uahnr/afts/img/A*YC4ERpGAddoAAAAAAAAAAAAADrJ8AQ/original",
-  },
-  {
     slug: "sender",
     path: "/components/sender",
     title: "Sender",
@@ -271,6 +249,28 @@ export const componentOverviewItems: ComponentOverviewItem[] = [
       "https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*siL-Qpl794sAAAAAAAAAAAAADgCCAQ/original",
   },
   {
+    slug: "notification",
+    path: "/components/notification",
+    title: "Notification",
+    subtitle: {
+      "zh-CN": "系统通知",
+    },
+    description: {
+      "zh-CN": "封装浏览器原生 Notification API，推送系统级通知。",
+      "en-US":
+        "A wrapper around the browser's native Notification API for pushing system-level notifications.",
+    },
+    group: {
+      "zh-CN": "通用",
+      "en-US": "Common",
+    },
+    groupOrder: 0,
+    cover:
+      "https://mdn.alipayobjects.com/huamei_7uahnr/afts/img/A*NVKORa7BCVwAAAAAAAAAAAAADrJ8AQ/original",
+    coverDark:
+      "https://mdn.alipayobjects.com/huamei_7uahnr/afts/img/A*YC4ERpGAddoAAAAAAAAAAAAADrJ8AQ/original",
+  },
+  {
     slug: "x-provider",
     path: "/components/x-provider",
     title: "XProvider",
@@ -290,5 +290,28 @@ export const componentOverviewItems: ComponentOverviewItem[] = [
       "https://mdn.alipayobjects.com/huamei_7uahnr/afts/img/A*NVKORa7BCVwAAAAAAAAAAAAADrJ8AQ/original",
     coverDark:
       "https://mdn.alipayobjects.com/huamei_7uahnr/afts/img/A*YC4ERpGAddoAAAAAAAAAAAAADrJ8AQ/originaloriginal",
+  },
+  {
+    slug: "welcome",
+    path: "/components/welcome",
+    title: "Welcome",
+    subtitle: {
+      "zh-CN": "欢迎",
+      "en-US": "Welcome",
+    },
+    description: {
+      "zh-CN": "清晰传达给用户可实现的意图范围和预期功能。",
+      "en-US":
+        "Clearly communicate the capability scope and expected experience to users.",
+    },
+    group: {
+      "zh-CN": "唤醒",
+      "en-US": "Awakening",
+    },
+    groupOrder: 1,
+    cover:
+      "https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*sSjhQ6q2-Z0AAAAAAAAAAAAADgCCAQ/original",
+    coverDark:
+      "https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*-gLqQpan1NAAAAAAAAAAAAAADgCCAQ/original",
   },
 ];
