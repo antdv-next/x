@@ -7,7 +7,9 @@ import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { componentOverviewItems } from "@/components/component-overview/data";
+import Contributors from "@/components/Contributors.vue";
 import { useDocPage } from "@/composables/use-doc-page";
+import { useLocale } from "@/composables/use-locale.ts";
 import { docsRoutes, LOCALE_EN_US, LOCALE_ZH_CN } from "@/router/docs";
 import { useAppStore } from "@/stores/app";
 
@@ -112,6 +114,7 @@ const router = useRouter();
 const appStore = useAppStore();
 const { pageData, anchorItems } = useDocPage();
 const styleState = useStyles();
+const { t } = useLocale();
 
 function normalizePath(path: string) {
   if (path === "/") return "/";
@@ -442,6 +445,10 @@ const handleSiderMenuClick: MenuEmits["click"] = info => {
           </p>
         </header>
         <router-view />
+        <Suspense>
+          <Contributors />
+          <template #fallback> loading </template>
+        </Suspense>
       </article>
 
       <aside v-if="hasAnchors" class="antd-doc-layout-anchor">
