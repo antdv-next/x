@@ -17,12 +17,12 @@ packageName: x-sdk
 ## 代码演示
 
 <!-- prettier-ignore -->
-<demo src="./demos/x-conversations/basic.vue">基础使用</demo>
-<demo src="./demos/x-conversations/operations.vue">会话操作</demo>
-<demo src="./demos/x-conversations/multi-instances.vue">多实例</demo>
-<demo src="./demos/x-conversations/with-x-chat.vue">配合 useXChat 对话消息管理</demo>
-<demo src="./demos/x-conversations/async-defaultMessages.vue">请求远程历史消息</demo>
-<demo src="./demos/x-conversations/session-key.vue">SessionId - ConversationKey</demo>
+<demo src="./demo/x-conversations-basic.vue">基础使用</demo>
+<demo src="./demo/x-conversations-operations.vue">会话操作</demo>
+<demo src="./demo/x-conversations-multi-instances.vue">多实例</demo>
+<demo src="./demo/x-conversations-with-x-chat.vue">配合 useXChat 对话消息管理</demo>
+<demo src="./demo/x-conversations-async-defaultMessages.vue">请求远程历史消息</demo>
+<demo src="./demo/x-conversations-session-key.vue">SessionId - ConversationKey</demo>
 
 ## API
 

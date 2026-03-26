@@ -12,14 +12,14 @@ import type {
   XModelResponse,
 } from "@antdv-next/x-sdk";
 
-import { BubbleList, Conversations, Sender } from "@antdv-next/x";
+import { BubbleList, Conversations, Sender, Welcome } from "@antdv-next/x";
 import {
   DeepSeekChatProvider,
   useXChat,
   useXConversations,
   XRequest,
 } from "@antdv-next/x-sdk";
-import { Flex, Typography, theme } from "antdv-next";
+import { Flex, theme } from "antdv-next";
 import { computed, ref, watch } from "vue";
 
 import { useLocale } from "@/composables/use-locale";
@@ -29,7 +29,6 @@ const senderRef = ref<SenderRef>();
 const providerCaches = new Map<string, DeepSeekChatProvider>();
 const { token } = theme.useToken();
 const { locale: docsLocale } = useLocale();
-const { Title, Text } = Typography;
 
 const locale = computed(() => {
   const isCN = docsLocale.value === "zh-CN";
@@ -41,13 +40,9 @@ const locale = computed(() => {
       ? "会话项目 3，你可以点击我！"
       : "This's Conversation Item 3, you can click me!",
     conversationItem4: isCN ? "会话项目 4" : "Conversation Item 4",
-    thinking: isCN ? "思考中" : "Thinking",
+    thinking: isCN ? "思考中..." : "Thinking...",
     requestAborted: isCN ? "请求已中止" : "Request aborted",
     somethingWrong: isCN ? "出了点问题" : "Something went wrong",
-    welcomeTitle: "Hello, I'm Ant Design X",
-    welcomeDescription: isCN
-      ? "基于 Ant Design 的 AGI 产品界面解决方案，构建更好的智能交互体验。"
-      : "Base on Ant Design, AGI product interface solution, create a better intelligent vision~",
   };
 });
 
@@ -56,11 +51,7 @@ const defaultItems = computed<ConversationItemType[]>(() => [
   { key: "sessionId_1", label: locale.value.conversationItem1 },
   { key: "sessionId_2", label: locale.value.conversationItem2 },
   { key: "sessionId_3", label: locale.value.conversationItem3 },
-  {
-    key: "sessionId_4",
-    label: locale.value.conversationItem4,
-    disabled: true,
-  },
+  { key: "sessionId_4", label: locale.value.conversationItem4, disabled: true },
 ]);
 
 function isHistorySessionId(sessionId: string) {
@@ -72,17 +63,17 @@ function providerFactory(conversationKey: string) {
     providerCaches.set(
       conversationKey,
       new DeepSeekChatProvider({
-        request: XRequest<XModelParams, Partial<Record<SSEFields, XModelResponse>>>(
-          "https://api.x.ant.design/api/big_model_glm-4.5-flash",
-          {
-            manual: true,
-            params: {
-              thinking: { type: "disabled" },
-              stream: true,
-              model: "glm-4.5-flash",
-            },
+        request: XRequest<
+          XModelParams,
+          Partial<Record<SSEFields, XModelResponse>>
+        >("https://api.x.ant.design/api/big_model_glm-4.5-flash", {
+          manual: true,
+          params: {
+            thinking: { type: "disabled" },
+            stream: true,
+            model: "glm-4.5-flash",
           },
-        ),
+        }),
       }),
     );
   }
@@ -129,12 +120,6 @@ const {
   defaultActiveConversationKey: DEFAULT_KEY,
 });
 
-const conversationStyle = computed(() => ({
-  width: "280px",
-  background: token.value.colorBgContainer,
-  borderRadius: `${token.value.borderRadius}px`,
-}));
-
 const {
   onRequest,
   messages,
@@ -171,20 +156,23 @@ watch(activeConversationKey, () => {
   senderRef.value?.clear();
 });
 
+const conversationStyle = computed(() => ({
+  width: "256px",
+  background: token.value.colorBgContainer,
+  borderRadius: `${token.value.borderRadius}px`,
+}));
+
 const conversationItems = computed<ConversationsProps["items"]>(() =>
-  conversations.value
-    .filter(item => item.key !== DEFAULT_KEY)
-    .slice()
-    .reverse(),
+  conversations.value.filter(item => item.key !== DEFAULT_KEY).reverse(),
 );
 
 const bubbleItems = computed(() =>
-  messages.value.map(messageInfo => ({
-    ...messageInfo.message,
-    key: messageInfo.id,
-    status: messageInfo.status,
-    loading: messageInfo.status === "loading",
-    extraInfo: messageInfo.extraInfo,
+  messages.value.map(i => ({
+    ...i.message,
+    key: i.id,
+    status: i.status,
+    loading: i.status === "loading",
+    extraInfo: i.extraInfo,
   })),
 );
 
@@ -220,42 +208,35 @@ function handleSubmit(value: string) {
       :creation="{ onClick: handleAdd }"
       :items="conversationItems"
       :active-key="
-        activeConversationKey === DEFAULT_KEY ? undefined : activeConversationKey
+        activeConversationKey === DEFAULT_KEY
+          ? undefined
+          : activeConversationKey
       "
       :style="conversationStyle"
       :on-active-change="setActiveConversationKey"
     />
 
-    <Flex vertical gap="small" align="start" :style="{ width: '500px' }">
+    <Flex vertical gap="small" :style="{ width: '500px' }">
       <div
         :style="{
           width: '100%',
           height: '350px',
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'flex-start',
         }"
       >
-        <template v-if="activeConversationKey === DEFAULT_KEY">
-          <Flex gap="small" :style="{ maxWidth: '426px' }">
-            <img
-              src="https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*s5sNRo5LjfQAAAAAAAAAAAAADgCCAQ/fmt.webp"
-              alt="Ant Design X"
-              :style="{ width: '64px', height: '64px' }"
-            />
-            <Flex vertical gap="small">
-              <Title :level="3" :style="{ margin: 0, lineHeight: '32px' }">
-                {{ locale.welcomeTitle }}
-              </Title>
-              <Text>{{ locale.welcomeDescription }}</Text>
-            </Flex>
-          </Flex>
-        </template>
+        <Welcome
+          v-if="activeConversationKey === DEFAULT_KEY"
+          variant="borderless"
+          icon="https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*s5sNRo5LjfQAAAAAAAAAAAAADgCCAQ/fmt.webp"
+          title="Hello, I'm Ant Design X"
+          description="Base on Ant Design, AGI product interface solution, create a better intelligent vision~"
+        />
         <BubbleList
           v-else
           :items="bubbleItems"
           :role="roleConfig"
-          :styles="{ bubble: { maxWidth: '840px' } }"
+          :style="{ height: '100%' }"
         />
       </div>
       <Sender
@@ -270,9 +251,9 @@ function handleSubmit(value: string) {
 </template>
 
 <docs lang="zh-CN">
-结合 `useXConversations` 与 `queueRequest` 演示基于会话键的消息排队与历史消息切换。点击预置会话项时，自动异步加载该会话的历史消息。
+结合 useXConversations 和 queueRequest 实现基于 sessionId 的智能请求排队机制，确保多会话场景下消息按会话有序发送且上下文准确。
 </docs>
 
 <docs lang="en-US">
-Combining `useXConversations` and `queueRequest` to demonstrate conversation-key-based request queuing and history switching. Clicking a preset session item automatically loads its historical messages asynchronously.
+Integrate useXConversations and queueRequest to implement intelligent request queuing based on sessionId, ensuring messages are sent orderly by conversation and context remains accurate in multi-conversation scenarios.
 </docs>
