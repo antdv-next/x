@@ -1,0 +1,82 @@
+name: 🐞 Bug report
+description: Report a bug in @antdv-next/x
+labels: [unconfirmed]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for taking the time to submit a bug report! 🙏
+
+        Before creating an issue, please make sure you have:
+
+        - Read the project `README.md`
+        - Checked the documentation site
+        - Tried the official examples or Playground
+        - If this is a usage question, please ask in Discussions first
+
+  - type: input
+    id: version
+    attributes:
+      label: "@antdv-next/x version"
+      placeholder: e.g. 0.1.0
+    validations:
+      required: true
+
+  - type: textarea
+    id: bug-description
+    attributes:
+      label: Bug description
+      description: |
+        Please describe the problem clearly and concisely.
+        If you plan to submit a PR to fix it, feel free to mention it here.
+      placeholder: Describe the bug
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: |
+        Please provide a minimal reproducible example.
+
+        Supported platforms:
+        - StackBlitz (recommended)
+        - CodeSandbox
+        - GitHub repository
+
+        Why reproduction is required:
+        https://antfu.me/posts/why-reproductions-are-required
+      placeholder: Reproduction link or code
+    validations:
+      required: true
+
+  - type: textarea
+    id: system-info
+    attributes:
+      label: System Info
+      description: |
+        Please run the following command in your terminal and paste the full output:
+
+        ```bash
+        npx envinfo --system --binaries --browsers
+        ```
+
+        This helps us quickly identify environment-related issues such as Node version,
+        package manager differences, or browser inconsistencies.
+      placeholder: Paste envinfo output here
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checkboxes
+    attributes:
+      label: Validations
+      description: Before submitting the issue, please confirm the following
+      options:
+        - label: I have searched existing issues to avoid duplicates.
+          required: true
+        - label: This is a bug report, not a usage question.
+          required: true
+        - label: I have provided a minimal reproducible example.
+          required: true
