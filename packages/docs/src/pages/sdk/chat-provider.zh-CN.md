@@ -8,6 +8,7 @@ subtitle: 数据提供
 description: 发送和接收的数据转换。
 order: 1
 packageName: x-sdk
+tag: 2.0.0
 ---
 
 `Chat Provider` 用于为 `useXChat` 提供统一的请求管理和数据格式转换，目前内置了 `OpenAI` 和 `DeepSeek` 两种模型服务商的 `Chat Provider`，你可以直接使用。
@@ -19,24 +20,18 @@ packageName: x-sdk
 `Chat Provider` 实例化需要传入一个 `XRequest` 调用，并且需要设置参数 `manual=true`，以便 `useXChat` 可以控制请求的发起。
 
 ```tsx | pure
-import {
-  DefaultChatProvider,
-  useXChat,
-  XRequest,
-  XRequestOptions,
-} from "@antdv-next/x-sdk";
+import { DefaultChatProvider, useXChat, XRequest } from "@antdv-next/x-sdk";
+import { ref } from "vue";
 
 interface ChatInput {
   query: string;
 }
 
-const [provider] = React.useState(
-  new DefaultChatProvider<string, ChatInput, string>({
-    request: XRequest("https://api.example.com/chat", {
-      manual: true,
-    }),
+const provider = new DefaultChatProvider<string, ChatInput, string>({
+  request: XRequest("https://api.example.com/chat", {
+    manual: true,
   }),
-);
+});
 
 const { onRequest, messages, isRequesting } = useXChat({
   provider,
@@ -48,3 +43,6 @@ const { onRequest, messages, isRequesting } = useXChat({
 ## DefaultChatProvider
 
 `DefaultChatProvider` 是一个默认的 `Chat Provider`，几乎没有对数据进行转换，直接将请求参数和响应数据返回给 `useXChat`。它兼容了普通请求和stream请求（你需要做流拼接）的数据格式，你可以直接使用。
+
+<demo src="./demo/chat-provider-basic.vue">基本</demo>
+<demo src="./demo/chat-provider-with-ui.vue">配合组件</demo>

@@ -1,13 +1,13 @@
 ---
 category: Components
 group:
-  title: Data Provider
+  title: Chat Provider
   order: 2
 title: Chat Provider
 description: Data transformation for sending and receiving.
 order: 1
-
 packageName: x-sdk
+tag: 2.0.0
 ---
 
 `Chat Provider` is used to provide unified request management and data format conversion for `useXChat`. Currently, it includes built-in `Chat Provider` implementations for `OpenAI` and `DeepSeek` model service providers that you can use directly.
@@ -19,24 +19,18 @@ If the built-in Chat Provider does not meet your needs, you can implement the ab
 Instantiating `Chat Provider` requires passing an `XRequest` call and setting the parameter `manual=true` so that `useXChat` can control the initiation of requests.
 
 ```tsx | pure
-import {
-  DefaultChatProvider,
-  useXChat,
-  XRequest,
-  XRequestOptions,
-} from "@antdv-next/x-sdk";
+import { DefaultChatProvider, useXChat, XRequest } from "@antdv-next/x-sdk";
+import { ref } from "vue";
 
 interface ChatInput {
   query: string;
 }
 
-const [provider] = React.useState(
-  new DefaultChatProvider<string, ChatInput, string>({
-    request: XRequest("https://api.example.com/chat", {
-      manual: true,
-    }),
+const provider = new DefaultChatProvider<string, ChatInput, string>({
+  request: XRequest("https://api.example.com/chat", {
+    manual: true,
   }),
-);
+});
 
 const { onRequest, messages, isRequesting } = useXChat({
   provider,
@@ -48,3 +42,6 @@ const { onRequest, messages, isRequesting } = useXChat({
 ## DefaultChatProvider
 
 `DefaultChatProvider` is a default `Chat Provider` that performs minimal data transformation, directly returning request parameters and response data to `useXChat`. It is compatible with both regular requests and stream requests (you need to handle stream concatenation) data formats and can be used directly.
+
+<demo src="./demo/chat-provider-basic.vue">Basic</demo>
+<demo src="./demo/chat-provider-with-ui.vue">With Components</demo>
