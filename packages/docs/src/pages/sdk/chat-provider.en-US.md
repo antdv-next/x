@@ -20,7 +20,6 @@ Instantiating `Chat Provider` requires passing an `XRequest` call and setting th
 
 ```tsx | pure
 import { DefaultChatProvider, useXChat, XRequest } from "@antdv-next/x-sdk";
-import { ref } from "vue";
 
 interface ChatInput {
   query: string;

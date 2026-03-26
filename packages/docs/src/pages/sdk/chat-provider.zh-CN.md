@@ -21,7 +21,6 @@ tag: 2.0.0
 
 ```tsx | pure
 import { DefaultChatProvider, useXChat, XRequest } from "@antdv-next/x-sdk";
-import { ref } from "vue";
 
 interface ChatInput {
   query: string;
