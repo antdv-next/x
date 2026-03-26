@@ -5,6 +5,7 @@ group:
   order: 2
 title: Custom Chat Provider
 order: 4
+tag: 2.0.0
 packageName: x-sdk
 ---
 
@@ -250,17 +251,17 @@ All responses use the unified `data.content` field for text content and optional
 
 5. Finally, we can instantiate `CustomProvider` and pass it to `useXChat` to complete the custom Provider usage.
 
-```tsx
-const [provider] = React.useState(
-  new CustomProvider({
-    request: XRequest<CustomInput, CustomOutput>(
-      "https://xxx.agent.com/api/stream",
-      {
-        manual: true,
-      },
-    ),
-  }),
-);
+```ts
+import { AbstractChatProvider, useXChat, XRequest } from "@antdv-next/x-sdk";
+
+const provider = new CustomProvider({
+  request: XRequest<CustomInput, CustomOutput>(
+    "https://xxx.agent.com/api/stream",
+    {
+      manual: true,
+    },
+  ),
+});
 
 const {
   onRequest,
@@ -277,7 +278,7 @@ const {
 
 6. Send request:
 
-```tsx
+```ts
 onRequest({
   query: "Help me summarize today's tech news",
 });
@@ -287,7 +288,7 @@ onRequest({
 
 If your service supports returning document attachments, you can use it like this:
 
-```tsx
+```ts
 // Send request and handle responses with attachments
 onRequest({
   query: "Generate a project summary report",
@@ -303,6 +304,11 @@ onRequest({
 - File types can be common document formats: pdf, docx, xlsx, png, jpg, etc.
 - Providing file size information is recommended to improve user experience
 - Download links need to ensure users have access permissions
+
+## Usage Example
+
+<!-- prettier-ignore -->
+<demo src="./demo/chat-provider-custom.vue">Basic</demo>
 
 ## Contributing Chat Provider
 

@@ -6,6 +6,7 @@ group:
 title: Custom Chat Provider
 order: 4
 subtitle: 自定义
+tag: 2.0.0
 packageName: x-sdk
 ---
 
@@ -253,17 +254,17 @@ data: {"content":"报告已生成完成","attachments":[{"name":"科技新闻总
 
 5、最后我们可以将 `CustomProvider` 实例化并传入 `useXChat` 中，即可完成自定义 Provider 的使用。
 
-```tsx
-const [provider] = React.useState(
-  new CustomProvider({
-    request: XRequest<CustomInput, CustomOutput>(
-      "https://xxx.agent.com/api/stream",
-      {
-        manual: true,
-      },
-    ),
-  }),
-);
+```ts
+import { AbstractChatProvider, useXChat, XRequest } from "@antdv-next/x-sdk";
+
+const provider = new CustomProvider({
+  request: XRequest<CustomInput, CustomOutput>(
+    "https://xxx.agent.com/api/stream",
+    {
+      manual: true,
+    },
+  ),
+});
 
 const {
   onRequest,
@@ -280,7 +281,7 @@ const {
 
 6、发送请求
 
-```tsx
+```ts
 onRequest({
   query: "帮我总结今天的科技新闻",
 });
@@ -290,7 +291,7 @@ onRequest({
 
 如果你的服务支持返回文档附件，可以这样使用：
 
-```tsx
+```ts
 // 发送请求并处理带附件的响应
 onRequest({
   query: "生成一份项目总结报告",
@@ -306,6 +307,11 @@ onRequest({
 - 文件类型可以是常见的文档格式：pdf、docx、xlsx、png、jpg 等
 - 建议提供文件大小信息，提升用户体验
 - 下载链接需要确保用户有权限访问
+
+## 代码演示
+
+<!-- prettier-ignore -->
+<demo src="./demo/chat-provider-custom.vue">基础</demo>
 
 ## 贡献 Chat Provider
 
