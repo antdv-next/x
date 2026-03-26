@@ -23,7 +23,7 @@ const useStyles = createStyles(({ token }) => ({
     ".antd-doc-layout-main": {
       padding: "24px 48px 40px",
       display: "grid",
-      gridTemplateColumns: "240px minmax(0, 1fr) 200px",
+      gridTemplateColumns: "280px minmax(0, 1fr) 200px",
       gap: 40,
     },
     ".antd-doc-layout-sider": {
@@ -139,6 +139,7 @@ type LocaleKey = typeof LOCALE_ZH_CN | typeof LOCALE_EN_US;
 
 interface ParsedPageMeta {
   title?: string;
+  subtitle?: string;
   order?: number;
   groupTitle?: string;
   groupOrder?: number;
@@ -174,6 +175,9 @@ function parseFrontmatterMeta(markdown: string): ParsedPageMeta {
   if (!frontmatter) return {};
 
   const title = toOptionalText(frontmatter.match(/^title:\s*(.+)$/m)?.[1]);
+  const subtitle = toOptionalText(
+    frontmatter.match(/^subtitle:\s*(.+)$/m)?.[1],
+  );
   const order = toOptionalNumber(frontmatter.match(/^order:\s*(.+)$/m)?.[1]);
   const hidden = toOptionalBoolean(frontmatter.match(/^hidden:\s*(.+)$/m)?.[1]);
 
@@ -187,6 +191,7 @@ function parseFrontmatterMeta(markdown: string): ParsedPageMeta {
 
   return {
     title,
+    subtitle,
     order,
     groupTitle,
     groupOrder,
@@ -303,6 +308,7 @@ function createGroupedSiderItems(
 
 interface ParsedPageMeta {
   title?: string;
+  subtitle?: string;
   order?: number;
   groupTitle?: string;
   groupOrder?: number;
@@ -385,10 +391,14 @@ const siderItems = computed<MenuItemType[]>(() => {
         pageMeta?.groupOrder ??
         fallbackMeta.groupOrder ??
         Number.MAX_SAFE_INTEGER,
-      label:
+      label: [
         pageMeta?.title ||
-        fallbackMeta.title ||
-        formatSegmentLabel(lastSegment),
+          fallbackMeta.title ||
+          formatSegmentLabel(lastSegment),
+        pageMeta?.subtitle,
+      ]
+        .filter(Boolean)
+        .join("  "),
     };
   });
 
