@@ -1,12 +1,18 @@
 <script setup lang="ts">
 import type { ThoughtChainItemType } from "@antdv-next/x";
-import type { AbstractXRequestClass } from "@antdv-next/x-sdk";
 
 import { LoadingOutlined, TagsOutlined } from "@antdv-next/icons";
 import { ThoughtChain } from "@antdv-next/x";
-import { XRequest } from "@antdv-next/x-sdk";
-import { Button, Descriptions, Flex, Input, Splitter } from "antdv-next";
-import { computed, h, onMounted, ref } from "vue";
+import { AbstractXRequestClass, XRequest } from "@antdv-next/x-sdk";
+import {
+  Button,
+  Descriptions,
+  DescriptionsItem,
+  Flex,
+  Input,
+  Splitter,
+} from "antdv-next";
+import { computed, h, onMounted, ref, shallowRef } from "vue";
 
 import { useLocale } from "@/composables/use-locale";
 
@@ -17,9 +23,11 @@ interface ChatInput {
 
 const QUERY_URL = "https://api.x.ant.design/api/default_chat_provider_stream";
 
-const useXRequestLocale = () => {
-  const { locale: docsLocale } = useLocale();
+const { locale: docsLocale } = useLocale();
+
+const locale = computed(() => {
   const isCN = docsLocale.value === "zh-CN";
+
   return {
     request: isCN ? "请求" : "Request",
     requestAbort: isCN ? "请求中止" : "Request Abort",
@@ -28,25 +36,21 @@ const useXRequestLocale = () => {
     updateTimes: isCN ? "更新次数" : "Update Times",
     requestStatus: (status: string) => `request ${status}`,
   };
-};
+});
 
 const status = ref<string>();
 const thoughtChainStatus = ref<ThoughtChainItemType["status"]>();
 const lines = ref<Record<string, string>[]>([]);
 const questionText = ref<string>("hello, who are u?");
-const locale = computed(() => useXRequestLocale());
-const requestHandlerRef = ref<AbstractXRequestClass<
-  ChatInput,
-  Record<string, string>
-> | null>(null);
+
+const requestHandlerRef =
+  shallowRef<AbstractXRequestClass<ChatInput, Record<string, string>>>();
 
 onMounted(() => {
   requestHandlerRef.value = XRequest<ChatInput, Record<string, string>>(
     QUERY_URL,
     {
-      params: {
-        stream: true,
-      },
+      params: { stream: true },
       manual: true,
       callbacks: {
         onSuccess: () => {
@@ -67,17 +71,42 @@ onMounted(() => {
   );
 });
 
-const request = () => {
+function request() {
   status.value = "pending";
   lines.value = [];
-  requestHandlerRef.value?.run({
-    query: questionText.value,
-  });
-};
+  requestHandlerRef.value?.run({ query: questionText.value });
+}
 
-const abort = () => {
+function abort() {
   requestHandlerRef.value?.abort?.();
-};
+}
+
+const thoughtChainItems = computed<ThoughtChainItemType[]>(() => [
+  {
+    title: locale.value.requestLog,
+    status: thoughtChainStatus.value,
+    icon: status.value === "pending" ? h(LoadingOutlined) : h(TagsOutlined),
+    description: locale.value.requestStatus(status.value || ""),
+    content: h(
+      Descriptions,
+      { column: 1 },
+      {
+        default: () => [
+          h(
+            DescriptionsItem,
+            { label: locale.value.status },
+            () => status.value || "-",
+          ),
+          h(
+            DescriptionsItem,
+            { label: locale.value.updateTimes },
+            () => lines.value.length,
+          ),
+        ],
+      },
+    ),
+  },
+]);
 </script>
 
 <template>
@@ -86,7 +115,10 @@ const abort = () => {
       <Splitter orientation="vertical">
         <Splitter.Panel :style="{ margin: '0 16px' }">
           <Flex gap="large" vertical>
-            <Input v-model:value="questionText" />
+            <Input
+              :value="questionText"
+              @update:value="questionText = $event"
+            />
             <Flex gap="small">
               <Button
                 type="primary"
@@ -106,43 +138,14 @@ const abort = () => {
           </Flex>
         </Splitter.Panel>
         <Splitter.Panel :style="{ margin: '16px' }">
-          <div
-            v-if="lines.length > 0"
-            :style="{
-              background: 'var(--ant-color-fill-tertiary)',
-              padding: '8px',
-            }"
-          >
-            <pre :style="{ margin: 0, overflow: 'auto' }">{{
-              JSON.stringify(lines)
-            }}</pre>
-          </div>
+          <p v-if="lines.length > 0">
+            {{ JSON.stringify(lines) }}
+          </p>
         </Splitter.Panel>
       </Splitter>
     </Splitter.Panel>
     <Splitter.Panel :style="{ marginLeft: '16px' }">
-      <ThoughtChain
-        :items="[
-          {
-            title: locale.requestLog,
-            status: thoughtChainStatus,
-            icon: status === 'pending' ? h(LoadingOutlined) : h(TagsOutlined),
-            description: locale.requestStatus(status || ''),
-            content: h(Descriptions, { column: 1 }, () => [
-              h(
-                Descriptions.Item,
-                { label: locale.status },
-                () => status || '-',
-              ),
-              h(
-                Descriptions.Item,
-                { label: locale.updateTimes },
-                () => lines.length,
-              ),
-            ]),
-          },
-        ]"
-      />
+      <ThoughtChain :items="thoughtChainItems" />
     </Splitter.Panel>
   </Splitter>
 </template>

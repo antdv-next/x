@@ -4,17 +4,16 @@ import type { ThoughtChainItemType } from "@antdv-next/x";
 import { TagsOutlined } from "@antdv-next/icons";
 import { ThoughtChain } from "@antdv-next/x";
 import { XRequest } from "@antdv-next/x-sdk";
-import { Button, Splitter } from "antdv-next";
+import { Button, Flex, Splitter } from "antdv-next";
 import { computed, h, ref } from "vue";
 
 import { useLocale } from "@/composables/use-locale";
 
 const BASE_URL = "https://api.example.com";
 const PATH = "/chat";
-
 const ND_JSON_SEPARATOR = "\n\n";
 
-async function mockFetch(): Promise<Response> {
+async function mockFetch() {
   const sseData = `data: {"id":"0","choices":[{"index":0,"delta":{"content":"Hello","role":"assistant"}}],"created":1733129200,"model":"gpt-4o"}${ND_JSON_SEPARATOR}data: {"id":"1","choices":[{"index":1,"delta":{"content":"world!","role":"assistant"}}],"created":1733129300,"model":"gpt-4o"}${ND_JSON_SEPARATOR}data: {"id":"2","choices":[{"index":2,"delta":{"content":"I","role":"assistant"}}],"created":1733129400,"model":"gpt-4o"}${ND_JSON_SEPARATOR}data: {"id":"3","choices":[{"index":3,"delta":{"content":"am","role":"assistant"}}],"created":1733129500,"model":"gpt-4o"}${ND_JSON_SEPARATOR}data: {"id":"4","choices":[{"index":4,"delta":{"content":"Ant Design X!","role":"assistant"}}],"created":1733129600,"model":"gpt-4o"}`;
   const chunks = sseData.split(ND_JSON_SEPARATOR);
   const response = new Response(
@@ -22,11 +21,8 @@ async function mockFetch(): Promise<Response> {
       async start(controller) {
         for (const chunk of chunks) {
           if (chunk.trim()) {
-            // 确保不是空字符串
             const time = 1000 * 10 * Math.random();
-            console.log("chunk 返回时间", time);
             await new Promise(resolve => setTimeout(resolve, time));
-            // 添加正确的 SSE 格式，确保每个 chunk 都有 data: 前缀
             const formattedChunk = chunk.startsWith("data:")
               ? chunk
               : `data: ${chunk}`;
@@ -38,19 +34,16 @@ async function mockFetch(): Promise<Response> {
         controller.close();
       },
     }),
-    {
-      headers: {
-        "Content-Type": "text/event-stream",
-      },
-    },
+    { headers: { "Content-Type": "text/event-stream" } },
   );
-
   return response;
 }
 
-const useXRequestLocale = () => {
-  const { locale: docsLocale } = useLocale();
+const { locale: docsLocale } = useLocale();
+
+const locale = computed(() => {
   const isCN = docsLocale.value === "zh-CN";
+
   return {
     request: isCN ? "请求" : "Request",
     mockCustomProtocolLog: isCN
@@ -63,16 +56,16 @@ const useXRequestLocale = () => {
       ? "自定义流转换器"
       : "Custom stream transformer",
   };
-};
+});
 
 const status = ref<ThoughtChainItemType["status"]>();
 const lines = ref<string[]>([]);
-const locale = computed(() => useXRequestLocale());
 const errorInfo = ref<Error | null>(null);
 
-const request = () => {
+function request() {
   status.value = "loading";
-  lines.value = []; // 清空之前的日志
+  lines.value = [];
+  errorInfo.value = null;
   XRequest(BASE_URL + PATH, {
     params: {
       model: "gpt-3.5-turbo",
@@ -93,48 +86,53 @@ const request = () => {
       },
       onUpdate: msg => {
         console.log("onUpdate", msg);
-        // 更新状态以显示接收到的数据
         lines.value = [...lines.value, JSON.stringify(msg)];
       },
     },
-
     fetch: mockFetch,
   });
-};
+}
 
-const clearLogs = () => {
+function clearLogs() {
   lines.value = [];
-};
+}
+
+const thoughtChainItems = computed<ThoughtChainItemType[]>(() => [
+  {
+    title: locale.value.mockCustomProtocolLog,
+    description: errorInfo.value ? errorInfo.value.message : "",
+    status: status.value,
+    icon: h(TagsOutlined),
+    content: h("pre", { style: { overflow: "scroll" } }, [
+      h(
+        "code",
+        lines.value
+          .map(l => (typeof l === "string" ? l.trim() : l))
+          .join(ND_JSON_SEPARATOR),
+      ),
+    ]),
+  },
+]);
 </script>
 
 <template>
   <Splitter>
     <Splitter.Panel>
-      <Button type="primary" :disabled="status === 'loading'" @click="request">
-        {{ locale.request }} - {{ BASE_URL }}{{ PATH }}
-      </Button>
-      <Button
-        :style="{ marginLeft: '8px' }"
-        @click="clearLogs"
-        :disabled="lines.length === 0"
-      >
-        清除日志
-      </Button>
+      <Flex gap="small">
+        <Button
+          type="primary"
+          :disabled="status === 'loading'"
+          @click="request"
+        >
+          {{ locale.request }} - {{ BASE_URL }}{{ PATH }}
+        </Button>
+        <Button :disabled="lines.length === 0" @click="clearLogs">
+          清除日志
+        </Button>
+      </Flex>
     </Splitter.Panel>
     <Splitter.Panel :style="{ marginLeft: '16px' }">
-      <ThoughtChain
-        :items="[
-          {
-            title: locale.mockCustomProtocolLog,
-            description: errorInfo ? errorInfo.message : '',
-            status: status,
-            icon: h(TagsOutlined),
-            content: h('pre', { style: { overflow: 'scroll' } }, [
-              h('code', {}, lines.join(ND_JSON_SEPARATOR)),
-            ]),
-          },
-        ]"
-      />
+      <ThoughtChain :items="thoughtChainItems" />
     </Splitter.Panel>
   </Splitter>
 </template>

@@ -22,8 +22,8 @@ const locale = computed(() => {
     status: isCN ? "状态" : "Status",
     updateTimes: isCN ? "更新次数" : "Update Times",
     replaceNotice: isCN
-      ? "请替换 BASE_URL、PATH 为您自己的值"
-      : "Please replace the BASE_URL, PATH, with your own values.",
+      ? "请替换 BASE_URL、PATH 和参数为您自己的值"
+      : "Please replace the BASE_URL, PATH and parameters, with your own values.",
     sendRequest: isCN
       ? "发送请求：使用XRequest进行API调用"
       : "Send request: use XRequest for API call",
@@ -37,7 +37,14 @@ function request() {
   status.value = "loading";
 
   XRequest(QUERY_URL, {
-    params: { query: "X" },
+    params: {
+      query: "gpt-3.5-turbo",
+      model: "gpt-3.5-turbo",
+      messages: [{ role: "user", content: "hello, who are u?" }],
+      stream: true,
+      agentId: 111,
+    },
+    headers: { "X-header": "ADX" },
     callbacks: {
       onSuccess: messages => {
         status.value = "success";
@@ -98,9 +105,9 @@ const thoughtChainItems = computed<ThoughtChainItemType[]>(() => [
 </template>
 
 <docs lang="zh-CN">
-基础请求示例，展示 XRequest 基本用法。
+自定义参数和请求头配置，支持完整请求定制。
 </docs>
 
 <docs lang="en-US">
-Basic request example showing XRequest fundamental usage.
+Custom parameters and headers configuration for full request customization.
 </docs>
