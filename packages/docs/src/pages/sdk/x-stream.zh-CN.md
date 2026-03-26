@@ -13,52 +13,41 @@ packageName: x-sdk
 
 ## 何时使用
 
-- 需要把 SSE 协议 `ReadableStream` 解析成结构化对象。
-- 需要对任意协议流进行解码，并通过 `for await...of` 消费。
+- 将 SSE 协议的 `ReadableStream` 转换为 `Record`
+- 将任何协议的 `ReadableStream` 解码并读取
 
-## 基础示例代码
+## 使用说明
 
-```ts
+常见的 `ReadableStream` 实例，如 `await fetch(...).body` 使用示例:
+
+```ts | pure
 import { XStream } from "@antdv-next/x-sdk";
 
 async function request() {
-  const response = await fetch("/api/stream");
+  const response = await fetch();
+  // .....
 
   for await (const chunk of XStream({
-    readableStream: response.body!,
+    readableStream: response.body,
   })) {
     console.log(chunk);
   }
 }
 ```
 
-## 自定义协议解析
+## 代码演示
 
-```ts
-import { XStream } from "@antdv-next/x-sdk";
-
-const stream = XStream({
-  readableStream: response.body!,
-  transformStream: new TransformStream<string, { data: string }>({
-    transform(chunk, controller) {
-      controller.enqueue({ data: chunk });
-    },
-  }),
-});
-```
+<demo src="./demo/x-stream-default-protocol.vue">默认协议 - SSE</demo>
+<demo src="./demo/x-stream-custom-protocol.vue">自定义协议</demo>
 
 ## API
 
 ### XStreamOptions
 
-| 属性              | 说明                                         | 类型                         | 默认值          |
-| ----------------- | -------------------------------------------- | ---------------------------- | --------------- |
-| `readableStream`  | `ReadableStream` 实例                        | `ReadableStream<Uint8Array>` | -               |
-| `transformStream` | 自定义转换流处理器                           | `TransformStream<string, T>` | 默认 SSE 转换器 |
-| `streamSeparator` | 流分隔符（`transformStream` 有值时不生效）   | `string`                     | `\n\n`          |
-| `partSeparator`   | 分段分隔符（`transformStream` 有值时不生效） | `string`                     | `\n`            |
-| `kvSeparator`     | 键值分隔符（`transformStream` 有值时不生效） | `string`                     | `:`             |
-
-## 说明
-
-- 默认输出符合 SSE 字段规范（如 `event`、`data`、`id`、`retry`）。
+| 属性            | 说明                                                             | 类型                         | 默认值             | 版本  |
+| --------------- | ---------------------------------------------------------------- | ---------------------------- | ------------------ | ----- |
+| readableStream  | ReadableStream 实例                                              | ReadableStream<'Uint8Array'> | -                  | -     |
+| transformStream | 自定义的 transformStream 用于转换流的处理                        | TransformStream<string, T>   | sseTransformStream | -     |
+| streamSeparator | 流分隔符，用于分隔不同的数据流，transformStream 有值时不生效     | string                       | \\n\\n             | 2.2.0 |
+| partSeparator   | 部分分隔符，用于分隔数据的不同部分，transformStream 有值时不生效 | string                       | \\n                | 2.2.0 |
+| kvSeparator     | 键值分隔符，用于分隔键和值，transformStream 有值时不生效         | string                       | :                  | 2.2.0 |

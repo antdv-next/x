@@ -13,52 +13,41 @@ packageName: x-sdk
 
 ## When To Use
 
-- You need to parse SSE `ReadableStream` into structured objects.
-- You need to decode custom streaming protocols and consume them with `for await...of`.
+- Transform SSE protocol `ReadableStream` to `Record`
+- Decode and read any protocol `ReadableStream`
 
-## Basic Example Code
+## Use
 
-```ts
+Common `ReadableStream` instances, such as `await fetch(...).body`, usage example:
+
+```ts | pure
 import { XStream } from "@antdv-next/x-sdk";
 
 async function request() {
-  const response = await fetch("/api/stream");
+  const response = await fetch();
+  // .....
 
   for await (const chunk of XStream({
-    readableStream: response.body!,
+    readableStream: response.body,
   })) {
     console.log(chunk);
   }
 }
 ```
 
-## Custom Protocol Parsing
+## Code Demo
 
-```ts
-import { XStream } from "@antdv-next/x-sdk";
-
-const stream = XStream({
-  readableStream: response.body!,
-  transformStream: new TransformStream<string, { data: string }>({
-    transform(chunk, controller) {
-      controller.enqueue({ data: chunk });
-    },
-  }),
-});
-```
+<demo src="./demo/x-stream-default-protocol.vue">Default Protocol - SSE</demo>
+<demo src="./demo/x-stream-custom-protocol.vue">Custom Protocol</demo>
 
 ## API
 
 ### XStreamOptions
 
-| Property          | Description                                                 | Type                         | Default                  |
-| ----------------- | ----------------------------------------------------------- | ---------------------------- | ------------------------ |
-| `readableStream`  | Readable stream instance                                    | `ReadableStream<Uint8Array>` | -                        |
-| `transformStream` | Custom transform stream processor                           | `TransformStream<string, T>` | Built-in SSE transformer |
-| `streamSeparator` | Stream separator (ignored when `transformStream` is set)    | `string`                     | `\n\n`                   |
-| `partSeparator`   | Part separator (ignored when `transformStream` is set)      | `string`                     | `\n`                     |
-| `kvSeparator`     | Key-value separator (ignored when `transformStream` is set) | `string`                     | `:`                      |
-
-## Notes
-
-- Default output follows SSE fields (`event`, `data`, `id`, `retry`).
+| Property        | Description                                               | Type                         | Default            | Version |
+| --------------- | --------------------------------------------------------- | ---------------------------- | ------------------ | ------- |
+| readableStream  | Readable stream of binary data                            | ReadableStream<'Uint8Array'> | -                  | -       |
+| transformStream | Support customizable transformStream to transform streams | TransformStream<string, T>   | sseTransformStream | -       |
+| streamSeparator | Stream separator, used to separate different data streams | string                       | \n\n               | 2.2.0   |
+| partSeparator   | Part separator, used to separate different parts of data  | string                       | \n                 | 2.2.0   |
+| kvSeparator     | Key-value separator, used to separate keys and values     | string                       | :                  | 2.2.0   |
