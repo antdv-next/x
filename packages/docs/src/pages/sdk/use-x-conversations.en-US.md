@@ -17,12 +17,12 @@ packageName: x-sdk
 ## Code Demo
 
 <!-- prettier-ignore -->
-<demo src="./demos/x-conversations/basic.vue">Basic Usage</demo>
-<demo src="./demos/x-conversations/operations.vue">Conversation Operations</demo>
-<demo src="./demos/x-conversations/multi-instances.vue">Multiple Instances</demo>
-<demo src="./demos/x-conversations/with-x-chat.vue">Integration with `useXChat` for message management</demo>
-<demo src="./demos/x-conversations/async-defaultMessages.vue">Request Remote Historical Messages</demo>
-<demo src="./demos/x-conversations/session-key.vue">SessionId - ConversationKey</demo>
+<demo src="./demo/x-conversations-basic.vue">Basic Usage</demo>
+<demo src="./demo/x-conversations-operations.vue">Conversation Operations</demo>
+<demo src="./demo/x-conversations-multi-instances.vue">Multiple Instances</demo>
+<demo src="./demo/x-conversations-with-x-chat.vue">Integration with `useXChat` for message management</demo>
+<demo src="./demo/x-conversations-async-defaultMessages.vue">Request Remote Historical Messages</demo>
+<demo src="./demo/x-conversations-session-key.vue">SessionId - ConversationKey</demo>
 
 ## API
 

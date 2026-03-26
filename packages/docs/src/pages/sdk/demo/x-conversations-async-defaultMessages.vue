@@ -20,7 +20,6 @@ import { computed, ref, watch } from "vue";
 
 import { useLocale } from "@/composables/use-locale";
 
-const DEFAULT_KEY = "DEFAULT_KEY";
 const senderRef = ref<SenderRef>();
 const providerCaches = new Map<string, DeepSeekChatProvider>();
 const { token } = theme.useToken();
@@ -33,45 +32,37 @@ const locale = computed(() => {
     conversationItem1: isCN ? "会话项目 1" : "Conversation Item 1",
     conversationItem2: isCN ? "会话项目 2" : "Conversation Item 2",
     conversationItem3: isCN ? "会话项目 3" : "Conversation Item 3",
-    placeholder: isCN ? "请输入消息..." : "Enter a message...",
+    conversationItem4: isCN ? "会话项目 4" : "Conversation Item 4",
     thinking: isCN ? "思考中..." : "Thinking...",
     requestAborted: isCN ? "请求已中止" : "Request aborted",
     somethingWrong: isCN ? "出了点问题" : "Something went wrong",
-    welcomeTitle: "Hello, I'm Ant Design X",
-    welcomeDescription: isCN
-      ? "基于 Ant Design 的 AGI 产品界面解决方案"
-      : "AGI product interface solution based on Ant Design",
     loadingHistory: isCN ? "加载历史消息中..." : "Loading history...",
   };
 });
 
-const defaultItems = computed(() => [
-  { key: DEFAULT_KEY },
-  { key: "sessionId_1", label: locale.value.conversationItem1 },
-  { key: "sessionId_2", label: locale.value.conversationItem2 },
-  { key: "sessionId_3", label: locale.value.conversationItem3 },
+const defaultItems = computed<ConversationsProps["items"]>(() => [
+  { key: "item2_1", label: locale.value.conversationItem1 },
+  { key: "item2_2", label: locale.value.conversationItem2 },
+  { key: "item2_3", label: locale.value.conversationItem3 },
+  { key: "item2_4", label: locale.value.conversationItem4, disabled: true },
 ]);
-
-function isHistorySession(sessionId: string) {
-  return defaultItems.value.some(item => item.key === sessionId);
-}
 
 function providerFactory(conversationKey: string) {
   if (!providerCaches.has(conversationKey)) {
     providerCaches.set(
       conversationKey,
       new DeepSeekChatProvider({
-        request: XRequest<XModelParams, Partial<Record<SSEFields, XModelResponse>>>(
-          "https://api.x.ant.design/api/big_model_glm-4.5-flash",
-          {
-            manual: true,
-            params: {
-              thinking: { type: "disabled" },
-              stream: true,
-              model: "glm-4.5-flash",
-            },
+        request: XRequest<
+          XModelParams,
+          Partial<Record<SSEFields, XModelResponse>>
+        >("https://api.x.ant.design/api/big_model_glm-4.5-flash", {
+          manual: true,
+          params: {
+            thinking: { type: "disabled" },
+            stream: true,
+            model: "glm-4.5-flash",
           },
-        ),
+        }),
       }),
     );
   }
@@ -83,11 +74,7 @@ const getHistoryMessageList = async (info: {
 }): Promise<DefaultMessageInfo<XModelMessage>[]> => {
   const conversationKey = info.conversationKey;
 
-  if (
-    !conversationKey ||
-    conversationKey === DEFAULT_KEY ||
-    !isHistorySession(conversationKey)
-  ) {
+  if (!conversationKey) {
     return [];
   }
 
@@ -107,14 +94,9 @@ const getHistoryMessageList = async (info: {
   return [];
 };
 
-const {
-  conversations,
-  activeConversationKey,
-  setActiveConversationKey,
-  addConversation,
-} = useXConversations({
+const { activeConversationKey, setActiveConversationKey } = useXConversations({
   defaultConversations: defaultItems.value,
-  defaultActiveConversationKey: DEFAULT_KEY,
+  defaultActiveConversationKey: "item2_1",
 });
 
 const {
@@ -123,7 +105,6 @@ const {
   isDefaultMessagesRequesting,
   isRequesting,
   abort,
-  queueRequest,
 } = useXChat({
   provider: computed(() => providerFactory(activeConversationKey.value)).value,
   conversationKey: activeConversationKey,
@@ -154,21 +135,18 @@ watch(activeConversationKey, () => {
 });
 
 const conversationStyle = computed(() => ({
-  width: "220px",
+  width: "256px",
   background: token.value.colorBgContainer,
   borderRadius: `${token.value.borderRadius}px`,
 }));
 
-const conversationItems = computed<ConversationsProps["items"]>(() =>
-  conversations.value.filter(c => c.key !== DEFAULT_KEY),
-);
-
 const bubbleItems = computed(() =>
-  messages.value.map(info => ({
-    key: info.id,
-    role: info.message.role,
-    content: info.message.content,
-    loading: info.status === "loading",
+  messages.value.map(i => ({
+    ...i.message,
+    key: i.id,
+    status: i.status,
+    loading: i.status === "loading",
+    extraInfo: i.extraInfo,
   })),
 );
 
@@ -177,21 +155,9 @@ const roleConfig = {
   user: { placement: "end" as const },
 };
 
-function handleAdd() {
-  setActiveConversationKey(DEFAULT_KEY);
-}
-
 function handleSubmit(value: string) {
-  if (!value.trim()) return;
-
-  if (activeConversationKey.value !== DEFAULT_KEY) {
-    onRequest({ messages: [{ role: "user", content: value }] });
-  } else {
-    const newKey = `conv_${Date.now()}`;
-    addConversation({ key: newKey, label: value.slice(0, 20) });
-    setActiveConversationKey(newKey);
-    queueRequest(newKey, { messages: [{ role: "user", content: value }] });
-  }
+  if (!value) return;
+  onRequest({ messages: [{ role: "user", content: value }] });
   senderRef.value?.clear();
 }
 </script>
@@ -199,24 +165,15 @@ function handleSubmit(value: string) {
 <template>
   <Flex gap="small" align="start">
     <Conversations
-      :creation="{ onClick: handleAdd }"
-      :items="conversationItems"
-      :active-key="
-        activeConversationKey === DEFAULT_KEY ? undefined : activeConversationKey
-      "
+      :items="defaultItems"
+      :active-key="activeConversationKey"
       :style="conversationStyle"
       :on-active-change="setActiveConversationKey"
     />
 
     <Flex vertical gap="small" :style="{ flex: 1, minWidth: 0 }">
-      <div :style="{ height: '360px' }">
-        <template v-if="activeConversationKey === DEFAULT_KEY">
-          <Flex vertical gap="small" :style="{ padding: '16px' }">
-            <strong>{{ locale.welcomeTitle }}</strong>
-            <span>{{ locale.welcomeDescription }}</span>
-          </Flex>
-        </template>
-        <template v-else-if="isDefaultMessagesRequesting">
+      <div :style="{ height: '350px' }">
+        <template v-if="isDefaultMessagesRequesting">
           <Flex :style="{ padding: '16px' }">
             {{ locale.loadingHistory }}
           </Flex>
@@ -232,7 +189,6 @@ function handleSubmit(value: string) {
         ref="senderRef"
         :loading="isRequesting"
         :disabled="isDefaultMessagesRequesting"
-        :placeholder="locale.placeholder"
         :on-submit="handleSubmit"
         :on-cancel="abort"
       />
