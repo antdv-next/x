@@ -1,7 +1,7 @@
 ---
 category: Components
 group:
-  title: Data Provider
+  title: Chat Provider
   order: 2
 title: Chat Provider
 description: Data transformation for sending and receiving.

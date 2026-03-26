@@ -1,7 +1,7 @@
 ---
 category: Components
 group:
-  title: Data Provider
+  title: Chat Provider
   order: 2
 title: OpenAIChatProvider
 order: 2

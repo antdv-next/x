@@ -1,11 +1,14 @@
 ---
 group:
   title: 工具
-  order: 2
+  order: 3
 title: XStream
 subtitle: 流
-description: 将可读数据流转换为可迭代输出。
-order: 4
+description: 转换可读数据流。
+order: 2
+tag: 2.0.0
+
+packageName: x-sdk
 ---
 
 ## 何时使用

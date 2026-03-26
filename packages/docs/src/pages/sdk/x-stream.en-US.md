@@ -1,11 +1,14 @@
 ---
 group:
   title: Utilities
-  order: 2
+  order: 3
 title: XStream
 subtitle: Stream
-description: Transform readable streams into async iterable outputs.
-order: 4
+description: Transform readable data streams.
+order: 2
+tag: 2.0.0
+
+packageName: x-sdk
 ---
 
 ## When To Use

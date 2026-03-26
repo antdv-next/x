@@ -2,9 +2,9 @@
 category: Components
 group:
   title: Utilities
-  order: 2
+  order: 3
 title: XRequest
-order: 3
+order: 1
 subtitle: Request
 description: Universal streaming request utility for AI chat and SSE scenarios.
 packageName: x-sdk

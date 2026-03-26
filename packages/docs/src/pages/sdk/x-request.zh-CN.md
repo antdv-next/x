@@ -2,9 +2,9 @@
 category: Components
 group:
   title: 工具
-  order: 2
+  order: 3
 title: XRequest
-order: 3
+order: 1
 subtitle: 请求
 description: 通用流式请求工具，适用于 AI 对话与 SSE 场景。
 packageName: x-sdk

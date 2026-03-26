@@ -1,7 +1,7 @@
 ---
 category: Components
 group:
-  title: Data Provider
+  title: Chat Provider
   order: 2
 title: Custom Chat Provider
 order: 4
