@@ -18,7 +18,7 @@ interface GroupConfig {
   collapsibleOptions: CollapsibleOptions;
 }
 
-type KeyList = { key: string | number; disabled?: boolean }[];
+type KeyList = { key: string; disabled?: boolean }[];
 
 export default function useGroupable(
   groupable: ComputedRef<ConversationsProps["groupable"]>,

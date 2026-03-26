@@ -23,7 +23,7 @@ export interface ConversationsRef {
 
 export interface ConversationItemType
   extends AnyObject, Omit<HTMLAttributes, "onClick" | "class" | "style"> {
-  key: string | number;
+  key: string;
   label?: VNodeChild;
   group?: string;
   icon?: VNodeChild;
@@ -34,7 +34,7 @@ export interface ConversationItemType
 
 export interface DividerItemType {
   type: "divider";
-  key?: string | number;
+  key?: string;
   dashed?: boolean;
 }
 
