@@ -1,6 +1,14 @@
 import type { Ref } from "vue";
 
-import { computed, isRef, onScopeDispose, ref, shallowRef, watch } from "vue";
+import {
+  computed,
+  isRef,
+  onScopeDispose,
+  reactive,
+  ref,
+  shallowRef,
+  watch,
+} from "vue";
 
 import type { AnyObject } from "../_util/types";
 import type { ConversationData } from "../x-conversations";
@@ -102,7 +110,7 @@ function resolveMaybeRef<T>(value: MaybeRef<T>): T {
   return isRef(value) ? value.value : value;
 }
 
-const IsRequestingMap = new Map<ConversationKey, boolean>();
+const IsRequestingMap = reactive(new Map<ConversationKey, boolean>());
 const generateConversationKey = () => Symbol("ConversationKey");
 
 export default function useXChat<
