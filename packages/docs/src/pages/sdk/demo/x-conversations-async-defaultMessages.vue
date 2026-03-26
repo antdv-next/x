@@ -31,12 +31,13 @@ const locale = computed(() => {
   return {
     conversationItem1: isCN ? "会话项目 1" : "Conversation Item 1",
     conversationItem2: isCN ? "会话项目 2" : "Conversation Item 2",
-    conversationItem3: isCN ? "会话项目 3" : "Conversation Item 3",
+    conversationItem3: isCN
+      ? "会话项目 3，你可以点击我！"
+      : "This's Conversation Item 3, you can click me!",
     conversationItem4: isCN ? "会话项目 4" : "Conversation Item 4",
     thinking: isCN ? "思考中..." : "Thinking...",
     requestAborted: isCN ? "请求已中止" : "Request aborted",
     somethingWrong: isCN ? "出了点问题" : "Something went wrong",
-    loadingHistory: isCN ? "加载历史消息中..." : "Loading history...",
   };
 });
 
@@ -163,7 +164,7 @@ function handleSubmit(value: string) {
 </script>
 
 <template>
-  <Flex gap="small" align="start">
+  <Flex gap="small" align="flex-start">
     <Conversations
       :items="defaultItems"
       :active-key="activeConversationKey"
@@ -171,18 +172,19 @@ function handleSubmit(value: string) {
       :on-active-change="setActiveConversationKey"
     />
 
-    <Flex vertical gap="small" :style="{ flex: 1, minWidth: 0 }">
-      <div :style="{ height: '350px' }">
-        <template v-if="isDefaultMessagesRequesting">
-          <Flex :style="{ padding: '16px' }">
-            {{ locale.loadingHistory }}
-          </Flex>
-        </template>
+    <Flex :style="{ width: '500px' }" vertical gap="small" align="flex-start">
+      <div
+        :style="{
+          width: '100%',
+          height: '350px',
+          display: 'flex',
+          flexDirection: 'column',
+        }"
+      >
         <BubbleList
-          v-else
           :items="bubbleItems"
+          :styles="{ bubble: { maxWidth: '840px' } }"
           :role="roleConfig"
-          :style="{ height: '100%' }"
         />
       </div>
       <Sender
@@ -197,9 +199,9 @@ function handleSubmit(value: string) {
 </template>
 
 <docs lang="zh-CN">
-将 `defaultMessages` 设为异步函数，在会话初始化时远程拉取历史消息。切换到预置会话时，自动加载该会话的历史记录。
+将 `defaultMessages` 设置为异步方法，可以在初始化时加载历史消息，该方法常与 `useXConversations` hook 配合使用，实现会话数据的动态管理和状态同步，适用于会话列表的消息更新和会话内容的初始化场景。
 </docs>
 
 <docs lang="en-US">
-Set `defaultMessages` as an async function to fetch remote history when a conversation is initialized. Switching to a preset session automatically loads its history.
+Set `defaultMessages` as an asynchronous method to load historical messages during initialization. This method is commonly used with the `useXConversations` hook to achieve dynamic management of conversation data and state synchronization, suitable for scenarios involving message updates in conversation lists and initialization of conversation content.
 </docs>

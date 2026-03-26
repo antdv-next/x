@@ -4,12 +4,10 @@ import type { ConversationsProps } from "@antdv-next/x";
 import { DeleteOutlined } from "@antdv-next/icons";
 import { Conversations } from "@antdv-next/x";
 import { useXConversations } from "@antdv-next/x-sdk";
-import { Button, Flex, Typography, theme } from "antdv-next";
+import { Button, Flex, theme } from "antdv-next";
 import { computed, h } from "vue";
 
 import { useLocale } from "@/composables/use-locale";
-
-const { Paragraph } = Typography;
 
 const { token } = theme.useToken();
 const { locale: docsLocale } = useLocale();
@@ -136,17 +134,25 @@ const currentData = computed(() =>
       <Button @click="onUpdate">{{ locale.update }}</Button>
       <Button @click="onReset">{{ locale.reset }}</Button>
     </Flex>
-    <Paragraph>
-      {{ locale.currentConversationData }}
-      <pre>{{ currentData }}</pre>
-    </Paragraph>
+    <div>
+      <p>{{ locale.currentConversationData }}</p>
+      <pre
+        :style="{
+          background: token.colorFillTertiary,
+          padding: '12px',
+          borderRadius: `${token.borderRadius}px`,
+          margin: 0,
+        }"
+        >{{ currentData }}</pre
+      >
+    </div>
   </Flex>
 </template>
 
 <docs lang="zh-CN">
-通过 `addConversation`、`removeConversation`、`setConversation` 等方法实现会话的增删改操作，配合 `menu` 属性提供右键操作菜单，使用 `creation` 属性添加新建会话按钮。
+展示会话的完整操作能力，包括动态添加、更新、删除、重置会话项目，以及获取当前会话数据。
 </docs>
 
 <docs lang="en-US">
-Use `addConversation`, `removeConversation`, and `setConversation` for CRUD operations on conversations, combined with the `menu` property for context menu actions and `creation` for an add conversation button.
+Demonstrate complete conversation operation capabilities, including dynamically adding, updating, deleting, resetting conversation items, and retrieving current conversation data.
 </docs>

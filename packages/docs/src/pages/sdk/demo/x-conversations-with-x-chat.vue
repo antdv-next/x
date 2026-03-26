@@ -2,7 +2,6 @@
 import type { ConversationsProps, SenderRef } from "@antdv-next/x";
 import type {
   SSEFields,
-  XModelMessage,
   XModelParams,
   XModelResponse,
 } from "@antdv-next/x-sdk";
@@ -30,33 +29,35 @@ const locale = computed(() => {
   return {
     conversationItem1: isCN ? "会话项目 1" : "Conversation Item 1",
     conversationItem2: isCN ? "会话项目 2" : "Conversation Item 2",
-    conversationItem3: isCN ? "会话项目 3" : "Conversation Item 3",
+    conversationItem3: isCN
+      ? "会话项目 3，你可以点击我！"
+      : "This's Conversation Item 3, you can click me!",
     conversationItem4: isCN ? "会话项目 4" : "Conversation Item 4",
     helloConversation1: isCN
       ? "你好，这是会话 1！"
-      : "Hello, this is conversation 1!",
+      : "Hello, this is Conversation 1!",
     welcomeConversation1: isCN
-      ? "欢迎来到会话 1！有什么我可以帮你的吗？"
-      : "Welcome to conversation 1! How can I help you?",
-    conversation2Started: isCN ? "会话 2 已启动" : "Conversation 2 started",
+      ? "你好！这是会话 1 的欢迎消息。我可以帮助你回答各种问题。"
+      : "Hello! This is the welcome message for Conversation 1. I can help you answer various questions.",
+    conversation2Started: isCN ? "会话 2 已启动" : "Conversation 2 has started",
     welcomeConversation2: isCN
-      ? "欢迎来到会话 2！有什么我可以帮你的吗？"
-      : "Welcome to conversation 2! How can I help you?",
-    clickedConversation3: isCN ? "点击了会话 3" : "Clicked conversation 3",
+      ? "欢迎来到会话 2！在这里我们可以讨论与技术相关的话题。"
+      : "Welcome to Conversation 2! Here we can discuss technology-related topics.",
+    clickedConversation3: isCN ? "点击了会话 3" : "Clicked on Conversation 3",
     specialConversation3: isCN
-      ? "这是会话 3 的特别消息！"
-      : "This is a special message for conversation 3!",
+      ? "你选择了会话 3！这是一个特殊的会话。我该如何帮助你？"
+      : "You selected Conversation 3! This is a special conversation. How can I help you?",
     conversation4Initialized: isCN
       ? "会话 4 已初始化"
       : "Conversation 4 initialized",
     conversation4Disabled: isCN
-      ? "会话 4 已禁用，无法发送消息。"
-      : "Conversation 4 is disabled and cannot send messages.",
-    helloDefault: isCN ? "你好！" : "Hello!",
+      ? "这是会话 4。虽然它被禁用了，但你仍然可以查看历史消息。"
+      : "This is Conversation 4. Although it is disabled, you can still view historical messages.",
+    helloDefault: isCN ? "你好！" : "hello!",
     howCanAssist: isCN
       ? "你好！我今天能为你做些什么？"
-      : "Hello! What can I do for you today?",
-    thinking: isCN ? "思考中..." : "Thinking...",
+      : "Hello! How can I assist you today?",
+    thinking: isCN ? "思考中" : "Thinking",
     requestAborted: isCN ? "请求已中止" : "Request aborted",
     somethingWrong: isCN ? "出了点问题" : "Something went wrong",
   };
@@ -96,41 +97,71 @@ const { activeConversationKey, setActiveConversationKey } = useXConversations({
   defaultActiveConversationKey: "item1_1",
 });
 
-const defaultMessages = computed<
-  (info: { conversationKey?: string }) => XModelMessage[]
->(() => {
-  const l = locale.value;
+const defaultMessages = computed<(info: { conversationKey?: string }) => any[]>(
+  () => {
+    const l = locale.value;
 
-  const messagesMap: Record<string, XModelMessage[]> = {
-    item1_1: [
-      { role: "user", content: l.helloConversation1 },
-      { role: "assistant", content: l.welcomeConversation1 },
-    ],
-    item1_2: [
-      { role: "user", content: l.conversation2Started },
-      { role: "assistant", content: l.welcomeConversation2 },
-    ],
-    item1_3: [
-      { role: "user", content: l.clickedConversation3 },
-      { role: "assistant", content: l.specialConversation3 },
-    ],
-    item1_4: [
-      { role: "user", content: l.conversation4Initialized },
-      { role: "assistant", content: l.conversation4Disabled },
-    ],
-  };
+    const messagesMap: Record<string, any[]> = {
+      item1_1: [
+        {
+          message: { role: "user", content: l.helloConversation1 },
+          status: "success",
+        },
+        {
+          message: { role: "assistant", content: l.welcomeConversation1 },
+          status: "success",
+        },
+      ],
+      item1_2: [
+        {
+          message: { role: "user", content: l.conversation2Started },
+          status: "success",
+        },
+        {
+          message: { role: "assistant", content: l.welcomeConversation2 },
+          status: "success",
+        },
+      ],
+      item1_3: [
+        {
+          message: { role: "user", content: l.clickedConversation3 },
+          status: "success",
+        },
+        {
+          message: { role: "assistant", content: l.specialConversation3 },
+          status: "success",
+        },
+      ],
+      item1_4: [
+        {
+          message: { role: "user", content: l.conversation4Initialized },
+          status: "success",
+        },
+        {
+          message: { role: "assistant", content: l.conversation4Disabled },
+          status: "success",
+        },
+      ],
+    };
 
-  return (info: { conversationKey?: string }) => {
-    const key = info.conversationKey;
-    if (key && messagesMap[key]) {
-      return messagesMap[key];
-    }
-    return [
-      { role: "user", content: l.helloDefault },
-      { role: "assistant", content: l.howCanAssist },
-    ];
-  };
-});
+    return (info: { conversationKey?: string }) => {
+      const key = info.conversationKey;
+      if (key && messagesMap[key]) {
+        return messagesMap[key];
+      }
+      return [
+        {
+          message: { role: "user", content: l.helloDefault },
+          status: "success",
+        },
+        {
+          message: { role: "assistant", content: l.howCanAssist },
+          status: "success",
+        },
+      ];
+    };
+  },
+);
 
 const { onRequest, messages, isRequesting, abort } = useXChat({
   provider: computed(() => providerFactory(activeConversationKey.value)).value,
@@ -143,10 +174,7 @@ const { onRequest, messages, isRequesting, abort } = useXChat({
   requestFallback: (_, { error, errorInfo, messageInfo }) => {
     if (error.name === "AbortError") {
       return {
-        content:
-          typeof messageInfo?.message?.content === "string"
-            ? messageInfo.message.content
-            : locale.value.requestAborted,
+        content: messageInfo?.message?.content || locale.value.requestAborted,
         role: "assistant",
       };
     }
@@ -190,7 +218,7 @@ function handleSubmit(value: string) {
 </script>
 
 <template>
-  <Flex gap="small" align="start">
+  <Flex gap="small" align="flex-start">
     <Conversations
       :items="defaultItems"
       :active-key="activeConversationKey"
@@ -198,11 +226,19 @@ function handleSubmit(value: string) {
       :on-active-change="setActiveConversationKey"
     />
 
-    <Flex vertical gap="small" :style="{ width: '500px' }">
-      <div :style="{ height: '300px' }">
+    <Flex vertical gap="small" align="flex-start" :style="{ width: '500px' }">
+      <div
+        :style="{
+          width: '100%',
+          height: '300px',
+          display: 'flex',
+          flexDirection: 'column',
+        }"
+      >
         <BubbleList
           :items="bubbleItems"
           :role="roleConfig"
+          :styles="{ bubble: { maxWidth: '840px' } }"
           :style="{ height: '100%' }"
         />
       </div>
@@ -217,9 +253,9 @@ function handleSubmit(value: string) {
 </template>
 
 <docs lang="zh-CN">
-将 `useXConversations` 与 `useXChat` 结合，通过 `defaultMessages` 为每个会话预置初始消息。切换会话时自动加载对应的消息记录。
+结合 useXConversations 和 useXChat 实现会话管理与聊天功能的完整集成，支持多会话独立聊天和上下文切换。
 </docs>
 
 <docs lang="en-US">
-Combine `useXConversations` with `useXChat`, using `defaultMessages` to preset initial messages for each conversation. Messages are automatically loaded when switching conversations.
+Integrate useXConversations and useXChat to achieve complete integration of conversation management and chat functionality, supporting multi-conversation independent chatting and context switching.
 </docs>

@@ -34,15 +34,15 @@ const locale = computed(() => {
 });
 
 const items: ConversationsProps["items"] = [
-  { key: "item1", label: "Conversation Item 1" },
-  { key: "item2", label: "Conversation Item 2" },
-  { key: "item3", label: "This's Conversation Item 3, you can click me!" },
-  { key: "item4", label: "Conversation Item 4", disabled: true },
+  { key: "item1", label: locale.value.conversationItem1 },
+  { key: "item2", label: locale.value.conversationItem2 },
+  { key: "item3", label: locale.value.conversationItem3 },
+  { key: "item4", label: locale.value.conversationItem4, disabled: true },
 ];
 
 const others: ConversationsProps["items"] = [
-  { key: "other1", label: "Conversation Item 1" },
-  { key: "other2", label: "Conversation Item 2" },
+  { key: "other1", label: locale.value.conversationItem1 },
+  { key: "other2", label: locale.value.conversationItem2 },
 ];
 
 let idx = 5;
@@ -159,9 +159,9 @@ const otherMenuConfig = computed<ConversationsProps["menu"]>(
 </template>
 
 <docs lang="zh-CN">
-`useXConversations` 支持多实例，每个实例维护独立的会话状态，互不影响。使用 `Row` 和 `Col` 布局展示两个独立的会话列表。
+展示多个会话实例的独立管理，支持添加、更新、删除会话项目，实现完全解耦的状态管理。
 </docs>
 
 <docs lang="en-US">
-`useXConversations` supports multiple independent instances, each maintaining its own conversation state. Uses `Row` and `Col` layout to display two independent conversation lists.
+Demonstrate independent management of multiple conversation instances, supporting add, update, and delete conversation items with fully decoupled state management.
 </docs>

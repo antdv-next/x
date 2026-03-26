@@ -20,7 +20,7 @@ import {
   XRequest,
 } from "@antdv-next/x-sdk";
 import { Flex, theme } from "antdv-next";
-import { computed, h, ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 
 import { useLocale } from "@/composables/use-locale";
 
@@ -36,15 +36,13 @@ const locale = computed(() => {
   return {
     conversationItem1: isCN ? "会话项目 1" : "Conversation Item 1",
     conversationItem2: isCN ? "会话项目 2" : "Conversation Item 2",
-    conversationItem3: isCN ? "会话项目 3" : "Conversation Item 3",
+    conversationItem3: isCN
+      ? "会话项目 3，你可以点击我！"
+      : "This's Conversation Item 3, you can click me!",
     conversationItem4: isCN ? "会话项目 4" : "Conversation Item 4",
     thinking: isCN ? "思考中..." : "Thinking...",
     requestAborted: isCN ? "请求已中止" : "Request aborted",
     somethingWrong: isCN ? "出了点问题" : "Something went wrong",
-    welcomeTitle: "Hello, I'm Ant Design X",
-    welcomeDescription: isCN
-      ? "基于 Ant Design 的 AGI 产品界面解决方案，构建更好的智能交互体验~"
-      : "Base on Ant Design, AGI product interface solution, create a better intelligent vision~",
   };
 });
 
@@ -165,10 +163,7 @@ const conversationStyle = computed(() => ({
 }));
 
 const conversationItems = computed<ConversationsProps["items"]>(() =>
-  conversations.value
-    .filter(item => item.key !== DEFAULT_KEY)
-    .slice()
-    .reverse(),
+  conversations.value.filter(item => item.key !== DEFAULT_KEY).reverse(),
 );
 
 const bubbleItems = computed(() =>
@@ -185,13 +180,6 @@ const roleConfig = {
   assistant: { placement: "start" as const },
   user: { placement: "end" as const },
 };
-
-const welcomeIcon = () =>
-  h("img", {
-    src: "https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*s5sNRo5LjfQAAAAAAAAAAAAADgCCAQ/fmt.webp",
-    alt: "Ant Design X",
-    style: { width: "64px", height: "64px" },
-  });
 
 function handleAdd() {
   setActiveConversationKey(DEFAULT_KEY);
@@ -235,15 +223,14 @@ function handleSubmit(value: string) {
           height: '350px',
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'flex-start',
         }"
       >
         <Welcome
           v-if="activeConversationKey === DEFAULT_KEY"
           variant="borderless"
-          :icon="welcomeIcon"
-          :title="locale.welcomeTitle"
-          :description="locale.welcomeDescription"
+          icon="https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*s5sNRo5LjfQAAAAAAAAAAAAADgCCAQ/fmt.webp"
+          title="Hello, I'm Ant Design X"
+          description="Base on Ant Design, AGI product interface solution, create a better intelligent vision~"
         />
         <BubbleList
           v-else
@@ -264,9 +251,9 @@ function handleSubmit(value: string) {
 </template>
 
 <docs lang="zh-CN">
-结合 `useXConversations` 与 `queueRequest` 演示基于会话键的消息排队与历史消息切换。点击预置会话项时，自动异步加载该会话的历史消息。
+结合 useXConversations 和 queueRequest 实现基于 sessionId 的智能请求排队机制，确保多会话场景下消息按会话有序发送且上下文准确。
 </docs>
 
 <docs lang="en-US">
-Combining `useXConversations` and `queueRequest` to demonstrate conversation-key-based request queuing and history switching. Clicking a preset session item automatically loads its historical messages asynchronously.
+Integrate useXConversations and queueRequest to implement intelligent request queuing based on sessionId, ensuring messages are sent orderly by conversation and context remains accurate in multi-conversation scenarios.
 </docs>
