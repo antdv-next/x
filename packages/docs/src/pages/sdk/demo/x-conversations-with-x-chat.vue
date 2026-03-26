@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import type { ConversationsProps, SenderRef } from "@antdv-next/x";
+import type { ConversationItemType, SenderRef } from "@antdv-next/x";
 import type {
+  DefaultMessageInfo,
   SSEFields,
+  XModelMessage,
   XModelParams,
   XModelResponse,
 } from "@antdv-next/x-sdk";
@@ -63,7 +65,7 @@ const locale = computed(() => {
   };
 });
 
-const defaultItems = computed<ConversationsProps["items"]>(() => [
+const defaultItems = computed<ConversationItemType[]>(() => [
   { key: "item1_1", label: locale.value.conversationItem1 },
   { key: "item1_2", label: locale.value.conversationItem2 },
   { key: "item1_3", label: locale.value.conversationItem3 },
@@ -97,76 +99,76 @@ const { activeConversationKey, setActiveConversationKey } = useXConversations({
   defaultActiveConversationKey: "item1_1",
 });
 
-const defaultMessages = computed<(info: { conversationKey?: string }) => any[]>(
-  () => {
-    const l = locale.value;
+const defaultMessages = async (info: {
+  conversationKey?: string;
+}): Promise<DefaultMessageInfo<XModelMessage>[]> => {
+  const l = locale.value;
 
-    const messagesMap: Record<string, any[]> = {
-      item1_1: [
-        {
-          message: { role: "user", content: l.helloConversation1 },
-          status: "success",
-        },
-        {
-          message: { role: "assistant", content: l.welcomeConversation1 },
-          status: "success",
-        },
-      ],
-      item1_2: [
-        {
-          message: { role: "user", content: l.conversation2Started },
-          status: "success",
-        },
-        {
-          message: { role: "assistant", content: l.welcomeConversation2 },
-          status: "success",
-        },
-      ],
-      item1_3: [
-        {
-          message: { role: "user", content: l.clickedConversation3 },
-          status: "success",
-        },
-        {
-          message: { role: "assistant", content: l.specialConversation3 },
-          status: "success",
-        },
-      ],
-      item1_4: [
-        {
-          message: { role: "user", content: l.conversation4Initialized },
-          status: "success",
-        },
-        {
-          message: { role: "assistant", content: l.conversation4Disabled },
-          status: "success",
-        },
-      ],
-    };
+  // 会话消息映射：为每个会话定义独特的欢迎消息
+  // Conversation message mapping: define unique welcome messages for each conversation
+  const messagesMap: Record<string, DefaultMessageInfo<XModelMessage>[]> = {
+    item1_1: [
+      {
+        message: { role: "user", content: l.helloConversation1 },
+        status: "success",
+      },
+      {
+        message: { role: "assistant", content: l.welcomeConversation1 },
+        status: "success",
+      },
+    ],
+    item1_2: [
+      {
+        message: { role: "user", content: l.conversation2Started },
+        status: "success",
+      },
+      {
+        message: { role: "assistant", content: l.welcomeConversation2 },
+        status: "success",
+      },
+    ],
+    item1_3: [
+      {
+        message: { role: "user", content: l.clickedConversation3 },
+        status: "success",
+      },
+      {
+        message: { role: "assistant", content: l.specialConversation3 },
+        status: "success",
+      },
+    ],
+    item1_4: [
+      {
+        message: { role: "user", content: l.conversation4Initialized },
+        status: "success",
+      },
+      {
+        message: { role: "assistant", content: l.conversation4Disabled },
+        status: "success",
+      },
+    ],
+  };
 
-    return (info: { conversationKey?: string }) => {
-      const key = info.conversationKey;
-      if (key && messagesMap[key]) {
-        return messagesMap[key];
-      }
-      return [
-        {
-          message: { role: "user", content: l.helloDefault },
-          status: "success",
-        },
-        {
-          message: { role: "assistant", content: l.howCanAssist },
-          status: "success",
-        },
-      ];
-    };
-  },
-);
+  const key = info.conversationKey;
+  if (key && messagesMap[key]) {
+    return messagesMap[key];
+  }
+  return [
+    {
+      message: { role: "user", content: l.helloDefault },
+      status: "success",
+    },
+    {
+      message: { role: "assistant", content: l.howCanAssist },
+      status: "success",
+    },
+  ];
+};
 
 const { onRequest, messages, isRequesting, abort } = useXChat({
   provider: computed(() => providerFactory(activeConversationKey.value)).value,
   conversationKey: activeConversationKey,
-  defaultMessages: defaultMessages.value,
+  defaultMessages: defaultMessages,
   requestPlaceholder: () => ({
     content: locale.value.thinking,
     role: "assistant",

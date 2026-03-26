@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ConversationsProps } from "@antdv-next/x";
+import type { ConversationItemType, ConversationsProps } from "@antdv-next/x";
 
 import { Conversations } from "@antdv-next/x";
 import { useXConversations } from "@antdv-next/x-sdk";
@@ -24,7 +24,7 @@ const locale = computed(() => {
   };
 });
 
-const items = computed<ConversationsProps["items"]>(() => [
+const items = computed<ConversationItemType[]>(() => [
   {
     key: "item1",
     label: locale.value.conversationItem1,

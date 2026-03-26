@@ -162,7 +162,7 @@ const conversationStyle = computed(() => ({
   borderRadius: `${token.value.borderRadius}px`,
 }));
 
-const conversationItems = computed<ConversationsProps["items"]>(() =>
+const conversationItems = computed<ConversationItemType[]>(() =>
   conversations.value.filter(item => item.key !== DEFAULT_KEY).reverse(),
 );
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ConversationsProps } from "@antdv-next/x";
+import type { ConversationItemType, ConversationsProps } from "@antdv-next/x";
 
 import { DeleteOutlined } from "@antdv-next/icons";
 import { Conversations } from "@antdv-next/x";
@@ -36,7 +36,7 @@ const locale = computed(() => {
   };
 });
 
-function createItems(): ConversationsProps["items"] {
+function createItems(): ConversationItemType[] {
   return [
     {
       key: "item1",

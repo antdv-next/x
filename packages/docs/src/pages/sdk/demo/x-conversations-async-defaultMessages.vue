@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ConversationsProps, SenderRef } from "@antdv-next/x";
+import type { ConversationItemType, SenderRef } from "@antdv-next/x";
 import type {
   DefaultMessageInfo,
   SSEFields,
@@ -41,7 +41,7 @@ const locale = computed(() => {
   };
 });
 
-const defaultItems = computed<ConversationsProps["items"]>(() => [
+const defaultItems = computed<ConversationItemType[]>(() => [
   { key: "item2_1", label: locale.value.conversationItem1 },
   { key: "item2_2", label: locale.value.conversationItem2 },
   { key: "item2_3", label: locale.value.conversationItem3 },
