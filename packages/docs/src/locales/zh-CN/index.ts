@@ -23,6 +23,7 @@ export default {
     start: "开始使用",
     design: "设计语言",
   },
+  "edit-page": "在 GitHub 上编辑此页！",
   contributors: {
     title: "文档贡献者",
   },

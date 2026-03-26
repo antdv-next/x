@@ -23,6 +23,7 @@ export default {
     start: "Get Started",
     design: "Get Design",
   },
+  "edit-page": "Edit this page on GitHub!",
   contributors: {
     title: "contributors",
   },
