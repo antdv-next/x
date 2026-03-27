@@ -309,9 +309,9 @@ function handleSubmit(nextContent: string) {
 </template>
 
 <docs lang="zh-CN">
-使用 `DeepSeekChatProvider` 迁移思考模型接入示例，保留消息操作、重试与中止请求，并通过 `Think` 组件展示思考过程。
+使用 DeepSeekChatProvider，接入思考模型，可发送消息、处理数据、终止消息。
 </docs>
 
 <docs lang="en-US">
-Migrated the thinking-model demo with `DeepSeekChatProvider`, preserving message actions, retry, abort, and the `Think` rendering for reasoning output.
+Use DeepSeekChatProvider to integrate thinking models, enabling message sending, data processing, and message termination.
 </docs>
