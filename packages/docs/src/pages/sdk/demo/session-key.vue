@@ -290,9 +290,9 @@ function handleSubmit(value: string) {
 </template>
 
 <docs lang="zh-CN">
-严格迁移 `SessionId - ConversationKey` 示例，结合 `useXConversations` 与 `queueRequest` 演示基于会话键的消息排队与历史消息切换。
+结合 useXConversations 和 queueRequest 实现基于 sessionId 的智能请求排队机制，确保多会话场景下消息按会话有序发送且上下文准确。
 </docs>
 
 <docs lang="en-US">
-Strict migration of the `SessionId - ConversationKey` demo, combining `useXConversations` and `queueRequest` to demonstrate conversation-key-based request queuing and history switching.
+Integrate useXConversations and queueRequest to implement intelligent request queuing based on sessionId, ensuring messages are sent orderly by conversation and context remains accurate in multi-conversation scenarios.
 </docs>

@@ -306,9 +306,9 @@ function handleSubmit(nextContent: string) {
 </template>
 
 <docs lang="zh-CN">
-严格迁移原始 `developer` 示例，使用 `defaultMessages` 注入开发者消息，并演示系统提示词的读取与更新。
+可使用 `defaultMessages` 设置系统提示词。
 </docs>
 
 <docs lang="en-US">
-Strict migration of the original `developer` demo, injecting developer messages through `defaultMessages` and demonstrating how to read and update the system prompt.
+You can use `defaultMessages` to set system prompts.
 </docs>

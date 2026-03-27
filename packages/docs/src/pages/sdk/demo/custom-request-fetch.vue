@@ -104,9 +104,9 @@ function handleSubmit(nextContent: string) {
 </template>
 
 <docs lang="zh-CN">
-严格迁移 `custom-request-fetch` 示例，演示如何覆写 `XRequest.fetch` 并继续复用 `DefaultChatProvider` 与 `useXChat`。
+自定义 XRequest.fetch。
 </docs>
 
 <docs lang="en-US">
-Strict migration of the `custom-request-fetch` demo, showing how to override `XRequest.fetch` while still reusing `DefaultChatProvider` and `useXChat`.
+Custom XRequest.fetch.
 </docs>

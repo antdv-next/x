@@ -301,9 +301,9 @@ function handleSubmit(nextContent: string) {
 </template>
 
 <docs lang="zh-CN">
-严格按照 ant-design/x 的 `OpenAI 模型接入` 示例迁移，保留历史消息、消息增删改、重试和中止请求等交互。
+使用 OpenAIChatProvider，接入 OpenAI 数据格式的模型，可发送消息、处理数据、终止消息。
 </docs>
 
 <docs lang="en-US">
-Strict migration of the ant-design/x `OpenAI Model Integration` demo, preserving historical messages, message mutations, retry, and request abort interactions.
+Use OpenAIChatProvider to integrate models with OpenAI data format, enabling message sending, data processing, and message termination.
 </docs>

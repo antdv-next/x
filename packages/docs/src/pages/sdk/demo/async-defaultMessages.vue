@@ -282,9 +282,9 @@ function handleSubmit(nextContent: string) {
 </template>
 
 <docs lang="zh-CN">
-严格按照原始异步历史消息示例迁移，将 `defaultMessages` 设为异步方法，在初始化时远程拉取历史消息。
+将 `defaultMessages` 设置为异步方法，可以在初始化时加载历史消息。
 </docs>
 
 <docs lang="en-US">
-Strict migration of the async historical-messages demo, using an asynchronous `defaultMessages` function to load remote history on initialization.
+Set `defaultMessages` as an asynchronous method to load historical messages during initialization.
 </docs>

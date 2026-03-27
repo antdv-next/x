@@ -306,9 +306,9 @@ function handleSubmit(nextContent: string) {
 </template>
 
 <docs lang="zh-CN">
-严格迁移 `openai-callback` 示例，展示 `XRequest` 的 `onSuccess`、`onError`、`onUpdate` 回调如何拿到组装后的 Chat Message。
+与 Chat Provider 协作时，XRequest 的 callback 回调可获取组装好的 Chat Message 数据。
 </docs>
 
 <docs lang="en-US">
-Strict migration of the `openai-callback` demo, showing how `XRequest` callbacks such as `onSuccess`, `onError`, and `onUpdate` receive assembled chat messages.
+When working with Chat Provider, the XRequest callback can obtain the assembled Chat Message data.
 </docs>

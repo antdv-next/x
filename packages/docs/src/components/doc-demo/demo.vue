@@ -69,7 +69,7 @@ const useStyles = createStyles(({ token }) => ({
       transition: "background-color 0.4s",
     },
     "& .ant-doc-demo-box-meta-description": {
-      padding: "18px 12px 24px",
+      padding: "18px 24px 24px",
     },
     "& .ant-doc-demo-box-meta-description p": {
       margin: 0,

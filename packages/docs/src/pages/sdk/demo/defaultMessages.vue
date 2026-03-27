@@ -269,9 +269,9 @@ function handleSubmit(nextContent: string) {
 </template>
 
 <docs lang="zh-CN">
-严格按原始 `defaultMessages` 示例迁移，演示如何通过 `defaultMessages` 初始化历史消息并继续进行消息操作。
+可使用 `defaultMessages` 设置历史消息。
 </docs>
 
 <docs lang="en-US">
-Strict migration of the original `defaultMessages` demo, showing how to initialize historical messages with `defaultMessages` and continue operating on them.
+You can use `defaultMessages` to set historical messages.
 </docs>
