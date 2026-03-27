@@ -2,6 +2,7 @@ import type { UploadFile, UploadProps } from "antdv-next";
 import type {
   ClassValue,
   CSSProperties,
+  DefineComponent,
   PropType,
   StyleValue,
   VNodeChild,
@@ -425,4 +426,4 @@ const XAttachments = defineComponent({
   },
 });
 
-export default XAttachments;
+export default XAttachments as DefineComponent<AttachmentsProps>;
