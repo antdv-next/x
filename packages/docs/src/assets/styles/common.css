@@ -107,7 +107,7 @@ html.dark body {
 }
 
 .ant-doc-main-sider-menu.ant-menu-inline > .ant-menu-item {
-  padding-inline: 36px 12px !important;
+  padding-inline: 24px 12px !important;
 }
 
 ::view-transition-old(root),
