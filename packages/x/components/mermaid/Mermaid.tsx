@@ -479,6 +479,7 @@ const XMermaid = defineComponent({
         () => graphRef.value,
       ],
       () => {
+        if (!graphRef.value) return;
         void renderDiagram();
       },
       {
