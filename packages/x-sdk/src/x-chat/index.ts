@@ -1,6 +1,14 @@
 import type { Ref } from "vue";
 
-import { computed, isRef, onScopeDispose, ref, shallowRef, watch } from "vue";
+import {
+  computed,
+  isRef,
+  onScopeDispose,
+  reactive,
+  ref,
+  shallowRef,
+  watch,
+} from "vue";
 
 import type { AnyObject } from "../_util/types";
 import type { ConversationData } from "../x-conversations";
@@ -102,7 +110,7 @@ function resolveMaybeRef<T>(value: MaybeRef<T>): T {
   return isRef(value) ? value.value : value;
 }
 
-const IsRequestingMap = new Map<ConversationKey, boolean>();
+const IsRequestingMap = reactive(new Map<ConversationKey, boolean>());
 const generateConversationKey = () => Symbol("ConversationKey");
 
 export default function useXChat<
@@ -122,8 +130,6 @@ export default function useXChat<
   const idRef = ref(0);
   const requestHandlerRef =
     shallowRef<AbstractXRequestClass<Input, Output, ChatMessage>>();
-  const isRequesting = ref(false);
-
   const originalConversationKey = config.conversationKey
     ? resolveMaybeRef(config.conversationKey)
     : undefined;
@@ -437,7 +443,6 @@ export default function useXChat<
         return msg;
       },
       onSuccess: (chunks: Output[], headers: Headers) => {
-        isRequesting.value = false;
         if (conversationKey.value) {
           IsRequestingMap.delete(conversationKey.value);
         }
@@ -450,7 +455,6 @@ export default function useXChat<
         return msg;
       },
       onError: async (error: Error, errorInfo: any) => {
-        isRequesting.value = false;
         if (conversationKey.value) {
           IsRequestingMap.delete(conversationKey.value);
         }
@@ -506,7 +510,6 @@ export default function useXChat<
         return fallbackMsg;
       },
     });
-    isRequesting.value = true;
     if (conversationKey.value) {
       IsRequestingMap.set(conversationKey.value, true);
     }
@@ -592,8 +595,8 @@ export default function useXChat<
     },
     isRequesting: computed(() =>
       conversationKey.value
-        ? IsRequestingMap?.get(conversationKey.value) || false
-        : isRequesting.value,
+        ? IsRequestingMap.get(conversationKey.value) || false
+        : false,
     ),
     onReload,
     queueRequest,
