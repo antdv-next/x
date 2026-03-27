@@ -12,6 +12,7 @@ import type { MermaidProps } from "../mermaid";
 import type { PromptsProps } from "../prompts";
 import type { SenderProps } from "../sender";
 import type { SourcesProps } from "../sources";
+import type { SuggestionProps } from "../suggestion";
 import type { DesignTokenProviderProps } from "../theme/context";
 import type { ThinkProps } from "../think";
 import type { ThoughtChainProps } from "../thought-chain";
@@ -40,6 +41,7 @@ export interface XComponentsConfig {
   mermaid?: Pick<MermaidProps, "style" | "styles" | "classes">;
   prompts?: Pick<PromptsProps, "style" | "styles" | "classes">;
   sender?: Pick<SenderProps, "style" | "styles" | "classNames">;
+  suggestion?: Pick<SuggestionProps, "style" | "styles" | "classes">;
   think?: Pick<ThinkProps, "style" | "styles" | "classes">;
   thoughtChain?: Pick<ThoughtChainProps, "style" | "styles" | "classes">;
   welcome?: Pick<WelcomeProps, "style" | "styles" | "classes">;

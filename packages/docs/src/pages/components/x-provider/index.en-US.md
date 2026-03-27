@@ -54,6 +54,7 @@ import zhCN from 'antdv-next/dist/locale/zh_CN'
 | `conversations` | Global configuration for Conversations | `{ style?: CSSProperties; styles?: Record<string, CSSProperties>; className?: string; classes?: Record<string, string>; shortcutKeys?: { creation?: ShortcutKeys<number>; items?: ShortcutKeys<'number'> \| ShortcutKeys<number>[] } }` | -       |
 | `actions`       | Global configuration for Actions       | `{ style?: CSSProperties; styles?: Record<string, CSSProperties>; className?: string; classes?: Record<string, string> }`                                                                                                               | -       |
 | `fileCard`      | Global configuration for FileCard      | `{ style?: CSSProperties; styles?: Record<string, CSSProperties>; className?: string; classes?: Record<string, string> }`                                                                                                               | -       |
+| `suggestion`    | Global configuration for Suggestion    | `{ style?: CSSProperties; styles?: Record<string, CSSProperties>; classes?: Record<string, string> }`                                                                                                                                   | -       |
 
 #### ShortcutKeys
 

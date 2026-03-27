@@ -1,21 +1,22 @@
 <script setup lang="ts">
-import type { SenderProps } from "@antdv-next/x";
+import type { SenderProps, SuggestionItem } from "@antdv-next/x";
 import type { MenuProps } from "antdv-next";
 
-// TODO: 待实现 Suggestion 组件 + slotConfig 后完善
-// 当前为占位 demo，展示 Agent 输入框 + 快捷指令的组合场景
-// React 版: 输入 @ 可唤起 Suggestion 快捷指令面板
 import {
+  AntDesignOutlined,
   ApiOutlined,
   CodeOutlined,
   EditOutlined,
+  FileImageOutlined,
+  OpenAIFilled,
   OpenAIOutlined,
   PaperClipOutlined,
+  ProfileOutlined,
   SearchOutlined,
 } from "@antdv-next/icons";
-import { Sender } from "@antdv-next/x";
+import { Sender, Suggestion } from "@antdv-next/x";
 import { Button, Divider, Dropdown, Flex, message } from "antdv-next";
-import { h, ref, watch } from "vue";
+import { h, nextTick, onBeforeUnmount, ref } from "vue";
 
 const SenderSwitch = Sender.Switch;
 
@@ -25,11 +26,38 @@ const agentMap: Record<string, { icon: any; label: string }> = {
   ai_writing: { icon: EditOutlined, label: "Writing" },
 };
 
+const fileMap: Record<string, { icon: any; label: string }> = {
+  file_image: { icon: FileImageOutlined, label: "x-image" },
+};
+
+const suggestions: SuggestionItem[] = [
+  { label: "Write a report", value: "report" },
+  { label: "Draw a picture", value: "draw" },
+  {
+    label: "Check some knowledge",
+    value: "knowledge",
+    icon: h(OpenAIFilled),
+    children: [
+      { label: "About React", value: "react" },
+      { label: "About Ant Design", value: "antd" },
+    ],
+  },
+];
+
 const loading = ref(false);
 const deepThink = ref(true);
 const activeAgentKey = ref("deep_search");
+const value = ref("");
+
+const senderRef = useTemplateRef("senderRef");
 
 const agentItems = Object.entries(agentMap).map(([key, { icon, label }]) => ({
+  key,
+  icon: h(icon),
+  label,
+}));
+
+const fileItems = Object.entries(fileMap).map(([key, { icon, label }]) => ({
   key,
   icon: h(icon),
   label,
@@ -39,49 +67,71 @@ const agentItemClick: MenuProps["onClick"] = item => {
   activeAgentKey.value = item.key as string;
 };
 
-const SwitchTextStyle = {
+const fileItemClick: MenuProps["onClick"] = item => {
+  const file = fileMap[item.key as string];
+  if (!file) return;
+  senderRef.value?.insert(` [${file.label}] `, "cursor");
+};
+
+const switchTextStyle = {
   display: "inline-flex",
   width: "28px",
   justifyContent: "center",
   alignItems: "center",
 };
 
-const IconStyle = { fontSize: "16px" };
+const iconStyle = { fontSize: "16px" };
 
-const senderRef = ref<InstanceType<typeof Sender>>();
+let timer: ReturnType<typeof setTimeout> | undefined;
 
-watch(loading, val => {
-  if (val) {
-    const timer = setTimeout(() => {
-      loading.value = false;
-      message.success("Send message successfully!");
-      clearTimeout(timer);
-    }, 3000);
-  }
+onBeforeUnmount(() => {
+  if (timer) clearTimeout(timer);
 });
 
-// TODO: 替换为 Suggestion 组件包裹 Sender
-// const suggestions = [
-//   { label: 'Write a report', value: 'report' },
-//   { label: 'Draw a picture', value: 'draw' },
-//   {
-//     label: 'Check some knowledge', value: 'knowledge',
-//     children: [
-//       { label: 'About React', value: 'react' },
-//       { label: 'About Ant Design', value: 'antd' },
-//     ],
-//   },
-// ];
-
-const onKeyDown = (e: KeyboardEvent) => {
-  if (e.key === "@") {
-    // TODO: 触发 Suggestion onTrigger
-    console.log("@ pressed - Suggestion 组件待实现");
+const onSelectSuggestion = () => {
+  if (value.value.endsWith("@")) {
+    value.value = value.value.slice(0, -1);
   }
+
+  nextTick(() => {
+    senderRef.value?.insert("[Enter a name] ", "cursor");
+  });
 };
 
-const footerRender: SenderProps["footer"] = (actionNode, { components }) => {
-  const { SendButton, LoadingButton } = components;
+const onSenderChange = (nextValue: string) => {
+  value.value = nextValue;
+};
+
+const onSenderKeyDown = (
+  event: KeyboardEvent,
+  onTrigger: (info?: string | false) => void,
+  onSuggestionKeyDown: (event: KeyboardEvent) => void | false,
+) => {
+  if (event.key === "@") {
+    onTrigger();
+  }
+
+  return onSuggestionKeyDown(event);
+};
+
+const onSubmit = (content: string) => {
+  loading.value = true;
+  message.info(`Send message: ${content}`);
+  senderRef.value?.clear();
+  if (timer) clearTimeout(timer);
+  timer = setTimeout(() => {
+    loading.value = false;
+    message.success("Send message successfully!");
+  }, 3000);
+};
+
+const onCancel = () => {
+  if (timer) clearTimeout(timer);
+  loading.value = false;
+  message.error("Cancel sending!");
+};
+
+const footerRender: SenderProps["footer"] = actionNode => {
   return h(
     Flex,
     { justify: "space-between", align: "center" },
@@ -94,7 +144,7 @@ const footerRender: SenderProps["footer"] = (actionNode, { components }) => {
             default: () => [
               h(
                 Button,
-                { style: IconStyle, type: "text" },
+                { style: iconStyle, type: "text" },
                 { icon: () => h(PaperClipOutlined) },
               ),
               h(SenderSwitch, {
@@ -105,11 +155,11 @@ const footerRender: SenderProps["footer"] = (actionNode, { components }) => {
                 icon: h(OpenAIOutlined),
                 checkedChildren: h("div", null, [
                   "Deep Think:",
-                  h("span", { style: SwitchTextStyle }, "on"),
+                  h("span", { style: switchTextStyle }, "on"),
                 ]),
                 unCheckedChildren: h("div", null, [
                   "Deep Think:",
-                  h("span", { style: SwitchTextStyle }, "off"),
+                  h("span", { style: switchTextStyle }, "off"),
                 ]),
               }),
               h(
@@ -127,12 +177,34 @@ const footerRender: SenderProps["footer"] = (actionNode, { components }) => {
                       SenderSwitch,
                       {
                         value: false,
-                        icon: h(SearchOutlined),
+                        icon: h(AntDesignOutlined),
                       },
                       { default: () => "Agent" },
                     ),
                 },
               ),
+              fileItems.length
+                ? h(
+                    Dropdown,
+                    {
+                      menu: {
+                        onClick: fileItemClick,
+                        items: fileItems,
+                      },
+                    },
+                    {
+                      default: () =>
+                        h(
+                          SenderSwitch,
+                          {
+                            value: false,
+                            icon: h(ProfileOutlined),
+                          },
+                          { default: () => "Files" },
+                        ),
+                    },
+                  )
+                : null,
             ],
           },
         ),
@@ -143,11 +215,11 @@ const footerRender: SenderProps["footer"] = (actionNode, { components }) => {
             default: () => [
               h(
                 Button,
-                { type: "text", style: IconStyle },
+                { type: "text", style: iconStyle },
                 { icon: () => h(ApiOutlined) },
               ),
               h(Divider, { type: "vertical" }),
-              loading.value ? h(LoadingButton) : h(SendButton),
+              actionNode,
             ],
           },
         ),
@@ -155,32 +227,26 @@ const footerRender: SenderProps["footer"] = (actionNode, { components }) => {
     },
   );
 };
-
-const onSubmit = (v: string) => {
-  loading.value = true;
-  message.info(`Send message: ${v}`);
-  senderRef.value?.clear();
-};
-
-const onCancel = () => {
-  loading.value = false;
-  message.error("Cancel sending!");
-};
 </script>
 
 <template>
-  <!-- TODO: 用 Suggestion 组件包裹 Sender -->
   <Flex vertical gap="middle">
-    <Sender
-      ref="senderRef"
-      :loading="loading"
-      placeholder="Press Enter to send message (type @ for suggestions - TODO)"
-      :footer="footerRender"
-      :suffix="false"
-      :auto-size="{ minRows: 3, maxRows: 6 }"
-      :on-submit="onSubmit"
-      :on-cancel="onCancel"
-      :on-key-down="onKeyDown"
-    />
+    <Suggestion :items="suggestions" :on-select="onSelectSuggestion">
+      <template #default="{ onTrigger, onKeyDown }">
+        <Sender
+          ref="senderRef"
+          :loading="loading"
+          :value="value"
+          placeholder="Press Enter to send message"
+          :footer="footerRender"
+          :suffix="false"
+          :auto-size="{ minRows: 3, maxRows: 6 }"
+          :on-change="onSenderChange"
+          :on-key-down="event => onSenderKeyDown(event, onTrigger, onKeyDown)"
+          :on-submit="onSubmit"
+          :on-cancel="onCancel"
+        />
+      </template>
+    </Suggestion>
   </Flex>
 </template>

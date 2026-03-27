@@ -17,6 +17,7 @@ import Notification, { XNotification } from "./notification";
 import Prompts from "./prompts";
 import Sender, { SenderHeader, SenderSwitch } from "./sender";
 import Sources from "./sources";
+import Suggestion from "./suggestion";
 import Think from "./think";
 import ThoughtChain, { ThoughtChainItem } from "./thought-chain";
 import Welcome from "./welcome";
@@ -46,6 +47,7 @@ const components = [
   Sender,
   SenderHeader,
   SenderSwitch,
+  Suggestion,
   Think,
   ThoughtChain,
   ThoughtChainItem,
@@ -68,6 +70,7 @@ const componentAliases = new Map<string, string[]>([
   ["XSender", ["ASender"]],
   ["XSenderHeader", ["ASenderHeader"]],
   ["XSenderSwitch", ["ASenderSwitch"]],
+  ["XSuggestion", ["ASuggestion"]],
   ["XThink", ["AThink"]],
   ["XThoughtChain", ["AThoughtChain"]],
   ["XThoughtChainItem", ["AThoughtChainItem"]],
@@ -109,6 +112,7 @@ export {
   Sender,
   SenderHeader,
   SenderSwitch,
+  Suggestion,
   Prompts,
   XProvider,
   version,
@@ -183,6 +187,11 @@ export type {
 } from "./code-highlighter";
 
 export type { SenderProps, SenderRef } from "./sender";
+export type {
+  RenderChildrenProps,
+  SuggestionItem,
+  SuggestionProps,
+} from "./suggestion";
 export type { XProviderProps } from "./x-provider";
 export type { AttachmentsProps, AttachmentsRef } from "./attachments";
 

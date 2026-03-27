@@ -227,6 +227,28 @@ export const componentOverviewItems: ComponentOverviewItem[] = [
       "https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*cOfrS4fVkOMAAAAAAAAAAAAADgCCAQ/original",
   },
   {
+    slug: "suggestion",
+    path: "/components/suggestion",
+    title: "Suggestion",
+    subtitle: {
+      "zh-CN": "快捷指令",
+      "en-US": "Quick Commands",
+    },
+    description: {
+      "zh-CN": "用于在输入场景中提供快捷指令建议。",
+      "en-US": "Provide quick command suggestions in input scenarios.",
+    },
+    group: {
+      "zh-CN": "表达",
+      "en-US": "Expression",
+    },
+    groupOrder: 2,
+    cover:
+      "https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*4vEeSJ2e9xgAAAAAAAAAAAAADgCCAQ/original",
+    coverDark:
+      "https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*cahuSJ4VxvoAAAAAAAAAAAAADgCCAQ/original",
+  },
+  {
     slug: "think",
     path: "/components/think",
     title: "Think",

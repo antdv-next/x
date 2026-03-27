@@ -1,7 +1,7 @@
 import { mount } from "@vue/test-utils";
 import { describe, expect, it, vi } from "vite-plus/test";
 
-import { Bubble, Conversations, FileCard } from "../../index";
+import { Bubble, Conversations, FileCard, Suggestion } from "../../index";
 import XProvider from "../index";
 
 describe("XProvider", () => {
@@ -68,6 +68,28 @@ describe("XProvider", () => {
     });
 
     expect(wrapper.find(".test-file-card").exists()).toBe(true);
+  });
+
+  it("injects suggestion component config", () => {
+    const wrapper = mount({
+      render() {
+        return (
+          <XProvider
+            suggestion={{
+              classes: {
+                root: "test-suggestion",
+              },
+            }}
+          >
+            <Suggestion items={[{ label: "Test", value: "test" }]}>
+              {({ onKeyDown }: any) => <input onKeydown={onKeyDown} />}
+            </Suggestion>
+          </XProvider>
+        );
+      },
+    });
+
+    expect(wrapper.find(".test-suggestion").exists()).toBe(true);
   });
 
   it("passes iconPrefixCls and theme config to ConfigProvider", () => {

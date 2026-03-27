@@ -55,6 +55,7 @@ import zhCN from 'antdv-next/dist/locale/zh_CN'
 | `conversations` | 会话组件的全局配置     | `{ style?: CSSProperties; styles?: Record<string, CSSProperties>; className?: string; classes?: Record<string, string>; shortcutKeys?: { creation?: ShortcutKeys<number>; items?: ShortcutKeys<'number'> \| ShortcutKeys<number>[] } }` | -      |
 | `actions`       | 操作列表组件的全局配置 | `{ style?: CSSProperties; styles?: Record<string, CSSProperties>; className?: string; classes?: Record<string, string> }`                                                                                                               | -      |
 | `fileCard`      | 文件卡片组件的全局配置 | `{ style?: CSSProperties; styles?: Record<string, CSSProperties>; className?: string; classes?: Record<string, string> }`                                                                                                               | -      |
+| `suggestion`    | 快捷指令组件的全局配置 | `{ style?: CSSProperties; styles?: Record<string, CSSProperties>; classes?: Record<string, string> }`                                                                                                                                   | -      |
 
 #### ShortcutKeys
 
