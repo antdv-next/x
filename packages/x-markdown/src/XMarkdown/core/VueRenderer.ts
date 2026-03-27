@@ -275,6 +275,26 @@ export class VueRenderer {
       props[attr.name] = attr.value;
     });
 
+    if (tagName === "code") {
+      const blockAttr = element.getAttribute("data-block");
+      props.block = blockAttr === "true";
+
+      const codeStreamStatus = element.getAttribute("data-state");
+      props.streamStatus = codeStreamStatus === "loading" ? "loading" : "done";
+
+      const langFromData = element.getAttribute("data-lang") || "";
+      const className = element.getAttribute("class") || "";
+      const langFromClass =
+        className.match(/(?:^|\s)language-([^\s]+)/)?.[1] ??
+        className.match(/(?:^|\s)lang-([^\s]+)/)?.[1] ??
+        "";
+
+      const lang = langFromData || langFromClass;
+      if (lang) {
+        props.lang = lang;
+      }
+    }
+
     return props;
   }
 

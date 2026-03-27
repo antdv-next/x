@@ -65,6 +65,7 @@ catalogs:
     dayjs: ^1.11.19
     lru-cache: ^11.2.2
     mlly: ^1.8.0
+    mermaid: ^11.12.1
     nanoid: ^5.1.6
     pathe: ^2.0.3
     picomatch: ^4.0.3

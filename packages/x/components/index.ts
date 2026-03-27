@@ -12,6 +12,7 @@ import Bubble, { BubbleDivider, BubbleList, BubbleSystem } from "./bubble";
 import CodeHighlighter from "./code-highlighter";
 import Conversations, { ConversationsCreation } from "./conversations";
 import FileCard, { FileCardList } from "./file-card";
+import Mermaid from "./mermaid";
 import Notification, { XNotification } from "./notification";
 import Prompts from "./prompts";
 import Sender, { SenderHeader, SenderSwitch } from "./sender";
@@ -40,6 +41,7 @@ const components = [
   ActionsItem,
   FileCard,
   FileCardList,
+  Mermaid,
   Attachments,
   Sender,
   SenderHeader,
@@ -61,6 +63,7 @@ const componentAliases = new Map<string, string[]>([
   ["XActionsItem", ["AActionsItem"]],
   ["XFileCard", ["AFileCard"]],
   ["XFileCardList", ["AFileCardList"]],
+  ["XMermaid", ["AMermaid"]],
   ["XAttachments", ["AAttachments"]],
   ["XSender", ["ASender"]],
   ["XSenderHeader", ["ASenderHeader"]],
@@ -100,6 +103,7 @@ export {
   ConversationsCreation,
   FileCard,
   FileCardList,
+  Mermaid,
   Notification,
   XNotification,
   Sender,
@@ -135,6 +139,13 @@ export type {
 } from "./bubble";
 
 export type { FileCardListProps, FileCardProps } from "./file-card";
+export type {
+  MermaidActions,
+  MermaidProps,
+  MermaidRef,
+  MermaidRenderType,
+  MermaidSemanticType,
+} from "./mermaid";
 
 export type {
   BasePromptsItemType,

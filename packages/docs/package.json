@@ -10,7 +10,8 @@
   },
   "dependencies": {
     "@antdv-next/icons": "catalog:prod",
-    "@antdv-next/x-markdown": "workspace:*"
+    "@antdv-next/x-markdown": "workspace:*",
+    "@antv/infographic": "^0.2.16"
   },
   "devDependencies": {
     "@antdv-next/auto-import-resolver": "catalog:dev",

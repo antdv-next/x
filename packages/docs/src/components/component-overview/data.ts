@@ -78,6 +78,27 @@ export const componentOverviewItems: ComponentOverviewItem[] = [
       "https://mdn.alipayobjects.com/huamei_lkxviz/afts/img/c62-S4SH1tUAAAAANuAAAAgADtFMAQFr/original",
   },
   {
+    slug: "mermaid",
+    path: "/components/mermaid",
+    title: "Mermaid",
+    subtitle: {
+      "zh-CN": "图表工具",
+    },
+    description: {
+      "zh-CN": "用于渲染 Mermaid 图表，支持图形/代码视图切换。",
+      "en-US": "Render Mermaid diagrams with image/code mode switching.",
+    },
+    group: {
+      "zh-CN": "反馈",
+      "en-US": "Feedback",
+    },
+    groupOrder: 4,
+    cover:
+      "https://mdn.alipayobjects.com/huamei_lkxviz/afts/img/yTn9SILS900AAAAAPaAAAAgADtFMAQFr/original",
+    coverDark:
+      "https://mdn.alipayobjects.com/huamei_lkxviz/afts/img/uYcMRYLDTCMAAAAAQBAAAAgADtFMAQFr/original",
+  },
+  {
     slug: "conversations",
     path: "/components/conversations",
     title: "Conversations",

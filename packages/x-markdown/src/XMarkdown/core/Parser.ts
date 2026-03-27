@@ -18,9 +18,14 @@ export function escapeHtml(html: string): string {
 }
 
 export class Parser {
+  private static readonly COMPLETE_FENCED_CODE =
+    /^ {0,3}(`{3,}|~{3,})([\s\S]*?)\n {0,3}\1[ \n\t]*$/;
+
   private options: Required<ParserOptions>;
   private markdownInstance: Marked;
   private injectTail = false;
+  private codeBlockStates: Array<"loading" | "done"> = [];
+  private codeBlockStateIndex = 0;
 
   constructor(options: ParserOptions = {}) {
     this.options = {
@@ -88,13 +93,75 @@ export class Parser {
           const lang = infostring || "";
           const langAttr = lang ? ` data-lang="${lang}"` : "";
           const blockAttr = ' data-block="true"';
-          const state = this.getCodeBlockState(lang);
+          const state = this.consumeCodeBlockState(lang);
           const stateAttr = ` data-state="${state}"`;
           const escapedCode = escaped ? code : escapeHtml(code);
           return `<pre><code class="language-${lang}"${langAttr}${blockAttr}${stateAttr}>${escapedCode}</code></pre>`;
         },
       },
     });
+  }
+
+  private prepareCodeBlockStates(markdown: string): void {
+    this.codeBlockStates = [];
+    this.codeBlockStateIndex = 0;
+
+    const tokens = this.markdownInstance.lexer(markdown) as unknown[];
+
+    const walkTokens = (nodes: unknown[]): void => {
+      for (const node of nodes) {
+        if (!node || typeof node !== "object") {
+          continue;
+        }
+
+        const token = node as Record<string, unknown>;
+        if (token.type === "code") {
+          const lang = typeof token.lang === "string" ? token.lang : "";
+          const codeBlockStyle =
+            typeof token.codeBlockStyle === "string"
+              ? token.codeBlockStyle
+              : "";
+          const raw = typeof token.raw === "string" ? token.raw : "";
+
+          const inferredState: "loading" | "done" =
+            codeBlockStyle === "indented" ||
+            Parser.COMPLETE_FENCED_CODE.test(raw)
+              ? "done"
+              : "loading";
+
+          this.codeBlockStates.push(
+            this.options.codeBlockStatus[lang] ?? inferredState,
+          );
+        }
+
+        const childTokens = token.tokens;
+        if (Array.isArray(childTokens)) {
+          walkTokens(childTokens);
+        }
+
+        const items = token.items;
+        if (Array.isArray(items)) {
+          for (const item of items) {
+            if (!item || typeof item !== "object") {
+              continue;
+            }
+
+            const itemTokens = (item as Record<string, unknown>).tokens;
+            if (Array.isArray(itemTokens)) {
+              walkTokens(itemTokens);
+            }
+          }
+        }
+      }
+    };
+
+    walkTokens(tokens);
+  }
+
+  private consumeCodeBlockState(lang: string): "loading" | "done" {
+    const nextState = this.codeBlockStates[this.codeBlockStateIndex];
+    this.codeBlockStateIndex += 1;
+    return nextState ?? this.getCodeBlockState(lang);
   }
 
   private getCodeBlockState(lang: string): "loading" | "done" {
@@ -113,6 +180,7 @@ export class Parser {
       processed = this.escapeRawHtml(processed);
     }
 
+    this.prepareCodeBlockStates(processed);
     const html = this.markedParse(processed);
 
     if (this.injectTail) {

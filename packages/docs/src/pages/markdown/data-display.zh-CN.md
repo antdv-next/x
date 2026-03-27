@@ -4,7 +4,6 @@ group:
   order: 5
 title: 数据展示
 order: 3
-hidden: true
 ---
 
 将 Markdown 内容映射为数据展示组件，当前示例聚焦：

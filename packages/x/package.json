@@ -48,6 +48,7 @@
     "@vueuse/core": "catalog:prod",
     "antdv-next": "catalog:prod",
     "dayjs": "catalog:prod",
+    "mermaid": "catalog:prod",
     "shiki": "catalog:docs",
     "vue": "catalog:prod"
   },

@@ -4,7 +4,6 @@ group:
   order: 5
 title: Data Display
 order: 3
-hidden: true
 ---
 
 Map Markdown content to data-display components. The current demos focus on:

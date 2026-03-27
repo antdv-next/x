@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { Bubble } from "@antdv-next/x";
+import { Bubble, Mermaid } from "@antdv-next/x";
 import { XMarkdown } from "@antdv-next/x-markdown";
 import { Button, Flex } from "antdv-next";
 import {
   computed,
   defineComponent,
   h,
+  nextTick,
   onBeforeUnmount,
   ref,
   watch,
@@ -27,6 +28,8 @@ graph TD
     C --> E[Generate Report]
     D --> E
     E --> F[End]
+    style A fill:#2ecc71,stroke:#27ae60
+    style F fill:#e74c3c,stroke:#c0392b
 \`\`\`
 
 #### 2. Sequence Diagram
@@ -36,10 +39,30 @@ sequenceDiagram
     participant Client
     participant Server
     participant Database
+
     Client->>Server: POST /api/data
     Server->>Database: INSERT record
     Database-->>Server: Success
     Server-->>Client: 201 Created
+\`\`\`
+
+#### 3. Quadrant Chart
+
+\`\`\`mermaid
+quadrantChart
+    title Reach and engagement of campaigns
+    x-axis Low Reach --> High Reach
+    y-axis Low Engagement --> High Engagement
+    quadrant-1 We should expand
+    quadrant-2 Need to promote
+    quadrant-3 Re-evaluate
+    quadrant-4 May be improved
+    Campaign A: [0.3, 0.6]
+    Campaign B: [0.45, 0.23]
+    Campaign C: [0.57, 0.69]
+    Campaign D: [0.78, 0.34]
+    Campaign E: [0.40, 0.34]
+    Campaign F: [0.35, 0.78]
 \`\`\`
 `;
 
@@ -54,34 +77,30 @@ function extractText(nodes: VNode[]): string {
     .join("");
 }
 
-const MermaidRenderer = defineComponent({
-  name: "MermaidRenderer",
+const CodeRenderer = defineComponent({
+  name: "MarkdownMermaidCodeRenderer",
   setup(_, { attrs, slots }) {
-    const code = computed(() => extractText(slots.default?.() ?? []));
-
     const lang = computed(() => {
-      const dataLang =
-        typeof attrs["data-lang"] === "string" ? attrs["data-lang"] : "";
       const className = typeof attrs.class === "string" ? attrs.class : "";
-      const classLang = className.match(/(?:^|\s)language-([^\s]+)/)?.[1] ?? "";
-      return dataLang || classLang;
+      return className.match(/language-(\w+)/)?.[1] || "";
     });
 
     return () => {
-      if (lang.value !== "mermaid") {
-        return h("code", code.value);
+      const code = extractText(slots.default?.() ?? []);
+
+      if (lang.value === "mermaid") {
+        return h(Mermaid, {
+          content: code,
+        });
       }
 
-      return h("div", { class: "mermaid-shell" }, [
-        h("div", { class: "mermaid-title" }, "Mermaid Preview"),
-        h("pre", { class: "mermaid-code" }, code.value),
-      ]);
+      return h("code", code);
     };
   },
 });
 
 const components = {
-  code: MermaidRenderer,
+  code: CodeRenderer,
 };
 
 const { isDark } = useDarkMode();
@@ -116,19 +135,41 @@ watch(
   { immediate: true },
 );
 
-watch(index, () => {
-  if (!contentRef.value || index.value <= 0 || index.value >= text.length) {
-    return;
-  }
+function resolveScrollContainer(): HTMLElement | null {
+  const node = contentRef.value as
+    | HTMLElement
+    | { $el?: Element | null }
+    | null;
 
-  const { scrollHeight, clientHeight } = contentRef.value;
-  if (scrollHeight > clientHeight) {
-    contentRef.value.scrollTo({
-      top: scrollHeight,
-      behavior: "smooth",
-    });
-  }
-});
+  if (!node) return null;
+  if (node instanceof HTMLElement) return node;
+  if (node.$el instanceof HTMLElement) return node.$el;
+  return null;
+}
+
+watch(
+  index,
+  async () => {
+    if (index.value <= 0 || index.value >= text.length) {
+      return;
+    }
+
+    await nextTick();
+    const container = resolveScrollContainer();
+    if (!container) {
+      return;
+    }
+
+    const { scrollHeight, clientHeight } = container;
+    if (scrollHeight > clientHeight) {
+      container.scrollTo({
+        top: scrollHeight,
+        behavior: "smooth",
+      });
+    }
+  },
+  { flush: "post" },
+);
 
 onBeforeUnmount(clearTimer);
 
@@ -166,33 +207,10 @@ const rerender = () => {
   </Flex>
 </template>
 
-<style scoped>
-.mermaid-shell {
-  border: 1px solid var(--ant-color-border, #d9d9d9);
-  border-radius: 8px;
-  overflow: hidden;
-  background: var(--ant-color-fill-tertiary, #fafafa);
-}
-
-.mermaid-title {
-  font-size: 12px;
-  font-weight: 600;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--ant-color-border, #d9d9d9);
-}
-
-.mermaid-code {
-  margin: 0;
-  padding: 12px;
-  overflow: auto;
-  white-space: pre;
-}
-</style>
-
 <docs lang="zh-CN">
-Mermaid 示例：对齐 antdx 结构，演示流式内容中按语言接管代码块渲染。
+Mermaid 示例：严格对齐官方 demo，使用 `components.code` 按语言接管代码块并渲染 `Mermaid`。
 </docs>
 
 <docs lang="en-US">
-Mermaid demo aligned with antdx structure: override code-block rendering by language during streaming output.
+Mermaid demo aligned with the upstream example: override `components.code` by language and render `Mermaid`.
 </docs>
