@@ -323,7 +323,7 @@ This guide will help you contribute to Ant Design. Please take a few minutes to 
 Chat Providers should follow these specifications:
 
 - Chat Providers should be included in the `packages/x-sdk/src/chat-providers` directory.
-- Chat Provider types should be included in the `packages/x-sdk/src/chat-providers/type` directory.
+- Chat Provider types should be included in the `packages/x-sdk/src/chat-providers/types` directory.
 
 ### Naming Conventions
 
