@@ -1,6 +1,6 @@
 ---
 title: Components Overview
-description: Antd Next X provides production-ready components for intelligent interfaces, covering conversation, input, feedback, and session management.
+description: Antdv Next X provides production-ready components for intelligent interfaces, covering conversation, input, feedback, and session management.
 showImport: false
 ---
 

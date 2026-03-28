@@ -76,10 +76,10 @@ export default {
       appTitle: "Mobile - APP",
       appDesc: "In development, stay tuned.",
       greeting: "Hello, I'm your AI assistant.",
-      greetingShort: "Hello, I am Antd Next X",
-      welcomePreviewTitle: "Hello, I am Antd Next X",
+      greetingShort: "Hello, I am Antdv Next X",
+      welcomePreviewTitle: "Hello, I am Antdv Next X",
       welcomePreviewDesc:
-        "Powered by Antd Next's AGI solution to create better intelligent experiences.",
+        "Powered by Antdv Next's AGI solution to create better intelligent experiences.",
       assistantGreeting: "What can I help you with?",
       waiting: "Processing...",
       assistTitle: "I can assist you with:",
@@ -100,7 +100,7 @@ export default {
     },
     components: {
       title: "Components Rich, Easy to Use",
-      desc: "Antd Next X's AI components provide practical capabilities with flexible customization and extension.",
+      desc: "Antdv Next X's AI components provide practical capabilities with flexible customization and extension.",
       welcomeTitle: "Welcome",
       welcomeDesc: "Help users quickly understand what AI can do.",
       welcomeTag: "Awaken",

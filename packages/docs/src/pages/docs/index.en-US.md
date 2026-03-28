@@ -1,9 +1,9 @@
 ---
 order: 0
-title: Antd Next X
+title: Antdv Next X
 ---
 
-Antd Next X is a comprehensive toolkit for AI applications, integrating a UI component library, streaming Markdown rendering engine, and AI SDK, providing developers with a complete toolchain for building next-generation AI-driven applications.
+Antdv Next X is a comprehensive toolkit for AI applications, integrating a UI component library, streaming Markdown rendering engine, and AI SDK, providing developers with a complete toolchain for building next-generation AI-driven applications.
 
 **`@antdv-next/x` - Intelligent Interface Framework**
 
@@ -19,7 +19,7 @@ Provides a complete set of tool APIs, out-of-the-box AI conversation data flow m
 
 **`@antdv-next/x-skill` - Intelligent Skill Library**
 
-A specialized intelligent skill library designed for Antd Next X, providing a series of carefully crafted Agent skills. These skills can significantly improve development efficiency, help you quickly build high-quality AI conversation applications, and effectively solve various problems encountered during development. For details, click [here](/skill).
+A specialized intelligent skill library designed for Antdv Next X, providing a series of carefully crafted Agent skills. These skills can significantly improve development efficiency, help you quickly build high-quality AI conversation applications, and effectively solve various problems encountered during development. For details, click [here](/skill).
 
 ## How to contribute
 

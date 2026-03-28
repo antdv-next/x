@@ -307,7 +307,7 @@ function onBackgroundLottieLoad(animation: {
 
     <div :class="styleState.styles.container">
       <div :class="styleState.styles.titleWrap">
-        <h1 :class="styleState.styles.logo">Antd Next X</h1>
+        <h1 :class="styleState.styles.logo">Antdv Next X</h1>
         <h1 :class="styleState.styles.title">
           {{ t("home.mainBanner.slogan") }}
         </h1>

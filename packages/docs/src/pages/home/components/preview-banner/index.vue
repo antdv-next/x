@@ -118,7 +118,7 @@ const styleState = useStyles();
         component="article"
         class="antdv-home-preview-banner-typography"
       >
-        <h1 class="antdv-home-preview-banner-title">Antd Next X</h1>
+        <h1 class="antdv-home-preview-banner-title">Antdv Next X</h1>
         <p class="antdv-home-preview-banner-desc">
           {{ t("home.desc") }}
         </p>
