@@ -316,7 +316,7 @@ We welcome community contributions for new Chat Providers! Please follow these s
 
 ### Contribution Guide
 
-This guide will help you contribute to Ant Design. Please take a few minutes to read this [contribution guide](/docs/react/contributing) before submitting an issue or pull request.
+This guide will help you contribute to Ant Design. Please take a few minutes to read this [contribution guide](/docs/contributing) before submitting an issue or pull request.
 
 ### Contribution Standards
 

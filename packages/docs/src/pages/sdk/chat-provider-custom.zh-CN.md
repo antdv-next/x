@@ -319,7 +319,7 @@ onRequest({
 
 ### 贡献指南
 
-这篇指南会指导你如何为 Ant Design 贡献自己的一份力量，请你在提 issue 或者 pull request 之前花几分钟来阅读一遍这篇[贡献指南](/docs/react/contributing-cn)。
+这篇指南会指导你如何为 Ant Design 贡献自己的一份力量，请你在提 issue 或者 pull request 之前花几分钟来阅读一遍这篇 [贡献指南](/docs/contributing)。
 
 ### 贡献规范
 
