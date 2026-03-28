@@ -2,10 +2,10 @@ import type { ConfigProviderProps } from "antdv-next";
 
 import { theme as themeConfig } from "antdv-next";
 
-import { useDarkMode } from "@/composables/use-dark-mode";
+import { useResolvedDarkMode } from "@/composables/use-resolved-dark-mode";
 
 export function useProviderTheme() {
-  const { isDark } = useDarkMode();
+  const { isDark } = useResolvedDarkMode();
 
   const lightTheme: NonNullable<ConfigProviderProps["theme"]> = {
     algorithm: [themeConfig.defaultAlgorithm],
