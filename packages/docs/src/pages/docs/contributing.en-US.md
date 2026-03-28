@@ -67,5 +67,5 @@ The following steps assume you have already installed and configured pnpm.
 Thanks to all the friends who contributed code and documentation to Antdv Next X. You make this project better! We look forward to more contributors joining this project to promote the development of Antdv Next X together.
 
 <a href="https://github.com/antdv-next/x/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=antdv-next/x&max=100&columns=15" alt="antv-next-x"/>
+  <img src="https://contrib.rocks/image?repo=antdv-next/x&max=100&columns=15" alt="antdv-next-x"/>
 </a>
