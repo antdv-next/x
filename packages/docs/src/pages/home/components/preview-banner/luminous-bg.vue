@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, reactive } from "vue";
 
-import { useDarkMode } from "@/composables/use-dark-mode";
+import { useResolvedDarkMode } from "@/composables/use-resolved-dark-mode";
 
 interface BubbleConfig {
   size: number;
@@ -22,7 +22,7 @@ interface BubbleState extends BubbleConfig {
 
 const MAX_OFFSET = 200;
 
-const { isDark } = useDarkMode();
+const { isDark } = useResolvedDarkMode();
 
 const bubbles = reactive<BubbleState[]>([
   {

@@ -5,8 +5,8 @@ import { ThemeProvider } from "antdv-style";
 import dayjs from "dayjs";
 
 import { useCodeCopy } from "@/composables/use-code-copy";
-import { useDarkMode } from "@/composables/use-dark-mode";
 import { useProviderTheme } from "@/composables/use-provider-theme";
+import { useResolvedDarkMode } from "@/composables/use-resolved-dark-mode";
 
 import AppContextRegister from "./app-context-register.vue";
 import "dayjs/locale/zh";
@@ -17,7 +17,7 @@ defineOptions({
 });
 useCodeCopy();
 const { theme } = useProviderTheme();
-const { darkMode } = useDarkMode();
+const { themeMode } = useResolvedDarkMode();
 const { locale, messages } = useI18n();
 const antdLocale = computed(() => {
   return (messages.value?.[locale.value]?.antd || undefined) as
@@ -43,7 +43,7 @@ watch(
 
 <template>
   <a-config-provider :locale="antdLocale" :theme="theme">
-    <ThemeProvider :theme-mode="darkMode">
+    <ThemeProvider :theme-mode="themeMode">
       <a-app>
         <AppContextRegister>
           <slot />
