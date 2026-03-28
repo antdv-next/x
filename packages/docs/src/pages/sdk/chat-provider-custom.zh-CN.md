@@ -326,7 +326,7 @@ onRequest({
 Chat Provider 应遵循以下规范：
 
 - Chat Provider 应包含在 `packages/x-sdk/src/chat-providers` 目录下。
-- Chat Provider Type 应包含在 `packages/x-sdk/src/chat-providers/type` 目录下。
+- Chat Provider Type 应包含在 `packages/x-sdk/src/chat-providers/types` 目录下。
 
 ### 命名规范
 
