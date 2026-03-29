@@ -11,7 +11,6 @@ import { useStreaming } from "./composables/useStreaming";
 import { useTail } from "./composables/useTail";
 import { Parser } from "./core/Parser";
 import { VueRenderer } from "./core/VueRenderer";
-import "./index.css";
 
 const props = withDefaults(defineProps<XMarkdownProps>(), {
   content: "",

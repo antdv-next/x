@@ -1,6 +1,6 @@
-import type { DarkMode } from "@/composables/use-dark-mode";
-
 import { useRoute } from "vue-router";
+
+import type { DarkMode } from "@/composables/use-dark-mode";
 
 import { useDarkMode } from "@/composables/use-dark-mode";
 

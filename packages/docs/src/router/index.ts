@@ -1,8 +1,8 @@
 import { nextTick } from "vue";
 import { createRouter, createWebHistory } from "vue-router";
 
-import { i18n } from "@/locales";
 import { DOC_HEADER_CONTENT_OFFSET } from "@/layouts/docs/components/header-shared";
+import { i18n } from "@/locales";
 
 import DocsLayout from "../layouts/docs/index.vue";
 import HomeView from "../pages/home/index.vue";

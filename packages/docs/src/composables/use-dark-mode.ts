@@ -15,7 +15,7 @@ export const useDarkMode = createGlobalState(() => {
   const { system, store } = useColorMode({
     storageKey: "antdv-color-scheme",
     initialValue: "auto" as DarkMode,
-    onChanged: () => { },
+    onChanged: () => {},
   });
 
   function getIsDark(mode: DarkMode) {
@@ -102,10 +102,10 @@ export const useDarkMode = createGlobalState(() => {
           },
         );
       })
-      .catch(() => { });
+      .catch(() => {});
 
     transition.finished
-      .catch(() => { })
+      .catch(() => {})
       .finally(() => {
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
