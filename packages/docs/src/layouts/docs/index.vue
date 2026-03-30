@@ -9,14 +9,14 @@ import { useRoute, useRouter } from "vue-router";
 import { componentOverviewItems } from "@/components/component-overview/data";
 import Contributors from "@/components/Contributors.vue";
 import { useDocPage } from "@/composables/use-doc-page";
-import { useLocale } from "@/composables/use-locale.ts";
+import { useLocale } from "@/composables/use-locale";
+import { useDarkMode } from "@/composables/use-dark-mode";
 import { docsRoutes, LOCALE_EN_US, LOCALE_ZH_CN } from "@/router/docs";
 import { useAppStore } from "@/stores/app";
 
 import DocHeader from "./components/doc-header.vue";
 import {
   DOC_HEADER_CONTENT_OFFSET,
-  DOC_HEADER_HEIGHT,
 } from "./components/header-shared";
 
 const useStyles = createStyles(({ token }) => ({
@@ -25,7 +25,7 @@ const useStyles = createStyles(({ token }) => ({
     background: token.colorBgContainer,
     transition: `background-color ${token.motionDurationSlow}`,
     ".antd-doc-layout-main": {
-      padding: "80px 48px 40px",
+      padding: "80px 0px 40px",
       display: "grid",
       gridTemplateColumns: "280px minmax(0, 1fr) 200px",
       gap: 40,
@@ -116,6 +116,7 @@ const useStyles = createStyles(({ token }) => ({
 const route = useRoute();
 const router = useRouter();
 const appStore = useAppStore();
+const { isDark } = useDarkMode();
 const { pageData, anchorItems } = useDocPage();
 const styleState = useStyles();
 const { t } = useLocale();
@@ -434,6 +435,7 @@ const editGithubUrl = computed(() => {
       <aside v-if="siderItems.length" class="antd-doc-layout-sider">
         <a-menu
           :items="siderItems"
+          :theme="isDark ? 'dark' : 'light'"
           :selected-keys="selectedSiderKeys"
           class="ant-doc-main-sider-menu"
           mode="inline"

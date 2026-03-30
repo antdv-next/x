@@ -66,6 +66,8 @@ quadrantChart
 \`\`\`
 `;
 
+const { isDark } = useDarkMode();
+
 function extractText(nodes: VNode[]): string {
   return nodes
     .map(node => {
@@ -91,6 +93,9 @@ const CodeRenderer = defineComponent({
       if (lang.value === "mermaid") {
         return h(Mermaid, {
           content: code,
+          codeHighlighterProps: {
+            theme: isDark.value ? "dark" : "light",
+          },
         });
       }
 
@@ -102,8 +107,6 @@ const CodeRenderer = defineComponent({
 const components = {
   code: CodeRenderer,
 };
-
-const { isDark } = useDarkMode();
 const markdownClass = computed(() =>
   isDark.value ? "x-markdown-dark" : "x-markdown-light",
 );

@@ -95,6 +95,7 @@ const CodeRenderer = defineComponent({
       return h(CodeHighlighter, {
         content: code,
         language: lang.value || "text",
+        theme: isDark.value ? "dark" : "light",
       });
     };
   },

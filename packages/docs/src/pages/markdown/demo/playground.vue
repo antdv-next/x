@@ -19,10 +19,12 @@ import {
 import { computed, defineComponent, h, onUnmounted, ref, watch } from "vue";
 import "@antdv-next/x-markdown/themes/light.css";
 import "@antdv-next/x-markdown/themes/dark.css";
+import { useDarkMode } from "@/composables/use-dark-mode";
 
 const { Text } = Typography;
 const { TextArea } = Input;
 const { token } = theme.useToken();
+const { isDark } = useDarkMode();
 
 const DEFAULT_SOURCE = `# XMarkdown Playground
 
@@ -176,7 +178,7 @@ const enableDebugPanel = ref(true);
 const escapeRawHtml = ref(true);
 const openLinksInNewTab = ref(true);
 const protectCustomTagNewlines = ref(true);
-const themeMode = ref<"light" | "dark">("light");
+const themeMode = ref<"light" | "dark">(isDark.value ? "dark" : "light");
 
 let timerRef: number | null = null;
 
@@ -186,6 +188,10 @@ const clearTimer = () => {
     timerRef = null;
   }
 };
+
+watch(isDark, value => {
+  themeMode.value = value ? "dark" : "light";
+});
 
 const markdownClassName = computed(() =>
   themeMode.value === "light" ? "x-markdown-light" : "x-markdown-dark",

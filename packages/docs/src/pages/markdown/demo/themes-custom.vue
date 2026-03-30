@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { XMarkdown } from "@antdv-next/x-markdown";
+import { theme } from "antdv-next";
 import { computed } from "vue";
 
+import { useDarkMode } from "@/composables/use-dark-mode";
 import { useLocale } from "@/composables/use-locale";
 
 const ThemeMarkdownZh = `
@@ -43,28 +45,49 @@ See [x-markdown theme docs](/markdown/themes-en).
 `;
 
 const { locale } = useLocale();
+const { isDark } = useDarkMode();
+const { token } = theme.useToken();
 
 const content = computed(() =>
   locale.value === "zh-CN" ? ThemeMarkdownZh : ThemeMarkdownEn,
 );
 
-const customVars: Record<string, string> = {
-  "--primary-color": "#0f766e",
-  "--primary-color-hover": "#0d9488",
-  "--heading-color": "#0f172a",
-  "--text-color": "#1f2937",
-  "--light-bg": "rgba(15, 118, 110, 0.08)",
-  "--border-color": "rgba(15, 23, 42, 0.12)",
-};
+const markdownClassName = computed(() =>
+  isDark.value
+    ? "x-markdown-dark x-markdown-custom"
+    : "x-markdown-light x-markdown-custom",
+);
+
+const customVars = computed(() =>
+  isDark.value
+    ? {
+        "--primary-color": token.value.colorLink,
+        "--primary-color-hover": token.value.colorLinkHover,
+        "--heading-color": token.value.colorTextHeading,
+        "--text-color": token.value.colorText,
+        "--dark-bg": token.value.colorFillSecondary,
+        "--border-color": token.value.colorBorder,
+      }
+    : {
+        "--primary-color": token.value.colorLink,
+        "--primary-color-hover": token.value.colorLinkHover,
+        "--heading-color": token.value.colorTextHeading,
+        "--text-color": token.value.colorText,
+        "--light-bg": token.value.colorFillSecondary,
+        "--border-color": token.value.colorBorder,
+      },
+);
+
+const containerStyle = computed(() => ({
+  background: token.value.colorBgContainer,
+  padding: "16px",
+  borderRadius: `${token.value.borderRadiusLG}px`,
+}));
 </script>
 
 <template>
-  <div style="background: #ffffff; padding: 16px; border-radius: 6px">
-    <XMarkdown
-      :content="content"
-      class-name="x-markdown-light x-markdown-custom"
-      :style="customVars"
-    />
+  <div :style="containerStyle">
+    <XMarkdown :content="content" :class-name="markdownClassName" :style="customVars" />
   </div>
 </template>
 

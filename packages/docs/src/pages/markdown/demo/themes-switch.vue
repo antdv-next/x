@@ -1,11 +1,17 @@
 <script setup lang="ts">
 import { XMarkdown } from "@antdv-next/x-markdown";
 import { Segmented } from "antdv-next";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import "@antdv-next/x-markdown/themes/light.css";
 import "@antdv-next/x-markdown/themes/dark.css";
+import { useDarkMode } from "@/composables/use-dark-mode";
 
-const mode = ref<"light" | "dark">("light");
+const { isDark } = useDarkMode();
+const mode = ref<"light" | "dark">(isDark.value ? "dark" : "light");
+
+watch(isDark, value => {
+  mode.value = value ? "dark" : "light";
+});
 
 const markdownClass = computed(() =>
   mode.value === "light" ? "x-markdown-light" : "x-markdown-dark",
