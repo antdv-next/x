@@ -4,12 +4,25 @@ import { useConfig } from "antdv-next/dist/config-provider/context";
 import { computed, defineComponent, ref } from "vue";
 
 import type {
+  ThoughtChainItemDescriptionSlotInfo,
+  ThoughtChainItemIconSlotInfo,
   ThoughtChainItemSemanticType,
   ThoughtChainItemStatus,
+  ThoughtChainItemTitleSlotInfo,
 } from "./interface";
 
-import Status from "./Status";
+import { STATUS_ICON_MAP } from "./Status";
 import useThoughtChainStyle from "./style";
+
+function hasRenderableNode(node: VNodeChild | null | undefined) {
+  if (Array.isArray(node)) {
+    return node.some(
+      item => item !== null && item !== undefined && item !== false,
+    );
+  }
+
+  return node !== null && node !== undefined && node !== false;
+}
 
 export const XThoughtChainItem = defineComponent({
   name: "XThoughtChainItem",
@@ -67,7 +80,7 @@ export const XThoughtChainItem = defineComponent({
       default: () => ({}),
     },
   },
-  setup(props, { expose }) {
+  setup(props, { expose, slots }) {
     const configCtx = useConfig();
     const rootRef = ref<HTMLDivElement>();
     const [hashId, cssVarCls] = useThoughtChainStyle(
@@ -89,6 +102,30 @@ export const XThoughtChainItem = defineComponent({
 
     return () => {
       const cls = itemPrefixCls.value;
+      const statusCls = `${props.prefixCls}-status`;
+      const iconRenderSlot = slots.iconRender ?? slots["icon-render"];
+
+      const originIconNode = props.status
+        ? STATUS_ICON_MAP[props.status]
+        : props.icon;
+      const iconNode = iconRenderSlot
+        ? iconRenderSlot({
+            originNode: originIconNode,
+            status: props.status,
+          } as ThoughtChainItemIconSlotInfo)
+        : originIconNode;
+      const titleNode = slots.title
+        ? slots.title({
+            originNode: props.title,
+          } as ThoughtChainItemTitleSlotInfo)
+        : props.title;
+      const descriptionNode = slots.description
+        ? slots.description({
+            originNode: props.description,
+          } as ThoughtChainItemDescriptionSlotInfo)
+        : props.description;
+      const hasTitle = hasRenderableNode(titleNode);
+      const hasDescription = hasRenderableNode(descriptionNode);
 
       return (
         <div
@@ -112,44 +149,47 @@ export const XThoughtChainItem = defineComponent({
           onClick={handleClick}
         >
           {/* Icon */}
-          {(props.icon || props.status) && (
-            <Status
+          {hasRenderableNode(iconNode) && (
+            <div
               style={props.styles?.icon}
-              class={props.classes?.icon}
-              prefixCls={props.prefixCls}
-              icon={props.icon}
-              status={props.status}
-            />
+              class={[
+                statusCls,
+                props.classes?.icon,
+                { [`${statusCls}-${props.status}`]: props.status },
+              ]}
+            >
+              {iconNode}
+            </div>
           )}
 
           {/* Content */}
-          {(props.title || props.description) && (
+          {(hasTitle || hasDescription) && (
             <div
               class={[
                 `${cls}-content`,
                 { [`${props.prefixCls}-motion-blink`]: props.blink },
               ]}
             >
-              {props.title && (
+              {hasTitle && (
                 <div
                   class={[
                     `${cls}-title`,
                     props.classes?.title,
                     {
-                      [`${cls}-title-with-description`]: !!props.description,
+                      [`${cls}-title-with-description`]: hasDescription,
                     },
                   ]}
                   style={props.styles?.title}
                 >
-                  {props.title}
+                  {titleNode}
                 </div>
               )}
-              {props.description && (
+              {hasDescription && (
                 <div
                   class={[`${cls}-description`, props.classes?.description]}
                   style={props.styles?.description}
                 >
-                  {props.description}
+                  {descriptionNode}
                 </div>
               )}
             </div>

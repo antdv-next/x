@@ -16,6 +16,7 @@ description: The ThoughtChain component is used to visualize and track the call 
 <demo src="./demo/collapsible.vue">Collapsible</demo>
 <demo src="./demo/controlled-collapsible.vue">Controlled Collapsible</demo>
 <demo src="./demo/customization.vue">Customization</demo>
+<demo src="./demo/slot.vue">Slots</demo>
 <demo src="./demo/nested.vue">Nested Usage</demo>
 <demo src="./demo/single-row.vue">Single Row</demo>
 
@@ -34,6 +35,18 @@ description: The ThoughtChain component is used to visualize and track the call 
 | prefixCls              | Custom prefix                             | `string`                                                                                       | -         | -       |
 | styles                 | Styles for semantic structure             | `Record<'root'\|'item'\|'itemIcon'\|'itemHeader'\|'itemContent'\|'itemFooter', CSSProperties>` | -         | -       |
 | rootClass              | Root element class name                   | `string`                                                                                       | -         | -       |
+
+### ThoughtChain Slots
+
+> Slots take priority over the same-named `VNodeChild` fields in `items`.
+
+| Slot Name     | Description                | Type                                                                                       |
+| ------------- | -------------------------- | ------------------------------------------------------------------------------------------ |
+| `iconRender`  | Custom node icon content   | `({ item, index, expanded, collapsible, toggleExpand, originNode, status }) => VNodeChild` |
+| `title`       | Custom node title content  | `({ item, index, expanded, collapsible, toggleExpand, originNode }) => VNodeChild`         |
+| `description` | Custom node description    | `({ item, index, expanded, collapsible, toggleExpand, originNode }) => VNodeChild`         |
+| `content`     | Custom node content area   | `({ item, index, expanded, collapsible, toggleExpand, originNode }) => VNodeChild`         |
+| `footer`      | Custom node footer content | `({ item, index, expanded, collapsible, toggleExpand, originNode }) => VNodeChild`         |
 
 ### ThoughtChainItemType
 
@@ -60,6 +73,16 @@ description: The ThoughtChain component is used to visualize and track the call 
 | status      | Status of the thought chain      | `'loading' \| 'success' \| 'error' \| 'abort'` | -       | -       |
 | variant     | Variant configuration            | `'solid' \| 'outlined' \| 'text'`              | -       | -       |
 | blink       | Blink mode                       | `boolean`                                      | -       | -       |
+
+### ThoughtChain.Item Slots
+
+> Named slots override the `icon`, `title`, and `description` props.
+
+| Slot Name     | Description        | Type                                     |
+| ------------- | ------------------ | ---------------------------------------- |
+| `iconRender`  | Custom icon        | `({ originNode, status }) => VNodeChild` |
+| `title`       | Custom title       | `({ originNode }) => VNodeChild`         |
+| `description` | Custom description | `({ originNode }) => VNodeChild`         |
 
 ## Semantic DOM
 

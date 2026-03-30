@@ -17,6 +17,7 @@ description: 思维链组件用于可视化和追踪 Agent 对 Actions 和 Tools
 <demo src="./demo/collapsible.vue">可折叠的</demo>
 <demo src="./demo/controlled-collapsible.vue">受控的折叠</demo>
 <demo src="./demo/customization.vue">客制化</demo>
+<demo src="./demo/slot.vue">插槽自定义</demo>
 <demo src="./demo/nested.vue">嵌套使用</demo>
 <demo src="./demo/single-row.vue">单行折叠</demo>
 
@@ -35,6 +36,18 @@ description: 思维链组件用于可视化和追踪 Agent 对 Actions 和 Tools
 | prefixCls              | 自定义前缀                        | `string`                                                                                       | -         | -    |
 | styles                 | 语义化结构的样式                  | `Record<'root'\|'item'\|'itemIcon'\|'itemHeader'\|'itemContent'\|'itemFooter', CSSProperties>` | -         | -    |
 | rootClass              | 根元素样式类名                    | `string`                                                                                       | -         | -    |
+
+### ThoughtChain Slots
+
+> 插槽优先级高于 `items` 中的同名 `VNodeChild` 配置。
+
+| 插槽名        | 说明               | 类型                                                                                       |
+| ------------- | ------------------ | ------------------------------------------------------------------------------------------ |
+| `iconRender`  | 自定义节点图标内容 | `({ item, index, expanded, collapsible, toggleExpand, originNode, status }) => VNodeChild` |
+| `title`       | 自定义节点标题内容 | `({ item, index, expanded, collapsible, toggleExpand, originNode }) => VNodeChild`         |
+| `description` | 自定义节点描述内容 | `({ item, index, expanded, collapsible, toggleExpand, originNode }) => VNodeChild`         |
+| `content`     | 自定义节点内容区   | `({ item, index, expanded, collapsible, toggleExpand, originNode }) => VNodeChild`         |
+| `footer`      | 自定义节点底部区   | `({ item, index, expanded, collapsible, toggleExpand, originNode }) => VNodeChild`         |
 
 ### ThoughtChainItemType
 
@@ -61,6 +74,16 @@ description: 思维链组件用于可视化和追踪 Agent 对 Actions 和 Tools
 | status      | 思维链状态 | `'loading' \| 'success' \| 'error' \| 'abort'` | -      | -    |
 | variant     | 变体配置   | `'solid' \| 'outlined' \| 'text'`              | -      | -    |
 | blink       | 闪动效果   | `boolean`                                      | -      | -    |
+
+### ThoughtChain.Item Slots
+
+> 同名插槽会覆盖 `icon`、`title`、`description` 属性。
+
+| 插槽名        | 说明       | 类型                                     |
+| ------------- | ---------- | ---------------------------------------- |
+| `iconRender`  | 自定义图标 | `({ originNode, status }) => VNodeChild` |
+| `title`       | 自定义标题 | `({ originNode }) => VNodeChild`         |
+| `description` | 自定义描述 | `({ originNode }) => VNodeChild`         |
 
 ## 语义化 DOM
 

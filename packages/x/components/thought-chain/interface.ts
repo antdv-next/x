@@ -17,6 +17,35 @@ export type SemanticType =
 
 export type ThoughtChainItemStatus = "loading" | "success" | "error" | "abort";
 
+export interface ThoughtChainNodeSharedSlotInfo {
+  item: ThoughtChainItemType;
+  index: number;
+  expanded: boolean;
+  collapsible: boolean;
+  toggleExpand: () => void;
+}
+
+export interface ThoughtChainIconSlotInfo extends ThoughtChainNodeSharedSlotInfo {
+  originNode: VNodeChild | null | undefined;
+  status?: ThoughtChainItemStatus;
+}
+
+export interface ThoughtChainTitleSlotInfo extends ThoughtChainNodeSharedSlotInfo {
+  originNode: VNodeChild | null | undefined;
+}
+
+export interface ThoughtChainDescriptionSlotInfo extends ThoughtChainNodeSharedSlotInfo {
+  originNode: VNodeChild | null | undefined;
+}
+
+export interface ThoughtChainContentSlotInfo extends ThoughtChainNodeSharedSlotInfo {
+  originNode: VNodeChild | null | undefined;
+}
+
+export interface ThoughtChainFooterSlotInfo extends ThoughtChainNodeSharedSlotInfo {
+  originNode: VNodeChild | null | undefined;
+}
+
 export interface ThoughtChainItemType {
   /**
    * @desc Unique key for the thought node
@@ -222,4 +251,17 @@ export interface ThoughtChainItemProps extends Omit<
    * @descZH 语义化样式
    */
   styles?: Partial<Record<ThoughtChainItemSemanticType, CSSProperties>>;
+}
+
+export interface ThoughtChainItemIconSlotInfo {
+  originNode: VNodeChild | null | undefined;
+  status?: ThoughtChainItemStatus;
+}
+
+export interface ThoughtChainItemTitleSlotInfo {
+  originNode: VNodeChild | null | undefined;
+}
+
+export interface ThoughtChainItemDescriptionSlotInfo {
+  originNode: VNodeChild | null | undefined;
 }

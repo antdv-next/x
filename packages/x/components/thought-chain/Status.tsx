@@ -10,7 +10,7 @@ import { defineComponent } from "vue";
 
 import type { ThoughtChainItemStatus } from "./interface";
 
-const STATUS_ICON_MAP: Record<ThoughtChainItemStatus, VNodeChild> = {
+export const STATUS_ICON_MAP: Record<ThoughtChainItemStatus, VNodeChild> = {
   loading: <LoadingOutlined />,
   success: <CheckCircleOutlined />,
   error: <CloseCircleOutlined />,

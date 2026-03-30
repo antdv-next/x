@@ -65,6 +65,35 @@ describe("ThoughtChain.Item", () => {
     expect(wrapper.find(".my-icon").exists()).toBe(true);
   });
 
+  it("supports iconRender, title and description slots", () => {
+    const wrapper = mount(Item, {
+      props: {
+        title: "Prop Title",
+        description: "Prop Description",
+        icon: h("span", { class: "prop-icon" }, "⚡"),
+        status: "success",
+      },
+      slots: {
+        iconRender: ({ originNode, status }: any) => (
+          <span class="slot-icon">{`${status}-${originNode ? "origin" : "none"}`}</span>
+        ),
+        title: ({ originNode }: any) => (
+          <span class="slot-title">{`${originNode}-slot`}</span>
+        ),
+        description: ({ originNode }: any) => (
+          <span class="slot-description">{`${originNode}-slot`}</span>
+        ),
+      },
+    });
+
+    expect(wrapper.find(".slot-icon").text()).toBe("success-origin");
+    expect(wrapper.find(".slot-title").text()).toBe("Prop Title-slot");
+    expect(wrapper.find(".slot-description").text()).toBe(
+      "Prop Description-slot",
+    );
+    expect(wrapper.find(".prop-icon").exists()).toBe(false);
+  });
+
   it("renders status icon instead of custom icon", () => {
     const wrapper = mount(Item, {
       props: {

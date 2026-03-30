@@ -5,9 +5,14 @@ import { computed, defineComponent, ref, useAttrs, watch } from "vue";
 
 import type {
   SemanticType,
+  ThoughtChainContentSlotInfo,
+  ThoughtChainDescriptionSlotInfo,
+  ThoughtChainFooterSlotInfo,
+  ThoughtChainIconSlotInfo,
   ThoughtChainItemType,
   ThoughtChainProps,
   ThoughtChainRef,
+  ThoughtChainTitleSlotInfo,
 } from "./interface";
 
 import useXComponentConfig from "../_utils/hooks/use-x-component-config";
@@ -62,7 +67,7 @@ export const XThoughtChain = defineComponent({
     },
   },
   emits: ["update:expandedKeys", "expand"],
-  setup(props, { emit, expose }) {
+  setup(props, { emit, expose, slots }) {
     const attrs = useAttrs();
     const configCtx = useConfig();
     const contextConfig = useXComponentConfig("thoughtChain");
@@ -187,6 +192,38 @@ export const XThoughtChain = defineComponent({
                 expanded={mergedExpandedKeys.value.includes(key)}
                 classes={mergedClasses.value}
                 styles={mergedStyles.value}
+                iconRenderSlot={
+                  (slots.iconRender ?? slots["icon-render"])
+                    ? info =>
+                        (slots.iconRender ?? slots["icon-render"])?.(
+                          info as ThoughtChainIconSlotInfo,
+                        )
+                    : undefined
+                }
+                titleRenderSlot={
+                  slots.title
+                    ? info => slots.title?.(info as ThoughtChainTitleSlotInfo)
+                    : undefined
+                }
+                descriptionRenderSlot={
+                  slots.description
+                    ? info =>
+                        slots.description?.(
+                          info as ThoughtChainDescriptionSlotInfo,
+                        )
+                    : undefined
+                }
+                contentRenderSlot={
+                  slots.content
+                    ? info =>
+                        slots.content?.(info as ThoughtChainContentSlotInfo)
+                    : undefined
+                }
+                footerRenderSlot={
+                  slots.footer
+                    ? info => slots.footer?.(info as ThoughtChainFooterSlotInfo)
+                    : undefined
+                }
                 onToggleExpand={() => toggleExpand(key)}
               />
             );

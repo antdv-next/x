@@ -162,6 +162,58 @@ describe("ThoughtChain", () => {
     expect(wrapper.find(".step-footer").exists()).toBe(true);
   });
 
+  it("supports scoped slots and slot-driven expand control", async () => {
+    const wrapper = mount(ThoughtChain, {
+      props: {
+        items: [
+          {
+            key: "1",
+            title: "Prop Title",
+            description: "Prop Description",
+            content: "Prop Content",
+            footer: "Prop Footer",
+            status: "success",
+            collapsible: true,
+            icon: false,
+          },
+        ],
+        defaultExpandedKeys: ["1"],
+      },
+      slots: {
+        iconRender: ({ index, status, originNode }: any) => (
+          <span class="slot-icon">{`${index}-${status}-${originNode ? "origin" : "none"}`}</span>
+        ),
+        title: ({ originNode, expanded }: any) => (
+          <span class="slot-title">{`${originNode}-${expanded ? "open" : "closed"}`}</span>
+        ),
+        description: ({ originNode, item }: any) => (
+          <span class="slot-description">{`${originNode}-${item.key}`}</span>
+        ),
+        content: ({ originNode, expanded, toggleExpand }: any) => (
+          <button class="slot-content" onClick={toggleExpand}>
+            {`${originNode}-${expanded ? "open" : "closed"}`}
+          </button>
+        ),
+        footer: ({ originNode, collapsible }: any) => (
+          <span class="slot-footer">{`${originNode}-${collapsible}`}</span>
+        ),
+      },
+    });
+
+    expect(wrapper.find(".slot-icon").text()).toBe("0-success-none");
+    expect(wrapper.find(".slot-title").text()).toBe("Prop Title-open");
+    expect(wrapper.find(".slot-description").text()).toBe("Prop Description-1");
+    expect(wrapper.find(".slot-content").text()).toBe("Prop Content-open");
+    expect(wrapper.find(".slot-footer").text()).toBe("Prop Footer-true");
+
+    await wrapper.find(".slot-content").trigger("click");
+    await nextTick();
+
+    expect(wrapper.find(".slot-content").exists()).toBe(false);
+    expect(wrapper.emitted("expand")).toBeTruthy();
+    expect(wrapper.emitted("update:expandedKeys")).toBeTruthy();
+  });
+
   it("supports collapsible items with toggle", async () => {
     const wrapper = mount(ThoughtChain, {
       props: {
