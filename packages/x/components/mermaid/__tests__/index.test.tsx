@@ -16,8 +16,8 @@ vi.mock("mermaid", () => ({
 
 const content = "graph TD; A-->B;";
 
-function flushPromises() {
-  return new Promise(resolve => setTimeout(resolve, 0));
+function flushPromises(wait = 0) {
+  return new Promise(resolve => setTimeout(resolve, wait));
 }
 
 function readScale(transform: string) {
@@ -83,7 +83,7 @@ describe("Mermaid", () => {
     expect(wrapper.find(".antd-mermaid-code").exists()).toBe(true);
 
     await wrapper.setProps({ renderType: "image" });
-    await flushPromises();
+    await flushPromises(200);
 
     expect(wrapper.find(".antd-mermaid-code").exists()).toBe(false);
     expect(wrapper.find(".antd-mermaid-graph svg").exists()).toBe(true);
