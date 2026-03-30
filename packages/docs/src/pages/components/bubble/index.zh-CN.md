@@ -29,6 +29,7 @@ description: 用于聊天消息展示的气泡组件。
 
 <demo src="./demo/list.vue">气泡列表</demo>
 <demo src="./demo/list-scroll.vue">滚动条控制</demo>
+<demo src="./demo/list-slot-compatible.vue" debug>插槽兼容</demo>
 <demo src="./demo/semantic-list-custom.vue">语义化自定义</demo>
 <demo src="./demo/list-extra.vue">列表扩展参数</demo>
 
@@ -76,12 +77,14 @@ description: 用于聊天消息展示的气泡组件。
 | `avatar`        | 头像区域           | `(content, info) => VNodeChild`     |
 | `extra`         | 额外内容区域       | `(content, info) => VNodeChild`     |
 
-内容渲染优先级：`contentRender` 插槽 > `contentRender` 属性 > `content` 属性。  
+内容渲染优先级：`contentRender` 插槽 > `contentRender` 属性 > `content` 属性。
 加载渲染优先级：`loadingRender` 插槽 > `loadingRender` 属性 > 默认 Loading。
 
 > 推荐优先使用 `BubbleList`、`BubbleSystem`、`BubbleDivider` 导出。`Bubble.List`、`Bubble.System`、`Bubble.Divider` 旧写法仍兼容。
 
 ### BubbleList
+
+#### 属性
 
 | 属性         | 说明                        | 类型                                                                                                                                                            | 默认值 |
 | ------------ | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
@@ -102,6 +105,19 @@ scrollTo(options: {
   block?: ScrollLogicalPosition
 }): void
 ```
+
+#### 插槽
+
+| 插槽            | 说明                   | 类型                                                   |
+| --------------- | ---------------------- | ------------------------------------------------------ |
+| `contentRender` | 列表级内容渲染插槽     | `({ content, info, item, index, role }) => VNodeChild` |
+| `loadingRender` | 列表级加载渲染插槽     | `({ content, info, item, index, role }) => VNodeChild` |
+| `header`        | 列表级头部渲染插槽     | `({ content, info, item, index, role }) => VNodeChild` |
+| `footer`        | 列表级底部渲染插槽     | `({ content, info, item, index, role }) => VNodeChild` |
+| `avatar`        | 列表级头像渲染插槽     | `({ content, info, item, index, role }) => VNodeChild` |
+| `extra`         | 列表级额外区域渲染插槽 | `({ content, info, item, index, role }) => VNodeChild` |
+
+插槽优先级：列表级同名插槽 > `items`/`role` 中对应渲染属性 > 默认渲染。
 
 ### BubbleSystem
 

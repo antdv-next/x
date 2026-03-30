@@ -28,6 +28,7 @@ Use this component for chat, Q&A, and message stream UIs.
 
 <demo src="./demo/list.vue">Bubble List</demo>
 <demo src="./demo/list-scroll.vue">Bubble List Ref</demo>
+<demo src="./demo/list-slot-compatible.vue" debug>Slot Compatibility</demo>
 <demo src="./demo/semantic-list-custom.vue">Semantic Customization</demo>
 <demo src="./demo/list-extra.vue">List Extra</demo>
 
@@ -75,12 +76,14 @@ Common props ref：[Common props](/docs/vue/common-props)
 | `avatar`        | Avatar area                | `(content, info) => VNodeChild`     |
 | `extra`         | Extra content area         | `(content, info) => VNodeChild`     |
 
-Content render priority: `contentRender` slot > `contentRender` prop > `content` prop.  
+Content render priority: `contentRender` slot > `contentRender` prop > `content` prop.
 Loading render priority: `loadingRender` slot > `loadingRender` prop > default Loading.
 
 Prefer `BubbleList`, `BubbleSystem`, and `BubbleDivider` exports. Legacy `Bubble.List`, `Bubble.System`, and `Bubble.Divider` syntax remains compatible.
 
 ### BubbleList
+
+#### Props
 
 | Property     | Description                             | Type                                                                                                                                                            | Default |
 | ------------ | --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
@@ -101,6 +104,19 @@ scrollTo(options: {
   block?: ScrollLogicalPosition
 }): void
 ```
+
+#### Slots
+
+| Slot            | Description                    | Type                                                   |
+| --------------- | ------------------------------ | ------------------------------------------------------ |
+| `contentRender` | List-level content render slot | `({ content, info, item, index, role }) => VNodeChild` |
+| `loadingRender` | List-level loading render slot | `({ content, info, item, index, role }) => VNodeChild` |
+| `header`        | List-level header render slot  | `({ content, info, item, index, role }) => VNodeChild` |
+| `footer`        | List-level footer render slot  | `({ content, info, item, index, role }) => VNodeChild` |
+| `avatar`        | List-level avatar render slot  | `({ content, info, item, index, role }) => VNodeChild` |
+| `extra`         | List-level extra render slot   | `({ content, info, item, index, role }) => VNodeChild` |
+
+Priority: list-level same-name slot > matching render props in `items`/`role` > default render.
 
 ### BubbleSystem
 

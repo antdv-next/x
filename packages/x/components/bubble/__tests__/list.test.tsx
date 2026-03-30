@@ -126,6 +126,130 @@ describe("Bubble.List", () => {
     expect(bubbles[1]?.classes()).toContain("antd-bubble-start");
   });
 
+  it("supports Bubble-compatible slots on BubbleList", () => {
+    const wrapper = mount(BubbleList, {
+      props: {
+        items: [
+          {
+            key: "slot-item",
+            role: "ai",
+            content: "Slot content",
+            status: "success",
+            extraInfo: { trace: "trace-id" },
+          },
+          {
+            key: "slot-loading",
+            role: "ai",
+            content: "Loading content",
+            loading: true,
+            status: "loading",
+          },
+        ] as any,
+      },
+      slots: {
+        avatar: ({ info, index, role }: any) => (
+          <div class="list-avatar-slot">{`avatar-${info.key}-${index}-${role}`}</div>
+        ),
+        header: ({ content, info, item, index, role }: any) => (
+          <div class="list-header-slot">
+            {`${content}-${info.key}-${item.key}-${index}-${role}`}
+          </div>
+        ),
+        footer: ({ info, item }: any) => (
+          <div class="list-footer-slot">{`footer-${info.key}-${item.key}`}</div>
+        ),
+        extra: ({ item }: any) => (
+          <div class="list-extra-slot">{`extra-${item.extraInfo?.trace}`}</div>
+        ),
+        contentRender: ({ content, info, item, index, role }: any) => (
+          <div class="list-content-slot">
+            {`${content}-${info.key}-${item.key}-${index}-${role}`}
+          </div>
+        ),
+        loadingRender: ({ content, info, item, index, role }: any) => (
+          <div class="list-loading-slot">
+            {`${content}-${info.key}-${item.key}-${index}-${role}`}
+          </div>
+        ),
+      },
+    });
+
+    expect(wrapper.find(".list-avatar-slot").exists()).toBe(true);
+    expect(wrapper.find(".list-header-slot").exists()).toBe(true);
+    expect(wrapper.find(".list-footer-slot").exists()).toBe(true);
+    expect(wrapper.find(".list-extra-slot").exists()).toBe(true);
+    expect(wrapper.find(".list-content-slot").exists()).toBe(true);
+    expect(wrapper.find(".list-loading-slot").exists()).toBe(true);
+    expect(wrapper.text()).toContain("Slot content-slot-item-slot-item-0-ai");
+    expect(wrapper.text()).toContain(
+      "Loading content-slot-loading-slot-loading-1-ai",
+    );
+  });
+
+  it("prefers BubbleList slots over item render props", () => {
+    const wrapper = mount(BubbleList, {
+      props: {
+        items: [
+          {
+            key: "priority-normal",
+            role: "ai",
+            content: "Priority content",
+            avatar: () => <div class="item-avatar-priority">item-avatar</div>,
+            header: () => <div class="item-header-priority">item-header</div>,
+            footer: () => <div class="item-footer-priority">item-footer</div>,
+            extra: () => <div class="item-extra-priority">item-extra</div>,
+            contentRender: () => (
+              <div class="item-content-priority">item-content</div>
+            ),
+          },
+          {
+            key: "priority-loading",
+            role: "ai",
+            content: "Priority loading",
+            loading: true,
+            loadingRender: () => (
+              <div class="item-loading-priority">item-loading</div>
+            ),
+          },
+        ] as any,
+      },
+      slots: {
+        avatar: ({ info }: any) => (
+          <div class="list-avatar-priority">{`slot-avatar-${info.key}`}</div>
+        ),
+        header: ({ info }: any) => (
+          <div class="list-header-priority">{`slot-header-${info.key}`}</div>
+        ),
+        footer: ({ info }: any) => (
+          <div class="list-footer-priority">{`slot-footer-${info.key}`}</div>
+        ),
+        extra: ({ info }: any) => (
+          <div class="list-extra-priority">{`slot-extra-${info.key}`}</div>
+        ),
+        contentRender: ({ info }: any) => (
+          <div class="list-content-priority">{`slot-content-${info.key}`}</div>
+        ),
+        loadingRender: ({ info }: any) => (
+          <div class="list-loading-priority">{`slot-loading-${info.key}`}</div>
+        ),
+      },
+    });
+
+    expect(wrapper.find(".list-avatar-priority").exists()).toBe(true);
+    expect(wrapper.find(".list-header-priority").exists()).toBe(true);
+    expect(wrapper.find(".list-footer-priority").exists()).toBe(true);
+    expect(wrapper.find(".list-extra-priority").exists()).toBe(true);
+    expect(wrapper.find(".list-content-priority").exists()).toBe(true);
+    expect(wrapper.find(".list-loading-priority").exists()).toBe(true);
+
+    expect(wrapper.find(".item-avatar-priority").exists()).toBe(false);
+    expect(wrapper.find(".item-header-priority").exists()).toBe(false);
+    expect(wrapper.find(".item-footer-priority").exists()).toBe(false);
+    expect(wrapper.find(".item-extra-priority").exists()).toBe(false);
+    expect(wrapper.find(".item-content-priority").exists()).toBe(false);
+    expect(wrapper.find(".item-loading-priority").exists()).toBe(false);
+  });
+
   it("lets item props override role config", () => {
     const role = {
       user: {

@@ -30,6 +30,17 @@ function pickBubbleRef(instance: any) {
   return instance as Element;
 }
 
+const bubbleSlotNames = [
+  "contentRender",
+  "loadingRender",
+  "avatar",
+  "header",
+  "footer",
+  "extra",
+] as const;
+
+type BubbleSlotName = (typeof bubbleSlotNames)[number];
+
 export const XBubbleList = defineComponent({
   name: "XBubbleList",
   inheritAttrs: false,
@@ -75,7 +86,7 @@ export const XBubbleList = defineComponent({
       default: undefined,
     },
   },
-  setup(props, { expose, attrs }) {
+  setup(props, { expose, attrs, slots }) {
     const rootRef = ref<HTMLDivElement>();
     const scrollBoxRef = ref<HTMLDivElement>();
     const scrollContentRef = ref<HTMLDivElement>();
@@ -229,7 +240,7 @@ export const XBubbleList = defineComponent({
             ref={scrollContentRef}
             class={`${listPrefixCls.value}-scroll-content`}
           >
-            {mergedItems.value.map(item => {
+            {mergedItems.value.map((item, index) => {
               const {
                 key,
                 role,
@@ -269,6 +280,10 @@ export const XBubbleList = defineComponent({
                 ...styles,
               };
 
+              const info = { key, status, extraInfo };
+              const hasListContentRenderSlot = Boolean(slots.contentRender);
+              const hasListLoadingRenderSlot = Boolean(slots.loadingRender);
+
               const commonProps = {
                 key,
                 ref: setBubbleRef(key),
@@ -279,6 +294,12 @@ export const XBubbleList = defineComponent({
                 class: itemClass,
                 classes: mergedClassNames,
                 styles: mergedStyles,
+                ...(hasListContentRenderSlot && contentRender
+                  ? { contentRender }
+                  : {}),
+                ...(hasListLoadingRenderSlot && loadingRender
+                  ? { loadingRender }
+                  : {}),
                 ...(rest as object),
               };
 
@@ -287,19 +308,47 @@ export const XBubbleList = defineComponent({
               if (role === "system") return <SystemBubble {...commonProps} />;
 
               const bubbleSlots: Record<string, any> = {};
-              if (contentRender)
-                bubbleSlots.contentRender = ({ content, info }: any) =>
-                  contentRender(content, info);
-              if (loadingRender)
-                bubbleSlots.loadingRender = ({ content, info }: any) =>
-                  loadingRender(content, info);
+              const bindListSlot = (name: BubbleSlotName) => {
+                const slot = slots[name];
+                if (!slot) return undefined;
+
+                return ({ content, info: bubbleInfo }: any) =>
+                  slot({
+                    content,
+                    info: bubbleInfo,
+                    item,
+                    index,
+                    role,
+                  });
+              };
+
+              if (slots.contentRender) {
+                bubbleSlots.contentRender = bindListSlot("contentRender");
+              } else if (contentRender) {
+                bubbleSlots.contentRender = ({
+                  content,
+                  info: bubbleInfo,
+                }: any) => contentRender(content, bubbleInfo);
+              }
+
+              if (slots.loadingRender) {
+                bubbleSlots.loadingRender = bindListSlot("loadingRender");
+              } else if (loadingRender) {
+                bubbleSlots.loadingRender = ({
+                  content,
+                  info: bubbleInfo,
+                }: any) => loadingRender(content, bubbleInfo);
+              }
+
+              for (const name of bubbleSlotNames) {
+                if (name === "contentRender" || name === "loadingRender")
+                  continue;
+                const slot = bindListSlot(name);
+                if (slot) bubbleSlots[name] = slot;
+              }
 
               return (
-                <Bubble
-                  {...commonProps}
-                  info={{ key, status, extraInfo }}
-                  v-slots={bubbleSlots}
-                />
+                <Bubble {...commonProps} info={info} v-slots={bubbleSlots} />
               );
             })}
           </div>
