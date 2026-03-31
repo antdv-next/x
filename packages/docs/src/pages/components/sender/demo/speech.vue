@@ -12,9 +12,9 @@ function handleSubmit() {
 </template>
 
 <docs lang="zh-CN">
-启用 `allowSpeech` 开启语音输入功能。
+语音输入，需要用户同意麦克风权限。
 </docs>
 
 <docs lang="en-US">
-Enable `allowSpeech` for speech input support.
+Speech input requires user permission to access the microphone.
 </docs>

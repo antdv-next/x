@@ -16,9 +16,9 @@ function handleSubmit() {
 </template>
 
 <docs lang="zh-CN">
-使用 `submitType="shiftEnter"` 切换为 Shift + Enter 发送消息。
+通过 `submitType` 控制换行与提交模式。
 </docs>
 
 <docs lang="en-US">
-Use `submitType="shiftEnter"` to send with Shift + Enter.
+Control the newline and submit mode through `submitType`.
 </docs>

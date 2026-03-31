@@ -100,3 +100,11 @@ const onSubmit = () => {
     </Sender>
   </Flex>
 </template>
+
+<docs lang="zh-CN">
+自定义禁用发送逻辑。
+</docs>
+
+<docs lang="en-US">
+Customize the disable sending logic.
+</docs>

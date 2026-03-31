@@ -9,9 +9,17 @@ import type {
 
 import { genStyleHooks } from "../../theme/genStyleUtils";
 import genSenderHeaderStyle from "./header";
+import genSlotTextAreaStyle from "./slot-textarea";
 import genSenderSwitchStyle from "./switch";
 
 export interface ComponentToken {
+  colorBgSlot: string;
+  colorTextSlot: string;
+  colorTextSlotPlaceholder: string;
+  colorBorderSlot: string;
+  colorBorderSlotHover: string;
+  colorBgSkill: string;
+  colorBgSkillHover: string;
   colorBorderInput: string;
   switchCheckedBg: string;
   switchCheckedHoverBg: string;
@@ -124,6 +132,19 @@ const genSenderStyle: GenerateStyle<SenderToken> = token => {
 export const prepareComponentToken: GetDefaultToken<"Sender"> = token => {
   const { colorPrimary, colorFillTertiary } = token;
 
+  const colorBgSlot = new FastColor(colorPrimary).setA(0.06).toRgbString();
+  const colorBgSkill = new FastColor(colorPrimary).setA(0.08).toRgbString();
+  const colorBgSkillHover = new FastColor(colorPrimary)
+    .setA(0.15)
+    .toRgbString();
+  const colorTextSlot = colorPrimary;
+  const colorTextSlotPlaceholder = new FastColor(colorPrimary)
+    .setA(0.25)
+    .toRgbString();
+  const colorBorderSlotHover = new FastColor(colorPrimary)
+    .setA(0.1)
+    .toRgbString();
+  const colorBorderSlot = colorBgSlot;
   const colorBorderInput = new FastColor(colorFillTertiary)
     .setA(0.1)
     .toRgbString();
@@ -140,6 +161,13 @@ export const prepareComponentToken: GetDefaultToken<"Sender"> = token => {
   const colorTextActionsDisabled = colorBgActionsDisabled;
 
   return {
+    colorBgSlot,
+    colorBgSkill,
+    colorBgSkillHover,
+    colorTextSlot,
+    colorTextSlotPlaceholder,
+    colorBorderSlotHover,
+    colorBorderSlot,
     colorBorderInput,
     switchCheckedBg,
     switchCheckedHoverBg,
@@ -160,6 +188,7 @@ export default genStyleHooks<"Sender">(
       genSenderStyle(senderToken),
       genSenderHeaderStyle(senderToken),
       genSenderSwitchStyle(senderToken),
+      genSlotTextAreaStyle(senderToken),
     ];
   },
   prepareComponentToken,

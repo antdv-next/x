@@ -6,6 +6,7 @@ import type { SenderProps } from "./interface";
 
 export interface SenderContextValue extends SenderProps {
   triggerSend?: () => void;
+  setSubmitDisabled?: (disabled: boolean) => void;
 }
 
 export const SenderContextKey: InjectionKey<ComputedRef<SenderContextValue>> =

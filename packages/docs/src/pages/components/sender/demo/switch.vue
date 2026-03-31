@@ -57,9 +57,9 @@ const controlled = ref(false);
 </template>
 
 <docs lang="zh-CN">
-`Sender.Switch` 的各种用法：默认、自定义内容、禁用、加载中、受控模式。
+功能开关，用于`Sender`功能开启/关闭。
 </docs>
 
 <docs lang="en-US">
-Various usages of `Sender.Switch`: default, custom content, disabled, loading, controlled mode.
+Feature switch, used to enable/disable features of `Sender`.
 </docs>

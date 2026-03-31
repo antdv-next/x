@@ -63,9 +63,9 @@ function footerRender(_: any, info: any) {
 </template>
 
 <docs lang="zh-CN">
-通过 `footer` 自定义底部内容，将操作按钮移至底部并添加更多功能入口。设置 `suffix={false}` 隐藏默认后缀。
+使用 `footer` 自定义底部内容。
 </docs>
 
 <docs lang="en-US">
-Customize footer content with `footer`. Move action buttons to the bottom and add more features. Set `suffix={false}` to hide default suffix.
+Use `footer` to customize the footer content.
 </docs>

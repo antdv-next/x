@@ -1,25 +1,22 @@
 <script setup lang="ts">
 import type { SenderProps } from "@antdv-next/x";
 
-// TODO: 待实现 Attachments 组件 + slotConfig 后完善
-// 当前为占位 demo，展示禁用发送逻辑 + 词槽配置的组合场景
 import { PaperClipOutlined } from "@antdv-next/icons";
 import { Sender } from "@antdv-next/x";
 import { Badge, Button, Flex, Tooltip } from "antdv-next";
 import { computed, h, ref } from "vue";
 
-// TODO: slotConfig 需要 SlotTextArea 组件支持
-// const slotConfig = [
-//   { type: 'text', value: 'Please help me search for news about ' },
-//   {
-//     type: 'select',
-//     key: 'search_type',
-//     props: {
-//       options: ['AI', 'Technology', 'Entertainment'],
-//       placeholder: 'Please select a category',
-//     },
-//   },
-// ];
+const slotConfig: SenderProps["slotConfig"] = [
+  { type: "text", value: "Please help me search for news about " },
+  {
+    type: "select",
+    key: "search_type",
+    props: {
+      options: ["AI", "Technology", "Entertainment"],
+      placeholder: "Please select a category",
+    },
+  },
+];
 
 const loading = ref(false);
 const open = ref(false);
@@ -91,6 +88,7 @@ const onSubmit = () => {
       ref="senderRef"
       submit-type="enter"
       :header="senderHeader"
+      :slot-config="slotConfig"
       :on-change="
         (v: string) => {
           value = v;
@@ -100,7 +98,6 @@ const onSubmit = () => {
       :suffix="suffixRender"
       :on-submit="onSubmit"
     >
-      <!-- TODO: slotConfig 支持后添加 :slot-config="slotConfig" -->
       <template #prefix>
         <Badge :dot="fileCount > 0 && !open">
           <Button type="text" @click="open = !open">
@@ -113,3 +110,11 @@ const onSubmit = () => {
     </Sender>
   </Flex>
 </template>
+
+<docs lang="zh-CN">
+自定义禁用发送逻辑，并使用 `slotConfig` 配置插槽。
+</docs>
+
+<docs lang="en-US">
+Customize the disable sending logic and configure slots with `slotConfig`.
+</docs>

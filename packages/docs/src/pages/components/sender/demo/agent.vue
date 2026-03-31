@@ -158,3 +158,11 @@ const footerRender: SenderProps["footer"] = (actionNode, { components }) => {
     :on-cancel="onCancel"
   />
 </template>
+
+<docs lang="zh-CN">
+智能体输入框。
+</docs>
+
+<docs lang="en-US">
+Agent input box.
+</docs>

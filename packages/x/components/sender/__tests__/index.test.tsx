@@ -33,7 +33,10 @@ describe("Sender", () => {
 
     const textarea = wrapper.find("textarea");
     await textarea.setValue("hello");
-    expect(onChange).toHaveBeenCalledWith("hello", expect.anything());
+    expect(onChange).toHaveBeenCalled();
+    const args = onChange.mock.calls[0]!;
+    expect(args[0]).toBe("hello");
+    expect(args[1]).toBeDefined();
   });
 
   it("should support controlled value", async () => {
@@ -56,7 +59,8 @@ describe("Sender", () => {
 
     const textarea = wrapper.find("textarea");
     await textarea.trigger("keydown", { key: "Enter" });
-    expect(onSubmit).toHaveBeenCalledWith("test message");
+    expect(onSubmit).toHaveBeenCalled();
+    expect(onSubmit.mock.calls[0]![0]).toBe("test message");
   });
 
   it("should not trigger onSubmit on Shift+Enter", async () => {
@@ -88,7 +92,8 @@ describe("Sender", () => {
       key: "Enter",
       shiftKey: true,
     });
-    expect(onSubmit).toHaveBeenCalledWith("test");
+    expect(onSubmit).toHaveBeenCalled();
+    expect(onSubmit.mock.calls[0]![0]).toBe("test");
   });
 
   it("should not submit when loading", async () => {
@@ -176,6 +181,93 @@ describe("Sender", () => {
     expect(typeof vm.focus).toBe("function");
     expect(typeof vm.blur).toBe("function");
     expect(typeof vm.clear).toBe("function");
+  });
+
+  it("should support slotConfig and emit structured payload", async () => {
+    const onChange = vi.fn();
+    const onSubmit = vi.fn();
+    const wrapper = mount(Sender, {
+      props: {
+        slotConfig: [
+          { type: "text", value: "Hello " },
+          {
+            type: "input",
+            key: "name",
+            props: { placeholder: "Enter a name" },
+          },
+          { type: "text", value: " !" },
+        ],
+        onChange,
+        onSubmit,
+      },
+    });
+
+    await wrapper.vm.$nextTick();
+
+    const slotInput = wrapper.find("input.antd-sender-slot-input");
+    await slotInput.setValue("Alice");
+
+    expect(onChange).toHaveBeenCalled();
+    const lastChange = onChange.mock.calls[onChange.mock.calls.length - 1]!;
+    expect(lastChange[0]).toContain("Alice");
+    expect(lastChange[2]).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          key: "name",
+          type: "input",
+          value: "Alice",
+        }),
+      ]),
+    );
+
+    const editable = wrapper.find(".antd-sender-input-slot");
+    await editable.trigger("keydown", { key: "Enter" });
+    expect(onSubmit).toHaveBeenCalled();
+    const submitArgs = onSubmit.mock.calls[onSubmit.mock.calls.length - 1]!;
+    expect(submitArgs[0]).toContain("Alice");
+    expect(submitArgs[1]).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          key: "name",
+          type: "input",
+          value: "Alice",
+        }),
+      ]),
+    );
+  });
+
+  it("should support slot insert and getValue on ref", async () => {
+    const wrapper = mount(Sender, {
+      props: {
+        slotConfig: [{ type: "text", value: "Prefix " }],
+      },
+    });
+    await wrapper.vm.$nextTick();
+
+    const vm = wrapper.vm as any;
+    vm.insert(
+      [
+        {
+          type: "input",
+          key: "account",
+          props: { defaultValue: "test-user" },
+        },
+      ],
+      "end",
+    );
+    await wrapper.vm.$nextTick();
+
+    const value = vm.getValue();
+    expect(value.value).toContain("test-user");
+    expect(value.slotConfig).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          key: "account",
+          type: "input",
+          value: "test-user",
+        }),
+      ]),
+    );
   });
 });
 

@@ -87,7 +87,11 @@ const containerStyle = computed(() => ({
 
 <template>
   <div :style="containerStyle">
-    <XMarkdown :content="content" :class-name="markdownClassName" :style="customVars" />
+    <XMarkdown
+      :content="content"
+      :class-name="markdownClassName"
+      :style="customVars"
+    />
   </div>
 </template>
 

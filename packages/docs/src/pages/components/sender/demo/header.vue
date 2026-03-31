@@ -77,9 +77,9 @@ function handleSubmit() {
 </template>
 
 <docs lang="zh-CN">
-通过 `Sender.Header` 配合 `prefix` 实现可折叠的头部上传面板。
+使用 `header` 自定义文件上传示例。
 </docs>
 
 <docs lang="en-US">
-Use `Sender.Header` with `prefix` to build a collapsible upload panel.
+Use `header` to customize the file upload example.
 </docs>

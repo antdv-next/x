@@ -100,9 +100,9 @@ function renderSend(opts: {
 </template>
 
 <docs lang="zh-CN">
-通过 `suffix` 自定义发送按钮的样式，如圆角、图标、加载行为等。
+通过定制后缀，调整`suffix`。
 </docs>
 
 <docs lang="en-US">
-Customize send button style via `suffix`, such as border radius, icon, and loading behavior.
+Adjust `suffix` by customizing the suffix.
 </docs>
