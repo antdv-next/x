@@ -4,6 +4,7 @@ import { isRef, onScopeDispose, ref, shallowRef, watch } from "vue";
 
 import type { AnyObject } from "../_util/types";
 
+import resolveMaybeRef from "../_util/resolveMaybeRef";
 import { ConversationStore } from "./store";
 
 export interface ConversationData extends AnyObject {
@@ -13,10 +14,6 @@ export interface ConversationData extends AnyObject {
 export interface XConversationConfig {
   defaultConversations?: MaybeRef<ConversationData[]>;
   defaultActiveConversationKey?: MaybeRef<string>;
-}
-
-function resolveMaybeRef<T>(value: MaybeRef<T> | undefined): T | undefined {
-  return isRef(value) ? value.value : value;
 }
 
 export default function useXConversations(config: XConversationConfig) {

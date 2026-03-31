@@ -236,4 +236,45 @@ describe("useXChat", () => {
     scope.stop();
     vi.useRealTimers();
   });
+
+  it("derives parsedMessages from parser output", async () => {
+    const scope = effectScope();
+    const chat = scope.run(() =>
+      useXChat<string, string>({
+        parser: message => [message.toUpperCase(), `${message}!`],
+      }),
+    );
+
+    expect(chat).toBeTruthy();
+    if (!chat) return;
+
+    await Promise.resolve();
+    await nextTick();
+
+    chat.setMessages([
+      {
+        id: "msg_1",
+        message: "hello",
+        status: "success",
+      },
+    ]);
+
+    await new Promise(resolve => setTimeout(resolve, 60));
+    await nextTick();
+
+    expect(chat.parsedMessages.value).toEqual([
+      {
+        id: "msg_1_0",
+        message: "HELLO",
+        status: "success",
+      },
+      {
+        id: "msg_1_1",
+        message: "hello!",
+        status: "success",
+      },
+    ]);
+
+    scope.stop();
+  });
 });

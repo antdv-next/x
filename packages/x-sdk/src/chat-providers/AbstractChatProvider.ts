@@ -1,7 +1,3 @@
-import type { MaybeRef } from "vue";
-
-import { isRef } from "vue";
-
 import type { MessageStatus, SimpleType } from "../x-chat";
 import type {
   AbstractXRequestClass,
@@ -15,7 +11,7 @@ export interface ChatProviderConfig<
   ChatMessage extends SimpleType = any,
 > {
   request:
-    | MaybeRef<AbstractXRequestClass<Input, Output, ChatMessage>>
+    | AbstractXRequestClass<Input, Output, ChatMessage>
     | (() => AbstractXRequestClass<Input, Output, ChatMessage>);
 }
 
@@ -41,14 +37,8 @@ export default abstract class AbstractChatProvider<
   }
 
   constructor(config: ChatProviderConfig<Input, Output, ChatMessage>) {
-    let request: AbstractXRequestClass<Input, Output, ChatMessage>;
-    if (typeof config.request === "function") {
-      request = config.request();
-    } else if (isRef(config.request)) {
-      request = config.request.value;
-    } else {
-      request = config.request;
-    }
+    const request =
+      typeof config.request === "function" ? config.request() : config.request;
 
     if (!request.manual) {
       throw new Error("request must be manual");

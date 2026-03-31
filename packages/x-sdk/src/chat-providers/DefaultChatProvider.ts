@@ -1,9 +1,8 @@
-import { isRef } from "vue";
-
 import type { SimpleType } from "../x-chat";
 import type { XRequestConfigOptions } from "../x-request";
 import type { TransformMessage } from "./AbstractChatProvider";
 
+import resolveMaybeRef from "../_util/resolveMaybeRef";
 import AbstractChatProvider from "./AbstractChatProvider";
 
 export default class DefaultChatProvider<
@@ -19,9 +18,7 @@ export default class DefaultChatProvider<
       throw new Error("requestParams must be an object");
     }
 
-    const params = isRef(options?.params)
-      ? options.params.value
-      : options?.params;
+    const params = resolveMaybeRef(options?.params);
 
     return {
       ...params,

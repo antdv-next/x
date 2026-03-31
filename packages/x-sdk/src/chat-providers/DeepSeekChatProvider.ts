@@ -1,10 +1,9 @@
-import { isRef } from "vue";
-
 import type { XRequestConfigOptions } from "../x-request";
 import type { SSEFields } from "../x-stream";
 import type { TransformMessage } from "./AbstractChatProvider";
 import type { XModelMessage, XModelParams } from "./types/model";
 
+import resolveMaybeRef from "../_util/resolveMaybeRef";
 import AbstractChatProvider from "./AbstractChatProvider";
 
 /**
@@ -24,9 +23,7 @@ export default class DeepSeekChatProvider<
     requestParams: Partial<Input>,
     options: XRequestConfigOptions<Input, Output, ChatMessage>,
   ): Input {
-    const params = isRef(options?.params)
-      ? options.params.value
-      : options?.params;
+    const params = resolveMaybeRef(options?.params);
 
     return {
       ...params,

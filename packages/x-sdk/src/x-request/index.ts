@@ -1,6 +1,6 @@
 import type { MaybeRef } from "vue";
 
-import { isRef, reactive, readonly } from "vue";
+import { reactive, readonly } from "vue";
 
 import type { AnyObject } from "../_util/types";
 import type { MessageInfo, SimpleType } from "../x-chat";
@@ -12,6 +12,7 @@ import type {
 } from "../x-stream";
 import type { XFetchMiddlewares } from "./x-fetch";
 
+import resolveMaybeRef from "../_util/resolveMaybeRef";
 import XStream from "../x-stream";
 import xFetch from "./x-fetch";
 
@@ -146,10 +147,6 @@ export function setXRequestGlobalOptions<Input, Output>(
   options: XRequestGlobalOptions<Input, Output>,
 ) {
   Object.assign(globalOptions, options);
-}
-
-function resolveMaybeRef<T>(value: MaybeRef<T> | undefined): T | undefined {
-  return isRef(value) ? value.value : value;
 }
 
 const LastEventId = "Last-Event-ID";

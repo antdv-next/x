@@ -15,6 +15,7 @@ import type { ConversationData } from "../x-conversations";
 import type { SSEOutput } from "../x-stream";
 import type { ConversationKey } from "./store";
 
+import resolveMaybeRef from "../_util/resolveMaybeRef";
 import { AbstractChatProvider } from "../chat-providers";
 import { AbstractXRequestClass } from "../x-request";
 import { ChatMessagesStore, chatMessagesStoreHelper } from "./store";
@@ -113,10 +114,6 @@ function toArray<T>(item: T | T[]): T[] {
   return Array.isArray(item) ? item : [item];
 }
 
-function resolveMaybeRef<T>(value: MaybeRef<T> | undefined): T | undefined {
-  return isRef(value) ? value.value : value;
-}
-
 const IsRequestingMap = reactive(new Map<ConversationKey, boolean>());
 const generateConversationKey = () => Symbol("ConversationKey");
 
@@ -162,7 +159,31 @@ export default function useXChat<
   const activeStore = shallowRef<ChatMessagesStore<MessageInfo<ChatMessage>>>();
   const messages = shallowRef<MessageInfo<ChatMessage>[]>([]);
   const isDefaultMessagesRequestingRef = shallowRef(false);
-  const parsedMessages = shallowRef<MessageInfo<ParsedMessage>[]>([]);
+  const parsedMessages = computed(() => {
+    const parser = config.parser;
+    const list: MessageInfo<ParsedMessage>[] = [];
+
+    messages.value.forEach(agentMsg => {
+      const sourceMessage = agentMsg.message as ChatMessage;
+      const rawParsedMsg = parser ? parser(sourceMessage) : sourceMessage;
+      const bubbleMsgs = toArray(rawParsedMsg as ParsedMessage);
+
+      bubbleMsgs.forEach((bubbleMsg, bubbleMsgIndex) => {
+        let key = agentMsg.id;
+        if (bubbleMsgs.length > 1) {
+          key = `${key}_${bubbleMsgIndex}`;
+        }
+
+        list.push({
+          id: key,
+          message: bubbleMsg,
+          status: agentMsg.status,
+        });
+      });
+    });
+
+    return list;
+  });
 
   let unsubscribeStore: (() => void) | null = null;
 
@@ -280,34 +301,6 @@ export default function useXChat<
 
     return msg;
   };
-
-  const syncParsedMessages = () => {
-    const parser = config.parser;
-    const list: MessageInfo<ParsedMessage>[] = [];
-
-    messages.value.forEach(agentMsg => {
-      const sourceMessage = agentMsg.message as ChatMessage;
-      const rawParsedMsg = parser ? parser(sourceMessage) : sourceMessage;
-      const bubbleMsgs = toArray(rawParsedMsg as ParsedMessage);
-
-      bubbleMsgs.forEach((bubbleMsg, bubbleMsgIndex) => {
-        let key = agentMsg.id;
-        if (bubbleMsgs.length > 1) {
-          key = `${key}_${bubbleMsgIndex}`;
-        }
-
-        list.push({
-          id: key,
-          message: bubbleMsg,
-          status: agentMsg.status,
-        });
-      });
-    });
-
-    parsedMessages.value = list;
-  };
-
-  watch(messages, syncParsedMessages, { immediate: true });
 
   const getFilteredMessages = (msgs: MessageInfo<ChatMessage>[]) =>
     msgs.filter(info => info.status !== "loading").map(info => info.message);
