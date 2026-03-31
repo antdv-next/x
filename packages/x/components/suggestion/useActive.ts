@@ -77,10 +77,12 @@ export default function useActive(
       case "ArrowDown":
         offsetRow(1);
         event.preventDefault();
+        event.stopPropagation();
         break;
       case "ArrowUp":
         offsetRow(-1);
         event.preventDefault();
+        event.stopPropagation();
         break;
       case "ArrowRight":
         if (rtl.value) {
@@ -89,6 +91,7 @@ export default function useActive(
           offsetNext();
         }
         event.preventDefault();
+        event.stopPropagation();
         break;
       case "ArrowLeft":
         if (rtl.value) {
@@ -97,13 +100,16 @@ export default function useActive(
           offsetPrev();
         }
         event.preventDefault();
+        event.stopPropagation();
         break;
       case "Enter":
         event.preventDefault();
+        event.stopPropagation();
         return false;
       case "Escape":
         onCancel();
         event.preventDefault();
+        event.stopPropagation();
         break;
       default:
         break;
