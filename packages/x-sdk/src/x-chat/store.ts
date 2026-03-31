@@ -34,6 +34,7 @@ export class ChatMessagesStore<T extends { id: number | string }> {
   private pendingEmit = false;
   private readonly throttleInterval: number = 50;
   private isDestroyed = false;
+  private defaultMessagesLoader!: () => Promise<T[]>;
 
   private emitListeners() {
     this.listeners.forEach(listener => {
@@ -62,10 +63,8 @@ export class ChatMessagesStore<T extends { id: number | string }> {
     defaultMessages: () => Promise<T[]>,
     conversationKey?: ConversationKey,
   ) {
-    void this.initializeMessages(defaultMessages, value => {
-      this.setSnapshotResult("isDefaultMessagesRequesting", value);
-      this.emitListeners();
-    });
+    this.defaultMessagesLoader = defaultMessages;
+    void this.initializeMessages();
 
     if (conversationKey) {
       this.conversationKey = conversationKey;
@@ -73,13 +72,11 @@ export class ChatMessagesStore<T extends { id: number | string }> {
     }
   }
 
-  private async initializeMessages(
-    defaultMessages: () => Promise<T[]>,
-    setDefaultMessagesRequesting: (defaultValueLoading: boolean) => void,
-  ) {
+  private async initializeMessages() {
     try {
-      setDefaultMessagesRequesting(true);
-      const messages = await defaultMessages();
+      this.setSnapshotResult("isDefaultMessagesRequesting", true);
+      this.emitListeners();
+      const messages = await this.defaultMessagesLoader();
 
       if (!this.isDestroyed) {
         this.setMessagesInternal(messages, false);
@@ -90,9 +87,16 @@ export class ChatMessagesStore<T extends { id: number | string }> {
         this.setMessagesInternal([], false);
       }
     } finally {
-      setDefaultMessagesRequesting(false);
+      this.setSnapshotResult("isDefaultMessagesRequesting", false);
+      this.emitListeners();
     }
   }
+
+  refreshDefaultMessages = () => {
+    if (this.isDestroyed) return false;
+    void this.initializeMessages();
+    return true;
+  };
 
   private setSnapshotResult = <K extends keyof ChatStoreSnapshot<T>>(
     key: K,

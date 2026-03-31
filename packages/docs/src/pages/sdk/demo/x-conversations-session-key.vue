@@ -116,7 +116,7 @@ const {
   setActiveConversationKey,
   addConversation,
 } = useXConversations({
-  defaultConversations: defaultItems.value,
+  defaultConversations: defaultItems,
   defaultActiveConversationKey: DEFAULT_KEY,
 });
 
@@ -128,7 +128,7 @@ const {
   abort,
   queueRequest,
 } = useXChat({
-  provider: computed(() => providerFactory(activeConversationKey.value)).value,
+  provider: computed(() => providerFactory(activeConversationKey.value)),
   conversationKey: activeConversationKey,
   defaultMessages: getHistoryMessageList,
   requestPlaceholder: () => ({

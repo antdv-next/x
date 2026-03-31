@@ -36,28 +36,28 @@ type XRequestFunction<
   Output = Record<string, string>,
 > = (
   baseURL: string,
-  options: XRequestOptions<Input, Output>,
+  options: XRequestConfigOptions<Input, Output>,
 ) => XRequestClass<Input, Output>;
 ```
 
-### XRequestOptions
+### XRequestConfigOptions
 
 | Property          | Description                                                 | Type                                                                                                                                      | Default | Version |
 | ----------------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------- | ------- |
 | `callbacks`       | Request callback handlers                                   | `XRequestCallbacks<Output>`                                                                                                               | -       | -       |
-| `params`          | Request parameters                                          | `Input`                                                                                                                                   | -       | -       |
-| `headers`         | Extra request headers                                       | `Record<string, string>`                                                                                                                  | -       | -       |
-| `timeout`         | Request timeout from send to connect, in ms                 | `number`                                                                                                                                  | -       | -       |
-| `streamTimeout`   | Chunk interval timeout in stream mode, in ms                | `number`                                                                                                                                  | -       | -       |
+| `params`          | Request parameters                                          | `MaybeRef<Input>`                                                                                                                         | -       | -       |
+| `headers`         | Extra request headers                                       | `MaybeRef<Record<string, string>>`                                                                                                        | -       | -       |
+| `timeout`         | Request timeout from send to connect, in ms                 | `MaybeRef<number>`                                                                                                                        | -       | -       |
+| `streamTimeout`   | Chunk interval timeout in stream mode, in ms                | `MaybeRef<number>`                                                                                                                        | -       | -       |
 | `fetch`           | Custom `fetch`                                              | `typeof fetch`                                                                                                                            | -       | -       |
 | `middlewares`     | Request/response middlewares                                | `XFetchMiddlewares`                                                                                                                       | -       | -       |
 | `transformStream` | Custom stream transformer                                   | `XStreamOptions<Output>["transformStream"] \| ((baseURL: string, responseHeaders: Headers) => XStreamOptions<Output>["transformStream"])` | -       | -       |
-| `streamSeparator` | Stream separator (ignored when `transformStream` is set)    | `string`                                                                                                                                  | `\n\n`  | 2.2.0   |
-| `partSeparator`   | Part separator (ignored when `transformStream` is set)      | `string`                                                                                                                                  | `\n`    | 2.2.0   |
-| `kvSeparator`     | Key-value separator (ignored when `transformStream` is set) | `string`                                                                                                                                  | `:`     | 2.2.0   |
-| `manual`          | Whether request is manually triggered                       | `boolean`                                                                                                                                 | `false` | -       |
-| `retryInterval`   | Retry interval when request fails, in ms                    | `number`                                                                                                                                  | -       | -       |
-| `retryTimes`      | Maximum retry attempts                                      | `number`                                                                                                                                  | -       | -       |
+| `streamSeparator` | Stream separator (ignored when `transformStream` is set)    | `MaybeRef<string>`                                                                                                                        | `\n\n`  | 2.2.0   |
+| `partSeparator`   | Part separator (ignored when `transformStream` is set)      | `MaybeRef<string>`                                                                                                                        | `\n`    | 2.2.0   |
+| `kvSeparator`     | Key-value separator (ignored when `transformStream` is set) | `MaybeRef<string>`                                                                                                                        | `:`     | 2.2.0   |
+| `manual`          | Whether request is manually triggered                       | `MaybeRef<boolean>`                                                                                                                       | `false` | -       |
+| `retryInterval`   | Retry interval when request fails, in ms                    | `MaybeRef<number>`                                                                                                                        | -       | -       |
+| `retryTimes`      | Maximum retry attempts                                      | `MaybeRef<number>`                                                                                                                        | -       | -       |
 
 ### XRequestCallbacks
 
@@ -87,7 +87,7 @@ type setXRequestGlobalOptions<Input, Output> = (
 
 ```ts | pure
 type XRequestGlobalOptions<Input, Output> = Pick<
-  XRequestOptions<Input, Output>,
+  XRequestConfigOptions<Input, Output>,
   | "headers"
   | "timeout"
   | "streamTimeout"

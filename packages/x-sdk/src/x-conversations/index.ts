@@ -1,4 +1,6 @@
-import { onScopeDispose, ref, shallowRef } from "vue";
+import type { MaybeRef } from "vue";
+
+import { isRef, onScopeDispose, ref, shallowRef, watch } from "vue";
 
 import type { AnyObject } from "../_util/types";
 
@@ -8,15 +10,19 @@ export interface ConversationData extends AnyObject {
   key: string;
 }
 
-interface XConversationConfig {
-  defaultConversations?: ConversationData[];
-  defaultActiveConversationKey?: string;
+export interface XConversationConfig {
+  defaultConversations?: MaybeRef<ConversationData[]>;
+  defaultActiveConversationKey?: MaybeRef<string>;
+}
+
+function resolveMaybeRef<T>(value: MaybeRef<T> | undefined): T | undefined {
+  return isRef(value) ? value.value : value;
 }
 
 export default function useXConversations(config: XConversationConfig) {
   const store = new ConversationStore(
-    config?.defaultConversations || [],
-    config?.defaultActiveConversationKey || "",
+    resolveMaybeRef(config?.defaultConversations) || [],
+    resolveMaybeRef(config?.defaultActiveConversationKey) || "",
   );
 
   const conversations = shallowRef<ConversationData[]>(store.getSnapshot());
@@ -29,6 +35,27 @@ export default function useXConversations(config: XConversationConfig) {
 
   const unsubscribe = store.subscribe(syncStore);
   syncStore();
+
+  if (config?.defaultConversations && isRef(config.defaultConversations)) {
+    watch(
+      config.defaultConversations,
+      list => {
+        store.setConversations(list || []);
+      },
+      { deep: true },
+    );
+  }
+
+  if (
+    config?.defaultActiveConversationKey &&
+    isRef(config.defaultActiveConversationKey)
+  ) {
+    watch(config.defaultActiveConversationKey, key => {
+      if (typeof key === "string") {
+        store.setActiveConversationKey(key);
+      }
+    });
+  }
 
   onScopeDispose(() => {
     unsubscribe();

@@ -10,6 +10,7 @@ export type { ConversationData } from "./x-conversations";
 export { default as useXConversations } from "./x-conversations";
 export type {
   XRequestCallbacks,
+  XRequestConfigOptions,
   XRequestClass,
   XRequestFunction,
   XRequestGlobalOptions,

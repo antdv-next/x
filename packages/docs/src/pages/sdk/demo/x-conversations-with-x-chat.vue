@@ -95,7 +95,7 @@ function providerFactory(conversationKey: string) {
 }
 
 const { activeConversationKey, setActiveConversationKey } = useXConversations({
-  defaultConversations: defaultItems.value,
+  defaultConversations: defaultItems,
   defaultActiveConversationKey: "item1_1",
 });
 
@@ -166,7 +166,7 @@ const defaultMessages = async (info: {
 };
 
 const { onRequest, messages, isRequesting, abort } = useXChat({
-  provider: computed(() => providerFactory(activeConversationKey.value)).value,
+  provider: computed(() => providerFactory(activeConversationKey.value)),
   conversationKey: activeConversationKey,
   defaultMessages: defaultMessages,
   requestPlaceholder: () => ({

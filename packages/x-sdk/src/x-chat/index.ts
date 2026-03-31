@@ -1,4 +1,4 @@
-import type { Ref } from "vue";
+import type { MaybeRef } from "vue";
 
 import {
   computed,
@@ -51,7 +51,17 @@ export type RequestParams<Message> = {
   [Key: PropertyKey]: Message;
 } & AnyObject;
 
-type MaybeRef<T> = T | Ref<T>;
+type ParserFn<ChatMessage, BubbleMessage> = (
+  message: ChatMessage,
+) => BubbleMessage | BubbleMessage[];
+
+type DefaultMessagesFn<ChatMessage extends SimpleType> =
+  | ((info: {
+      conversationKey?: ConversationData["key"];
+    }) => Promise<DefaultMessageInfo<ChatMessage>[]>)
+  | ((info?: {
+      conversationKey?: ConversationData["key"];
+    }) => DefaultMessageInfo<ChatMessage>[]);
 
 export interface XChatConfig<
   ChatMessage extends SimpleType = string,
@@ -59,20 +69,17 @@ export interface XChatConfig<
   Input = ChatMessage,
   Output = ChatMessage,
 > {
-  provider?: AbstractChatProvider<ChatMessage, Input, Output>;
+  provider?: MaybeRef<AbstractChatProvider<ChatMessage, Input, Output>>;
   conversationKey?: MaybeRef<ConversationData["key"] | undefined>;
   defaultMessages?:
-    | DefaultMessageInfo<ChatMessage>[]
-    | ((info: {
-        conversationKey?: ConversationData["key"];
-      }) => Promise<DefaultMessageInfo<ChatMessage>[]>)
-    | ((info?: {
-        conversationKey?: ConversationData["key"];
-      }) => DefaultMessageInfo<ChatMessage>[]);
-  parser?: (message: ChatMessage) => BubbleMessage | BubbleMessage[];
-  requestPlaceholder?: ChatMessage | RequestPlaceholderFn<Input, ChatMessage>;
+    | MaybeRef<DefaultMessageInfo<ChatMessage>[]>
+    | DefaultMessagesFn<ChatMessage>;
+  parser?: ParserFn<ChatMessage, BubbleMessage> | undefined;
+  requestPlaceholder?:
+    | MaybeRef<ChatMessage>
+    | RequestPlaceholderFn<Input, ChatMessage>;
   requestFallback?:
-    | ChatMessage
+    | MaybeRef<ChatMessage>
     | RequestFallbackFn<Input, MessageInfo<ChatMessage>, ChatMessage>;
 }
 
@@ -106,7 +113,7 @@ function toArray<T>(item: T | T[]): T[] {
   return Array.isArray(item) ? item : [item];
 }
 
-function resolveMaybeRef<T>(value: MaybeRef<T>): T {
+function resolveMaybeRef<T>(value: MaybeRef<T> | undefined): T | undefined {
   return isRef(value) ? value.value : value;
 }
 
@@ -119,17 +126,15 @@ export default function useXChat<
   Input = RequestParams<ChatMessage>,
   Output = SSEOutput,
 >(config: XChatConfig<ChatMessage, ParsedMessage, Input, Output>) {
-  const {
-    defaultMessages,
-    requestFallback,
-    requestPlaceholder,
-    parser,
-    provider,
-  } = config;
-
   const idRef = ref(0);
   const requestHandlerRef =
     shallowRef<AbstractXRequestClass<Input, Output, ChatMessage>>();
+
+  const providerRef = isRef(config.provider)
+    ? config.provider
+    : shallowRef(config.provider);
+  let provider = providerRef.value;
+
   const originalConversationKey = config.conversationKey
     ? resolveMaybeRef(config.conversationKey)
     : undefined;
@@ -155,14 +160,20 @@ export default function useXChat<
   >();
 
   const activeStore = shallowRef<ChatMessagesStore<MessageInfo<ChatMessage>>>();
-  const messages = ref<MessageInfo<ChatMessage>[]>([]);
-  const isDefaultMessagesRequesting = ref(false);
+  const messages = shallowRef<MessageInfo<ChatMessage>[]>([]);
+  const isDefaultMessagesRequestingRef = shallowRef(false);
+  const parsedMessages = shallowRef<MessageInfo<ParsedMessage>[]>([]);
 
   let unsubscribeStore: (() => void) | null = null;
 
   const resolveDefaultMessages = async (
     currentConversationKey: ConversationKey,
   ) => {
+    const sourceDefaultMessages = config.defaultMessages;
+    const defaultMessages =
+      typeof sourceDefaultMessages === "function"
+        ? sourceDefaultMessages
+        : resolveMaybeRef(sourceDefaultMessages);
     const messageList =
       typeof defaultMessages === "function"
         ? await defaultMessages({
@@ -192,13 +203,13 @@ export default function useXChat<
   const syncStoreSnapshot = () => {
     if (!activeStore.value) {
       messages.value = [];
-      isDefaultMessagesRequesting.value = false;
+      isDefaultMessagesRequestingRef.value = false;
       return;
     }
 
     const snapshot = activeStore.value.getSnapshot();
     messages.value = snapshot.messages;
-    isDefaultMessagesRequesting.value = snapshot.isDefaultMessagesRequesting;
+    isDefaultMessagesRequestingRef.value = snapshot.isDefaultMessagesRequesting;
   };
 
   const bindStore = (currentConversationKey: ConversationKey) => {
@@ -270,7 +281,8 @@ export default function useXChat<
     return msg;
   };
 
-  const parsedMessages = computed(() => {
+  const syncParsedMessages = () => {
+    const parser = config.parser;
     const list: MessageInfo<ParsedMessage>[] = [];
 
     messages.value.forEach(agentMsg => {
@@ -292,16 +304,31 @@ export default function useXChat<
       });
     });
 
-    return list;
-  });
+    parsedMessages.value = list;
+  };
+
+  watch(messages, syncParsedMessages, { immediate: true });
 
   const getFilteredMessages = (msgs: MessageInfo<ChatMessage>[]) =>
     msgs.filter(info => info.status !== "loading").map(info => info.message);
 
-  provider?.injectGetMessages(() => {
-    return getFilteredMessages(getMessages());
-  });
-  requestHandlerRef.value = provider?.request;
+  const setupProvider = (
+    nextProvider: AbstractChatProvider<ChatMessage, Input, Output> | undefined,
+  ) => {
+    provider = nextProvider;
+    if (nextProvider) {
+      nextProvider.injectGetMessages(() => {
+        return getFilteredMessages(getMessages());
+      });
+      requestHandlerRef.value = nextProvider.request;
+    } else {
+      requestHandlerRef.value = undefined;
+    }
+  };
+
+  setupProvider(provider);
+
+  watch(providerRef, setupProvider);
   const getRequestMessages = () => getFilteredMessages(getMessages());
 
   const innerOnRequest = (
@@ -315,9 +342,16 @@ export default function useXChat<
     if (!provider) {
       return;
     }
+    const activeProvider = provider;
+
     const { updatingId, reload } = opts || {};
     let loadingMsgId: number | string | null | undefined = null;
-    const localMessage = provider.transformLocalMessage(requestParams);
+    const sourceRequestPlaceholder = config.requestPlaceholder;
+    const requestPlaceholder =
+      typeof sourceRequestPlaceholder === "function"
+        ? sourceRequestPlaceholder
+        : resolveMaybeRef(sourceRequestPlaceholder);
+    const localMessage = activeProvider.transformLocalMessage(requestParams);
     const localMessages = (
       Array.isArray(localMessage) ? localMessage : [localMessage]
     ).map(message => createMessage(message, "local", opts?.extraInfo));
@@ -385,7 +419,7 @@ export default function useXChat<
           msg = getMessages().find(info => info.id === updatingId);
           if (msg) {
             msg.status = status;
-            msg.message = provider.transformMessage({
+            msg.message = activeProvider.transformMessage({
               chunk,
               status,
               chunks,
@@ -397,7 +431,7 @@ export default function useXChat<
             updatingMsgId = msg.id;
           }
         } else {
-          const transformData = provider.transformMessage({
+          const transformData = activeProvider.transformMessage({
             chunk,
             status,
             chunks,
@@ -417,7 +451,7 @@ export default function useXChat<
         setMessages((ori: MessageInfo<ChatMessage>[]) => {
           return ori.map((info: MessageInfo<ChatMessage>) => {
             if (info.id === updatingMsgId) {
-              const transformData = provider.transformMessage({
+              const transformData = activeProvider.transformMessage({
                 originMessage: info.message,
                 chunk,
                 chunks,
@@ -437,7 +471,7 @@ export default function useXChat<
       msg = getMessages().find(info => info.id === updatingMsgId) || msg;
       return msg;
     };
-    provider.injectRequest({
+    activeProvider.injectRequest({
       onUpdate: (chunk: Output, headers: Headers) => {
         const msg = updateMessage("updating", chunk, [], headers);
         return msg;
@@ -459,6 +493,11 @@ export default function useXChat<
           IsRequestingMap.delete(conversationKey.value);
         }
         let fallbackMsg: ChatMessage;
+        const sourceRequestFallback = config.requestFallback;
+        const requestFallback =
+          typeof sourceRequestFallback === "function"
+            ? sourceRequestFallback
+            : resolveMaybeRef(sourceRequestFallback);
         if (requestFallback) {
           if (typeof requestFallback === "function") {
             const currentMessages = getRequestMessages();
@@ -492,9 +531,10 @@ export default function useXChat<
             ),
           ]);
         } else {
-          fallbackMsg = getMessages().find(
+          const existingMessageInfo = getMessages().find(
             info => info.id !== loadingMsgId && info.id !== updatingMsgId,
-          ) as ChatMessage;
+          );
+          fallbackMsg = existingMessageInfo?.message as ChatMessage;
           setMessages((ori: MessageInfo<ChatMessage>[]) => {
             return ori.map((info: MessageInfo<ChatMessage>) => {
               if (info.id === loadingMsgId || info.id === updatingMsgId) {
@@ -513,8 +553,11 @@ export default function useXChat<
     if (conversationKey.value) {
       IsRequestingMap.set(conversationKey.value, true);
     }
-    provider.request.run(
-      provider.transformParams(requestParams, provider.request.options),
+    activeProvider.request.run(
+      activeProvider.transformParams(
+        requestParams,
+        activeProvider.request.options,
+      ),
     );
   };
 
@@ -522,7 +565,7 @@ export default function useXChat<
     requestParams: Partial<Input>,
     opts?: { extraInfo: AnyObject },
   ) => {
-    if (!provider) {
+    if (!providerRef.value) {
       throw new Error("provider is required");
     }
     innerOnRequest(requestParams, opts);
@@ -533,7 +576,7 @@ export default function useXChat<
     requestParams: Partial<Input>,
     opts?: { extraInfo: AnyObject },
   ) => {
-    if (!provider) {
+    if (!providerRef.value) {
       throw new Error("provider is required");
     }
     if (!id || !getMessages().find(info => info.id === id)) {
@@ -559,11 +602,21 @@ export default function useXChat<
     }
   };
 
-  watch(isDefaultMessagesRequesting, requesting => {
+  watch(isDefaultMessagesRequestingRef, requesting => {
     if (!requesting) {
       processMessageQueue();
     }
   });
+
+  if (config.defaultMessages && isRef(config.defaultMessages)) {
+    watch(
+      config.defaultMessages,
+      () => {
+        activeStore.value?.refreshDefaultMessages();
+      },
+      { deep: true },
+    );
+  }
 
   const queueRequest = (
     currentConversationKey: ConversationKey,
@@ -581,7 +634,9 @@ export default function useXChat<
 
   return {
     onRequest,
-    isDefaultMessagesRequesting,
+    isDefaultMessagesRequesting: computed(
+      () => isDefaultMessagesRequestingRef.value,
+    ),
     messages,
     parsedMessages,
     setMessages,

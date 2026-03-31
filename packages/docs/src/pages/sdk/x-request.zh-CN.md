@@ -36,28 +36,28 @@ type XRequestFunction<
   Output = Record<string, string>,
 > = (
   baseURL: string,
-  options: XRequestOptions<Input, Output>,
+  options: XRequestConfigOptions<Input, Output>,
 ) => XRequestClass<Input, Output>;
 ```
 
-### XRequestOptions
+### XRequestConfigOptions
 
 | 属性              | 说明                                         | 类型                                                                                                                                      | 默认值  | 版本  |
 | ----------------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------- | ----- |
 | `callbacks`       | 请求回调处理集                               | `XRequestCallbacks<Output>`                                                                                                               | -       | -     |
-| `params`          | 请求参数                                     | `Input`                                                                                                                                   | -       | -     |
-| `headers`         | 额外请求头                                   | `Record<string, string>`                                                                                                                  | -       | -     |
-| `timeout`         | 请求超时（发起到连通），单位 ms              | `number`                                                                                                                                  | -       | -     |
-| `streamTimeout`   | chunk 间隔超时，单位 ms                      | `number`                                                                                                                                  | -       | -     |
+| `params`          | 请求参数                                     | `MaybeRef<Input>`                                                                                                                         | -       | -     |
+| `headers`         | 额外请求头                                   | `MaybeRef<Record<string, string>>`                                                                                                        | -       | -     |
+| `timeout`         | 请求超时（发起到连通），单位 ms              | `MaybeRef<number>`                                                                                                                        | -       | -     |
+| `streamTimeout`   | chunk 间隔超时，单位 ms                      | `MaybeRef<number>`                                                                                                                        | -       | -     |
 | `fetch`           | 自定义 `fetch`                               | `typeof fetch`                                                                                                                            | -       | -     |
 | `middlewares`     | 请求前后中间件                               | `XFetchMiddlewares`                                                                                                                       | -       | -     |
 | `transformStream` | 自定义流转换器                               | `XStreamOptions<Output>["transformStream"] \| ((baseURL: string, responseHeaders: Headers) => XStreamOptions<Output>["transformStream"])` | -       | -     |
-| `streamSeparator` | 流分隔符（`transformStream` 有值时不生效）   | `string`                                                                                                                                  | `\n\n`  | 2.2.0 |
-| `partSeparator`   | 分段分隔符（`transformStream` 有值时不生效） | `string`                                                                                                                                  | `\n`    | 2.2.0 |
-| `kvSeparator`     | 键值分隔符（`transformStream` 有值时不生效） | `string`                                                                                                                                  | `:`     | 2.2.0 |
-| `manual`          | 是否手动触发请求                             | `boolean`                                                                                                                                 | `false` | -     |
-| `retryInterval`   | 失败后自动重试间隔，单位 ms                  | `number`                                                                                                                                  | -       | -     |
-| `retryTimes`      | 最大重试次数                                 | `number`                                                                                                                                  | -       | -     |
+| `streamSeparator` | 流分隔符（`transformStream` 有值时不生效）   | `MaybeRef<string>`                                                                                                                        | `\n\n`  | 2.2.0 |
+| `partSeparator`   | 分段分隔符（`transformStream` 有值时不生效） | `MaybeRef<string>`                                                                                                                        | `\n`    | 2.2.0 |
+| `kvSeparator`     | 键值分隔符（`transformStream` 有值时不生效） | `MaybeRef<string>`                                                                                                                        | `:`     | 2.2.0 |
+| `manual`          | 是否手动触发请求                             | `MaybeRef<boolean>`                                                                                                                       | `false` | -     |
+| `retryInterval`   | 失败后自动重试间隔，单位 ms                  | `MaybeRef<number>`                                                                                                                        | -       | -     |
+| `retryTimes`      | 最大重试次数                                 | `MaybeRef<number>`                                                                                                                        | -       | -     |
 
 ### XRequestCallbacks
 
@@ -87,7 +87,7 @@ type setXRequestGlobalOptions<Input, Output> = (
 
 ```ts | pure
 type XRequestGlobalOptions<Input, Output> = Pick<
-  XRequestOptions<Input, Output>,
+  XRequestConfigOptions<Input, Output>,
   | "headers"
   | "timeout"
   | "streamTimeout"
