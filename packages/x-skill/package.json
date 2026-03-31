@@ -1,8 +1,20 @@
 {
   "name": "@antdv-next/x-skill",
   "version": "0.0.1",
+  "description": "CLI tool for installing AI skills to development tools like Claude, Cursor, etc.",
+  "homepage": "https://github.com/antdv-next/x",
+  "bugs": {
+    "url": "https://github.com/antdv-next/x/issues"
+  },
+  "bin": {
+    "x-skill": "dist/cli.js"
+  },
   "files": [
-    "dist"
+    "skills",
+    "skills-zh",
+    "dist",
+    ".skill.json",
+    ".claude-plugin"
   ],
   "type": "module",
   "main": "./dist/index.js",
@@ -20,6 +32,18 @@
   },
   "scripts": {
     "type-check": "tsc --project tsconfig.json --noEmit",
-    "build": "tsc --project tsconfig.build.json"
+    "build": "tsc --project tsconfig.build.json",
+    "generate-meta": "tsx scripts/generate-meta.ts",
+    "generate-version": "tsx scripts/generate-version.ts"
+  },
+  "dependencies": {
+    "figlet": "^1.10.0",
+    "ora": "^9.3.0",
+    "progress": "^2.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/progress": "^2.0.7",
+    "tsx": "^4.19.1"
   }
 }
