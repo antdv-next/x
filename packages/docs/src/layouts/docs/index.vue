@@ -8,16 +8,14 @@ import { useRoute, useRouter } from "vue-router";
 
 import { componentOverviewItems } from "@/components/component-overview/data";
 import Contributors from "@/components/Contributors.vue";
+import { useDarkMode } from "@/composables/use-dark-mode";
 import { useDocPage } from "@/composables/use-doc-page";
 import { useLocale } from "@/composables/use-locale";
-import { useDarkMode } from "@/composables/use-dark-mode";
 import { docsRoutes, LOCALE_EN_US, LOCALE_ZH_CN } from "@/router/docs";
 import { useAppStore } from "@/stores/app";
 
 import DocHeader from "./components/doc-header.vue";
-import {
-  DOC_HEADER_CONTENT_OFFSET,
-} from "./components/header-shared";
+import { DOC_HEADER_CONTENT_OFFSET } from "./components/header-shared";
 
 const useStyles = createStyles(({ token }) => ({
   root: {

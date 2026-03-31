@@ -53,8 +53,8 @@ export const headerItems: HeaderItem[] = [
   },
   {
     key: "demo",
-    path: "/demo",
-    basePath: "/demo",
+    path: "/playground/ultramodern",
+    basePath: "/playground/ultramodern",
     label: {
       "zh-CN": "演示",
       "en-US": "Demos",
