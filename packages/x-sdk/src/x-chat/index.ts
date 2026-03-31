@@ -586,8 +586,7 @@ export default function useXChat<
   const processMessageQueue = () => {
     const requestParamsList = messageQueueMap.get(conversationKey.value);
     if (requestParamsList && requestParamsList.length > 0) {
-      const timer = setTimeout(() => {
-        clearTimeout(timer);
+      setTimeout(() => {
         requestParamsList.forEach(({ requestParams, opts }) => {
           onRequest(requestParams, opts);
         });
