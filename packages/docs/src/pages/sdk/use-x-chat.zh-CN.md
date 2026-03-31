@@ -68,7 +68,7 @@ type useXChat<
 | --------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ------ | ----- |
 | abort                       | 取消请求                                                  | () => void                                                                                                    | -      | -     |
 | isRequesting                | 是否在请求中                                              | ComputedRef\<boolean\>                                                                                        | -      | -     |
-| isDefaultMessagesRequesting | 默认消息列表是否在请求中                                  | ComputedRef<boolean>                                                                                          | false  | 2.2.0 |
+| isDefaultMessagesRequesting | 默认消息列表是否在请求中                                  | ComputedRef\<boolean\>                                                                                        | false  | 2.2.0 |
 | messages                    | 当前管理消息列表的内容                                    | ShallowRef\<MessageInfo\<ChatMessage\>[]\>                                                                    | -      | -     |
 | parsedMessages              | 经过 `parser` 转译过的内容                                | ShallowRef\<MessageInfo\<ParsedMessages\>[]\>                                                                 | -      | -     |
 | onReload                    | 重新生成，会发送请求到后台，使用新返回数据更新该条消息    | (id: string \| number, requestParams: Partial\<Input\>,opts: { extra: AnyObject }) => void                    | -      | -     |
