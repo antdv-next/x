@@ -98,8 +98,9 @@ const useStyles = createStyles(({ token }) => ({
     },
     "@media (max-width: 900px)": {
       ".antd-doc-layout-main": {
+        marginTop: 80,
         gridTemplateColumns: "minmax(0, 1fr)",
-        padding: 16,
+        padding: "16px 48px",
       },
       ".antd-doc-layout-sider": {
         display: "none",
