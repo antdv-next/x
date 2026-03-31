@@ -238,6 +238,8 @@ describe("useXChat", () => {
   });
 
   it("derives parsedMessages from parser output", async () => {
+    vi.useFakeTimers();
+
     const scope = effectScope();
     const chat = scope.run(() =>
       useXChat<string, string>({
@@ -259,7 +261,7 @@ describe("useXChat", () => {
       },
     ]);
 
-    await new Promise(resolve => setTimeout(resolve, 60));
+    await vi.advanceTimersByTimeAsync(60);
     await nextTick();
 
     expect(chat.parsedMessages.value).toEqual([
@@ -276,5 +278,6 @@ describe("useXChat", () => {
     ]);
 
     scope.stop();
+    vi.useRealTimers();
   });
 });

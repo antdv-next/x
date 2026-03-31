@@ -338,7 +338,7 @@ export class XRequestClass<
     };
 
     if (timeout && timeout > 0) {
-      this.timeoutHandler = window.setTimeout(() => {
+      this.timeoutHandler = setTimeout(() => {
         this.isTimeout = true;
         this.finishRequest();
         callbacks?.onError?.(new Error("TimeoutError"));
@@ -502,7 +502,7 @@ export class XRequestClass<
     let result: IteratorResult<Output, any>;
     do {
       if (streamTimeout) {
-        this.streamTimeoutHandler = window.setTimeout(() => {
+        this.streamTimeoutHandler = setTimeout(() => {
           this.isStreamTimeout = true;
           this.finishRequest();
           callbacks?.onError?.(

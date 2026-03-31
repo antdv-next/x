@@ -5,6 +5,7 @@ import {
   isRef,
   onScopeDispose,
   reactive,
+  readonly,
   ref,
   shallowRef,
   watch,
@@ -627,9 +628,7 @@ export default function useXChat<
 
   return {
     onRequest,
-    isDefaultMessagesRequesting: computed(
-      () => isDefaultMessagesRequestingRef.value,
-    ),
+    isDefaultMessagesRequesting: readonly(isDefaultMessagesRequestingRef),
     messages,
     parsedMessages,
     setMessages,
