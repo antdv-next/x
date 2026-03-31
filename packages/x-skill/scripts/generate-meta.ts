@@ -1,7 +1,11 @@
 #!/usr/bin/env tsx
 
 import fs from "fs";
-import path from "path";
+import path, { dirname } from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 /**
  * 自动生成skill元数据配置文件的脚本
@@ -271,8 +275,6 @@ function generateSkillMeta(): void {
 }
 
 // 执行生成
-if (require.main === module) {
-  generateSkillMeta();
-}
+generateSkillMeta();
 
 export { extractSkillMetadata, generateSkillMeta, scanSkills };
