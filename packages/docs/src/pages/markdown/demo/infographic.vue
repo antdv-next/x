@@ -82,8 +82,8 @@ const VueInfographic = defineComponent({
         return;
       }
 
-      const mod = await import("@antv/infographic");
-      const ctor = mod.Infographic as new (options: {
+      const { Infographic } = await import("@antv/infographic");
+      const ctor = Infographic as new (options: {
         container: HTMLElement;
       }) => InfographicInstance;
 

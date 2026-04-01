@@ -4,8 +4,8 @@ import type { Component, CSSProperties } from "vue";
 import { CheckOutlined, CopyOutlined } from "@antdv-next/icons";
 import { useClipboard } from "@vueuse/core";
 import { createStyles } from "antdv-style";
-import demos from "virtual:demos";
-import { computed, defineAsyncComponent, shallowRef } from "vue";
+import { loadDemo } from "virtual:demos";
+import { computed, defineAsyncComponent, shallowRef, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { getDemoId } from "@/utils/get-demo-id";
@@ -164,7 +164,15 @@ const route = useRoute();
 const router = useRouter();
 const showCode = shallowRef(false);
 const codeType = shallowRef<"ts" | "js">("ts");
-const demo = computed(() => demos[props.src]);
+const demo = shallowRef<any>(null);
+
+watch(
+  () => props.src,
+  async src => {
+    demo.value = await loadDemo(src);
+  },
+  { immediate: true },
+);
 
 const preferredLocale = computed(() => {
   return route.meta?.locale === "en-US" ? "en-US" : "zh-CN";

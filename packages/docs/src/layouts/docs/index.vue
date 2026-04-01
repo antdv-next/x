@@ -3,7 +3,7 @@ import type { MenuEmits, MenuItemType } from "antdv-next";
 
 import { EditOutlined } from "@antdv-next/icons";
 import { createStyles } from "antdv-style";
-import { computed } from "vue";
+import { computed, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { componentOverviewItems } from "@/components/component-overview/data";
@@ -150,11 +150,17 @@ interface ParsedPageMeta {
   hidden?: boolean;
 }
 
-const docsRawPages = import.meta.glob("../../pages/**/*.md", {
+const docsRawPageLoaders = import.meta.glob("../../pages/**/*.md", {
   query: "?raw",
   import: "default",
-  eager: true,
-}) as Record<string, string>;
+}) as Record<string, () => Promise<string>>;
+
+const docsRawPageLoaderBySource = new Map(
+  Object.entries(docsRawPageLoaders).map(([source, loader]) => [
+    normalizeSourcePath(source),
+    loader,
+  ]),
+);
 
 function normalizeSourcePath(path: string) {
   return path.replace(/^(\.\.\/)+/, "");
@@ -203,12 +209,8 @@ function parseFrontmatterMeta(markdown: string): ParsedPageMeta {
   };
 }
 
-const pageMetaBySource = new Map<string, ParsedPageMeta>(
-  Object.entries(docsRawPages).map(([source, markdown]) => [
-    normalizeSourcePath(source),
-    parseFrontmatterMeta(markdown),
-  ]),
-);
+const pageMetaBySource = ref(new Map<string, ParsedPageMeta>());
+const pageMetaLoadingSources = new Set<string>();
 const componentOverviewMetaBySlug = new Map(
   componentOverviewItems.map(item => [item.slug, item]),
 );
@@ -310,21 +312,6 @@ function createGroupedSiderItems(
   ] satisfies MenuItemType[];
 }
 
-interface ParsedPageMeta {
-  title?: string;
-  subtitle?: string;
-  order?: number;
-  groupTitle?: string;
-  groupOrder?: number;
-  hidden?: boolean;
-}
-
-const markdownRawPages = import.meta.glob("../../pages/markdown/**/*.md", {
-  query: "?raw",
-  import: "default",
-  eager: true,
-}) as Record<string, string>;
-
 function toOptionalNumber(value?: string) {
   if (!value) return undefined;
   const parsed = Number(value.trim().replace(/^['"]|['"]$/g, ""));
@@ -336,13 +323,6 @@ function toOptionalText(value?: string) {
   return value.trim().replace(/^['"]|['"]$/g, "");
 }
 
-const markdownMetaBySource = new Map<string, ParsedPageMeta>(
-  Object.entries(markdownRawPages).map(([source, markdown]) => [
-    normalizeSourcePath(source),
-    parseFrontmatterMeta(markdown),
-  ]),
-);
-
 const normalizedCurrentPath = computed(() => normalizePath(route.path));
 const currentPathWithoutLocale = computed(() =>
   stripLocaleSuffix(normalizedCurrentPath.value),
@@ -353,6 +333,53 @@ const currentSectionKey = computed(() => {
   if (!segments.length) return "";
   return `/${segments[0]}`;
 });
+
+async function ensurePageMetaForCurrentSection(
+  section: string,
+  locale: LocaleKey,
+) {
+  const routesInSection = docsRoutes.filter(item => {
+    if (item.meta?.locale !== locale) return false;
+    const normalizedPath = stripLocaleSuffix(normalizePath(item.path));
+    return normalizedPath === section || normalizedPath.startsWith(`${section}/`);
+  });
+
+  const loadingTasks: Promise<void>[] = [];
+
+  for (const item of routesInSection) {
+    const source = normalizeSourcePath(String(item.meta?.source || ""));
+    if (!source || pageMetaBySource.value.has(source)) continue;
+    if (pageMetaLoadingSources.has(source)) continue;
+
+    const loader = docsRawPageLoaderBySource.get(source);
+    if (!loader) continue;
+
+    pageMetaLoadingSources.add(source);
+    loadingTasks.push(
+      loader()
+        .then(markdown => {
+          const next = new Map(pageMetaBySource.value);
+          next.set(source, parseFrontmatterMeta(markdown));
+          pageMetaBySource.value = next;
+        })
+        .finally(() => {
+          pageMetaLoadingSources.delete(source);
+        }),
+    );
+  }
+
+  await Promise.all(loadingTasks);
+}
+
+watch(
+  [currentSectionKey, () => appStore.locale],
+  ([section, locale]) => {
+    if (!section) return;
+    const localeKey = locale === LOCALE_EN_US ? LOCALE_EN_US : LOCALE_ZH_CN;
+    void ensurePageMetaForCurrentSection(section, localeKey);
+  },
+  { immediate: true },
+);
 
 const siderItems = computed<MenuItemType[]>(() => {
   const section = currentSectionKey.value;
@@ -382,7 +409,7 @@ const siderItems = computed<MenuItemType[]>(() => {
     const lastSegment = segments.at(-1) || "";
     const isSectionIndex = withoutLocale === section;
     const source = normalizeSourcePath(String(item.meta?.source || ""));
-    const pageMeta = pageMetaBySource.get(source);
+    const pageMeta = pageMetaBySource.value.get(source);
     const fallbackMeta = getFallbackPageMeta(section, lastSegment, localeKey);
 
     return {

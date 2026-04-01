@@ -138,17 +138,28 @@ export function demoPlugin(): PluginOption {
         return `
 import { shallowReactive } from 'vue'
 
-const initialDemos = import.meta.glob(${JSON.stringify(DEMO_GLOB)}, {
+const demoLoaders = import.meta.glob(${JSON.stringify(DEMO_GLOB)}, {
   query: { demo: 'true' },
-  eager: true,
-  import: 'default',
 })
 
-const demos = shallowReactive({ ...initialDemos })
+const demos = shallowReactive({})
 
 async function registerDemo(id, timestamp = Date.now()) {
   const mod = await import(/* @vite-ignore */ \`\${id}?demo=true&t=\${timestamp}\`)
   demos[id] = mod.default ?? mod
+}
+
+export async function loadDemo(id) {
+  if (demos[id])
+    return demos[id]
+
+  const loader = demoLoaders[id]
+  if (!loader)
+    return null
+
+  const mod = await loader()
+  demos[id] = mod.default ?? mod
+  return demos[id]
 }
 
 function removeDemo(id) {
