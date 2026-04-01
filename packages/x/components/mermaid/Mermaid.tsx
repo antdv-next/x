@@ -1,3 +1,4 @@
+import type { MermaidConfig } from "mermaid";
 import type {
   CSSProperties,
   PropType,
@@ -13,7 +14,6 @@ import {
 } from "@antdv-next/icons";
 import { Button, Segmented, Tooltip } from "antdv-next";
 import { useConfig } from "antdv-next/dist/config-provider/context";
-import mermaid, { type MermaidConfig } from "mermaid";
 import {
   computed,
   defineComponent,
@@ -32,6 +32,7 @@ import Actions from "../actions";
 import CodeHighlighter from "../code-highlighter";
 import enUS from "../locale/en_US";
 import useLocale from "../locale/useLocale";
+import { initializeMermaid, parseMermaid, renderMermaid } from "./loader";
 import useMermaidStyle from "./style";
 
 export type MermaidSemanticType = "root" | "header" | "graph" | "code";
@@ -266,7 +267,7 @@ const XMermaid = defineComponent({
       if (!graphEl) return;
 
       try {
-        const parseResult = await mermaid.parse(props.content, {
+        const parseResult = await parseMermaid(props.content, {
           suppressErrors: true,
         } as any);
 
@@ -274,7 +275,7 @@ const XMermaid = defineComponent({
           throw new Error("Invalid Mermaid syntax");
         }
 
-        const { svg } = await mermaid.render(
+        const { svg } = await renderMermaid(
           `${renderBaseId}-${idSeed++}-${props.content.length || 0}`,
           props.content,
         );
@@ -460,7 +461,7 @@ const XMermaid = defineComponent({
     watch(
       () => props.config,
       nextConfig => {
-        mermaid.initialize({
+        initializeMermaid({
           startOnLoad: false,
           securityLevel: "strict",
           theme: "default",

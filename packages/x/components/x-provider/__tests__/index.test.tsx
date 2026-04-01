@@ -1,4 +1,5 @@
 import { mount } from "@vue/test-utils";
+import { ConfigProvider } from "antdv-next";
 import { describe, expect, it, vi } from "vite-plus/test";
 
 import { Bubble, Conversations, FileCard, Suggestion } from "../../index";
@@ -106,6 +107,11 @@ describe("XProvider", () => {
       },
     });
 
-    expect(wrapper.find(".tom-icon").exists()).toBe(true);
+    const configProvider = wrapper.getComponent(ConfigProvider);
+
+    expect(configProvider.props("iconPrefixCls")).toBe("tom-icon");
+    expect(configProvider.props("theme")).toEqual({
+      token: { motion: false },
+    });
   });
 });

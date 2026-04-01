@@ -10,8 +10,10 @@ const mermaidMock = vi.hoisted(() => ({
   render: vi.fn(),
 }));
 
-vi.mock("mermaid", () => ({
-  default: mermaidMock,
+vi.mock("../loader", () => ({
+  initializeMermaid: (config: any) => mermaidMock.initialize(config),
+  parseMermaid: (...args: any[]) => mermaidMock.parse(...args),
+  renderMermaid: (...args: any[]) => mermaidMock.render(...args),
 }));
 
 const content = "graph TD; A-->B;";

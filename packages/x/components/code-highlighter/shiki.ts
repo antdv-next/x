@@ -1,7 +1,7 @@
 import { createHighlighterCore } from "shiki/core";
-import { createJavaScriptRegexEngine } from "shiki/engine/javascript";
 import darkTheme from "shiki/dist/themes/vitesse-dark.mjs";
 import lightTheme from "shiki/dist/themes/vitesse-light.mjs";
+import { createJavaScriptRegexEngine } from "shiki/engine/javascript";
 
 type Highlighter = Awaited<ReturnType<typeof createHighlighterCore>>;
 

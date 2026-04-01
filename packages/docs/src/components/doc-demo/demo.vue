@@ -11,6 +11,7 @@ import { useRoute, useRouter } from "vue-router";
 import { getDemoId } from "@/utils/get-demo-id";
 
 import ExpandIcon from "./demo-expand-icon.vue";
+import DemoSkeleton from "./demo-skeleton.vue";
 
 defineOptions({
   name: "Demo",
@@ -51,6 +52,14 @@ const useStyles = createStyles(({ token }) => ({
       borderBottom: `1px solid ${token.colorSplit}`,
       borderRadius: "8px 8px 0 0",
       background: token.colorBgContainer,
+    },
+    "& .ant-doc-demo-box-skeleton": {
+      minHeight: 160,
+      padding: "24px 0 0",
+    },
+    "& .ant-doc-demo-box-skeleton-compact": {
+      minHeight: 120,
+      paddingTop: 0,
     },
     "&.ant-doc-demo-box-simplify": {
       borderRadius: 0,
@@ -165,11 +174,25 @@ const router = useRouter();
 const showCode = shallowRef(false);
 const codeType = shallowRef<"ts" | "js">("ts");
 const demo = shallowRef<any>(null);
+const demoLoading = shallowRef(true);
+let demoLoadVersion = 0;
 
 watch(
   () => props.src,
   async src => {
-    demo.value = await loadDemo(src);
+    const currentLoadVersion = ++demoLoadVersion;
+    demoLoading.value = true;
+    demo.value = null;
+
+    try {
+      const loadedDemo = await loadDemo(src);
+      if (currentLoadVersion !== demoLoadVersion) return;
+      demo.value = loadedDemo;
+    } finally {
+      if (currentLoadVersion === demoLoadVersion) {
+        demoLoading.value = false;
+      }
+    }
   },
   { immediate: true },
 );
@@ -262,15 +285,22 @@ function navigateToAnchor(event: MouseEvent) {
   >
     <template v-if="simplify">
       <section class="vp-raw ant-doc-demo-box-demo" :style="demoStyle">
-        <component :is="component" v-if="component" />
+        <DemoSkeleton v-if="demoLoading" simplify />
+        <Suspense v-else-if="component">
+          <component :is="component" />
+          <template #fallback>
+            <DemoSkeleton simplify />
+          </template>
+        </Suspense>
       </section>
     </template>
     <template v-else>
       <section class="vp-raw ant-doc-demo-box-demo" :style="demoStyle">
-        <Suspense>
-          <component :is="component" v-if="component" />
+        <DemoSkeleton v-if="demoLoading" :compact="compact" />
+        <Suspense v-else-if="component">
+          <component :is="component" />
           <template #fallback>
-            <a-skeleton active :paragraph="{ rows: 5 }" />
+            <DemoSkeleton :compact="compact" />
           </template>
         </Suspense>
       </section>
