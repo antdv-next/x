@@ -456,6 +456,7 @@ class SkillInstaller {
   async run(): Promise<void> {
     // 首先处理非交互式命令
     if (this.handleNonInteractiveCommands()) {
+      this.rl.close();
       return;
     }
 
