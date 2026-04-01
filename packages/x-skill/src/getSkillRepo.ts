@@ -160,12 +160,7 @@ class SkillLoader {
     return new Promise((resolve, reject) => {
       const request = https
         .get(url, res => {
-          // 检查状态码
-          if (res.statusCode! < 200 || res.statusCode! >= 300) {
-            reject(new Error(`HTTP ${res.statusCode}: ${res.statusMessage}`));
-            return;
-          }
-
+          // Follow redirect
           if (res.statusCode === 302 || res.statusCode === 301) {
             // Follow redirect
             if (!res.headers.location) {
@@ -195,6 +190,12 @@ class SkillLoader {
               reject(new Error("Redirect request timeout after 30 seconds"));
             });
 
+            return;
+          }
+
+          // 检查状态码
+          if (res.statusCode! < 200 || res.statusCode! >= 300) {
+            reject(new Error(`HTTP ${res.statusCode}: ${res.statusMessage}`));
             return;
           }
 
