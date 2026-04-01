@@ -5,8 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vp dev .",
-    "build": "vp build .",
-    "preview": "vp preview ."
+    "build": "node ./scripts/llm/generate-llms-semantic.mjs && node ./scripts/llm/generate-llms.mjs && vp build .",
+    "preview": "vp preview .",
+    "build:llm": "node ./scripts/llm/generate-llms-semantic.mjs && node ./scripts/llm/generate-llms.mjs",
+    "build:llm:text": "node ./scripts/llm/generate-llms.mjs",
+    "build:llm:semantic": "node ./scripts/llm/generate-llms-semantic.mjs"
   },
   "dependencies": {
     "@antdv-next/icons": "catalog:prod",
