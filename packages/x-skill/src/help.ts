@@ -1,8 +1,12 @@
 import figlet from "figlet";
 import * as fs from "fs";
 import * as path from "path";
+import { fileURLToPath } from "url";
 
 import { getMessage, type Language } from "./locale/index";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 interface ColorMap {
   [key: string]: string;

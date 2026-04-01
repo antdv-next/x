@@ -1,7 +1,11 @@
 import fs from "fs";
 import https from "https";
 import os from "os";
-import path from "path";
+import path, { dirname } from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 interface SkillLoaderOptions {
   githubOwner?: string;

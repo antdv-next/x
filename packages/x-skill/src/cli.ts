@@ -3,9 +3,13 @@
 import fs from "fs";
 import ora from "ora";
 import os from "os";
-import path from "path";
+import path, { dirname } from "path";
 import ProgressBar from "progress";
 import readline from "readline";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 import SkillLoader from "./getSkillRepo";
 import HelpManager from "./help";
