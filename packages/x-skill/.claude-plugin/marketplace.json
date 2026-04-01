@@ -1,0 +1,47 @@
+{
+  "name": "x-agent-skills",
+  "metadata": {
+    "description": "Antdv Next X intelligent agent skills collection",
+    "descriptionZh": "Antdv Next X 智能技能库，提供完整的 AI 对话应用开发技能",
+    "version": "0.0.1",
+    "author": "Antdv Next X Team",
+    "homepage": "https://github.com/antdv-next/x",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/antdv-next/x.git"
+    },
+    "keywords": [
+      "antdv-next-x",
+      "x-chat",
+      "x-request",
+      "x-markdown",
+      "markdown",
+      "chat-provider",
+      "ai",
+      "vue",
+      "typescript"
+    ]
+  },
+  "plugins": [
+    {
+      "name": "x-sdk-skills",
+      "description": "Antdv Next X SDK core skill package, including complete features such as useXChat, XRequest, and custom Provider",
+      "descriptionZh": "Antdv Next X SDK 核心技能包，包含 useXChat、XRequest 和自定义 Provider 等完整功能",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./skills/use-x-chat",
+        "./skills/x-chat-provider",
+        "./skills/x-request"
+      ]
+    },
+    {
+      "name": "x-markdown",
+      "description": "Antdv Next X Markdown rendering skill package, providing rich text rendering and chat enhancement features",
+      "descriptionZh": "Antdv Next X Markdown 渲染技能包，提供富文本渲染和对话增强功能",
+      "source": "./",
+      "strict": false,
+      "skills": ["./skills/x-markdown"]
+    }
+  ]
+}
