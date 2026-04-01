@@ -132,10 +132,10 @@ try {
   console.error(`❌ Failed to update marketplace.json:`, error);
 }
 
-// Format marketplace.json with biome
+// Format marketplace.json with vp fmt
 console.log(`\n🎨 Formatting marketplace.json...`);
 try {
-  execSync("npx biome format --write .claude-plugin/marketplace.json", {
+  execSync("vp fmt .claude-plugin/marketplace.json", {
     stdio: "inherit",
     cwd: path.join(__dirname, ".."),
   });
