@@ -619,7 +619,7 @@ class SkillInstaller {
         (error as Error).message.includes("Readline interface is closed")
       ) {
         console.error(
-          `${emojis.cross} ${this.helpManager.colorize(getMessage("programInterrupted"), "red")}`,
+          `${emojis.cross} ${this.helpManager.colorize(getMessage("programInterrupted", this.language), "red")}`,
         );
       } else {
         this.helpManager.printError(error as Error);

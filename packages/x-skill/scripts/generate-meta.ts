@@ -184,8 +184,8 @@ function getPluginInfo(skillName: string): {
   }
   return {
     category: "x-sdk-skills",
-    desc: "Ant Design X SDK core skill package",
-    descZh: "Ant Design X SDK 核心技能包",
+    desc: "Antdv Next X SDK core skill package",
+    descZh: "Antdv Next X SDK 核心技能包",
   };
 }
 
