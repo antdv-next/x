@@ -7,4 +7,4 @@ description: Natural language is dominant.
 order: 0
 ---
 
-<demo src="./demo/ultramodern.vue" compact>Ultramodern</demo>
+<demo src="./demo/ultramodern.vue">Ultramodern</demo>

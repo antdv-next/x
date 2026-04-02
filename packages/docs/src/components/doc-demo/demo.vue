@@ -20,12 +20,10 @@ defineOptions({
 const props = withDefaults(
   defineProps<{
     src: string;
-    compact?: boolean;
     background?: string;
     simplify?: boolean;
   }>(),
   {
-    compact: false,
     background: "",
     simplify: false,
   },
@@ -48,18 +46,13 @@ const useStyles = createStyles(({ token }) => ({
       boxShadow: `0 0 0 3px color-mix(in srgb, ${token.colorPrimary} 12%, transparent)`,
     },
     "& .ant-doc-demo-box-demo": {
-      padding: "42px 24px 50px",
+      padding: "24px",
       borderBottom: `1px solid ${token.colorSplit}`,
       borderRadius: "8px 8px 0 0",
       background: token.colorBgContainer,
     },
     "& .ant-doc-demo-box-skeleton": {
       minHeight: 160,
-      padding: "24px 0 0",
-    },
-    "& .ant-doc-demo-box-skeleton-compact": {
-      minHeight: 120,
-      paddingTop: 0,
     },
     "&.ant-doc-demo-box-simplify": {
       borderRadius: 0,
@@ -207,7 +200,7 @@ const description = computed(() => {
     locales[preferredLocale.value]?.html ||
     locales["zh-CN"]?.html ||
     locales["en-US"]?.html ||
-    Object.values(locales)[0]?.html ||
+    Reflect.get(Object.values(locales)[0] || {}, "html") ||
     ""
   );
 });
@@ -251,10 +244,6 @@ const styleState = useStyles();
 const isActive = computed(() => route.hash === `#${id.value}`);
 const demoStyle = computed<CSSProperties>(() => {
   const inlineStyle: CSSProperties = {};
-  if (props.compact) {
-    inlineStyle.padding = "0";
-    inlineStyle.overflow = "hidden";
-  }
   if (props.background === "grey")
     inlineStyle.backgroundColor = styleState.theme.colorBgLayout;
   return inlineStyle;
@@ -296,11 +285,11 @@ function navigateToAnchor(event: MouseEvent) {
     </template>
     <template v-else>
       <section class="vp-raw ant-doc-demo-box-demo" :style="demoStyle">
-        <DemoSkeleton v-if="demoLoading" :compact="compact" />
+        <DemoSkeleton v-if="demoLoading" />
         <Suspense v-else-if="component">
           <component :is="component" />
           <template #fallback>
-            <DemoSkeleton :compact="compact" />
+            <DemoSkeleton />
           </template>
         </Suspense>
       </section>

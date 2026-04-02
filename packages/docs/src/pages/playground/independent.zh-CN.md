@@ -6,4 +6,4 @@ title: 独立式
 order: 1
 ---
 
-<demo src="./demo/independent.vue" compact>独立式实现</demo>
+<demo src="./demo/independent.vue">独立式实现</demo>
