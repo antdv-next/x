@@ -177,9 +177,10 @@ export const XPrompts = defineComponent({
     });
 
     const triggerItemClick = (item: PromptDataItem, nested: boolean) => {
-      if (nested || item.disabled) return;
+      if (item.disabled || (!nested && hasChildren(item))) return;
 
       const info: PromptsClickInfo = { data: item };
+      props.onItemClick?.(info);
       emit("itemClick", info);
     };
 
