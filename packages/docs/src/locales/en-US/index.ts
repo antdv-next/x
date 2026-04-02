@@ -2,6 +2,9 @@ import antd from "antdv-next/locale/en_US";
 
 export default {
   antd,
+  common: {
+    copied: "Copied",
+  },
   ui: {
     themeBtn: {
       system: "System",
