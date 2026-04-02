@@ -323,7 +323,6 @@ export default function useXChat<
   setupProvider(provider);
 
   watch(providerRef, setupProvider);
-  const getRequestMessages = () => getFilteredMessages(getMessages());
 
   const innerOnRequest = (
     requestParams: Partial<Input>,
@@ -337,6 +336,8 @@ export default function useXChat<
       return;
     }
     const activeProvider = provider;
+    const requestKey = conversationKey.value;
+    const requestStore = createStore(requestKey);
 
     const { updatingId, reload } = opts || {};
     let loadingMsgId: number | string | null | undefined = null;
@@ -351,7 +352,7 @@ export default function useXChat<
     ).map(message => createMessage(message, "local", opts?.extraInfo));
     if (reload) {
       loadingMsgId = updatingId;
-      setMessages((ori: MessageInfo<ChatMessage>[]) => {
+      requestStore.setMessages((ori: MessageInfo<ChatMessage>[]) => {
         const nextMessages = [...ori];
         if (requestPlaceholder) {
           let placeholderMsg: ChatMessage;
@@ -377,7 +378,7 @@ export default function useXChat<
         return nextMessages;
       });
     } else {
-      setMessages((ori: MessageInfo<ChatMessage>[]) => {
+      requestStore.setMessages((ori: MessageInfo<ChatMessage>[]) => {
         let nextMessages = [...ori, ...localMessages];
         if (requestPlaceholder) {
           let placeholderMsg: ChatMessage;
@@ -407,10 +408,12 @@ export default function useXChat<
       chunks: Output[],
       responseHeaders: Headers,
     ) => {
-      let msg = getMessages().find(info => info.id === updatingMsgId);
+      let msg = requestStore
+        .getMessages()
+        .find(info => info.id === updatingMsgId);
       if (!msg) {
         if (reload && updatingId) {
-          msg = getMessages().find(info => info.id === updatingId);
+          msg = requestStore.getMessages().find(info => info.id === updatingId);
           if (msg) {
             msg.status = status;
             msg.message = activeProvider.transformMessage({
@@ -419,7 +422,7 @@ export default function useXChat<
               chunks,
               responseHeaders,
             });
-            setMessages((ori: MessageInfo<ChatMessage>[]) => {
+            requestStore.setMessages((ori: MessageInfo<ChatMessage>[]) => {
               return [...ori];
             });
             updatingMsgId = msg.id;
@@ -432,7 +435,7 @@ export default function useXChat<
             responseHeaders,
           });
           msg = createMessage(transformData, status);
-          setMessages((ori: MessageInfo<ChatMessage>[]) => {
+          requestStore.setMessages((ori: MessageInfo<ChatMessage>[]) => {
             const oriWithoutPending = ori.filter(
               (info: { id: string | number | null | undefined }) =>
                 info.id !== loadingMsgId,
@@ -442,7 +445,7 @@ export default function useXChat<
           updatingMsgId = msg.id;
         }
       } else {
-        setMessages((ori: MessageInfo<ChatMessage>[]) => {
+        requestStore.setMessages((ori: MessageInfo<ChatMessage>[]) => {
           return ori.map((info: MessageInfo<ChatMessage>) => {
             if (info.id === updatingMsgId) {
               const transformData = activeProvider.transformMessage({
@@ -462,7 +465,9 @@ export default function useXChat<
           });
         });
       }
-      msg = getMessages().find(info => info.id === updatingMsgId) || msg;
+      msg =
+        requestStore.getMessages().find(info => info.id === updatingMsgId) ||
+        msg;
       return msg;
     };
     activeProvider.injectRequest({
@@ -471,8 +476,8 @@ export default function useXChat<
         return msg;
       },
       onSuccess: (chunks: Output[], headers: Headers) => {
-        if (conversationKey.value) {
-          IsRequestingMap.delete(conversationKey.value);
+        if (requestKey) {
+          IsRequestingMap.delete(requestKey);
         }
         const msg = updateMessage(
           "success",
@@ -483,8 +488,8 @@ export default function useXChat<
         return msg;
       },
       onError: async (error: Error, errorInfo: any) => {
-        if (conversationKey.value) {
-          IsRequestingMap.delete(conversationKey.value);
+        if (requestKey) {
+          IsRequestingMap.delete(requestKey);
         }
         let fallbackMsg: ChatMessage;
         const sourceRequestFallback = config.requestFallback;
@@ -494,10 +499,14 @@ export default function useXChat<
             : resolveMaybeRef(sourceRequestFallback);
         if (requestFallback) {
           if (typeof requestFallback === "function") {
-            const currentMessages = getRequestMessages();
-            const msg = getMessages().find(
-              info => info.id === loadingMsgId || info.id === updatingMsgId,
+            const currentMessages = getFilteredMessages(
+              requestStore.getMessages(),
             );
+            const msg = requestStore
+              .getMessages()
+              .find(
+                info => info.id === loadingMsgId || info.id === updatingMsgId,
+              );
 
             fallbackMsg = await (
               requestFallback as RequestFallbackFn<
@@ -514,7 +523,7 @@ export default function useXChat<
           } else {
             fallbackMsg = requestFallback;
           }
-          setMessages((ori: MessageInfo<ChatMessage>[]) => [
+          requestStore.setMessages((ori: MessageInfo<ChatMessage>[]) => [
             ...ori.filter(
               (info: { id: string | number | null | undefined }) =>
                 info.id !== loadingMsgId && info.id !== updatingMsgId,
@@ -525,11 +534,13 @@ export default function useXChat<
             ),
           ]);
         } else {
-          const existingMessageInfo = getMessages().find(
-            info => info.id !== loadingMsgId && info.id !== updatingMsgId,
-          );
+          const existingMessageInfo = requestStore
+            .getMessages()
+            .find(
+              info => info.id !== loadingMsgId && info.id !== updatingMsgId,
+            );
           fallbackMsg = existingMessageInfo?.message as ChatMessage;
-          setMessages((ori: MessageInfo<ChatMessage>[]) => {
+          requestStore.setMessages((ori: MessageInfo<ChatMessage>[]) => {
             return ori.map((info: MessageInfo<ChatMessage>) => {
               if (info.id === loadingMsgId || info.id === updatingMsgId) {
                 return {
@@ -544,8 +555,8 @@ export default function useXChat<
         return fallbackMsg;
       },
     });
-    if (conversationKey.value) {
-      IsRequestingMap.set(conversationKey.value, true);
+    if (requestKey) {
+      IsRequestingMap.set(requestKey, true);
     }
     activeProvider.request.run(
       activeProvider.transformParams(

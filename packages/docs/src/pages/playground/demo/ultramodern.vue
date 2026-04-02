@@ -4,6 +4,7 @@ import type {
   BubbleListRef,
   ConversationItemType,
   ConversationsProps,
+  SenderProps,
   SenderRef,
   XProviderProps,
 } from "@antdv-next/x";
@@ -49,7 +50,7 @@ import { useLocale } from "@/composables/use-locale";
 const useStyles = createStyles(({ token, css }) => ({
   layout: css`
     width: 100%;
-    min-height: 760px;
+    height: 760px;
     display: flex;
     border-radius: ${token.borderRadiusLG}px;
     background: ${token.colorBgContainer};
@@ -164,6 +165,10 @@ const t = computed(() => {
     retry: isCN ? "重试" : "Retry",
     delete: isCN ? "删除" : "Delete",
     placeholder: isCN ? "问我任何问题..." : "Ask me anything...",
+    slotTextStart: isCN
+      ? "请帮我介绍 Antdv Next X 中"
+      : "Please help me introduce the usage of ",
+    slotTextEnd: isCN ? "的用法。" : "in Antdv Next X.",
     deepThink: isCN ? "深度思考" : "Deep Think",
     noData: isCN ? "暂无数据" : "No data",
     requestAborted: isCN ? "请求已中止" : "Request aborted",
@@ -230,6 +235,12 @@ function historyMessageFactory(conversationKey: string) {
   return historyMessages.value[conversationKey] || [];
 }
 
+const conversationActivity = ref<Record<string, boolean>>({
+  "default-0": false,
+  "default-1": true,
+  "default-2": true,
+});
+
 const providerCaches = new Map<string, DeepSeekChatProvider>();
 
 function providerFactory(conversationKey: string) {
@@ -262,13 +273,27 @@ const listRef = ref<BubbleListRef>();
 const deepThink = ref(true);
 const curConversation = ref<string>("default-0");
 const activeConversation = ref<string>();
+const senderSlotConfig = computed<NonNullable<SenderProps["slotConfig"]>>(
+  () => [
+    { type: "text", value: t.value.slotTextStart },
+    {
+      type: "select",
+      key: "destination",
+      props: {
+        defaultValue: "X SDK",
+        options: ["X SDK", "X Markdown", "Bubble"],
+      },
+    },
+    { type: "text", value: t.value.slotTextEnd },
+  ],
+);
 
 const { conversations, addConversation, setConversations } = useXConversations({
   defaultConversations: defaultConversations.value,
 });
 
 const { onRequest, messages, isRequesting, abort, onReload } = useXChat({
-  provider: computed(() => providerFactory(curConversation.value)).value,
+  provider: computed(() => providerFactory(curConversation.value)),
   conversationKey: curConversation,
   defaultMessages: (info?: { conversationKey?: ConversationData["key"] }) =>
     historyMessageFactory(String(info?.conversationKey || "")),
@@ -293,6 +318,14 @@ const { onRequest, messages, isRequesting, abort, onReload } = useXChat({
     };
   },
 });
+
+function switchConversation(nextConversationKey: string) {
+  if (nextConversationKey === curConversation.value) {
+    return;
+  }
+
+  curConversation.value = nextConversationKey;
+}
 
 watch(
   curConversation,
@@ -399,6 +432,8 @@ function handleSubmit(value: string) {
     return;
   }
 
+  conversationActivity.value[curConversation.value] = true;
+
   onRequest({
     messages: [{ role: "user", content: value }],
     thinking: {
@@ -414,18 +449,19 @@ function handleSubmit(value: string) {
 }
 
 function handleCreateConversation() {
-  if (messages.value.length === 0) {
+  if (!conversationActivity.value[curConversation.value]) {
     messageApi.error(t.value.newConversationWarn);
     return;
   }
 
   const key = dayjs().valueOf().toString();
+  conversationActivity.value[key] = false;
   addConversation({
     key,
     label: `${t.value.newConversation} ${conversations.value.length + 1}`,
     group: t.value.today,
   });
-  curConversation.value = key;
+  switchConversation(key);
 }
 </script>
 
@@ -452,7 +488,7 @@ function handleCreateConversation() {
           :class="styles.conversations"
           :active-key="curConversation"
           :on-active-change="
-            (value: string | number) => (curConversation = String(value))
+            (value: string | number) => switchConversation(String(value))
           "
           :menu="menuConfig"
           groupable
@@ -489,6 +525,7 @@ function handleCreateConversation() {
             ref="senderRef"
             :key="curConversation"
             :suffix="false"
+            :slot-config="senderSlotConfig"
             :loading="isRequesting"
             :placeholder="t.placeholder"
             :auto-size="{ minRows: 3, maxRows: 6 }"

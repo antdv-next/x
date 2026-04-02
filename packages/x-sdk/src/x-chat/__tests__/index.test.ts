@@ -8,6 +8,7 @@ import {
   type XRequestReactiveState,
 } from "../../x-request";
 import useXChat from "../index";
+import { chatMessagesStoreHelper } from "../store";
 
 type ChatInput = {
   input: string;
@@ -114,6 +115,70 @@ class MockProvider extends AbstractChatProvider<string, ChatInput, string> {
     }
 
     return info.originMessage || "";
+  }
+}
+
+class DeferredManualRequest extends AbstractXRequestClass<
+  ChatInput,
+  string,
+  string
+> {
+  private _state = reactive<XRequestReactiveState>({
+    isTimeout: false,
+    isStreamTimeout: false,
+    isRequesting: false,
+  });
+  private callbacks?: XRequestCallbacks<string, string>;
+  private params?: ChatInput;
+
+  constructor() {
+    super("https://mock.request", { manual: true });
+  }
+
+  get asyncHandler() {
+    return Promise.resolve();
+  }
+
+  get isTimeout() {
+    return this._state.isTimeout;
+  }
+
+  get isStreamTimeout() {
+    return this._state.isStreamTimeout;
+  }
+
+  get isRequesting() {
+    return this._state.isRequesting;
+  }
+
+  get manual() {
+    return true;
+  }
+
+  get state() {
+    return readonly(this._state);
+  }
+
+  run(params?: ChatInput): void {
+    this.params = params;
+    this.callbacks = this.options.callbacks as
+      | XRequestCallbacks<string, string>
+      | undefined;
+    this._state.isRequesting = true;
+  }
+
+  resolve() {
+    const headers = new Headers({
+      "content-type": "application/json",
+    });
+    const chunk = `echo:${this.params?.input || ""}`;
+    this.callbacks?.onUpdate?.(chunk, headers);
+    this.callbacks?.onSuccess?.([chunk], headers);
+    this._state.isRequesting = false;
+  }
+
+  abort(): void {
+    this._state.isRequesting = false;
   }
 }
 
@@ -279,5 +344,63 @@ describe("useXChat", () => {
 
     scope.stop();
     vi.useRealTimers();
+  });
+
+  it("keeps streaming updates isolated to the request conversation after switching", async () => {
+    const activeConversationKey = ref("a");
+    const requestA = new DeferredManualRequest();
+    const requestB = new DeferredManualRequest();
+    const providers = {
+      a: new MockProvider({ request: requestA }),
+      b: new MockProvider({ request: requestB }),
+    };
+
+    const scope = effectScope();
+    const chat = scope.run(() =>
+      useXChat<string, string, ChatInput, string>({
+        provider: computed(
+          () => providers[activeConversationKey.value as "a" | "b"],
+        ),
+        conversationKey: activeConversationKey,
+      }),
+    );
+
+    expect(chat).toBeTruthy();
+    if (!chat) return;
+
+    await Promise.resolve();
+    await nextTick();
+
+    chat.onRequest({ input: "from-a" });
+    expect(chat.messages.value.map(item => item.message)).toEqual(["from-a"]);
+
+    activeConversationKey.value = "b";
+    await nextTick();
+
+    expect(chat.messages.value).toEqual([]);
+
+    requestA.resolve();
+    await nextTick();
+
+    expect(chat.messages.value).toEqual([]);
+    expect(
+      chatMessagesStoreHelper
+        .getMessages("a")
+        ?.map(item => ({ message: item.message, status: item.status })),
+    ).toEqual([
+      { message: "from-a", status: "local" },
+      { message: "echo:from-a", status: "success" },
+    ]);
+    expect(chatMessagesStoreHelper.getMessages("b")).toEqual([]);
+
+    activeConversationKey.value = "a";
+    await nextTick();
+
+    expect(chat.messages.value.map(item => item.message)).toEqual([
+      "from-a",
+      "echo:from-a",
+    ]);
+
+    scope.stop();
   });
 });
