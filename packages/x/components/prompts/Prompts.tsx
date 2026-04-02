@@ -272,7 +272,7 @@ export const XPrompts = defineComponent({
                   nested ? mergedStyles.value.subItem : mergedStyles.value.item,
                   item.style,
                 ]}
-                onClick={() => triggerItemClick(item, itemHasChildren)}
+                onClick={() => triggerItemClick(item, nested)}
               >
                 {hasRenderableNode(iconNode) && (
                   <div class={`${props.prefixCls}-icon`}>{iconNode}</div>

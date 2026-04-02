@@ -1,6 +1,6 @@
 import { mount, VueWrapper } from "@vue/test-utils";
-import { afterEach, describe, expect, it } from "vite-plus/test";
-import { nextTick } from "vue";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
+import { defineComponent, nextTick } from "vue";
 
 import Prompts from "../index";
 
@@ -106,6 +106,31 @@ describe("Prompts", () => {
     ]);
   });
 
+  it("calls onItemClick prop when a clickable item is clicked", async () => {
+    const onItemClick = vi.fn();
+    const wrapper = track(
+      mount(
+        defineComponent({
+          components: { Prompts },
+          setup() {
+            return { items, onItemClick };
+          },
+          template: `<Prompts :items="items" :on-item-click="onItemClick" />`,
+        }),
+      ),
+    );
+
+    await wrapper.find(".antd-prompts-item").trigger("click");
+
+    expect(onItemClick).toHaveBeenCalledTimes(1);
+    expect(onItemClick).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        key: "1",
+        label: "Label 1",
+      }),
+    });
+  });
+
   it("does not emit itemClick for disabled items", async () => {
     const wrapper = track(
       mount(Prompts, {
@@ -166,6 +191,35 @@ describe("Prompts", () => {
         }),
       },
     ]);
+  });
+
+  it("calls onItemClick for nested children but not parent groups", async () => {
+    const onItemClick = vi.fn();
+    const wrapper = track(
+      mount(
+        defineComponent({
+          components: { Prompts },
+          setup() {
+            return { nestedItems, onItemClick };
+          },
+          template: `<Prompts :items="nestedItems" :on-item-click="onItemClick" />`,
+        }),
+      ),
+    );
+
+    const promptItems = wrapper.findAll(".antd-prompts-item");
+
+    await promptItems[0]!.trigger("click");
+    expect(onItemClick).not.toHaveBeenCalled();
+
+    await promptItems[1]!.trigger("click");
+    expect(onItemClick).toHaveBeenCalledTimes(1);
+    expect(onItemClick).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        key: "child-1",
+        label: "Child Label 1",
+      }),
+    });
   });
 
   it("supports custom semantic classes", () => {
