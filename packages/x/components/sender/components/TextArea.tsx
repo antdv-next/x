@@ -1,13 +1,11 @@
 import { TextArea as ATextarea } from "antdv-next";
 import { defineComponent, ref } from "vue";
 
+import type { SenderFocusOptions } from "../interface";
+
 import { useSenderContext } from "../context";
 
 export type InsertPosition = "start" | "end" | "cursor";
-
-export interface SenderFocusOptions extends FocusOptions {
-  cursor?: "start" | "end" | "all";
-}
 
 export interface TextAreaRef {
   nativeElement: HTMLTextAreaElement | null;

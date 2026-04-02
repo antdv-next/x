@@ -54,9 +54,9 @@ onBeforeUnmount(() => {
 </template>
 
 <docs lang="zh-CN">
-基本用法，展示多种状态：正常、加载中、禁用。
+基础用法，受控进行状态管理。
 </docs>
 
 <docs lang="en-US">
-Basic usage showing multiple states: normal, loading, and disabled.
+Basic usage. State management in controlled.
 </docs>

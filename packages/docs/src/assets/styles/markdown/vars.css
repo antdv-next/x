@@ -337,12 +337,11 @@
   --vp-code-line-warning-color: var(--vp-c-warning-soft);
   --vp-code-line-error-color: var(--vp-c-danger-soft);
 
-  --vp-code-copy-code-border-color: var(--vp-c-divider);
+  --vp-code-copy-code-border-color: transparent;
   --vp-code-copy-code-bg: var(--vp-c-bg-soft);
-  --vp-code-copy-code-hover-border-color: var(--vp-c-divider);
+  --vp-code-copy-code-hover-border-color: transparent;
   --vp-code-copy-code-hover-bg: var(--vp-c-bg);
   --vp-code-copy-code-active-text: var(--vp-c-text-2);
-  --vp-code-copy-copied-text-content: "Copied";
 
   --vp-code-tab-divider: var(--vp-code-block-divider-color);
   --vp-code-tab-text-color: var(--vp-c-text-2);
@@ -350,6 +349,11 @@
   --vp-code-tab-hover-text-color: var(--vp-c-text-1);
   --vp-code-tab-active-text-color: var(--vp-c-text-1);
   --vp-code-tab-active-bar-color: var(--vp-c-brand-1);
+}
+
+.dark {
+  --vp-code-copy-code-active-text: var(--vp-c-neutral);
+  --vp-code-lang-color: rgba(255, 255, 255, 0.45);
 }
 
 /**

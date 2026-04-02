@@ -45,7 +45,7 @@ const items = computed<ConversationItemType[]>(() => [
 ]);
 
 const { conversations } = useXConversations({
-  defaultConversations: items.value,
+  defaultConversations: items,
 });
 
 const containerStyle = computed(() => ({

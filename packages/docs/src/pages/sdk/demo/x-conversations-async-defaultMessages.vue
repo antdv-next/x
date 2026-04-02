@@ -96,7 +96,7 @@ const getHistoryMessageList = async (info: {
 };
 
 const { activeConversationKey, setActiveConversationKey } = useXConversations({
-  defaultConversations: defaultItems.value,
+  defaultConversations: defaultItems,
   defaultActiveConversationKey: "item2_1",
 });
 
@@ -107,7 +107,7 @@ const {
   isRequesting,
   abort,
 } = useXChat({
-  provider: computed(() => providerFactory(activeConversationKey.value)).value,
+  provider: computed(() => providerFactory(activeConversationKey.value)),
   conversationKey: activeConversationKey,
   defaultMessages: getHistoryMessageList,
   requestPlaceholder: () => ({

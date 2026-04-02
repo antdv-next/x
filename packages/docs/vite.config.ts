@@ -37,6 +37,9 @@ export default defineConfig({
       resolvers: [AntdvNextResolver()],
     }),
   ],
+  build: {
+    modulePreload: false,
+  },
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),

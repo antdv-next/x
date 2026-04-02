@@ -1,7 +1,8 @@
 import type { SimpleType } from "../x-chat";
-import type { XRequestOptions } from "../x-request";
+import type { XRequestConfigOptions } from "../x-request";
 import type { TransformMessage } from "./AbstractChatProvider";
 
+import resolveMaybeRef from "../_util/resolveMaybeRef";
 import AbstractChatProvider from "./AbstractChatProvider";
 
 export default class DefaultChatProvider<
@@ -11,14 +12,16 @@ export default class DefaultChatProvider<
 > extends AbstractChatProvider<ChatMessage, Input, Output> {
   transformParams(
     requestParams: ChatMessage & Partial<Input>,
-    options: XRequestOptions<Input, Output, ChatMessage>,
+    options: XRequestConfigOptions<Input, Output, ChatMessage>,
   ): Input {
     if (typeof requestParams !== "object") {
       throw new Error("requestParams must be an object");
     }
 
+    const params = resolveMaybeRef(options?.params);
+
     return {
-      ...options?.params,
+      ...params,
       ...(requestParams as object),
     } as unknown as Input;
   }

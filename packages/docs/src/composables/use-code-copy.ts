@@ -1,47 +1,51 @@
+import { useI18n } from "vue-i18n";
+
 export const isBrowser = typeof document !== "undefined";
 
 export function useCodeCopy() {
-  if (isBrowser) {
-    const timeoutIdMap: WeakMap<
-      HTMLElement,
-      ReturnType<typeof setTimeout>
-    > = new WeakMap();
-    window.addEventListener("click", e => {
-      const el = e.target as HTMLElement;
-      if (el.matches('div[class*="language-"] > button.copy')) {
-        const parent = el.parentElement;
-        const sibling = el.nextElementSibling?.nextElementSibling;
-        if (!parent || !sibling) return;
+  if (!isBrowser) return;
 
-        const isShell = /language-(?:shellscript|shell|bash|sh|zsh)/.test(
-          parent.className,
-        );
+  const { t } = useI18n();
+  const timeoutIdMap: WeakMap<
+    HTMLElement,
+    ReturnType<typeof setTimeout>
+  > = new WeakMap();
+  window.addEventListener("click", e => {
+    const el = e.target as HTMLElement;
+    if (el.matches('div[class*="language-"] > button.copy')) {
+      const parent = el.parentElement;
+      const sibling = el.nextElementSibling?.nextElementSibling;
+      if (!parent || !sibling) return;
 
-        const ignoredNodes = [".vp-copy-ignore", ".diff.remove"];
+      const isShell = /language-(?:shellscript|shell|bash|sh|zsh)/.test(
+        parent.className,
+      );
 
-        // Clone the node and remove the ignored nodes
-        const clone = sibling.cloneNode(true) as HTMLElement;
-        clone
-          .querySelectorAll(ignoredNodes.join(","))
-          .forEach(node => node.remove());
+      const ignoredNodes = [".vp-copy-ignore", ".diff.remove"];
 
-        let text = clone.textContent || "";
+      // Clone the node and remove the ignored nodes
+      const clone = sibling.cloneNode(true) as HTMLElement;
+      clone
+        .querySelectorAll(ignoredNodes.join(","))
+        .forEach(node => node.remove());
 
-        if (isShell) text = text.replace(/^ *(\$|>) /gm, "").trim();
+      let text = clone.textContent || "";
 
-        void copyToClipboard(text).then(() => {
-          el.classList.add("copied");
-          clearTimeout(timeoutIdMap.get(el));
-          const timeoutId = setTimeout(() => {
-            el.classList.remove("copied");
-            el.blur();
-            timeoutIdMap.delete(el);
-          }, 2000);
-          timeoutIdMap.set(el, timeoutId);
-        });
-      }
-    });
-  }
+      if (isShell) text = text.replace(/^ *(\$|>) /gm, "").trim();
+
+      void copyToClipboard(text).then(() => {
+        el.dataset.copiedText = t("common.copied");
+        el.classList.add("copied");
+        clearTimeout(timeoutIdMap.get(el));
+        const timeoutId = setTimeout(() => {
+          el.classList.remove("copied");
+          el.blur();
+          timeoutIdMap.delete(el);
+        }, 2000);
+        timeoutIdMap.set(el, timeoutId);
+      });
+    }
+  });
 }
 
 async function copyToClipboard(text: string) {

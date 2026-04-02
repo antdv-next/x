@@ -2,6 +2,9 @@ import antd from "antdv-next/locale/zh_CN";
 
 export default {
   antd,
+  common: {
+    copied: "已复制",
+  },
   ui: {
     themeBtn: {
       system: "跟随系统",

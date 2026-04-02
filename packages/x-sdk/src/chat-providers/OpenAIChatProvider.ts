@@ -1,8 +1,9 @@
-import type { XRequestOptions } from "../x-request";
+import type { XRequestConfigOptions } from "../x-request";
 import type { SSEFields } from "../x-stream";
 import type { TransformMessage } from "./AbstractChatProvider";
 import type { XModelMessage, XModelParams } from "./types/model";
 
+import resolveMaybeRef from "../_util/resolveMaybeRef";
 import AbstractChatProvider from "./AbstractChatProvider";
 
 /**
@@ -20,10 +21,12 @@ export default class OpenAIChatProvider<
 > extends AbstractChatProvider<ChatMessage, Input, Output> {
   transformParams(
     requestParams: Partial<Input>,
-    options: XRequestOptions<Input, Output, ChatMessage>,
+    options: XRequestConfigOptions<Input, Output, ChatMessage>,
   ): Input {
+    const params = resolveMaybeRef(options?.params);
+
     return {
-      ...options?.params,
+      ...params,
       ...requestParams,
       messages: this.getMessages(),
     } as unknown as Input;

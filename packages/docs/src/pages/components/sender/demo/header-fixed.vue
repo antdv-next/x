@@ -41,9 +41,9 @@ function handleSubmit() {
 </template>
 
 <docs lang="zh-CN">
-使用 Header 引用功能，通过 Switch 控制展开/折叠。
+使用 `header` 做引用效果。
 </docs>
 
 <docs lang="en-US">
-Header reference feature, controlled by a Switch toggle.
+Use `header` to do the reference effect.
 </docs>

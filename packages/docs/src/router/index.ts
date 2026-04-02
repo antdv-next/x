@@ -4,8 +4,6 @@ import { createRouter, createWebHistory } from "vue-router";
 import { DOC_HEADER_CONTENT_OFFSET } from "@/layouts/docs/components/header-shared";
 import { i18n } from "@/locales";
 
-import DocsLayout from "../layouts/docs/index.vue";
-import HomeView from "../pages/home/index.vue";
 import { docsRoutes, resolveDocRoutePath } from "./docs";
 
 const router = createRouter({
@@ -30,7 +28,7 @@ const router = createRouter({
     {
       path: "/",
       name: "home",
-      component: HomeView,
+      component: () => import("../pages/home/index.vue"),
       meta: {
         forceDark: true,
       },
@@ -38,7 +36,7 @@ const router = createRouter({
     {
       path: "/docs-layout",
       name: "DocsLayout",
-      component: DocsLayout,
+      component: () => import("../layouts/docs/index.vue"),
       children: docsRoutes,
     },
   ],

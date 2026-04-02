@@ -35,3 +35,11 @@ const senderRef = ref<InstanceType<typeof Sender>>();
     <Sender ref="senderRef" />
   </Flex>
 </template>
+
+<docs lang="zh-CN">
+使用 `ref` 选项控制聚焦、文本插入等。
+</docs>
+
+<docs lang="en-US">
+Use the `ref` option to control focus, text insertion, and more.
+</docs>

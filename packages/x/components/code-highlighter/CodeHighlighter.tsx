@@ -22,23 +22,8 @@ import type {
   CodeHighlighterSemanticType,
 } from "./interface";
 
+import { codeToHtml } from "./shiki";
 import useCodeHighlighterStyle from "./style";
-
-// Shiki highlighter cache
-let shikiHighlighter: typeof import("shiki").codeToHtml | null = null;
-let shikiPromise: Promise<void> | null = null;
-
-async function initShiki() {
-  if (shikiHighlighter) return;
-  if (shikiPromise) return shikiPromise;
-
-  shikiPromise = (async () => {
-    const shiki = await import("shiki");
-    shikiHighlighter = shiki.codeToHtml;
-  })();
-
-  return shikiPromise;
-}
 
 export const XCodeHighlighter = defineComponent({
   name: "XCodeHighlighter",
@@ -123,10 +108,7 @@ export const XCodeHighlighter = defineComponent({
     // Initialize Shiki and highlight code
     const highlightCode = async () => {
       try {
-        await initShiki();
-        if (!shikiHighlighter) return;
-
-        const html = await shikiHighlighter(props.content, {
+        const html = await codeToHtml(props.content, {
           lang: props.language,
           theme: props.theme === "dark" ? "vitesse-dark" : "vitesse-light",
         });

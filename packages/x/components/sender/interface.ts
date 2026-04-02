@@ -179,7 +179,8 @@ export interface SenderProps {
 }
 
 export interface SenderFocusOptions extends FocusOptions {
-  cursor?: "start" | "end" | "all";
+  cursor?: "start" | "end" | "all" | "slot";
+  key?: string;
 }
 
 export interface SenderRef {

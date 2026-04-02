@@ -2,16 +2,19 @@ import type { PropType, StyleValue } from "vue";
 import type { CSSProperties } from "vue";
 
 import { useConfig } from "antdv-next/dist/config-provider/context";
-import { computed, defineComponent, ref, useAttrs } from "vue";
+import { computed, defineComponent, ref, useAttrs, watch } from "vue";
 
+import type { SlotTextAreaRef } from "./components/SlotTextArea";
 import type { TextAreaRef } from "./components/TextArea";
-import type { SenderFocusOptions } from "./components/TextArea";
 import type {
   AllowSpeech,
   BaseNode,
   InsertPosition,
   NodeRender,
+  SenderFocusOptions,
   SenderRef,
+  SkillType,
+  SlotConfigType,
   SubmitType,
 } from "./interface";
 
@@ -23,6 +26,7 @@ import {
 import ClearButton from "./components/ClearButton";
 import LoadingButton from "./components/LoadingButton";
 import SendButton from "./components/SendButton";
+import SlotTextArea from "./components/SlotTextArea";
 import SpeechButton from "./components/SpeechButton";
 import TextArea from "./components/TextArea";
 import { provideSenderContext } from "./context";
@@ -56,6 +60,14 @@ export default defineComponent({
       default: "enter",
     },
     disabled: { type: Boolean, default: false },
+    slotConfig: {
+      type: Array as PropType<Readonly<SlotConfigType[]>>,
+      default: undefined,
+    },
+    skill: {
+      type: Object as PropType<SkillType>,
+      default: undefined,
+    },
     placeholder: { type: String, default: undefined },
     allowSpeech: {
       type: [Boolean, Object] as PropType<AllowSpeech>,
@@ -92,11 +104,24 @@ export default defineComponent({
       default: undefined,
     },
     onSubmit: {
-      type: Function as PropType<(message: string) => void>,
+      type: Function as PropType<
+        (
+          message: string,
+          slotConfig?: SlotConfigType[],
+          skill?: SkillType,
+        ) => void
+      >,
       default: undefined,
     },
     onChange: {
-      type: Function as PropType<(value: string, event?: Event) => void>,
+      type: Function as PropType<
+        (
+          value: string,
+          event?: Event,
+          slotConfig?: SlotConfigType[],
+          skill?: SkillType,
+        ) => void
+      >,
       default: undefined,
     },
     onCancel: {
@@ -144,20 +169,50 @@ export default defineComponent({
     const [hashId, cssVarCls] = useStyle(prefixCls);
 
     const containerRef = ref<HTMLDivElement>();
-    const inputRef = ref<TextAreaRef>();
+    const inputRef = ref<TextAreaRef | SlotTextAreaRef>();
+    const isSlotMode = computed(
+      () => Array.isArray(props.slotConfig) || !!props.skill?.value,
+    );
 
     // Value
     const innerValue = ref(props.defaultValue);
     const mergedValue = computed(() => props.value ?? innerValue.value);
 
-    const triggerValueChange = (nextValue: string, event?: Event) => {
+    const triggerValueChange = (
+      nextValue: string,
+      event?: Event,
+      slotConfig?: SlotConfigType[],
+      skill?: SkillType,
+    ) => {
       innerValue.value = nextValue;
-      props.onChange?.(nextValue, event);
+      props.onChange?.(nextValue, event, slotConfig, skill);
     };
+
+    const submitDisabled = ref(!mergedValue.value);
+
+    watch(
+      () => mergedValue.value,
+      next => {
+        if (!isSlotMode.value) {
+          submitDisabled.value = !next;
+        }
+      },
+      { immediate: true },
+    );
 
     // Speech
     const [speechPermission, triggerSpeech, speechRecording] = useSpeech(
       transcript => {
+        if (isSlotMode.value) {
+          (inputRef.value as SlotTextAreaRef | undefined)?.insert?.([
+            {
+              type: "text",
+              value: transcript,
+            },
+          ]);
+          return;
+        }
+
         triggerValueChange(`${mergedValue.value} ${transcript}`);
       },
       () => props.allowSpeech,
@@ -165,14 +220,26 @@ export default defineComponent({
 
     // Events
     const triggerSend = () => {
-      if (props.onSubmit && !props.loading && mergedValue.value) {
-        props.onSubmit(mergedValue.value);
+      if (!props.onSubmit || props.loading || submitDisabled.value) {
+        return;
       }
+
+      const value = inputRef.value?.getValue?.() ?? { value: "" };
+      const slotConfig =
+        "slotConfig" in value
+          ? (value as { slotConfig?: SlotConfigType[] }).slotConfig
+          : undefined;
+      const skill =
+        "skill" in value ? (value as { skill?: SkillType }).skill : undefined;
+      props.onSubmit(value.value, slotConfig, skill);
     };
 
     const triggerClear = () => {
+      if (inputRef.value?.clear) {
+        inputRef.value.clear();
+        return;
+      }
       triggerValueChange("");
-      inputRef.value?.clear();
     };
 
     // Expose
@@ -190,7 +257,32 @@ export default defineComponent({
         triggerClear();
       },
       insert(text, position?: InsertPosition) {
-        inputRef.value?.insert(text as string, position);
+        if (isSlotMode.value) {
+          const slotList = Array.isArray(text)
+            ? text
+            : ([{ type: "text", value: text }] as SlotConfigType[]);
+          (inputRef.value as SlotTextAreaRef | undefined)?.insert?.(
+            slotList,
+            position,
+          );
+          return;
+        }
+
+        const textValue = Array.isArray(text)
+          ? text
+              .map(config => {
+                if (config.type === "text") return config.value ?? "";
+                return (
+                  config.formatResult?.((config as any).props?.defaultValue) ??
+                  ""
+                );
+              })
+              .join("")
+          : text;
+        (inputRef.value as TextAreaRef | undefined)?.insert?.(
+          textValue,
+          position,
+        );
       },
       getValue() {
         return inputRef.value?.getValue() ?? { value: "" };
@@ -217,6 +309,11 @@ export default defineComponent({
         placeholder: props.placeholder,
         onFocus: props.onFocus,
         onBlur: props.onBlur,
+        slotConfig: props.slotConfig,
+        skill: props.skill,
+        setSubmitDisabled: (disabled: boolean) => {
+          submitDisabled.value = disabled;
+        },
       })),
     );
 
@@ -227,9 +324,9 @@ export default defineComponent({
       computed<ActionButtonContextProps>(() => ({
         prefixCls: actionBtnCls.value,
         onSend: triggerSend,
-        onSendDisabled: !mergedValue.value,
+        onSendDisabled: submitDisabled.value,
         onClear: triggerClear,
-        onClearDisabled: !mergedValue.value,
+        onClearDisabled: submitDisabled.value,
         onCancel: props.onCancel,
         onCancelDisabled: !props.loading,
         onSpeech: () => triggerSpeech(false),
@@ -311,12 +408,15 @@ export default defineComponent({
             class={[`${cls}-content`, props.classNames.content]}
             style={props.styles.content}
             onMousedown={(e: MouseEvent) => {
-              if (
-                e.target !== containerRef.value?.querySelector(`.${cls}-input`)
-              ) {
+              const inputNode = containerRef.value?.querySelector(
+                `.${cls}-input`,
+              );
+              if (!isSlotMode.value && e.target !== inputNode) {
                 e.preventDefault();
               }
-              inputRef.value?.focus();
+              if (e.target === inputNode || e.target === containerRef.value) {
+                inputRef.value?.focus();
+              }
             }}
           >
             {/* Prefix */}
@@ -337,7 +437,11 @@ export default defineComponent({
             )}
 
             {/* Input */}
-            <TextArea ref={inputRef} />
+            {isSlotMode.value ? (
+              <SlotTextArea ref={inputRef as any} />
+            ) : (
+              <TextArea ref={inputRef as any} />
+            )}
 
             {/* Suffix */}
             {suffixNode && (

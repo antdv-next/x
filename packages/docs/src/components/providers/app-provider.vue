@@ -29,6 +29,7 @@ watch(
   locale,
   () => {
     // 切换dayjs的中英文
+    document.documentElement.lang = locale.value;
     if (locale.value === "zh-CN") {
       dayjs.locale("zh");
     } else {

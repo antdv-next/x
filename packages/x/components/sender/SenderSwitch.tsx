@@ -128,7 +128,7 @@ export default defineComponent({
             class={[`${cls}-content`, props.classNames.content]}
             style={props.styles.content as any}
             {...{
-              classNames: {
+              classes: {
                 icon: props.classNames.icon,
                 content: props.classNames.title,
               },

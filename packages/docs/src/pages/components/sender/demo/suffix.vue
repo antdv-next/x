@@ -51,9 +51,9 @@ function handleSubmit() {
 </template>
 
 <docs lang="zh-CN">
-通过 `suffix` 自定义后缀操作区域，使用内置的 `SendButton`、`ClearButton` 等组件。
+通过 `suffix` 属性，可以自定义发送按钮的行为。
 </docs>
 
 <docs lang="en-US">
-Customize suffix area with built-in `SendButton`, `ClearButton` components.
+Customize the behavior of the send button through the `suffix` property.
 </docs>

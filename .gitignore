@@ -40,3 +40,7 @@ __screenshots__/
 
 **/types/auto-imports.d.ts
 **/types/components.d.ts
+packages/docs/public/**/*.md
+packages/docs/public/llms.txt
+packages/docs/public/llms-full.txt
+packages/docs/public/llms-full-cn.txt

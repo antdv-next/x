@@ -1,8 +1,8 @@
 import type { MessageStatus, SimpleType } from "../x-chat";
 import type {
   AbstractXRequestClass,
+  XRequestConfigOptions,
   XRequestCallbacks,
-  XRequestOptions,
 } from "../x-request";
 
 export interface ChatProviderConfig<
@@ -39,6 +39,7 @@ export default abstract class AbstractChatProvider<
   constructor(config: ChatProviderConfig<Input, Output, ChatMessage>) {
     const request =
       typeof config.request === "function" ? config.request() : config.request;
+
     if (!request.manual) {
       throw new Error("request must be manual");
     }
@@ -53,7 +54,7 @@ export default abstract class AbstractChatProvider<
    */
   abstract transformParams(
     requestParams: Partial<Input>,
-    options: XRequestOptions<Input, Output, ChatMessage>,
+    options: XRequestConfigOptions<Input, Output, ChatMessage>,
   ): Input;
 
   /**

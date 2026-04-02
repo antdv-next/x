@@ -65,7 +65,6 @@ const ActionButton = defineComponent({
       type: String as PropType<ButtonProps["variant"]>,
       default: undefined,
     },
-    class: { type: String, default: undefined },
   },
   setup(props, { attrs }) {
     const context = useActionButtonContext();
@@ -92,7 +91,7 @@ const ActionButton = defineComponent({
           disabled={mergedDisabled.value}
           class={[
             prefixCls,
-            props.class,
+            attrs.class,
             { [`${prefixCls}-disabled`]: mergedDisabled.value },
           ]}
           onClick={(e: MouseEvent) => {

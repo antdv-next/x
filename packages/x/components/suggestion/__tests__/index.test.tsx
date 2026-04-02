@@ -158,6 +158,40 @@ describe("Suggestion", () => {
     expect(activeItem?.textContent).toContain("About Vue");
   });
 
+  it("keeps vertical navigation within the second level after entering it", async () => {
+    const wrapper = track(
+      mount(Suggestion, {
+        attachTo: document.body,
+        props: {
+          items,
+        },
+        slots: createSlot(),
+      }),
+    );
+
+    await wrapper.find(".trigger-input").trigger("keydown", { key: "@" });
+    await wrapper
+      .find(".trigger-input")
+      .trigger("keydown", { key: "ArrowDown" });
+    await wrapper.find(".trigger-input").trigger("keydown", {
+      key: "ArrowRight",
+    });
+    await wrapper
+      .find(".trigger-input")
+      .trigger("keydown", { key: "ArrowDown" });
+    await flush();
+
+    const activeItem = document.querySelector<HTMLElement>(
+      ".ant-cascader-menu-item-active:not(.ant-cascader-menu-item-expand)",
+    );
+    const firstLevelActiveItem = document
+      .querySelectorAll<HTMLElement>(".ant-cascader-menu")[0]
+      ?.querySelector<HTMLElement>(".ant-cascader-menu-item-active");
+
+    expect(activeItem?.textContent).toContain("About Antdv Next");
+    expect(firstLevelActiveItem?.textContent).toContain("Check some knowledge");
+  });
+
   it("reverses horizontal navigation under RTL", async () => {
     const wrapper = track(
       mount(
