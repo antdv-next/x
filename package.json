@@ -17,6 +17,11 @@
     "build:x": "vp run --filter @antdv-next/x build",
     "pack:packages": "vp pm pack -r --filter \"./packages/*\" --filter \"!./packages/docs\"",
     "publish:packages": "vp pm publish -r --filter \"./packages/*\" --filter \"!./packages/docs\" --access public --no-git-checks",
+    "bump:pkg": "vp exec bumpp --all --no-commit --no-tag --no-push",
+    "bump:x": "vp exec bumpp packages/x/package.json --no-commit --no-tag --no-push",
+    "bump:sdk": "vp exec bumpp packages/x-sdk/package.json --no-commit --no-tag --no-push",
+    "bump:skill": "vp exec bumpp packages/x-skill/package.json --no-commit --no-tag --no-push",
+    "bump:libs": "vp exec bumpp packages/x/package.json packages/x-sdk/package.json packages/x-skill/package.json --no-commit --no-tag --no-push",
     "prepare": "vp config"
   },
   "devDependencies": {
@@ -34,6 +39,7 @@
     "@vue/tsconfig": "catalog:dev",
     "@vueuse/core": "catalog:prod",
     "antdv-next": "catalog:prod",
+    "bumpp": "catalog:dev",
     "dayjs": "catalog:prod",
     "jiti": "catalog:dev",
     "jsdom": "catalog:dev",

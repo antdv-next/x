@@ -17,6 +17,7 @@ catalogs:
     "@vue/tsconfig": ^0.9.0
     jiti: ^2.6.1
     jsdom: ^28.1.0
+    bumpp: ^10.4.1
     npm-run-all2: ^8.0.4
     postcss-selector-parser: ^7.1.0
     tinyglobby: ^0.2.15
