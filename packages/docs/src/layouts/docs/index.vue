@@ -341,7 +341,9 @@ async function ensurePageMetaForCurrentSection(
   const routesInSection = docsRoutes.filter(item => {
     if (item.meta?.locale !== locale) return false;
     const normalizedPath = stripLocaleSuffix(normalizePath(item.path));
-    return normalizedPath === section || normalizedPath.startsWith(`${section}/`);
+    return (
+      normalizedPath === section || normalizedPath.startsWith(`${section}/`)
+    );
   });
 
   const loadingTasks: Promise<void>[] = [];

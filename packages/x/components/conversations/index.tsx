@@ -31,7 +31,7 @@ function isTypingTarget(target: EventTarget | null) {
 }
 
 const XConversations = defineComponent({
-  name: "XConversations",
+  name: "AxConversations",
   inheritAttrs: false,
   props: {
     items: {

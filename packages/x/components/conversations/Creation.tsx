@@ -7,7 +7,7 @@ import type { CreationProps } from "./interface";
 import useCreation from "./hooks/useCreation";
 
 const Creation = defineComponent({
-  name: "XConversationsCreation",
+  name: "AxConversationsCreation",
   props: {
     label: {
       type: [String, Number, Object, Function] as PropType<

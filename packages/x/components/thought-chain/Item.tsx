@@ -25,7 +25,7 @@ function hasRenderableNode(node: VNodeChild | null | undefined) {
 }
 
 export const XThoughtChainItem = defineComponent({
-  name: "XThoughtChainItem",
+  name: "AxThoughtChainItem",
   props: {
     prefixCls: {
       type: String,

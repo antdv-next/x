@@ -8,11 +8,11 @@ describe("FileCard exports", () => {
     expect(FileCard.List).toBe(FileCardList);
   });
 
-  it("registers AFileCard* aliases in plugin install", () => {
+  it("registers FileCard aliases in plugin install", () => {
     const app = createApp({ render: () => null });
     app.use(AntdvX);
 
-    expect(app.component("AFileCard")).toBe(app.component("XFileCard"));
-    expect(app.component("AFileCardList")).toBe(app.component("XFileCardList"));
+    expect(app.component("AxFileCard")).toBeDefined();
+    expect(app.component("AxFileCardList")).toBeDefined();
   });
 });

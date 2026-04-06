@@ -11,7 +11,7 @@ import useXProviderContext, {
 } from "./hooks/use-x-provider-context";
 
 const XProvider = defineComponent({
-  name: "XProvider",
+  name: "AxProvider",
   inheritAttrs: false,
   props: {
     attachments: {

@@ -11,7 +11,7 @@ import { useSenderContext } from "./context";
 type SwitchSemanticType = "root" | "content" | "icon" | "title";
 
 export default defineComponent({
-  name: "XSenderSwitch",
+  name: "AxSenderSwitch",
   inheritAttrs: false,
   props: {
     prefixCls: { type: String, default: undefined },

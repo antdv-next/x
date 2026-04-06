@@ -20,7 +20,7 @@ function hasContent(value: VNodeChild | VNodeChild[] | null | undefined) {
 }
 
 export const XWelcome = defineComponent({
-  name: "XWelcome",
+  name: "AxWelcome",
   inheritAttrs: false,
   props: {
     prefixCls: {

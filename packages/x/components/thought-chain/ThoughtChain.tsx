@@ -20,7 +20,7 @@ import Node from "./Node";
 import useThoughtChainStyle from "./style";
 
 export const XThoughtChain = defineComponent({
-  name: "XThoughtChain",
+  name: "AxThoughtChain",
   inheritAttrs: false,
   props: {
     prefixCls: {

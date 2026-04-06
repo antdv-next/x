@@ -37,7 +37,7 @@ function hasRenderableNode(node: any): boolean {
 }
 
 export const XBubble = defineComponent({
-  name: "XBubble",
+  name: "AxBubble",
   inheritAttrs: false,
   props: {
     prefixCls: {

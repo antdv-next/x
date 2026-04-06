@@ -11,7 +11,7 @@ import type {
 import Bubble from "./Bubble";
 
 export const XBubbleSystem = defineComponent({
-  name: "XBubbleSystem",
+  name: "AxBubbleSystem",
   props: {
     prefixCls: {
       type: String,

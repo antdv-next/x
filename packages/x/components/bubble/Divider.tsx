@@ -12,7 +12,7 @@ import type {
 import Bubble from "./Bubble";
 
 export const XBubbleDivider = defineComponent({
-  name: "XBubbleDivider",
+  name: "AxBubbleDivider",
   props: {
     prefixCls: {
       type: String,

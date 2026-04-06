@@ -42,7 +42,7 @@ const bubbleSlotNames = [
 type BubbleSlotName = (typeof bubbleSlotNames)[number];
 
 export const XBubbleList = defineComponent({
-  name: "XBubbleList",
+  name: "AxBubbleList",
   inheritAttrs: false,
   props: {
     prefixCls: {

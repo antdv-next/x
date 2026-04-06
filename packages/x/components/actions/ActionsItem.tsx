@@ -35,7 +35,7 @@ export interface ActionsItemProps {
 }
 
 export const XActionsItem = defineComponent({
-  name: "XActionsItem",
+  name: "AxActionsItem",
   inheritAttrs: false,
   props: {
     status: {

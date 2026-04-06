@@ -48,7 +48,7 @@ export interface FileCardListSlotInfo extends FileCardSlotInfo {
 }
 
 export const XFileCardList = defineComponent({
-  name: "XFileCardList",
+  name: "AxFileCardList",
   props: {
     prefixCls: {
       type: String,

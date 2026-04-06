@@ -25,7 +25,7 @@ const hasRenderableNode = (node: unknown): boolean => {
 };
 
 const XSuggestion = defineComponent({
-  name: "XSuggestion",
+  name: "AxSuggestion",
   inheritAttrs: false,
   props: {
     prefixCls: {

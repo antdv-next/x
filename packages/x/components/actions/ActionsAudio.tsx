@@ -20,7 +20,7 @@ export interface ActionsAudioProps {
 }
 
 export const XActionsAudio = defineComponent({
-  name: "XActionsAudio",
+  name: "AxActionsAudio",
   props: {
     status: {
       type: String as PropType<ActionsItemProps["status"]>,

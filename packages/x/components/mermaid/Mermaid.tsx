@@ -129,7 +129,7 @@ function throttle<T extends (...args: never[]) => void>(fn: T, wait: number) {
 }
 
 const XMermaid = defineComponent({
-  name: "XMermaid",
+  name: "AxMermaid",
   inheritAttrs: false,
   props: {
     content: {

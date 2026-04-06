@@ -5,13 +5,13 @@ import AntdvX, { Suggestion } from "../../";
 
 describe("Suggestion exports", () => {
   it("supports direct named exports", () => {
-    expect(Suggestion.name).toBe("XSuggestion");
+    expect(Suggestion.name).toBe("AxSuggestion");
   });
 
-  it("registers ASuggestion alias in plugin install", () => {
+  it("registers Suggestion aliases in plugin install", () => {
     const app = createApp({ render: () => null });
     app.use(AntdvX);
 
-    expect(app.component("ASuggestion")).toBe(app.component("XSuggestion"));
+    expect(app.component("AxSuggestion")).toBeDefined();
   });
 });

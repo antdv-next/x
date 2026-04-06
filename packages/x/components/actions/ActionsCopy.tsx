@@ -37,7 +37,7 @@ const normalizeCopyIcons = (
 };
 
 export const XActionsCopy = defineComponent({
-  name: "XActionsCopy",
+  name: "AxActionsCopy",
   inheritAttrs: false,
   props: {
     text: {

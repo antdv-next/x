@@ -18,7 +18,7 @@ import ThinkIcon from "./icons/think";
 import useThinkStyle from "./style";
 
 export const XThink = defineComponent({
-  name: "XThink",
+  name: "AxThink",
   inheritAttrs: false,
   props: {
     prefixCls: {

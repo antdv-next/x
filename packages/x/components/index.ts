@@ -53,38 +53,12 @@ const components = [
   ThoughtChainItem,
 ];
 
-const componentAliases = new Map<string, string[]>([
-  ["XBubble", ["ABubble"]],
-  ["XBubbleList", ["ABubbleList"]],
-  ["XBubbleSystem", ["ABubbleSystem"]],
-  ["XBubbleDivider", ["ABubbleDivider"]],
-  ["XActions", ["AActions"]],
-  ["XActionsAudio", ["AActionsAudio"]],
-  ["XActionsCopy", ["AActionsCopy"]],
-  ["XActionsFeedback", ["AActionsFeedback"]],
-  ["XActionsItem", ["AActionsItem"]],
-  ["XFileCard", ["AFileCard"]],
-  ["XFileCardList", ["AFileCardList"]],
-  ["XMermaid", ["AMermaid"]],
-  ["XAttachments", ["AAttachments"]],
-  ["XSender", ["ASender"]],
-  ["XSenderHeader", ["ASenderHeader"]],
-  ["XSenderSwitch", ["ASenderSwitch"]],
-  ["XSuggestion", ["ASuggestion"]],
-  ["XThink", ["AThink"]],
-  ["XThoughtChain", ["AThoughtChain"]],
-  ["XThoughtChainItem", ["AThoughtChainItem"]],
-]);
-
 export default {
   install(app: App) {
     components.forEach(component => {
       if (!component.name) return;
 
       app.component(component.name, component);
-      componentAliases.get(component.name)?.forEach(alias => {
-        app.component(alias, component);
-      });
     });
   },
   version,

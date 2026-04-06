@@ -81,7 +81,7 @@ export interface AttachmentsRef {
 }
 
 const XAttachments = defineComponent({
-  name: "XAttachments",
+  name: "AxAttachments",
   inheritAttrs: false,
   props: {
     prefixCls: {

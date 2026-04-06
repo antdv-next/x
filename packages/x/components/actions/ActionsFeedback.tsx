@@ -31,7 +31,7 @@ export interface ActionsFeedbackProps {
 }
 
 export const XActionsFeedback = defineComponent({
-  name: "XActionsFeedback",
+  name: "AxActionsFeedback",
   inheritAttrs: false,
   props: {
     value: {

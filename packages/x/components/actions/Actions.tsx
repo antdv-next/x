@@ -36,7 +36,7 @@ function getMotionTransitionProps(motionName: string): TransitionProps {
 }
 
 export const XActions = defineComponent({
-  name: "XActions",
+  name: "AxActions",
   inheritAttrs: false,
   props: {
     items: {

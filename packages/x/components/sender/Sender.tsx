@@ -41,7 +41,7 @@ const sharedRenderComponents = {
 };
 
 export default defineComponent({
-  name: "XSender",
+  name: "AxSender",
   inheritAttrs: false,
   props: {
     prefixCls: { type: String, default: "antd-sender" },

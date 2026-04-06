@@ -28,7 +28,7 @@ const hasRenderableNode = (node: unknown): boolean => {
 };
 
 export const XSources = defineComponent({
-  name: "XSources",
+  name: "AxSources",
   inheritAttrs: false,
   props: {
     prefixCls: {

@@ -54,7 +54,7 @@ function hasRenderableNode(node: unknown): boolean {
 }
 
 export const XPrompts = defineComponent({
-  name: "XPrompts",
+  name: "AxPrompts",
   inheritAttrs: false,
   props: {
     items: {

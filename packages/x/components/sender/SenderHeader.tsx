@@ -16,7 +16,7 @@ import { useSenderContext } from "./context";
 export type HeaderSemanticType = "header" | "content";
 
 export default defineComponent({
-  name: "XSenderHeader",
+  name: "AxSenderHeader",
   props: {
     open: { type: Boolean, default: false },
     onOpenChange: {

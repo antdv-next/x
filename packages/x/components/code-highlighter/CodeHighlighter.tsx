@@ -26,7 +26,7 @@ import { codeToHtml } from "./shiki";
 import useCodeHighlighterStyle from "./style";
 
 export const XCodeHighlighter = defineComponent({
-  name: "XCodeHighlighter",
+  name: "AxCodeHighlighter",
   inheritAttrs: false,
   props: {
     prefixCls: {

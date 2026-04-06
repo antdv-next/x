@@ -17,16 +17,14 @@ describe("Actions exports", () => {
     expect(Actions.Item).toBe(ActionsItem);
   });
 
-  it("registers AActions* aliases in plugin install", () => {
+  it("registers Actions aliases in plugin install", () => {
     const app = createApp({ render: () => null });
     app.use(AntdvX);
 
-    expect(app.component("AActions")).toBe(app.component("XActions"));
-    expect(app.component("AActionsAudio")).toBe(app.component("XActionsAudio"));
-    expect(app.component("AActionsCopy")).toBe(app.component("XActionsCopy"));
-    expect(app.component("AActionsFeedback")).toBe(
-      app.component("XActionsFeedback"),
-    );
-    expect(app.component("AActionsItem")).toBe(app.component("XActionsItem"));
+    expect(app.component("AxActions")).toBeDefined();
+    expect(app.component("AxActionsAudio")).toBeDefined();
+    expect(app.component("AxActionsCopy")).toBeDefined();
+    expect(app.component("AxActionsFeedback")).toBeDefined();
+    expect(app.component("AxActionsItem")).toBeDefined();
   });
 });

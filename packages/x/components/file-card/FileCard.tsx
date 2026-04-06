@@ -193,7 +193,7 @@ const DEFAULT_ICON = {
 };
 
 export const XFileCard = defineComponent({
-  name: "XFileCard",
+  name: "AxFileCard",
   inheritAttrs: false,
   props: {
     prefixCls: {
