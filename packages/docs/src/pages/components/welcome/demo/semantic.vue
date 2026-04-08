@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { EllipsisOutlined, ShareAltOutlined } from "@antdv-next/icons";
-import { computed, h } from "vue";
+import { computed } from "vue";
 
 import { SemanticPreview } from "@/components/semantic";
 const locales = {
@@ -33,8 +33,16 @@ const semantics = computed(() => [
       >
         <template #extra>
           <a-space>
-            <a-button size="small" :icon="h(ShareAltOutlined)" />
-            <a-button size="small" :icon="h(EllipsisOutlined)" />
+            <a-button size="small">
+              <template #icon>
+                <ShareAltOutlined />
+              </template>
+            </a-button>
+            <a-button size="small">
+              <template #icon>
+                <EllipsisOutlined />
+              </template>
+            </a-button>
           </a-space>
         </template>
       </ax-welcome>

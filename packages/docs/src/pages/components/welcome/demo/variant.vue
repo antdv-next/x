@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { EllipsisOutlined, ShareAltOutlined } from "@antdv-next/icons";
-import { h } from "vue";
 </script>
 
 <template>
@@ -12,8 +11,16 @@ import { h } from "vue";
   >
     <template #extra>
       <a-flex :gap="8">
-        <a-button :icon="h(ShareAltOutlined)" />
-        <a-button :icon="h(EllipsisOutlined)" />
+        <a-button>
+          <template #icon>
+            <ShareAltOutlined />
+          </template>
+        </a-button>
+        <a-button>
+          <template #icon>
+            <EllipsisOutlined />
+          </template>
+        </a-button>
       </a-flex>
     </template>
   </ax-welcome>
