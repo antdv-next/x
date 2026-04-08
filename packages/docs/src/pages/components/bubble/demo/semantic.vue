@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { CopyOutlined, SyncOutlined, UserOutlined } from "@antdv-next/icons";
-import { Bubble } from "@antdv-next/x";
-import { Avatar, Button, Space, theme } from "antdv-next";
-import { computed, h } from "vue";
+import { computed } from "vue";
 
 import { SemanticPreview } from "@/components/semantic";
 import { useLocale } from "@/composables/use-locale";
@@ -28,7 +26,6 @@ const locales = {
   },
 } as const;
 
-const { token } = theme.useToken();
 const { locale } = useLocale();
 
 const semanticLocale = computed(() =>
@@ -44,42 +41,42 @@ const semantics = computed(() => [
   { name: "footer", desc: semanticLocale.value.footer },
   { name: "extra", desc: semanticLocale.value.extra },
 ]);
-
-const avatarNode = h(Avatar, { size: 32, icon: h(UserOutlined) });
-const extraNode = h(
-  Button,
-  { type: "text", size: "small" },
-  { icon: () => h(CopyOutlined) },
-);
-
-function footerNode() {
-  return h(
-    Space,
-    { size: token.value.paddingXXS },
-    {
-      default: () => [
-        h(
-          Button,
-          { type: "text", size: "small" },
-          { icon: () => h(SyncOutlined) },
-        ),
-      ],
-    },
-  );
-}
 </script>
 
 <template>
   <SemanticPreview component-name="Bubble" :semantics="semantics">
     <template #default="{ classes }">
-      <Bubble
-        content="Feel free to use Ant Design X!"
-        header="Ant Design X"
-        :avatar="avatarNode"
-        :extra="extraNode"
-        :footer="footerNode"
+      <ax-bubble
+        content="Feel free to use Antd Next X!"
+        header="Antd Next X"
         :classes="classes"
-      />
+      >
+        <template #avatar>
+          <a-avatar :size="32">
+            <template #icon>
+              <UserOutlined />
+            </template>
+          </a-avatar>
+        </template>
+
+        <template #extra>
+          <a-button type="text" size="small">
+            <template #icon>
+              <CopyOutlined />
+            </template>
+          </a-button>
+        </template>
+
+        <template #footer>
+          <a-space :size="4">
+            <a-button type="text" size="small">
+              <template #icon>
+                <SyncOutlined />
+              </template>
+            </a-button>
+          </a-space>
+        </template>
+      </ax-bubble>
     </template>
   </SemanticPreview>
 </template>

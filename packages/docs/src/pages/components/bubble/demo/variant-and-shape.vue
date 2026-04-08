@@ -1,49 +1,52 @@
-<script setup lang="ts">
-import { Bubble } from "@antdv-next/x";
-import { Space } from "antdv-next";
-</script>
-
 <template>
-  <Space direction="vertical" style="display: flex; width: 100%" :size="10">
-    <Space wrap>
-      <Bubble content="filled - default" />
-      <Bubble content="filled - round" shape="round" />
-      <Bubble content="filled - corner left" shape="corner" />
-      <Bubble content="filled - corner right" shape="corner" placement="end" />
-    </Space>
+  <a-space direction="vertical" style="display: flex; width: 100%" :size="10">
+    <a-space wrap>
+      <ax-bubble content="filled - default" />
+      <ax-bubble content="filled - round" shape="round" />
+      <ax-bubble content="filled - corner left" shape="corner" />
+      <ax-bubble
+        content="filled - corner right"
+        shape="corner"
+        placement="end"
+      />
+    </a-space>
 
-    <Space wrap>
-      <Bubble content="outlined - default" variant="outlined" />
-      <Bubble content="outlined - round" variant="outlined" shape="round" />
-      <Bubble
+    <a-space wrap>
+      <ax-bubble content="outlined - default" variant="outlined" />
+      <ax-bubble content="outlined - round" variant="outlined" shape="round" />
+      <ax-bubble
         content="outlined - corner left"
         variant="outlined"
         shape="corner"
       />
-      <Bubble
+      <ax-bubble
         content="outlined - corner right"
         variant="outlined"
         shape="corner"
         placement="end"
       />
-    </Space>
+    </a-space>
 
-    <Space wrap>
-      <Bubble content="shadow - default" variant="shadow" />
-      <Bubble content="shadow - round" variant="shadow" shape="round" />
-      <Bubble content="shadow - corner left" variant="shadow" shape="corner" />
-      <Bubble
+    <a-space wrap>
+      <ax-bubble content="shadow - default" variant="shadow" />
+      <ax-bubble content="shadow - round" variant="shadow" shape="round" />
+      <ax-bubble
+        content="shadow - corner left"
+        variant="shadow"
+        shape="corner"
+      />
+      <ax-bubble
         content="shadow - corner right"
         variant="shadow"
         shape="corner"
         placement="end"
       />
-    </Space>
+    </a-space>
 
-    <Space wrap>
-      <Bubble variant="borderless" content="borderless bubble" />
-    </Space>
-  </Space>
+    <a-space wrap>
+      <ax-bubble variant="borderless" content="borderless bubble" />
+    </a-space>
+  </a-space>
 </template>
 
 <docs lang="zh-CN">

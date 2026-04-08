@@ -10,10 +10,8 @@ import {
   RedoOutlined,
   UserOutlined,
 } from "@antdv-next/icons";
-import { Actions, BubbleList, FileCard } from "@antdv-next/x";
-import { Avatar, Button, Flex, Space, Switch, Typography } from "antdv-next";
-import MarkdownIt from "markdown-it";
-import { computed, h, ref } from "vue";
+import { XMarkdown } from "@antdv-next/x-markdown";
+import { computed, ref } from "vue";
 
 let seed = 0;
 const nextKey = () => `bubble_${seed++}`;
@@ -30,35 +28,15 @@ function genItem(isAI: boolean, config: Partial<any> = {}): any {
 const markdownText = `
 > Render as markdown content to show rich text!
 
-Link: [Ant Design X](https://x.ant.design)
+Link: [Antd Next X](https://x.ant.design)
 `.trim();
-
-const md = new MarkdownIt({ html: false, linkify: true, typographer: true });
-
-function renderMarkdown(value: string) {
-  return h("div", {
-    class: "leading-[1.7] whitespace-normal",
-    innerHTML: md.render(value),
-  });
-}
 
 const listRef = ref<any>(null);
 const enableLocate = ref(true);
 const autoScroll = ref(true);
-const actionItems = [
-  {
-    key: "retry",
-    icon: h(RedoOutlined),
-    label: "Retry",
-  },
-  {
-    key: "copy",
-    icon: h(CopyOutlined),
-    label: "Copy",
-  },
-];
+
 const items = ref<any[]>([
-  { key: nextKey(), role: "system", content: "Welcome to use Ant Design X" },
+  { key: nextKey(), role: "system", content: "Welcome to use Antd Next X" },
   genItem(false, { typing: false }),
   genItem(true, { typing: false }),
   { key: nextKey(), role: "divider", content: "divider" },
@@ -70,28 +48,11 @@ const role = computed<any>(() => ({
   ai: {
     typing: true,
     header: "AI",
-    avatar: () => h(Avatar, { icon: h(AntDesignOutlined) }),
-    footer: () => h(Actions, { items: actionItems }),
   },
   user: (data: any) => ({
     placement: "end",
     typing: false,
     header: `User-${data.key}`,
-    avatar: () => h(Avatar, { icon: h(UserOutlined) }),
-    footer: () =>
-      h(Actions, {
-        items: [
-          data.editable
-            ? { key: "done", icon: h(CheckOutlined), label: "done" }
-            : { key: "edit", icon: h(EditOutlined), label: "edit" },
-        ],
-        onClick: ({ key }) => {
-          items.value = items.value.map(item => {
-            if (item.key !== data.key) return item;
-            return { ...item, editable: key === "edit" };
-          });
-        },
-      }),
     onEditConfirm: (content: any) => {
       items.value = items.value.map(item => {
         if (item.key !== data.key) return item;
@@ -108,19 +69,6 @@ const role = computed<any>(() => ({
   reference: {
     variant: "borderless",
     styles: { root: { margin: 0, marginBottom: "-12px" } },
-    avatar: () => "",
-    contentRender: (content: FileCardProps) =>
-      h(Space, null, {
-        default: () => [
-          h(LinkOutlined),
-          h(FileCard, {
-            type: "file",
-            size: "small",
-            name: content.name,
-            byte: content.byte,
-          }),
-        ],
-      }),
   },
 }));
 
@@ -156,10 +104,6 @@ function addMarkdown() {
     role: "ai",
     typing: { effect: "fade-in", step: 6 },
     content: markdownText,
-    contentRender: (content: string) =>
-      h(Typography, null, {
-        default: () => [renderMarkdown(content)],
-      }),
   });
   maybeLocate("bottom");
 }
@@ -191,43 +135,123 @@ function addWithReference() {
   ];
   maybeLocate("bottom");
 }
+
+function handleUserActionClick(actionKey: string, itemKey: string | number) {
+  items.value = items.value.map(item => {
+    if (item.key !== itemKey) return item;
+    return { ...item, editable: actionKey === "edit" };
+  });
+}
 </script>
 
 <template>
-  <Flex vertical :gap="20" style="height: 720px">
-    <Flex vertical gap="small">
-      <Space align="center">
-        <Switch v-model:checked="autoScroll" />
+  <a-flex vertical :gap="20" style="height: 720px">
+    <a-flex vertical gap="small">
+      <a-space align="center">
+        <a-switch v-model:checked="autoScroll" />
         <span>启用 autoScroll / enabled autoScroll</span>
-      </Space>
-      <Space align="center">
-        <Switch v-model:checked="enableLocate" />
+      </a-space>
+      <a-space align="center">
+        <a-switch v-model:checked="enableLocate" />
         <span>定位到新气泡 / locate to new bubble</span>
-      </Space>
-    </Flex>
+      </a-space>
+    </a-flex>
 
-    <Flex gap="small" wrap>
-      <Button type="primary" @click="addBubble">
+    <a-flex gap="small" wrap>
+      <a-button type="primary" @click="addBubble">
         <RedoOutlined />
         Add Bubble
-      </Button>
-      <Button @click="addMarkdown"> Add Markdown </Button>
-      <Button @click="addDivider"> Add Divider </Button>
-      <Button @click="addSystem"> Add System </Button>
-      <Button @click="addToTop"> Add To Top </Button>
-      <Button @click="addWithReference"> Add With Ref </Button>
-    </Flex>
+      </a-button>
+      <a-button @click="addMarkdown"> Add Markdown </a-button>
+      <a-button @click="addDivider"> Add Divider </a-button>
+      <a-button @click="addSystem"> Add System </a-button>
+      <a-button @click="addToTop"> Add To Top </a-button>
+      <a-button @click="addWithReference"> Add With Ref </a-button>
+    </a-flex>
 
     <div style="display: flex; flex: 1; min-height: 0">
-      <BubbleList
+      <ax-bubble-list
         ref="listRef"
         style="height: 620px"
         :role="role"
         :items="items"
         :auto-scroll="autoScroll"
-      />
+      >
+        <template #avatar="{ item }">
+          <a-avatar v-if="item.role === 'ai'">
+            <template #icon>
+              <AntDesignOutlined />
+            </template>
+          </a-avatar>
+          <a-avatar v-if="item.role === 'user'">
+            <template #icon>
+              <UserOutlined />
+            </template>
+          </a-avatar>
+        </template>
+
+        <template #footer="{ item }">
+          <ax-actions
+            v-if="item.role === 'ai'"
+            :items="[
+              { key: 'retry', label: 'Retry' },
+              { key: 'copy', label: 'Copy' },
+            ]"
+          >
+            <template #icon-render="{ item: actionItem }">
+              <RedoOutlined v-if="actionItem.key === 'retry'" />
+              <CopyOutlined v-if="actionItem.key === 'copy'" />
+            </template>
+          </ax-actions>
+
+          <ax-actions
+            v-if="item.role === 'user'"
+            :items="[
+              item.editable
+                ? { key: 'done', label: 'done' }
+                : { key: 'edit', label: 'edit' },
+            ]"
+            @click="(info: any) => handleUserActionClick(info.key, item.key)"
+          >
+            <template #icon-render="{ item: actionItem }">
+              <CheckOutlined v-if="actionItem.key === 'done'" />
+              <EditOutlined v-if="actionItem.key === 'edit'" />
+            </template>
+          </ax-actions>
+        </template>
+
+        <template #contentRender="{ content, item }">
+          <a-typography
+            v-if="item.role === 'ai' && typeof content === 'string'"
+          >
+            <XMarkdown
+              v-if="content.includes('>') || content.includes('](')"
+              :content="content"
+              :streaming="{
+                hasNextChunk: item.status === 'loading',
+                enableAnimation: true,
+              }"
+            />
+            <div v-else style="white-space: normal; line-height: 1.7">
+              {{ content }}
+            </div>
+          </a-typography>
+
+          <a-space v-if="item.role === 'reference'">
+            <LinkOutlined />
+            <ax-file-card
+              type="file"
+              size="small"
+              :name="(content as FileCardProps).name"
+              :byte="(content as FileCardProps).byte"
+            />
+          </a-space>
+
+          <div v-if="item.role === 'user'">{{ content }}</div>
+        </template>
+      </ax-bubble-list>
     </div>
-  </Flex>
+  </a-flex>
 </template>
 
 <docs lang="zh-CN">

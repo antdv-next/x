@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import { Bubble } from "@antdv-next/x";
-import { Button, Image, Space, Typography } from "antdv-next";
-import { h, ref } from "vue";
+import { ref } from "vue";
 
 interface CustomContent {
   imageUrl: string;
@@ -10,45 +8,35 @@ interface CustomContent {
 }
 
 const content = ref<CustomContent>({
-  imageUrl:
-    "https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*eco6RrQhxbMAAAAAAAAAAAAADgCCAQ/original",
-  text: "Ant Design X",
+  imageUrl: "https://x.antdv-next.com/x.svg",
+  text: "Antdv Next X",
   actionLabel: "Click Me",
 });
 
 function updateAction() {
   content.value = {
     ...content.value,
-    actionLabel: "Happy Ant Design X!",
+    actionLabel: "Happy Antdv Next X!",
   };
-}
-
-function footerRender(value: any) {
-  return h(
-    Button,
-    {
-      type: "text",
-      size: "small",
-      onClick: updateAction,
-    },
-    {
-      default: () => value.actionLabel,
-    },
-  );
 }
 </script>
 
 <template>
-  <Bubble :content="content" :footer="footerRender">
+  <ax-bubble :content="content">
     <template #contentRender="{ content: value }">
-      <Space align="center" :size="10">
-        <Image :width="50" :src="value.imageUrl" :preview="false" />
-        <Typography.Text strong>
+      <a-space align="center" :size="10">
+        <a-image :width="50" :src="value.imageUrl" :preview="false" />
+        <a-typography-text strong>
           {{ value.text }}
-        </Typography.Text>
-      </Space>
+        </a-typography-text>
+      </a-space>
     </template>
-  </Bubble>
+    <template #footer>
+      <a-button type="text" size="small" @click="updateAction">
+        {{ content.actionLabel }}
+      </a-button>
+    </template>
+  </ax-bubble>
 </template>
 
 <docs lang="zh-CN">

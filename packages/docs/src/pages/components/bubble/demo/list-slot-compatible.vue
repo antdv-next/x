@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import type { BubbleListProps } from "@antdv-next/x";
 
-import { BubbleList } from "@antdv-next/x";
-import { Avatar, Flex, Space, Tag, Typography } from "antdv-next";
 import { computed, ref } from "vue";
 
 const items = ref<BubbleListProps["items"]>([
@@ -38,50 +36,50 @@ const role = computed<BubbleListProps["role"]>(() => ({
 </script>
 
 <template>
-  <BubbleList style="height: 420px" :items="items" :role="role">
+  <ax-bubble-list style="height: 420px" :items="items" :role="role">
     <template #avatar="{ role: itemRole }">
-      <Avatar size="small">
+      <a-avatar size="small">
         {{ itemRole === "user" ? "U" : "AI" }}
-      </Avatar>
+      </a-avatar>
     </template>
 
     <template #header="{ role: itemRole, index, info }">
-      <Space size="small">
-        <Typography.Text type="secondary">
+      <a-space size="small">
+        <a-typography-text type="secondary">
           {{ itemRole.toUpperCase() }}
-        </Typography.Text>
-        <Typography.Text type="secondary">#{{ index + 1 }}</Typography.Text>
-        <Tag color="blue">{{ info.key }}</Tag>
-      </Space>
+        </a-typography-text>
+        <a-typography-text type="secondary">#{{ index + 1 }}</a-typography-text>
+        <a-tag color="blue">{{ info.key }}</a-tag>
+      </a-space>
     </template>
 
     <template #contentRender="{ content, item }">
-      <Flex vertical gap="small">
+      <a-flex vertical gap="small">
         <span>{{ content }}</span>
-        <Tag v-if="item.extraInfo?.source" color="processing">
+        <a-tag v-if="item.extraInfo?.source" color="processing">
           source: {{ item.extraInfo.source }}
-        </Tag>
-      </Flex>
+        </a-tag>
+      </a-flex>
     </template>
 
     <template #footer="{ item }">
-      <Typography.Text type="secondary">
+      <a-typography-text type="secondary">
         tokens: {{ item.extraInfo?.tokens || 0 }}
-      </Typography.Text>
+      </a-typography-text>
     </template>
 
     <template #extra="{ role: itemRole }">
-      <Tag v-if="itemRole === 'ai'" color="geekblue">assistant</Tag>
+      <a-tag v-if="itemRole === 'ai'" color="geekblue">assistant</a-tag>
     </template>
 
     <template #loadingRender="{ content, info }">
-      <Space align="center" size="small">
+      <a-space align="center" size="small">
         <span>Custom loading:</span>
-        <Tag color="processing">{{ info.status }}</Tag>
+        <a-tag color="processing">{{ info.status }}</a-tag>
         <span>{{ content }}...</span>
-      </Space>
+      </a-space>
     </template>
-  </BubbleList>
+  </ax-bubble-list>
 </template>
 
 <docs lang="zh-CN">

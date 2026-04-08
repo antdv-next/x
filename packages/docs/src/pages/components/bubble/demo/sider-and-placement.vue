@@ -1,40 +1,42 @@
 <script setup lang="ts">
 import { CopyOutlined, UserOutlined } from "@antdv-next/icons";
-import { Bubble } from "@antdv-next/x";
-import { Avatar, Button, Space, Tooltip } from "antdv-next";
-import { h } from "vue";
-
-function mainSide() {
-  return h(
-    Tooltip,
-    { title: "main side" },
-    {
-      default: () => h(Avatar, { icon: h(UserOutlined) }),
-    },
-  );
-}
-
-function extraSide() {
-  return h(
-    Tooltip,
-    { title: "extra side" },
-    {
-      default: () => h(CopyOutlined),
-    },
-  );
-}
 </script>
 
 <template>
-  <Space direction="vertical" style="display: flex; width: 100%" :size="10">
-    <Bubble content="align left" :avatar="mainSide" :extra="extraSide" />
-    <Bubble
-      content="align right"
-      placement="end"
-      :avatar="mainSide"
-      :extra="extraSide"
-    />
-  </Space>
+  <a-space direction="vertical" style="display: flex; width: 100%" :size="10">
+    <ax-bubble content="align left">
+      <template #avatar>
+        <a-tooltip title="main side">
+          <a-avatar>
+            <template #icon>
+              <UserOutlined />
+            </template>
+          </a-avatar>
+        </a-tooltip>
+      </template>
+      <template #extra>
+        <a-tooltip title="extra side">
+          <CopyOutlined />
+        </a-tooltip>
+      </template>
+    </ax-bubble>
+    <ax-bubble content="align right" placement="end">
+      <template #avatar>
+        <a-tooltip title="main side">
+          <a-avatar>
+            <template #icon>
+              <UserOutlined />
+            </template>
+          </a-avatar>
+        </a-tooltip>
+      </template>
+      <template #extra>
+        <a-tooltip title="extra side">
+          <CopyOutlined />
+        </a-tooltip>
+      </template>
+    </ax-bubble>
+  </a-space>
 </template>
 
 <docs lang="zh-CN">

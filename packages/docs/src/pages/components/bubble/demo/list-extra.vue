@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import type { ActionsFeedbackProps } from "@antdv-next/x";
 
-import { Actions, BubbleList } from "@antdv-next/x";
-import { Flex, Spin } from "antdv-next";
-import { h, ref } from "vue";
+import { shallowRef } from "vue";
 
-const messages = ref<any[]>([
+const messages = shallowRef<any[]>([
   {
     key: "welcome",
     role: "ai",
@@ -69,44 +67,6 @@ const role: any = {
       info.status === "updating"
         ? { effect: "typing", step: 5, interval: 20 }
         : false,
-    loadingRender: () =>
-      h(
-        Flex,
-        { align: "center", gap: "small" },
-        {
-          default: () => [
-            h(Spin, { size: "small" }),
-            h("span", "Custom loading..."),
-          ],
-        },
-      ),
-    footer: (content: string, info: any) => {
-      const feedback =
-        (info.extraInfo?.feedback as ActionsFeedbackProps["value"]) ||
-        "default";
-      return h(Actions, {
-        items: [
-          {
-            key: "copy",
-            label: "copy",
-            actionRender: () => h(Actions.Copy, { text: content }),
-          },
-          {
-            key: "feedback",
-            actionRender: () =>
-              h(Actions.Feedback, {
-                value: feedback,
-                styles: {
-                  liked: {
-                    color: "#f759ab",
-                  },
-                },
-                onChange: val => updateFeedback(info.key!, val),
-              }),
-          },
-        ],
-      });
-    },
   },
   user: {
     placement: "end",
@@ -115,7 +75,43 @@ const role: any = {
 </script>
 
 <template>
-  <BubbleList style="height: 500px" :role="role" :items="messages" />
+  <ax-bubble-list style="height: 500px" :role="role" :items="messages">
+    <template #loadingRender="{ item }">
+      <a-flex
+        v-if="item.role === 'ai' && item.loading"
+        align="center"
+        gap="small"
+      >
+        <a-spin size="small" />
+        <span>Custom loading...</span>
+      </a-flex>
+    </template>
+
+    <template #footer="{ content, item }">
+      <ax-actions
+        v-if="item.role === 'ai' && !item.loading"
+        :items="[
+          {
+            key: 'copy',
+            label: 'copy',
+          },
+          {
+            key: 'feedback',
+          },
+        ]"
+      >
+        <template #action-render="{ item: actionItem }">
+          <ax-actions-copy v-if="actionItem.key === 'copy'" :text="content" />
+          <ax-actions-feedback
+            v-if="actionItem.key === 'feedback'"
+            :value="item.extraInfo?.feedback || 'default'"
+            :styles="{ liked: { color: '#f759ab' } }"
+            @change="updateFeedback(item.key, $event)"
+          />
+        </template>
+      </ax-actions>
+    </template>
+  </ax-bubble-list>
 </template>
 
 <docs lang="zh-CN">

@@ -1,30 +1,25 @@
 <script setup lang="ts">
-import { BubbleSystem } from "@antdv-next/x";
-import { Space, Typography } from "antdv-next";
-import { h } from "vue";
-
 const text = "Hello, this is a system message";
 </script>
 
 <template>
-  <Space direction="vertical" style="display: flex; width: 100%" :size="14">
-    <BubbleSystem :content="text" />
+  <a-space direction="vertical" style="display: flex; width: 100%" :size="14">
+    <ax-bubble-system :content="text" />
 
-    <BubbleSystem
-      variant="outlined"
-      shape="round"
-      :content="[text, ' ', h(Typography.Link, null, { default: () => 'ok' })]"
-    />
+    <ax-bubble-system variant="outlined" shape="round" :content="text">
+      <template #contentRender="{ content }">
+        <span> {{ content }} <a-typography-link>ok</a-typography-link> </span>
+      </template>
+    </ax-bubble-system>
 
-    <BubbleSystem
-      variant="borderless"
-      :content="[
-        text,
-        ' ',
-        h(Typography.Link, null, { default: () => 'cancel' }),
-      ]"
-    />
-  </Space>
+    <ax-bubble-system variant="borderless" :content="text">
+      <template #contentRender="{ content }">
+        <span>
+          {{ content }} <a-typography-link>cancel</a-typography-link>
+        </span>
+      </template>
+    </ax-bubble-system>
+  </a-space>
 </template>
 
 <docs lang="zh-CN">

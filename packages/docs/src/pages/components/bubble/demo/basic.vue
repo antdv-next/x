@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { AntDesignOutlined, RedoOutlined } from "@antdv-next/icons";
-import { Avatar } from "antdv-next";
 
 const actionItems = [
   {
@@ -23,11 +22,11 @@ const text = "Hello World\nNext line\nTab\tindent";
     header="Antdv Design X"
   >
     <template #avatar>
-      <Avatar size="small">
+      <a-avatar size="small">
         <template #icon>
           <AntDesignOutlined />
         </template>
-      </Avatar>
+      </a-avatar>
     </template>
     <template #footer>
       <ax-actions :items="actionItems">

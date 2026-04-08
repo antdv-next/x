@@ -1,73 +1,85 @@
 <script setup lang="ts">
 import { EditOutlined, UserOutlined } from "@antdv-next/icons";
-import { Actions, Bubble } from "@antdv-next/x";
-import { Avatar, Space } from "antdv-next";
-import { h, ref } from "vue";
+import { ref } from "vue";
 
 const contentA = ref("editable bubble 1");
 const contentB = ref("editable bubble 2");
 const editingA = ref(false);
 const editingB = ref(false);
+
 const editItems = [
   {
     key: "edit",
-    icon: h(EditOutlined),
     label: "edit",
   },
 ];
 
-const avatar = h(Avatar, { size: "small", icon: h(UserOutlined) });
-
-function footerA() {
-  return h(Actions, {
-    items: editItems,
-    onClick: ({ key }) => {
-      editingA.value = key === "edit";
-    },
-  });
+function handleEditClickA({ key }: { key?: string }) {
+  editingA.value = key === "edit";
 }
 
-function footerB() {
-  return h(Actions, {
-    items: editItems,
-    onClick: ({ key }) => {
-      editingB.value = key === "edit";
-    },
-  });
+function handleEditClickB({ key }: { key?: string }) {
+  editingB.value = key === "edit";
+}
+
+function handleEditConfirmA(value: string) {
+  contentA.value = value;
+  editingA.value = false;
+}
+
+function handleEditConfirmB(value: string) {
+  contentB.value = value;
+  editingB.value = false;
 }
 </script>
 
 <template>
-  <Space direction="vertical" style="display: flex; width: 100%" :size="10">
-    <Bubble
+  <a-space direction="vertical" style="display: flex; width: 100%" :size="10">
+    <ax-bubble
       :editable="editingA"
       :content="contentA"
-      :avatar="avatar"
-      :footer="footerA"
-      :on-edit-cancel="() => (editingA = false)"
-      :on-edit-confirm="
-        value => {
-          contentA = value;
-          editingA = false;
-        }
-      "
-    />
+      @edit-cancel="editingA = false"
+      @edit-confirm="handleEditConfirmA"
+    >
+      <template #avatar>
+        <a-avatar size="small">
+          <template #icon>
+            <UserOutlined />
+          </template>
+        </a-avatar>
+      </template>
+      <template #footer>
+        <ax-actions :items="editItems" @click="handleEditClickA">
+          <template #icon-render="items">
+            <EditOutlined v-if="items.item.key === 'edit'" />
+          </template>
+        </ax-actions>
+      </template>
+    </ax-bubble>
 
-    <Bubble
+    <ax-bubble
       placement="end"
       :editable="{ editing: editingB, okText: 'ok', cancelText: 'cancel' }"
       :content="contentB"
-      :avatar="avatar"
-      :footer="footerB"
-      :on-edit-cancel="() => (editingB = false)"
-      :on-edit-confirm="
-        value => {
-          contentB = value;
-          editingB = false;
-        }
-      "
-    />
-  </Space>
+      @edit-cancel="editingB = false"
+      @edit-confirm="handleEditConfirmB"
+    >
+      <template #avatar>
+        <a-avatar size="small">
+          <template #icon>
+            <UserOutlined />
+          </template>
+        </a-avatar>
+      </template>
+      <template #footer>
+        <ax-actions :items="editItems" @click="handleEditClickB">
+          <template #icon-render="items">
+            <EditOutlined v-if="items.item.key === 'edit'" />
+          </template>
+        </ax-actions>
+      </template>
+    </ax-bubble>
+  </a-space>
 </template>
 
 <docs lang="zh-CN">

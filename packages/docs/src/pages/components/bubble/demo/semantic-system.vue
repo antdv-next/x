@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { BubbleSystem } from "@antdv-next/x";
 import { computed } from "vue";
 
 import { SemanticPreview } from "@/components/semantic";
@@ -34,8 +33,8 @@ const semantics = computed(() => [
 <template>
   <SemanticPreview component-name="BubbleSystem" :semantics="semantics">
     <template #default="{ classes }">
-      <BubbleSystem
-        content="Feel free to use Ant Design X!"
+      <ax-bubble-system
+        content="Feel free to use Antd Next X!"
         :classes="classes"
       />
     </template>

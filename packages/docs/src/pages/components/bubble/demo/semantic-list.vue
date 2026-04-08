@@ -6,9 +6,7 @@ import {
   CopyOutlined,
   SyncOutlined,
 } from "@antdv-next/icons";
-import { BubbleList } from "@antdv-next/x";
-import { Avatar, Button, Space, theme } from "antdv-next";
-import { computed, h } from "vue";
+import { computed } from "vue";
 
 import { SemanticPreview } from "@/components/semantic";
 import { useLocale } from "@/composables/use-locale";
@@ -42,7 +40,6 @@ const locales = {
   },
 } as const;
 
-const { token } = theme.useToken();
 const { locale } = useLocale();
 
 const semanticLocale = computed(() =>
@@ -67,26 +64,6 @@ const role = computed<BubbleListProps["role"]>(() => ({
   ai: {
     typing: true,
     header: "AI",
-    extra: h(
-      Button,
-      { type: "text", size: "small" },
-      { icon: () => h(CopyOutlined) },
-    ),
-    avatar: () => h(Avatar, { icon: h(AntDesignOutlined) }),
-    footer: () =>
-      h(
-        Space,
-        { size: token.value.paddingXXS },
-        {
-          default: () => [
-            h(
-              Button,
-              { type: "text", size: "small" },
-              { icon: () => h(SyncOutlined) },
-            ),
-          ],
-        },
-      ),
   },
   user: () => ({
     placement: "end",
@@ -94,9 +71,9 @@ const role = computed<BubbleListProps["role"]>(() => ({
 }));
 
 const items: BubbleListProps["items"] = [
-  { key: "system", role: "system", content: "Welcome to Ant Design X" },
+  { key: "system", role: "system", content: "Welcome to Antd Next X" },
   { key: "divider", role: "divider", content: "divider" },
-  { key: "user", role: "user", content: "hello, Ant Design X" },
+  { key: "user", role: "user", content: "hello, Antd Next X" },
   { key: "ai", role: "ai", content: "hello, how can I help you?" },
   {
     key: "user2",
@@ -110,12 +87,38 @@ const items: BubbleListProps["items"] = [
 <template>
   <SemanticPreview component-name="BubbleList" :semantics="semantics">
     <template #default="{ classes }">
-      <BubbleList
+      <ax-bubble-list
         style="height: 630px"
         :role="role"
         :items="items"
         :classes="classes"
-      />
+      >
+        <template #avatar="{ item }">
+          <a-avatar v-if="item.role === 'ai'">
+            <template #icon>
+              <AntDesignOutlined />
+            </template>
+          </a-avatar>
+        </template>
+
+        <template #footer="{ item }">
+          <a-space v-if="item.role === 'ai'" :size="4">
+            <a-button type="text" size="small">
+              <template #icon>
+                <SyncOutlined />
+              </template>
+            </a-button>
+          </a-space>
+        </template>
+
+        <template #extra="{ item }">
+          <a-button v-if="item.role === 'ai'" type="text" size="small">
+            <template #icon>
+              <CopyOutlined />
+            </template>
+          </a-button>
+        </template>
+      </ax-bubble-list>
     </template>
   </SemanticPreview>
 </template>

@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { RedoOutlined, UserOutlined } from "@antdv-next/icons";
-import { Bubble } from "@antdv-next/x";
-import { Avatar, Button, Divider, Space, Switch, Typography } from "antdv-next";
-import { computed, h, onBeforeUnmount, ref } from "vue";
+import { computed, onBeforeUnmount, ref } from "vue";
 
-const text =
-  "Ant Design X - Better UI toolkit for your AI Chat WebApp. ".repeat(5);
+const text = "Antd Next X - Better UI toolkit for your AI Chat WebApp. ".repeat(
+  5,
+);
 const loading = ref(true);
 const source = ref("");
 const streamContent = ref("");
@@ -59,40 +58,40 @@ onBeforeUnmount(() => clearTimer());
 </script>
 
 <template>
-  <Space direction="vertical" style="display: flex; width: 100%" :size="10">
-    <Space align="center" wrap>
+  <a-space direction="vertical" style="display: flex; width: 100%" :size="10">
+    <a-space align="center" wrap>
       <span>Streaming data:</span>
-      <Button type="primary" @click="start(2, 100)">
+      <a-button type="primary" @click="start(2, 100)">
         <RedoOutlined />
         load slowly
-      </Button>
-      <Button @click="start(10, 50)">
+      </a-button>
+      <a-button @click="start(10, 50)">
         <RedoOutlined />
         load quickly
-      </Button>
-      <Button type="link" @click="clear"> clear </Button>
-    </Space>
+      </a-button>
+      <a-button type="link" @click="clear"> clear </a-button>
+    </a-space>
 
-    <Space align="center">
+    <a-space align="center">
       <span>Force close streaming:</span>
-      <Switch v-model:checked="disableStreaming" />
-    </Space>
+      <a-switch v-model:checked="disableStreaming" />
+    </a-space>
 
-    <Space align="center">
+    <a-space align="center">
       <span>Enable typing animation:</span>
-      <Switch v-model:checked="typing" />
-    </Space>
+      <a-switch v-model:checked="typing" />
+    </a-space>
 
-    <Space align="center">
+    <a-space align="center">
       <span>onTypingComplete trigger times:</span>
-      <Typography.Text type="danger">
+      <a-typography-text type="danger">
         {{ count }}
-      </Typography.Text>
-    </Space>
+      </a-typography-text>
+    </a-space>
 
-    <Divider style="margin: 4px 0" />
+    <a-divider style="margin: 4px 0" />
 
-    <Bubble
+    <ax-bubble
       :loading="loading"
       :content="streamContent"
       :streaming="bubbleStreaming"
@@ -102,14 +101,21 @@ onBeforeUnmount(() => clearTimer());
           : false
       "
       header="ADX"
-      :avatar="h(Avatar, { size: 'small', icon: h(UserOutlined) })"
       :on-typing-complete="
         () => {
           count += 1;
         }
       "
-    />
-  </Space>
+    >
+      <template #avatar>
+        <a-avatar size="small">
+          <template #icon>
+            <UserOutlined />
+          </template>
+        </a-avatar>
+      </template>
+    </ax-bubble>
+  </a-space>
 </template>
 
 <docs lang="zh-CN">

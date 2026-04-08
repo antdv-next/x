@@ -7,9 +7,7 @@ import {
   RedoOutlined,
   UserOutlined,
 } from "@antdv-next/icons";
-import { Actions, BubbleList } from "@antdv-next/x";
-import { Avatar, Button, Flex } from "antdv-next";
-import { h, ref } from "vue";
+import { ref } from "vue";
 
 let seed = 0;
 const nextKey = () => `bubble_${seed++}`;
@@ -23,7 +21,7 @@ function genItem(isAI: boolean, config: Partial<any> = {}, repeat = 50): any {
   };
 }
 
-const listRef = ref<any>(null);
+const listRef = useTemplateRef("listRef");
 const items = ref<any[]>([
   genItem(false, { typing: false }),
   genItem(true, { typing: false }),
@@ -37,31 +35,16 @@ const items = ref<any[]>([
   genItem(true, { typing: false }),
   genItem(false, { typing: false }),
 ]);
-const actionItems = [
-  {
-    key: "retry",
-    icon: h(RedoOutlined),
-    label: "Retry",
-  },
-  {
-    key: "copy",
-    icon: h(CopyOutlined),
-    label: "Copy",
-  },
-];
 
 const role: BubbleListProps["role"] = {
   ai: {
     typing: true,
     header: "AI",
-    avatar: () => h(Avatar, { icon: h(AntDesignOutlined) }),
-    footer: () => h(Actions, { items: actionItems }),
   },
   user: {
     placement: "end",
     typing: false,
     header: "User",
-    avatar: () => h(Avatar, { icon: h(UserOutlined) }),
   },
 };
 
@@ -107,26 +90,64 @@ function scrollLast() {
 </script>
 
 <template>
-  <Flex vertical gap="small" style="height: 720px">
-    <Flex gap="small" wrap>
-      <Button type="primary" @click="addLongBubble"> Add Long Bubble </Button>
-      <Button @click="scrollTop"> Scroll To Top </Button>
-      <Button @click="scrollBottomSmooth"> Scroll To Bottom smooth </Button>
-      <Button @click="scrollBottomInstant"> Scroll To Bottom instant </Button>
-      <Button @click="scrollRandom"> Scroll To Random </Button>
-      <Button @click="scrollSecond"> Scroll To Second Bubble </Button>
-      <Button @click="scrollLast"> Scroll To Last Bubble </Button>
-    </Flex>
+  <a-flex vertical gap="small" style="height: 720px">
+    <a-flex gap="small" wrap>
+      <a-button type="primary" @click="addLongBubble">
+        Add Long Bubble
+      </a-button>
+      <a-button @click="scrollTop"> Scroll To Top </a-button>
+      <a-button @click="scrollBottomSmooth"> Scroll To Bottom smooth </a-button>
+      <a-button @click="scrollBottomInstant">
+        Scroll To Bottom instant
+      </a-button>
+      <a-button @click="scrollRandom"> Scroll To Random </a-button>
+      <a-button @click="scrollSecond"> Scroll To Second Bubble </a-button>
+      <a-button @click="scrollLast"> Scroll To Last Bubble </a-button>
+    </a-flex>
 
     <div style="display: flex; flex: 1; min-height: 0">
-      <BubbleList
+      <ax-bubble-list
         ref="listRef"
         style="height: 100%"
         :role="role"
         :items="items"
-      />
+      >
+        <template #avatar="{ item }">
+          <a-avatar v-if="item.role === 'ai'">
+            <template #icon>
+              <AntDesignOutlined />
+            </template>
+          </a-avatar>
+          <a-avatar v-if="item.role === 'user'">
+            <template #icon>
+              <UserOutlined />
+            </template>
+          </a-avatar>
+        </template>
+
+        <template #footer="{ item }">
+          <ax-actions
+            v-if="item.role === 'ai'"
+            :items="[
+              {
+                key: 'retry',
+                label: 'Retry',
+              },
+              {
+                key: 'copy',
+                label: 'Copy',
+              },
+            ]"
+          >
+            <template #icon-render="{ item: actionItem }">
+              <RedoOutlined v-if="actionItem.key === 'retry'" />
+              <CopyOutlined v-if="actionItem.key === 'copy'" />
+            </template>
+          </ax-actions>
+        </template>
+      </ax-bubble-list>
     </div>
-  </Flex>
+  </a-flex>
 </template>
 
 <docs lang="zh-CN">

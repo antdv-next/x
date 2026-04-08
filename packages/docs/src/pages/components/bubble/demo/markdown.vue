@@ -1,53 +1,64 @@
 <script setup lang="ts">
 import { RedoOutlined } from "@antdv-next/icons";
-import { Bubble } from "@antdv-next/x";
-import { Button, Space, Typography } from "antdv-next";
-import MarkdownIt from "markdown-it";
-import { computed, ref } from "vue";
+import { XMarkdown } from "@antdv-next/x-markdown";
+import { computed, onBeforeUnmount, ref } from "vue";
 
 const source = `
 > Render as markdown content to show rich text!
 
-Link: [Ant Design X](https://x.ant.design)
+Link: [Antdv Next X](https://x.antdv-next.com)
 `.trim();
 
 const index = ref(source.length);
-const md = new MarkdownIt({ html: false, linkify: true, typographer: true });
+let timer: ReturnType<typeof setInterval> | null = null;
 
 const content = computed(() => source.slice(0, index.value));
 
-function renderMarkdown(value: string) {
-  return md.render(value);
-}
+const streaming = computed(() => ({
+  hasNextChunk: index.value < source.length,
+  enableAnimation: true,
+}));
 
 function rerender() {
+  if (timer) {
+    clearInterval(timer);
+    timer = null;
+  }
+
   index.value = 1;
-  const timer = setInterval(() => {
+  timer = setInterval(() => {
     index.value += 5;
-    if (index.value >= source.length) clearInterval(timer);
+    if (index.value >= source.length) {
+      index.value = source.length;
+      if (timer) {
+        clearInterval(timer);
+        timer = null;
+      }
+    }
   }, 20);
 }
+
+onBeforeUnmount(() => {
+  if (timer) clearInterval(timer);
+});
 </script>
 
 <template>
-  <Space direction="vertical" style="display: flex; width: 100%" :size="10">
-    <Space>
-      <Button type="primary" @click="rerender">
+  <a-space direction="vertical" style="display: flex; width: 100%" :size="10">
+    <a-space>
+      <a-button type="primary" @click="rerender">
         <RedoOutlined />
         rerender
-      </Button>
-    </Space>
-    <Typography>
-      <Bubble :content="content">
+      </a-button>
+    </a-space>
+    <a-typography>
+      <ax-bubble :content="content">
         <template #contentRender="{ content: value }">
-          <div
-            style="white-space: normal; line-height: 1.7"
-            v-html="renderMarkdown(value)"
-          />
+          <XMarkdown :content="value" :streaming="streaming" />
         </template>
-      </Bubble>
-    </Typography>
-  </Space>
+      </ax-bubble>
+    </a-typography>
+  </a-space>
 </template>
 
 <docs lang="zh-CN">

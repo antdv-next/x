@@ -1,60 +1,103 @@
 <script setup lang="ts">
 import { CopyOutlined, RedoOutlined, UserOutlined } from "@antdv-next/icons";
-import { Actions, Bubble } from "@antdv-next/x";
-import { Avatar, Space } from "antdv-next";
-import { h } from "vue";
 
-const avatarNode = h(Avatar, { size: "small", icon: h(UserOutlined) });
 const actionItems = [
   {
     key: "retry",
-    icon: h(RedoOutlined),
     label: "Retry",
   },
   {
     key: "copy",
-    icon: h(CopyOutlined),
     label: "Copy",
   },
 ];
-
-function footerNode() {
-  return h(Actions, { items: actionItems });
-}
 </script>
 
 <template>
-  <Space direction="vertical" style="display: flex; width: 100%" :size="10">
-    <Bubble
-      content="outer footer"
-      header="footer"
-      :avatar="avatarNode"
-      :footer="footerNode"
-    />
-    <Bubble
+  <a-space direction="vertical" style="display: flex; width: 100%" :size="10">
+    <ax-bubble content="outer footer" header="footer">
+      <template #avatar>
+        <a-avatar size="small">
+          <template #icon>
+            <UserOutlined />
+          </template>
+        </a-avatar>
+      </template>
+      <template #footer>
+        <ax-actions :items="actionItems">
+          <template #icon-render="items">
+            <RedoOutlined v-if="items.item.key === 'retry'" />
+            <CopyOutlined v-if="items.item.key === 'copy'" />
+          </template>
+        </ax-actions>
+      </template>
+    </ax-bubble>
+    <ax-bubble
       content="inner footer"
       placement="end"
       footer-placement="inner-end"
       header="footer"
-      :avatar="avatarNode"
-      :footer="footerNode"
-    />
-    <Bubble
+    >
+      <template #avatar>
+        <a-avatar size="small">
+          <template #icon>
+            <UserOutlined />
+          </template>
+        </a-avatar>
+      </template>
+      <template #footer>
+        <ax-actions :items="actionItems">
+          <template #icon-render="items">
+            <RedoOutlined v-if="items.item.key === 'retry'" />
+            <CopyOutlined v-if="items.item.key === 'copy'" />
+          </template>
+        </ax-actions>
+      </template>
+    </ax-bubble>
+    <ax-bubble
       content="outer footer and align right"
       footer-placement="outer-end"
       header="footer"
-      :avatar="avatarNode"
-      :footer="footerNode"
-    />
-    <Bubble
+    >
+      <template #avatar>
+        <a-avatar size="small">
+          <template #icon>
+            <UserOutlined />
+          </template>
+        </a-avatar>
+      </template>
+      <template #footer>
+        <ax-actions :items="actionItems">
+          <template #icon-render="items">
+            <RedoOutlined v-if="items.item.key === 'retry'" />
+            <CopyOutlined v-if="items.item.key === 'copy'" />
+          </template>
+        </ax-actions>
+      </template>
+    </ax-bubble>
+    <ax-bubble
       content="inner footer and align left"
       placement="end"
       footer-placement="inner-start"
       header="footer"
-      :avatar="avatarNode"
-      :footer="footerNode"
-    />
-  </Space>
+    >
+      <template #avatar>
+        <a-avatar size="small">
+          <template #icon>
+            <UserOutlined />
+          </template>
+        </a-avatar>
+      </template>
+      <template #footer>
+        <ax-actions :items="actionItems">
+          <template #icon-render="items">
+            <RedoOutlined v-if="items.item.key === 'retry'" />
+            <CopyOutlined v-if="items.item.key === 'copy'" />
+          </template>
+        </ax-actions>
+      </template>
+    </ax-bubble>
+  </a-space>
 </template>
 
 <docs lang="zh-CN">

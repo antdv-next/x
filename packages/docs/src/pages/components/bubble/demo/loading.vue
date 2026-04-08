@@ -1,19 +1,17 @@
 <script setup lang="ts">
-import { Bubble } from "@antdv-next/x";
-import { Space, Switch } from "antdv-next";
 import { ref } from "vue";
 
 const loading = ref(true);
 </script>
 
 <template>
-  <Space direction="vertical" style="display: flex; width: 100%">
-    <Bubble :loading="loading" content="hello world !" />
-    <Space>
+  <a-space direction="vertical" style="display: flex; width: 100%">
+    <ax-bubble :loading="loading" content="hello world !" />
+    <a-space>
       <span>Loading state:</span>
-      <Switch v-model:checked="loading" />
-    </Space>
-  </Space>
+      <a-switch v-model:checked="loading" />
+    </a-space>
+  </a-space>
 </template>
 
 <docs lang="zh-CN">
