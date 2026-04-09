@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { Think } from "@antdv-next/x";
-import { Button } from "antdv-next";
 import { ref } from "vue";
 
 const expanded = ref(true);
@@ -9,12 +7,12 @@ const expanded = ref(true);
 <template>
   <div>
     <div>
-      <Button @click="expanded = !expanded"> Change expand </Button>
+      <a-button @click="expanded = !expanded"> Change expand </a-button>
     </div>
     <br />
-    <Think v-model:expanded="expanded" title="deep thinking">
+    <ax-think v-model:expanded="expanded" title="deep thinking">
       This is deep thinking content.
-    </Think>
+    </ax-think>
   </div>
 </template>
 

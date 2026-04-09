@@ -36,13 +36,36 @@ group:
 | classes              | Semantic class overrides                                | `Partial<Record<'root' \| 'header' \| 'graph' \| 'code', string>>`                                     | -                                                              |
 | styles               | Semantic style overrides                                | `Partial<Record<'root' \| 'header' \| 'graph' \| 'code', CSSProperties>>`                              | -                                                              |
 
+### ItemType
+
+`actions.customActions` accepts `ItemType[]`:
+
+```ts
+type ItemType = {
+  key?: string | number;
+  label?: string;
+  icon?: VNodeChild;
+  onItemClick?: (info?: ItemType) => void;
+  danger?: boolean;
+  subItems?: Omit<
+    ItemType,
+    "subItems" | "triggerSubMenuAction" | "actionRender"
+  >[];
+  triggerSubMenuAction?: MenuProps["triggerSubMenuAction"];
+  actionRender?: ((item: ItemType) => VNodeChild) | VNodeChild;
+};
+```
+
 ### Slots
 
-| Slot Name | Description        | Type               |
-| --------- | ------------------ | ------------------ |
-| `header`  | Custom header area | `() => VNodeChild` |
+| Slot Name                | Description                             | Type                                          |
+| ------------------------ | --------------------------------------- | --------------------------------------------- |
+| `header`                 | Custom header area                      | `() => VNodeChild`                            |
+| `customActionIconRender` | Custom icon for `actions.customActions` | `({ item, index, originNode }) => VNodeChild` |
+| `customActionRender`     | Custom action node for `customActions`  | `({ item, index, originNode }) => VNodeChild` |
 
 The `header` slot takes precedence over the `header` prop. Passing `header={null}` hides the default header.
+`customActionIconRender` and `customActionRender` only apply to `actions.customActions`.
 
 ### Events
 

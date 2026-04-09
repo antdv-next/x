@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import type { SourcesProps } from "@antdv-next/x";
 
-import { Sources } from "@antdv-next/x";
-
 const items: SourcesProps["items"] = [
   {
     title: "1. Data source",
@@ -27,9 +25,9 @@ const items: SourcesProps["items"] = [
 <template>
   <div style="display: flex; align-items: center">
     <span>Use the inline mode in the text</span>
-    <Sources title="1" :items="items" inline />
+    <ax-sources title="1" :items="items" inline />
     <span>Use the inline mode in the text</span>
-    <Sources title="2" :items="items" inline />
+    <ax-sources title="2" :items="items" inline />
   </div>
 </template>
 

@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import { OpenAIOutlined, SyncOutlined } from "@antdv-next/icons";
-import { Think } from "@antdv-next/x";
-import { Button } from "antdv-next";
-import { h, ref } from "vue";
+import { ref } from "vue";
 
 const title = ref("Complete thinking");
-const loading = ref<boolean | ReturnType<typeof h>>(false);
+const loading = ref<boolean>(false);
 
 function handleClick() {
   loading.value = true;
@@ -21,26 +19,23 @@ function handleClick() {
 <template>
   <div>
     <div>
-      <Button @click="handleClick"> Run </Button>
+      <a-button @click="handleClick"> Run </a-button>
     </div>
     <br />
-    <Think :title="title" blink :loading="loading">
+    <ax-think :title="title" blink :loading="loading">
       This is deep thinking content.
-    </Think>
+    </ax-think>
     <br />
-    <Think
-      :title="title"
-      :loading="
-        loading
-          ? h(SyncOutlined, {
-              style: { fontSize: '12px', animation: 'spin 1s linear infinite' },
-            })
-          : false
-      "
-      :icon="h(OpenAIOutlined)"
-    >
+    <ax-think :title="title">
+      <template #icon>
+        <SyncOutlined
+          v-if="loading"
+          style="font-size: 12px; animation: spin 1s linear infinite"
+        />
+        <OpenAIOutlined v-else />
+      </template>
       Customize status icon.
-    </Think>
+    </ax-think>
   </div>
 </template>
 

@@ -1,9 +1,5 @@
-<script setup lang="ts">
-import { Think } from "@antdv-next/x";
-</script>
-
 <template>
-  <Think title="deep thinking"> This is deep thinking content. </Think>
+  <ax-think title="deep thinking"> This is deep thinking content. </ax-think>
 </template>
 
 <docs lang="zh-CN">

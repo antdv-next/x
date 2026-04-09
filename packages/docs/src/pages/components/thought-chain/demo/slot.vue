@@ -9,8 +9,6 @@ import {
   CloseCircleTwoTone,
   LoadingOutlined,
 } from "@antdv-next/icons";
-import { ThoughtChain } from "@antdv-next/x";
-import { Button, Card, Flex, Tag, Typography } from "antdv-next";
 
 const items: ThoughtChainItemType[] = [
   {
@@ -67,13 +65,13 @@ function getStatusColor(status?: ThoughtChainItemStatus) {
 </script>
 
 <template>
-  <Card :style="{ width: '560px' }">
-    <Flex vertical gap="large">
-      <Flex vertical gap="small">
-        <Typography.Title :level="5" :style="{ margin: 0 }">
+  <a-card :style="{ width: '560px' }">
+    <a-flex vertical gap="large">
+      <a-flex vertical gap="small">
+        <a-typography-title :level="5" :style="{ margin: 0 }">
           ThoughtChain scoped slots
-        </Typography.Title>
-        <ThoughtChain :items="items" :default-expanded-keys="['plan']">
+        </a-typography-title>
+        <ax-thought-chain :items="items" :default-expanded-keys="['plan']">
           <template #iconRender="{ status, index }">
             <LoadingOutlined v-if="status === 'loading'" />
             <CheckCircleTwoTone
@@ -88,16 +86,16 @@ function getStatusColor(status?: ThoughtChainItemStatus) {
           </template>
 
           <template #title="{ item }">
-            <Flex align="center" gap="small">
+            <a-flex align="center" gap="small">
               <span>{{ item.title }}</span>
-              <Tag :color="getStatusColor(item.status)">
+              <a-tag :color="getStatusColor(item.status)">
                 {{ getStatusLabel(item.status) }}
-              </Tag>
-            </Flex>
+              </a-tag>
+            </a-flex>
           </template>
 
           <template #content="{ originNode, expanded }">
-            <Flex
+            <a-flex
               vertical
               gap="small"
               :style="{
@@ -106,56 +104,56 @@ function getStatusColor(status?: ThoughtChainItemStatus) {
                 background: 'rgba(5, 145, 255, 0.06)',
               }"
             >
-              <Typography.Text type="secondary">
+              <a-typography-text type="secondary">
                 {{ originNode }}
-              </Typography.Text>
-              <Typography.Text strong>
+              </a-typography-text>
+              <a-typography-text strong>
                 {{ expanded ? "Expanded" : "Collapsed" }}
-              </Typography.Text>
-            </Flex>
+              </a-typography-text>
+            </a-flex>
           </template>
 
           <template #footer="{ item, expanded, collapsible, toggleExpand }">
-            <Flex align="center" justify="space-between" gap="small">
-              <Typography.Text type="secondary">
+            <a-flex align="center" justify="space-between" gap="small">
+              <a-typography-text type="secondary">
                 {{ item.footer }}
-              </Typography.Text>
-              <Button
+              </a-typography-text>
+              <a-button
                 v-if="collapsible"
                 type="link"
                 size="small"
                 @click="toggleExpand"
               >
                 {{ expanded ? "Collapse" : "Expand" }}
-              </Button>
-            </Flex>
+              </a-button>
+            </a-flex>
           </template>
-        </ThoughtChain>
-      </Flex>
+        </ax-thought-chain>
+      </a-flex>
 
-      <Flex vertical gap="small">
-        <Typography.Title :level="5" :style="{ margin: 0 }">
+      <a-flex vertical gap="small">
+        <a-typography-title :level="5" :style="{ margin: 0 }">
           ThoughtChain.Item slots
-        </Typography.Title>
-        <ThoughtChain.Item variant="outlined" status="success">
+        </a-typography-title>
+        <ax-thought-chain-item variant="outlined" status="success">
           <template #iconRender>
             <CheckCircleTwoTone two-tone-color="#52c41a" />
           </template>
           <template #title>
-            <Flex align="center" gap="small">
+            <a-flex align="center" gap="small">
               <span>Publish slot API</span>
-              <Tag color="success">Slot</Tag>
-            </Flex>
+              <a-tag color="success">Slot</a-tag>
+            </a-flex>
           </template>
           <template #description>
-            <Typography.Text type="secondary">
+            <a-typography-text type="secondary">
               packages/x/components/thought-chain
-            </Typography.Text>
+            </a-typography-text>
           </template>
-        </ThoughtChain.Item>
-      </Flex>
-    </Flex>
-  </Card>
+        </ax-thought-chain-item>
+      </a-flex>
+    </a-flex>
+  </a-card>
 </template>
 
 <docs lang="zh-CN">

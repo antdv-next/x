@@ -37,13 +37,36 @@ group:
 | classes              | 语义化类名覆写                              | `Partial<Record<'root' \| 'header' \| 'graph' \| 'code', string>>`                                     | -                                                              |
 | styles               | 语义化样式覆写                              | `Partial<Record<'root' \| 'header' \| 'graph' \| 'code', CSSProperties>>`                              | -                                                              |
 
+### ItemType
+
+`actions.customActions` 使用 `ItemType[]`，结构如下：
+
+```ts
+type ItemType = {
+  key?: string | number;
+  label?: string;
+  icon?: VNodeChild;
+  onItemClick?: (info?: ItemType) => void;
+  danger?: boolean;
+  subItems?: Omit<
+    ItemType,
+    "subItems" | "triggerSubMenuAction" | "actionRender"
+  >[];
+  triggerSubMenuAction?: MenuProps["triggerSubMenuAction"];
+  actionRender?: ((item: ItemType) => VNodeChild) | VNodeChild;
+};
+```
+
 ### 插槽
 
-| 插槽名   | 说明         | 类型               |
-| -------- | ------------ | ------------------ |
-| `header` | 自定义头部区 | `() => VNodeChild` |
+| 插槽名                   | 说明                          | 类型                                          |
+| ------------------------ | ----------------------------- | --------------------------------------------- |
+| `header`                 | 自定义头部区                  | `() => VNodeChild`                            |
+| `customActionIconRender` | 自定义 `customActions` 图标   | `({ item, index, originNode }) => VNodeChild` |
+| `customActionRender`     | 自定义 `customActions` 操作区 | `({ item, index, originNode }) => VNodeChild` |
 
 `header` 插槽优先级高于 `header` 属性；传入 `header={null}` 时可隐藏默认头部。
+`customActionIconRender` 与 `customActionRender` 仅作用于 `actions.customActions`。
 
 ### 事件
 

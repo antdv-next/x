@@ -1,9 +1,6 @@
 <script setup lang="ts">
 import type { ThoughtChainProps } from "@antdv-next/x";
 
-import { ThoughtChain } from "@antdv-next/x";
-import { Card } from "antdv-next";
-
 const items: ThoughtChainProps["items"] = [
   {
     title: "Knowledge Query",
@@ -26,9 +23,9 @@ const items: ThoughtChainProps["items"] = [
 </script>
 
 <template>
-  <Card :style="{ width: '500px' }">
-    <ThoughtChain :items="items" />
-  </Card>
+  <a-card :style="{ width: '500px' }">
+    <ax-thought-chain :items="items" />
+  </a-card>
 </template>
 
 <docs lang="zh-CN">

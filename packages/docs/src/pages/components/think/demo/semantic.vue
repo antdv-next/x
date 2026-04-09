@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { Think } from "@antdv-next/x";
 import { computed } from "vue";
 
 import { SemanticPreview } from "@/components/semantic";
@@ -34,11 +33,11 @@ const semantics = computed(() => [
 <template>
   <SemanticPreview component-name="Think" :semantics="semantics">
     <template #default="{ classes }">
-      <Think title="Deep Thinking" :classes="classes">
+      <ax-think title="Deep Thinking" :classes="classes">
         <p>1. Analyze the question</p>
         <p>2. Search related documents</p>
         <p>3. Generate answer</p>
-      </Think>
+      </ax-think>
     </template>
   </SemanticPreview>
 </template>

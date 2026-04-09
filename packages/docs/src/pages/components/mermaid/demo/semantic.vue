@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { Mermaid } from "@antdv-next/x";
 import { computed, ref } from "vue";
 
 import { SemanticPreview } from "@/components/semantic";
@@ -56,7 +55,7 @@ function handleRenderTypeChange(next: "image" | "code") {
 <template>
   <SemanticPreview component-name="Mermaid" :semantics="semantics">
     <template #default="{ classes }">
-      <Mermaid
+      <ax-mermaid
         :content="content"
         :classes="classes"
         @render-type-change="handleRenderTypeChange"

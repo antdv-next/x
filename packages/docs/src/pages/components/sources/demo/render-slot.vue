@@ -2,8 +2,6 @@
 import type { SourcesProps } from "@antdv-next/x";
 
 import { LinkOutlined } from "@antdv-next/icons";
-import { Sources } from "@antdv-next/x";
-import { Tag } from "antdv-next";
 
 const items: SourcesProps["items"] = [
   {
@@ -22,13 +20,13 @@ const items: SourcesProps["items"] = [
 </script>
 
 <template>
-  <Sources title="Used 2 sources" :items="items">
+  <ax-sources title="Used 2 sources" :items="items">
     <template #title="{ originNode }">
       <span>{{ originNode }} by slots</span>
     </template>
 
     <template #iconRender="{ index }">
-      <Tag color="processing">#{{ index + 1 }}</Tag>
+      <a-tag color="processing">#{{ index + 1 }}</a-tag>
     </template>
 
     <template #titleRender="{ item }">
@@ -41,7 +39,7 @@ const items: SourcesProps["items"] = [
     <template #description="{ item }">
       <span style="color: rgba(0, 0, 0, 0.45)">{{ item.description }}</span>
     </template>
-  </Sources>
+  </ax-sources>
 </template>
 
 <docs lang="zh-CN">

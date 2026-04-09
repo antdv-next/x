@@ -15,9 +15,6 @@ import {
   FileSearchOutlined,
   SignatureOutlined,
 } from "@antdv-next/icons";
-import { Conversations, XProvider } from "@antdv-next/x";
-import { Card, Flex, Tag, Typography } from "antdv-next";
-import { h } from "vue";
 
 const providerConversationsConfig: XProviderProps["conversations"] = {
   shortcutKeys: {
@@ -29,43 +26,46 @@ const items: ConversationsProps["items"] = [
   {
     key: "write",
     label: "Help Me Write",
-    icon: h(SignatureOutlined),
   },
   {
     key: "coding",
     label: "AI Coding",
-    icon: h(CodeOutlined),
   },
   {
     key: "createImage",
     label: "Create Image",
-    icon: h(FileImageOutlined),
   },
   {
     key: "deepSearch",
     label: "Deep Search",
-    icon: h(FileSearchOutlined),
   },
 ];
 </script>
 
 <template>
-  <Flex :gap="12" style="margin-bottom: 16px" align="center">
-    <Typography.Text>
+  <a-flex :gap="12" style="margin-bottom: 16px" align="center">
+    <a-typography-text>
       You can switch sessions using the shortcut key:
-      <Tag>Alt/⌥</Tag>
+      <a-tag>Alt/⌥</a-tag>
       +
-      <Tag>number</Tag>
-    </Typography.Text>
-  </Flex>
+      <a-tag>number</a-tag>
+    </a-typography-text>
+  </a-flex>
 
-  <Card>
-    <XProvider :conversations="providerConversationsConfig">
-      <Conversations
+  <a-card>
+    <ax-x-provider :conversations="providerConversationsConfig">
+      <ax-conversations
         :style="{ width: '220px' }"
         default-active-key="write"
         :items="items"
-      />
-    </XProvider>
-  </Card>
+      >
+        <template #iconRender="{ item }">
+          <SignatureOutlined v-if="item.key === 'write'" />
+          <CodeOutlined v-else-if="item.key === 'coding'" />
+          <FileImageOutlined v-else-if="item.key === 'createImage'" />
+          <FileSearchOutlined v-else-if="item.key === 'deepSearch'" />
+        </template>
+      </ax-conversations>
+    </ax-x-provider>
+  </a-card>
 </template>

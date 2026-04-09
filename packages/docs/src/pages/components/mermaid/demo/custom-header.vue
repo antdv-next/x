@@ -1,7 +1,4 @@
 <script setup lang="ts">
-import { Mermaid } from "@antdv-next/x";
-import { Button, Space } from "antdv-next";
-
 const content = `flowchart LR
   A[User Login] --> B{Validate}
   B -->|Success| C[System Entry]
@@ -11,17 +8,17 @@ const content = `flowchart LR
 </script>
 
 <template>
-  <Mermaid :content="content">
+  <ax-mermaid :content="content">
     <template #header>
       <div class="custom-header">
-        <Space>
+        <a-space>
           <span class="custom-title">Login Flow</span>
-          <Button type="primary" size="small">Export</Button>
-          <Button size="small">Reset</Button>
-        </Space>
+          <a-button type="primary" size="small">Export</a-button>
+          <a-button size="small">Reset</a-button>
+        </a-space>
       </div>
     </template>
-  </Mermaid>
+  </ax-mermaid>
 </template>
 
 <style scoped>

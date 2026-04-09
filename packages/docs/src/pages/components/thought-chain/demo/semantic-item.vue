@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { CodeOutlined } from "@antdv-next/icons";
-import { ThoughtChain } from "@antdv-next/x";
-import { computed, h } from "vue";
+import { computed } from "vue";
 
 import { SemanticPreview } from "@/components/semantic";
 import { useLocale } from "@/composables/use-locale";
@@ -38,14 +37,17 @@ const semantics = computed(() => [
 <template>
   <SemanticPreview component-name="ThoughtChain.Item" :semantics="semantics">
     <template #default="{ classes }">
-      <ThoughtChain.Item
+      <ax-thought-chain-item
         variant="solid"
-        :icon="h(CodeOutlined)"
         title="Execute Command"
         description="mkdir -p src/components"
         status="success"
         :classes="classes"
-      />
+      >
+        <template #iconRender>
+          <CodeOutlined />
+        </template>
+      </ax-thought-chain-item>
     </template>
   </SemanticPreview>
 </template>

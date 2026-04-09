@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { ThoughtChain } from "@antdv-next/x";
-import { computed, h } from "vue";
+import { computed } from "vue";
 
 import { SemanticPreview } from "@/components/semantic";
 import { useLocale } from "@/composables/use-locale";
@@ -44,14 +43,14 @@ const items = [
     key: "1",
     title: "Analyze Task",
     status: "success" as const,
-    content: h("p", "Understanding user requirements..."),
-    footer: h("span", "Completed in 2s"),
+    content: "Understanding user requirements...",
+    footer: "Completed in 2s",
   },
   {
     key: "2",
     title: "Generate Code",
     status: "loading" as const,
-    content: h("p", "Writing implementation..."),
+    content: "Writing implementation...",
   },
 ];
 </script>
@@ -59,7 +58,7 @@ const items = [
 <template>
   <SemanticPreview component-name="ThoughtChain" :semantics="semantics">
     <template #default="{ classes }">
-      <ThoughtChain
+      <ax-thought-chain
         :items="items"
         :default-expanded-keys="['1', '2']"
         :classes="classes"

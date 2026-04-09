@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import type { SourcesProps } from "@antdv-next/x";
 
-import { Sources } from "@antdv-next/x";
-
 const items: SourcesProps["items"] = [
   {
     title: "1. Data source",
@@ -20,7 +18,7 @@ const items: SourcesProps["items"] = [
 </script>
 
 <template>
-  <Sources title="Used 3 sources" :items="items" />
+  <ax-sources title="Used 3 sources" :items="items" />
 </template>
 
 <docs lang="zh-CN">

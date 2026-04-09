@@ -2,9 +2,7 @@
 import type { ThoughtChainProps } from "@antdv-next/x";
 
 import { CodeOutlined, EditOutlined } from "@antdv-next/icons";
-import { ThoughtChain } from "@antdv-next/x";
-import { Button, Card, Flex, Typography } from "antdv-next";
-import { h, ref } from "vue";
+import { ref } from "vue";
 
 const expandedKeys = ref(["create_task"]);
 
@@ -14,30 +12,6 @@ const items: ThoughtChainProps["items"] = [
     title: "Create Task: Develop New Component",
     description: "Execute files needed for new component creation",
     collapsible: true,
-    content: h(Flex, { gap: "small", vertical: true }, () => [
-      h(
-        Typography.Text,
-        { type: "secondary" },
-        () => "Creating folder for new component",
-      ),
-      h(ThoughtChain.Item, {
-        variant: "solid",
-        icon: h(CodeOutlined),
-        title: "Executing command",
-        description: "mkdir -p component",
-      }),
-      h(
-        Typography.Text,
-        { type: "secondary" },
-        () => "Creating files needed for new component",
-      ),
-      h(ThoughtChain.Item, {
-        variant: "solid",
-        icon: h(EditOutlined),
-        title: "Creating file",
-        description: "component/index.tsx",
-      }),
-    ]),
     status: "success",
   },
   {
@@ -45,49 +19,81 @@ const items: ThoughtChainProps["items"] = [
     title: "Check Task Execution Steps Completion",
     collapsible: true,
     description: "Verify the overall task execution logic and feasibility",
-    content: h(Flex, { gap: "small", vertical: true }, () => [
-      h(ThoughtChain.Item, {
-        variant: "solid",
-        status: "success",
-        title: "Folder created",
-        description: "component",
-      }),
-      h(ThoughtChain.Item, {
-        variant: "solid",
-        status: "success",
-        title: "File created",
-        description: "component/index.tsx",
-      }),
-    ]),
     status: "success",
   },
   {
     key: "used_task",
     title: "Using the New Component",
     description: "Using the generated component to complete the task",
-    content: h(Flex, { gap: "small", vertical: true }, () => [
-      h(ThoughtChain.Item, {
-        variant: "solid",
-        status: "success",
-        title: "File created",
-        description: "component",
-      }),
-    ]),
+    collapsible: true,
     status: "loading",
   },
 ];
 </script>
 
 <template>
-  <Card :style="{ width: '500px' }">
-    <Button
+  <a-card :style="{ width: '500px' }">
+    <a-button
       :style="{ marginBottom: '16px' }"
       @click="expandedKeys = ['check_task']"
     >
       Open "check_task" details
-    </Button>
-    <ThoughtChain v-model:expanded-keys="expandedKeys" :items="items" />
-  </Card>
+    </a-button>
+    <ax-thought-chain v-model:expanded-keys="expandedKeys" :items="items">
+      <template #content="{ item }">
+        <a-flex v-if="item.key === 'create_task'" gap="small" vertical>
+          <a-typography-text type="secondary">
+            Creating folder for new component
+          </a-typography-text>
+          <ax-thought-chain-item
+            variant="solid"
+            title="Executing command"
+            description="mkdir -p component"
+          >
+            <template #iconRender>
+              <CodeOutlined />
+            </template>
+          </ax-thought-chain-item>
+          <a-typography-text type="secondary">
+            Creating files needed for new component
+          </a-typography-text>
+          <ax-thought-chain-item
+            variant="solid"
+            title="Creating file"
+            description="component/index.tsx"
+          >
+            <template #iconRender>
+              <EditOutlined />
+            </template>
+          </ax-thought-chain-item>
+        </a-flex>
+
+        <a-flex v-else-if="item.key === 'check_task'" gap="small" vertical>
+          <ax-thought-chain-item
+            variant="solid"
+            status="success"
+            title="Folder created"
+            description="component"
+          />
+          <ax-thought-chain-item
+            variant="solid"
+            status="success"
+            title="File created"
+            description="component/index.tsx"
+          />
+        </a-flex>
+
+        <a-flex v-else-if="item.key === 'used_task'" gap="small" vertical>
+          <ax-thought-chain-item
+            variant="solid"
+            status="success"
+            title="File created"
+            description="component"
+          />
+        </a-flex>
+      </template>
+    </ax-thought-chain>
+  </a-card>
 </template>
 
 <docs lang="zh-CN">

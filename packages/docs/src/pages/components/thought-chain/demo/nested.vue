@@ -1,41 +1,45 @@
 <script setup lang="ts">
 import type { ThoughtChainProps } from "@antdv-next/x";
 
-import { ThoughtChain } from "@antdv-next/x";
-import { Button, Card } from "antdv-next";
-import { h } from "vue";
+const nestedItemsMap: Record<string, ThoughtChainProps["items"]> = {
+  task_1: [
+    { title: "1-1 Thought Chain Item", description: "description" },
+    { title: "1-2 Thought Chain Item", description: "description" },
+  ],
+  task_2: [
+    { title: "2-1 Thought Chain Item", description: "description" },
+    { title: "2-2 Thought Chain Item", description: "description" },
+    { title: "2-3 Thought Chain Item", description: "description" },
+  ],
+};
 
 const items: ThoughtChainProps["items"] = [
   {
+    key: "task_1",
     title: "1 - Thought Chain Item",
     description: "description",
-    footer: h(Button, () => "1 - Thought Chain Item Footer"),
-    content: h(ThoughtChain, {
-      items: [
-        { title: "1-1 Thought Chain Item", description: "description" },
-        { title: "1-2 Thought Chain Item", description: "description" },
-      ],
-    }),
+    collapsible: true,
   },
   {
+    key: "task_2",
     title: "2 - Thought Chain Item",
     description: "description",
-    footer: h(Button, () => "2 - Thought Chain Item Footer"),
-    content: h(ThoughtChain, {
-      items: [
-        { title: "2-1 Thought Chain Item", description: "description" },
-        { title: "2-2 Thought Chain Item", description: "description" },
-        { title: "2-3 Thought Chain Item", description: "description" },
-      ],
-    }),
+    collapsible: true,
   },
 ];
 </script>
 
 <template>
-  <Card :style="{ width: '500px' }">
-    <ThoughtChain :items="items" />
-  </Card>
+  <a-card :style="{ width: '500px' }">
+    <ax-thought-chain :items="items">
+      <template #content="{ item }">
+        <ax-thought-chain :items="nestedItemsMap[item.key as string] || []" />
+      </template>
+      <template #footer="{ item }">
+        <a-button>{{ item.title }} Footer</a-button>
+      </template>
+    </ax-thought-chain>
+  </a-card>
 </template>
 
 <docs lang="zh-CN">

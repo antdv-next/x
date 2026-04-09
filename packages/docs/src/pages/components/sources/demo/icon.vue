@@ -6,30 +6,34 @@ import {
   TwitterOutlined,
   YoutubeOutlined,
 } from "@antdv-next/icons";
-import { Sources } from "@antdv-next/x";
-import { h } from "vue";
 
 const items: SourcesProps["items"] = [
   {
+    key: "twitter",
     title: "Data source from twitter",
     url: "https://x.antdv-next.com/components",
-    icon: h(TwitterOutlined),
   },
   {
+    key: "youtube",
     title: "Data source from youtube",
     url: "https://x.antdv-next.com/components",
-    icon: h(YoutubeOutlined),
   },
   {
+    key: "github",
     title: "Data source from github",
     url: "https://x.antdv-next.com/components",
-    icon: h(GithubOutlined),
   },
 ];
 </script>
 
 <template>
-  <Sources title="Used 3 sources" :items="items" expandIconPosition="end" />
+  <ax-sources title="Used 3 sources" :items="items" expandIconPosition="end">
+    <template #iconRender="{ item }">
+      <TwitterOutlined v-if="item.key === 'twitter'" />
+      <YoutubeOutlined v-else-if="item.key === 'youtube'" />
+      <GithubOutlined v-else-if="item.key === 'github'" />
+    </template>
+  </ax-sources>
 </template>
 
 <docs lang="zh-CN">

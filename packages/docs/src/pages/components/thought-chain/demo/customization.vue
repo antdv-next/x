@@ -7,141 +7,162 @@ import {
   HeartTwoTone,
   SmileTwoTone,
 } from "@antdv-next/icons";
-import { Think, ThoughtChain } from "@antdv-next/x";
-import { Button, Card, Flex, Typography } from "antdv-next";
-import { h } from "vue";
 
 const items: ThoughtChainItemType[] = [
   {
+    key: "create_task",
     title: "Create Task",
     description: "description",
-    icon: h(HeartTwoTone, { twoToneColor: "#eb2f96" }),
-    footer: h(Button, { block: true }, () => "Thought Chain Item Footer"),
-    content: h(Flex, { gap: "small", vertical: true }, () => [
-      h(
-        Think,
-        { title: "Thinking Process" },
-        () =>
-          "1. Analyze task, understand task workflow\n2. Task creation, files needed for task\n3. Task execution, using new component",
-      ),
-      h(
-        Typography.Text,
-        { type: "secondary" },
-        () => "Creating folder for new component",
-      ),
-      h(ThoughtChain.Item, {
-        variant: "solid",
-        icon: h(CodeOutlined),
-        title: "Executing command",
-        description: "mkdir -p component",
-      }),
-      h(
-        Typography.Text,
-        { type: "secondary" },
-        () => "Creating files needed for new component",
-      ),
-      h(ThoughtChain.Item, {
-        variant: "solid",
-        icon: h(EditOutlined),
-        title: "Creating file",
-        description: "component/index.tsx",
-      }),
-      h(
-        Typography.Text,
-        { type: "secondary" },
-        () => "Creating Chinese documentation file for new component",
-      ),
-      h(ThoughtChain.Item, {
-        variant: "solid",
-        icon: h(EditOutlined),
-        title: "Continue creating file",
-        description: "component/index.zh-CN.md",
-      }),
-      h(
-        Typography.Text,
-        { type: "secondary" },
-        () => "Creating English description file for new component",
-      ),
-      h(ThoughtChain.Item, {
-        variant: "solid",
-        icon: h(EditOutlined),
-        title: "Continue creating file",
-        description: "component/index.en-US.md",
-      }),
-    ]),
+    collapsible: true,
   },
   {
     key: "check_task",
     title: "Check Task Execution Steps Completion",
-    icon: h(SmileTwoTone),
     collapsible: true,
     description: "Verify the overall task execution logic and feasibility",
-    content: h(Flex, { gap: "small", vertical: true }, () => [
-      h(ThoughtChain.Item, {
-        variant: "solid",
-        status: "success",
-        title: "Folder creation completed",
-        description: "component",
-      }),
-      h(ThoughtChain.Item, {
-        variant: "solid",
-        status: "success",
-        title: "File creation completed",
-        description: "component/index.tsx",
-      }),
-      h(ThoughtChain.Item, {
-        variant: "solid",
-        status: "success",
-        title: "File creation completed",
-        description: "component/index.zh-CN.md",
-      }),
-      h(ThoughtChain.Item, {
-        variant: "solid",
-        status: "success",
-        title: "File creation completed",
-        description: "component/index.en-US.md",
-      }),
-    ]),
   },
   {
     key: "used_task",
     title: "Checking Task Execution Steps",
+    collapsible: true,
     description: "Verify the overall task execution logic and feasibility",
-    content: h(Flex, { gap: "small", vertical: true }, () => [
-      h(ThoughtChain.Item, {
-        variant: "solid",
-        status: "success",
-        title: "Folder creation completed",
-        description: "component",
-      }),
-      h(ThoughtChain.Item, {
-        variant: "solid",
-        status: "success",
-        title: "File creation completed",
-        description: "component/index.tsx",
-      }),
-      h(ThoughtChain.Item, {
-        variant: "solid",
-        status: "success",
-        title: "File creation completed",
-        description: "component/index.zh-CN.md",
-      }),
-      h(ThoughtChain.Item, {
-        variant: "solid",
-        status: "success",
-        title: "File creation completed",
-        description: "component/index.en-US.md",
-      }),
-    ]),
     status: "error",
   },
 ];
 </script>
 
 <template>
-  <Card :style="{ width: '500px' }">
-    <ThoughtChain :items="items" line="dashed" />
-  </Card>
+  <a-card :style="{ width: '500px' }">
+    <ax-thought-chain :items="items" line="dashed">
+      <template #iconRender="{ item }">
+        <HeartTwoTone
+          v-if="item.key === 'create_task'"
+          two-tone-color="#eb2f96"
+        />
+        <SmileTwoTone v-else-if="item.key === 'check_task'" />
+      </template>
+
+      <template #content="{ item }">
+        <a-flex v-if="item.key === 'create_task'" gap="small" vertical>
+          <ax-think title="Thinking Process">
+            1. Analyze task, understand task workflow
+            <br />
+            2. Task creation, files needed for task
+            <br />
+            3. Task execution, using new component
+          </ax-think>
+          <a-typography-text type="secondary">
+            Creating folder for new component
+          </a-typography-text>
+          <ax-thought-chain-item
+            variant="solid"
+            title="Executing command"
+            description="mkdir -p component"
+          >
+            <template #iconRender>
+              <CodeOutlined />
+            </template>
+          </ax-thought-chain-item>
+          <a-typography-text type="secondary">
+            Creating files needed for new component
+          </a-typography-text>
+          <ax-thought-chain-item
+            variant="solid"
+            title="Creating file"
+            description="component/index.tsx"
+          >
+            <template #iconRender>
+              <EditOutlined />
+            </template>
+          </ax-thought-chain-item>
+          <a-typography-text type="secondary">
+            Creating Chinese documentation file for new component
+          </a-typography-text>
+          <ax-thought-chain-item
+            variant="solid"
+            title="Continue creating file"
+            description="component/index.zh-CN.md"
+          >
+            <template #iconRender>
+              <EditOutlined />
+            </template>
+          </ax-thought-chain-item>
+          <a-typography-text type="secondary">
+            Creating English description file for new component
+          </a-typography-text>
+          <ax-thought-chain-item
+            variant="solid"
+            title="Continue creating file"
+            description="component/index.en-US.md"
+          >
+            <template #iconRender>
+              <EditOutlined />
+            </template>
+          </ax-thought-chain-item>
+        </a-flex>
+
+        <a-flex v-else-if="item.key === 'check_task'" gap="small" vertical>
+          <ax-thought-chain-item
+            variant="solid"
+            status="success"
+            title="Folder creation completed"
+            description="component"
+          />
+          <ax-thought-chain-item
+            variant="solid"
+            status="success"
+            title="File creation completed"
+            description="component/index.tsx"
+          />
+          <ax-thought-chain-item
+            variant="solid"
+            status="success"
+            title="File creation completed"
+            description="component/index.zh-CN.md"
+          />
+          <ax-thought-chain-item
+            variant="solid"
+            status="success"
+            title="File creation completed"
+            description="component/index.en-US.md"
+          />
+        </a-flex>
+
+        <a-flex v-else-if="item.key === 'used_task'" gap="small" vertical>
+          <ax-thought-chain-item
+            variant="solid"
+            status="success"
+            title="Folder creation completed"
+            description="component"
+          />
+          <ax-thought-chain-item
+            variant="solid"
+            status="success"
+            title="File creation completed"
+            description="component/index.tsx"
+          />
+          <ax-thought-chain-item
+            variant="solid"
+            status="success"
+            title="File creation completed"
+            description="component/index.zh-CN.md"
+          />
+          <ax-thought-chain-item
+            variant="solid"
+            status="success"
+            title="File creation completed"
+            description="component/index.en-US.md"
+          />
+        </a-flex>
+      </template>
+
+      <template #footer="{ item }">
+        <a-button v-if="item.key === 'create_task'" block>
+          Thought Chain Item Footer
+        </a-button>
+      </template>
+    </ax-thought-chain>
+  </a-card>
 </template>
 
 <docs lang="zh-CN">

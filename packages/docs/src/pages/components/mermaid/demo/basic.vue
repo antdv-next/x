@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { Mermaid } from "@antdv-next/x";
-
 const content = `graph TD
   A[Start] --> B{Data Valid?}
   B -->|Yes| C[Process Data]
@@ -11,7 +9,7 @@ const content = `graph TD
 </script>
 
 <template>
-  <Mermaid :content="content" />
+  <ax-mermaid :content="content" />
 </template>
 
 <docs lang="zh-CN">

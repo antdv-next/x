@@ -5,9 +5,6 @@ import {
   SearchOutlined,
   SunOutlined,
 } from "@antdv-next/icons";
-import { ThoughtChain } from "@antdv-next/x";
-import { Flex, Typography } from "antdv-next";
-import { h } from "vue";
 
 function onClick() {
   console.log("Item Click");
@@ -15,282 +12,321 @@ function onClick() {
 </script>
 
 <template>
-  <Flex vertical gap="middle">
-    <Flex gap="small" align="flex-start">
-      <Typography.Text :style="{ whiteSpace: 'nowrap' }"
-        >loading status:</Typography.Text
+  <a-flex vertical gap="middle">
+    <a-flex gap="small" align="flex-start">
+      <a-typography-text :style="{ whiteSpace: 'nowrap' }"
+        >loading status:</a-typography-text
       >
-      <Flex wrap align="center" gap="middle">
-        <ThoughtChain.Item
+      <a-flex wrap align="center" gap="middle">
+        <ax-thought-chain-item
           variant="solid"
           status="loading"
           title="Tool Calling"
         />
-        <ThoughtChain.Item
+        <ax-thought-chain-item
           variant="outlined"
           status="loading"
           title="Tool Calling"
         />
-        <ThoughtChain.Item
+        <ax-thought-chain-item
           variant="text"
           status="loading"
           title="Tool Calling"
         />
-      </Flex>
-    </Flex>
+      </a-flex>
+    </a-flex>
 
-    <Flex gap="small" align="flex-start">
-      <Typography.Text :style="{ whiteSpace: 'nowrap' }"
-        >success status:</Typography.Text
+    <a-flex gap="small" align="flex-start">
+      <a-typography-text :style="{ whiteSpace: 'nowrap' }"
+        >success status:</a-typography-text
       >
-      <Flex wrap align="center" gap="middle">
-        <ThoughtChain.Item
+      <a-flex wrap align="center" gap="middle">
+        <ax-thought-chain-item
           variant="solid"
           status="success"
           title="Tool Call Finished"
         />
-        <ThoughtChain.Item
+        <ax-thought-chain-item
           variant="outlined"
           status="success"
           title="Tool Call Finished"
         />
-        <ThoughtChain.Item
+        <ax-thought-chain-item
           variant="text"
           status="success"
           title="Tool Call Finished"
         />
-      </Flex>
-    </Flex>
+      </a-flex>
+    </a-flex>
 
-    <Flex gap="small" align="flex-start">
-      <Typography.Text :style="{ whiteSpace: 'nowrap' }"
-        >error status:</Typography.Text
+    <a-flex gap="small" align="flex-start">
+      <a-typography-text :style="{ whiteSpace: 'nowrap' }"
+        >error status:</a-typography-text
       >
-      <Flex wrap align="center" gap="middle">
-        <ThoughtChain.Item
+      <a-flex wrap align="center" gap="middle">
+        <ax-thought-chain-item
           variant="solid"
           status="error"
           title="Tool Call Error"
         />
-        <ThoughtChain.Item
+        <ax-thought-chain-item
           variant="outlined"
           status="error"
           title="Tool Call Error"
         />
-        <ThoughtChain.Item
+        <ax-thought-chain-item
           variant="text"
           status="error"
           title="Tool Call Error"
         />
-      </Flex>
-    </Flex>
+      </a-flex>
+    </a-flex>
 
-    <Flex gap="small" align="flex-start">
-      <Typography.Text :style="{ whiteSpace: 'nowrap' }"
-        >abort status:</Typography.Text
+    <a-flex gap="small" align="flex-start">
+      <a-typography-text :style="{ whiteSpace: 'nowrap' }"
+        >abort status:</a-typography-text
       >
-      <Flex wrap align="center" gap="middle">
-        <ThoughtChain.Item
+      <a-flex wrap align="center" gap="middle">
+        <ax-thought-chain-item
           variant="solid"
           status="abort"
           title="Agent Response Aborted"
         />
-        <ThoughtChain.Item
+        <ax-thought-chain-item
           variant="outlined"
           status="abort"
           title="Agent Response Aborted"
         />
-        <ThoughtChain.Item
+        <ax-thought-chain-item
           variant="text"
           status="abort"
           title="Agent Response Aborted"
         />
-      </Flex>
-    </Flex>
+      </a-flex>
+    </a-flex>
 
-    <Flex gap="small" align="flex-start">
-      <Typography.Text :style="{ whiteSpace: 'nowrap' }"
-        >custom icon:</Typography.Text
+    <a-flex gap="small" align="flex-start">
+      <a-typography-text :style="{ whiteSpace: 'nowrap' }"
+        >custom icon:</a-typography-text
       >
-      <Flex wrap align="center" gap="middle">
-        <ThoughtChain.Item
-          variant="solid"
-          :icon="h(SunOutlined)"
-          title="Task Completed"
-        />
-        <ThoughtChain.Item
-          variant="outlined"
-          :icon="h(SunOutlined)"
-          title="Task Completed"
-        />
-        <ThoughtChain.Item
-          variant="text"
-          :icon="h(SunOutlined)"
-          title="Task Completed"
-        />
-      </Flex>
-    </Flex>
+      <a-flex wrap align="center" gap="middle">
+        <ax-thought-chain-item variant="solid" title="Task Completed">
+          <template #iconRender>
+            <SunOutlined />
+          </template>
+        </ax-thought-chain-item>
+        <ax-thought-chain-item variant="outlined" title="Task Completed">
+          <template #iconRender>
+            <SunOutlined />
+          </template>
+        </ax-thought-chain-item>
+        <ax-thought-chain-item variant="text" title="Task Completed">
+          <template #iconRender>
+            <SunOutlined />
+          </template>
+        </ax-thought-chain-item>
+      </a-flex>
+    </a-flex>
 
-    <Flex gap="small" align="flex-start">
-      <Typography.Text :style="{ whiteSpace: 'nowrap' }"
-        >click:</Typography.Text
+    <a-flex gap="small" align="flex-start">
+      <a-typography-text :style="{ whiteSpace: 'nowrap' }"
+        >click:</a-typography-text
       >
-      <Flex wrap align="center" gap="middle">
-        <ThoughtChain.Item
+      <a-flex wrap align="center" gap="middle">
+        <ax-thought-chain-item
           variant="solid"
           :on-click="onClick"
-          :icon="h(GlobalOutlined)"
           title="Opening Webpage"
           description="https://x.ant.design/docs/playground/copilot"
-        />
-        <ThoughtChain.Item
+        >
+          <template #iconRender>
+            <GlobalOutlined />
+          </template>
+        </ax-thought-chain-item>
+        <ax-thought-chain-item
           variant="outlined"
           :on-click="onClick"
-          :icon="h(EditOutlined)"
           title="Creating"
           description="todo.md"
-        />
-        <ThoughtChain.Item
+        >
+          <template #iconRender>
+            <EditOutlined />
+          </template>
+        </ax-thought-chain-item>
+        <ax-thought-chain-item
           variant="text"
           :on-click="onClick"
-          :icon="h(SearchOutlined)"
           title="Searching"
           description="Route Information"
-        />
-        <ThoughtChain.Item
+        >
+          <template #iconRender>
+            <SearchOutlined />
+          </template>
+        </ax-thought-chain-item>
+        <ax-thought-chain-item
           variant="solid"
           status="error"
           :on-click="onClick"
-          :icon="h(GlobalOutlined)"
           title="Opening Webpage"
           description="https://x.ant.design/docs/playground/copilot"
-        />
-        <ThoughtChain.Item
+        >
+          <template #iconRender>
+            <GlobalOutlined />
+          </template>
+        </ax-thought-chain-item>
+        <ax-thought-chain-item
           :on-click="onClick"
           variant="solid"
           status="success"
           title="Tool Call Finished"
         />
-        <ThoughtChain.Item
+        <ax-thought-chain-item
           :on-click="onClick"
           variant="outlined"
           status="success"
           title="Tool Call Finished"
         />
-        <ThoughtChain.Item
+        <ax-thought-chain-item
           :on-click="onClick"
           variant="text"
           status="success"
           title="Tool Call Finished"
         />
-      </Flex>
-    </Flex>
+      </a-flex>
+    </a-flex>
 
-    <Flex gap="small" align="flex-start">
-      <Typography.Text :style="{ whiteSpace: 'nowrap' }"
-        >blink:</Typography.Text
+    <a-flex gap="small" align="flex-start">
+      <a-typography-text :style="{ whiteSpace: 'nowrap' }"
+        >blink:</a-typography-text
       >
-      <Flex wrap align="center" gap="middle">
-        <ThoughtChain.Item
+      <a-flex wrap align="center" gap="middle">
+        <ax-thought-chain-item
           :blink="true"
           variant="solid"
-          :icon="h(SunOutlined)"
           title="Task Completed"
-        />
-        <ThoughtChain.Item
+        >
+          <template #iconRender>
+            <SunOutlined />
+          </template>
+        </ax-thought-chain-item>
+        <ax-thought-chain-item
           :blink="true"
           variant="outlined"
-          :icon="h(SunOutlined)"
           title="Task Completed"
-        />
-        <ThoughtChain.Item
+        >
+          <template #iconRender>
+            <SunOutlined />
+          </template>
+        </ax-thought-chain-item>
+        <ax-thought-chain-item
           :blink="true"
           variant="text"
-          :icon="h(SunOutlined)"
           title="Task Completed"
           description="Route Information"
-        />
-      </Flex>
-    </Flex>
+        >
+          <template #iconRender>
+            <SunOutlined />
+          </template>
+        </ax-thought-chain-item>
+      </a-flex>
+    </a-flex>
 
-    <Flex gap="small" align="flex-start">
-      <Typography.Text :style="{ whiteSpace: 'nowrap' }"
-        >disabled:</Typography.Text
+    <a-flex gap="small" align="flex-start">
+      <a-typography-text :style="{ whiteSpace: 'nowrap' }"
+        >disabled:</a-typography-text
       >
-      <Flex wrap align="center" gap="middle">
-        <ThoughtChain.Item
+      <a-flex wrap align="center" gap="middle">
+        <ax-thought-chain-item
           disabled
           :on-click="onClick"
           variant="solid"
-          :icon="h(SunOutlined)"
           title="Task Completed"
-        />
-        <ThoughtChain.Item
+        >
+          <template #iconRender>
+            <SunOutlined />
+          </template>
+        </ax-thought-chain-item>
+        <ax-thought-chain-item
           disabled
           :on-click="onClick"
           variant="outlined"
-          :icon="h(SunOutlined)"
           title="Task Completed"
-        />
-        <ThoughtChain.Item
+        >
+          <template #iconRender>
+            <SunOutlined />
+          </template>
+        </ax-thought-chain-item>
+        <ax-thought-chain-item
           disabled
           :on-click="onClick"
           variant="text"
-          :icon="h(SunOutlined)"
           title="Task Completed"
           description="Route Information"
-        />
-        <ThoughtChain.Item
+        >
+          <template #iconRender>
+            <SunOutlined />
+          </template>
+        </ax-thought-chain-item>
+        <ax-thought-chain-item
           disabled
           variant="solid"
           status="error"
           :on-click="onClick"
-          :icon="h(GlobalOutlined)"
           title="Opening Webpage"
           description="playground/copilot"
-        />
-        <ThoughtChain.Item
+        >
+          <template #iconRender>
+            <GlobalOutlined />
+          </template>
+        </ax-thought-chain-item>
+        <ax-thought-chain-item
           disabled
           variant="outlined"
           status="error"
           :on-click="onClick"
-          :icon="h(GlobalOutlined)"
           title="Opening Webpage"
           description="playground/copilot"
-        />
-        <ThoughtChain.Item
+        >
+          <template #iconRender>
+            <GlobalOutlined />
+          </template>
+        </ax-thought-chain-item>
+        <ax-thought-chain-item
           disabled
           variant="text"
           status="error"
           :on-click="onClick"
-          :icon="h(GlobalOutlined)"
           title="Opening Webpage"
           description="playground/copilot"
-        />
-        <ThoughtChain.Item
+        >
+          <template #iconRender>
+            <GlobalOutlined />
+          </template>
+        </ax-thought-chain-item>
+        <ax-thought-chain-item
           disabled
           :on-click="onClick"
           variant="solid"
           status="success"
           title="Tool Call Finished"
         />
-        <ThoughtChain.Item
+        <ax-thought-chain-item
           disabled
           :on-click="onClick"
           variant="outlined"
           status="success"
           title="Tool Call Finished"
         />
-        <ThoughtChain.Item
+        <ax-thought-chain-item
           disabled
           :on-click="onClick"
           variant="text"
           status="success"
           title="Tool Call Finished"
         />
-      </Flex>
-    </Flex>
-  </Flex>
+      </a-flex>
+    </a-flex>
+  </a-flex>
 </template>
 
 <docs lang="zh-CN">

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { SourcesProps } from "@antdv-next/x";
 
-import { Sources } from "@antdv-next/x";
 import { computed } from "vue";
 
 import { SemanticPreview } from "@/components/semantic";
@@ -55,7 +54,7 @@ const items: SourcesProps["items"] = [
     :motion="true"
   >
     <template #default="{ classes }">
-      <Sources title="Used 3 sources" :items="items" :classes="classes" />
+      <ax-sources title="Used 3 sources" :items="items" :classes="classes" />
     </template>
   </SemanticPreview>
 </template>

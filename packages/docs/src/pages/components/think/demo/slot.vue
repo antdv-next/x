@@ -1,20 +1,18 @@
 <script setup lang="ts">
 import { BulbOutlined } from "@antdv-next/icons";
-import { Think } from "@antdv-next/x";
-import { Button, Flex, Tag, Typography } from "antdv-next";
 </script>
 
 <template>
-  <Think title="prop title" :icon="BulbOutlined">
+  <ax-think title="prop title" :icon="BulbOutlined">
     <template #icon>
-      <Tag color="gold">AI</Tag>
+      <a-tag color="gold">AI</a-tag>
     </template>
 
     <template #title>
-      <Flex align="center" gap="small">
-        <Typography.Text strong>Reasoning Trace</Typography.Text>
-        <Tag color="processing">streaming</Tag>
-      </Flex>
+      <a-flex align="center" gap="small">
+        <a-typography-text strong>Reasoning Trace</a-typography-text>
+        <a-tag color="processing">streaming</a-tag>
+      </a-flex>
     </template>
 
     <div>
@@ -22,9 +20,9 @@ import { Button, Flex, Tag, Typography } from "antdv-next";
         The model is comparing options, checking constraints, and narrowing the
         final answer.
       </p>
-      <Button type="link" size="small">Inspect details</Button>
+      <a-button type="link" size="small">Inspect details</a-button>
     </div>
-  </Think>
+  </ax-think>
 </template>
 
 <docs lang="zh-CN">

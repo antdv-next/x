@@ -19,18 +19,9 @@ import {
   FileSearchOutlined,
   SignatureOutlined,
 } from "@antdv-next/icons";
-import { Actions, Conversations, XProvider } from "@antdv-next/x";
-import {
-  Card,
-  Flex,
-  Radio,
-  RadioButton,
-  RadioGroup,
-  Typography,
-} from "antdv-next";
 import enUS from "antdv-next/dist/locale/en_US";
 import zhCN from "antdv-next/dist/locale/zh_CN";
-import { computed, h, ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 
 import { useAppStore } from "@/stores/app";
 
@@ -78,22 +69,18 @@ const conversationItems = computed<ConversationsProps["items"]>(() => {
     {
       key: "write",
       label: t.write,
-      icon: h(SignatureOutlined),
     },
     {
       key: "coding",
       label: t.coding,
-      icon: h(CodeOutlined),
     },
     {
       key: "createImage",
       label: t.createImage,
-      icon: h(FileImageOutlined),
     },
     {
       key: "deepSearch",
       label: t.deepSearch,
-      icon: h(FileSearchOutlined),
     },
   ];
 });
@@ -101,44 +88,58 @@ const conversationItems = computed<ConversationsProps["items"]>(() => {
 const actionItems: ActionsProps["items"] = [
   {
     key: "feedback",
-    actionRender: () => h(Actions.Feedback),
+    label: "feedback",
   },
   {
     key: "copy",
     label: "copy",
-    actionRender: () => h(Actions.Copy, { text: "copy value" }),
   },
   {
     key: "audio",
     label: "audio",
-    actionRender: () => h(Actions.Audio),
   },
 ];
 </script>
 
 <template>
-  <Flex :gap="12" style="margin-bottom: 16px" align="center">
-    <Typography.Text>Change locale of components:</Typography.Text>
-    <RadioGroup v-model:value="localeType">
-      <RadioButton value="en"> English </RadioButton>
-      <RadioButton value="zh"> 中文 </RadioButton>
-    </RadioGroup>
-  </Flex>
+  <a-flex :gap="12" style="margin-bottom: 16px" align="center">
+    <a-typography-text>Change locale of components:</a-typography-text>
+    <a-radio-group v-model:value="localeType">
+      <a-radio-button value="en"> English </a-radio-button>
+      <a-radio-button value="zh"> 中文 </a-radio-button>
+    </a-radio-group>
+  </a-flex>
 
-  <XProvider :locale="locale">
-    <Flex :gap="12" vertical>
-      <Card>
-        <Conversations
+  <ax-x-provider :locale="locale">
+    <a-flex :gap="12" vertical>
+      <a-card>
+        <ax-conversations
           :style="{ width: '220px' }"
           default-active-key="write"
           :creation="{ onClick: () => {} }"
           :items="conversationItems"
-        />
-      </Card>
+        >
+          <template #iconRender="{ item }">
+            <SignatureOutlined v-if="item.key === 'write'" />
+            <CodeOutlined v-else-if="item.key === 'coding'" />
+            <FileImageOutlined v-else-if="item.key === 'createImage'" />
+            <FileSearchOutlined v-else-if="item.key === 'deepSearch'" />
+          </template>
+        </ax-conversations>
+      </a-card>
 
-      <Card>
-        <Actions :items="actionItems" />
-      </Card>
-    </Flex>
-  </XProvider>
+      <a-card>
+        <ax-actions :items="actionItems">
+          <template #actionRender="{ item }">
+            <ax-actions-feedback v-if="item.key === 'feedback'" />
+            <ax-actions-copy
+              v-else-if="item.key === 'copy'"
+              text="copy value"
+            />
+            <ax-actions-audio v-else-if="item.key === 'audio'" />
+          </template>
+        </ax-actions>
+      </a-card>
+    </a-flex>
+  </ax-x-provider>
 </template>

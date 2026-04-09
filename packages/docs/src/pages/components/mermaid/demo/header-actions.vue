@@ -2,9 +2,8 @@
 import type { MermaidProps } from "@antdv-next/x";
 
 import { EditOutlined, ShareAltOutlined } from "@antdv-next/icons";
-import { Mermaid } from "@antdv-next/x";
-import { Checkbox, Flex, Space, message } from "antdv-next";
-import { computed, h, ref } from "vue";
+import { message } from "antdv-next";
+import { computed, ref } from "vue";
 
 const enableZoom = ref(true);
 const enableDownload = ref(true);
@@ -22,7 +21,6 @@ const content = `flowchart TD
 const customActions: NonNullable<MermaidProps["actions"]>["customActions"] = [
   {
     key: "edit",
-    icon: h(EditOutlined),
     label: "Edit",
     onItemClick: () => {
       message.info("Edit button clicked");
@@ -30,7 +28,6 @@ const customActions: NonNullable<MermaidProps["actions"]>["customActions"] = [
   },
   {
     key: "share",
-    icon: h(ShareAltOutlined),
     label: "Share",
     onItemClick: () => {
       message.success("Chart link copied to clipboard");
@@ -47,16 +44,32 @@ const actions = computed<MermaidProps["actions"]>(() => ({
 </script>
 
 <template>
-  <Flex vertical :gap="16">
-    <Space wrap>
-      <Checkbox v-model:checked="enableZoom">Enable Zoom</Checkbox>
-      <Checkbox v-model:checked="enableDownload">Enable Download</Checkbox>
-      <Checkbox v-model:checked="enableCopy">Enable Copy</Checkbox>
-      <Checkbox v-model:checked="showCustom">Show Custom Actions</Checkbox>
-    </Space>
+  <a-flex vertical :gap="16">
+    <a-space wrap>
+      <a-checkbox v-model:checked="enableZoom">Enable Zoom</a-checkbox>
+      <a-checkbox v-model:checked="enableDownload">Enable Download</a-checkbox>
+      <a-checkbox v-model:checked="enableCopy">Enable Copy</a-checkbox>
+      <a-checkbox v-model:checked="showCustom">Show Custom Actions</a-checkbox>
+    </a-space>
 
-    <Mermaid :content="content" :actions="actions" />
-  </Flex>
+    <ax-mermaid :content="content" :actions="actions">
+      <template #customActionIconRender="{ item }">
+        <EditOutlined v-if="item.key === 'edit'" />
+        <ShareAltOutlined v-else-if="item.key === 'share'" />
+      </template>
+
+      <template #customActionRender="{ item }">
+        <a-button
+          v-if="item.key === 'share'"
+          type="text"
+          size="small"
+          @click="item.onItemClick?.(item)"
+        >
+          Share Link
+        </a-button>
+      </template>
+    </ax-mermaid>
+  </a-flex>
 </template>
 
 <docs lang="zh-CN">

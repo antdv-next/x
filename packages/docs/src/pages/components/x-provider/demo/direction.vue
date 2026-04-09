@@ -20,9 +20,7 @@ import {
   RobotOutlined,
   UserOutlined,
 } from "@antdv-next/icons";
-import { Actions, BubbleList, Conversations, XProvider } from "@antdv-next/x";
-import { Card, Divider, Flex, Radio, Typography } from "antdv-next";
-import { h, ref } from "vue";
+import { ref } from "vue";
 
 const direction = ref<ConfigProviderProps["direction"]>("ltr");
 
@@ -30,12 +28,10 @@ const conversationItems: ConversationsProps["items"] = [
   {
     key: "1",
     label: "Conversation - 1",
-    icon: h(GithubOutlined),
   },
   {
     key: "2",
     label: "Conversation - 2",
-    icon: h(AlipayCircleOutlined),
   },
 ];
 
@@ -45,13 +41,11 @@ const bubbleItems: BubbleListProps["items"] = [
     role: "user",
     placement: "end",
     content: "Hello Antdv Next X!",
-    avatar: h(UserOutlined),
   },
   {
     key: "2",
     role: "ai",
     content: "Hello World!",
-    avatar: h(RobotOutlined),
   },
 ];
 
@@ -59,40 +53,57 @@ const actionItems: ActionsProps["items"] = [
   {
     key: "copy",
     label: "copy",
-    actionRender: () => h(Actions.Copy, { text: "Hello Antdv Next X!" }),
   },
   {
     key: "feedback",
-    actionRender: () => h(Actions.Feedback),
+    label: "feedback",
   },
 ];
 </script>
 
 <template>
-  <Flex :gap="12" style="margin-bottom: 16px" align="center">
-    <Typography.Text>Direction:</Typography.Text>
-    <Radio.Group v-model:value="direction">
-      <Radio.Button value="ltr"> LTR </Radio.Button>
-      <Radio.Button value="rtl"> RTL </Radio.Button>
-    </Radio.Group>
-  </Flex>
+  <a-flex :gap="12" style="margin-bottom: 16px" align="center">
+    <a-typography-text>Direction:</a-typography-text>
+    <a-radio-group v-model:value="direction">
+      <a-radio-button value="ltr"> LTR </a-radio-button>
+      <a-radio-button value="rtl"> RTL </a-radio-button>
+    </a-radio-group>
+  </a-flex>
 
-  <Card>
-    <XProvider :direction="direction">
-      <Flex :gap="12" style="height: 440px">
-        <Conversations
+  <a-card>
+    <ax-x-provider :direction="direction">
+      <a-flex :gap="12" style="height: 440px">
+        <ax-conversations
           :style="{ width: '220px' }"
           default-active-key="1"
           :items="conversationItems"
-        />
+        >
+          <template #iconRender="{ item }">
+            <GithubOutlined v-if="item.key === '1'" />
+            <AlipayCircleOutlined v-else-if="item.key === '2'" />
+          </template>
+        </ax-conversations>
 
-        <Divider type="vertical" style="height: 100%" />
+        <a-divider type="vertical" style="height: 100%" />
 
-        <Flex vertical justify="space-between" :style="{ flex: 1 }">
-          <BubbleList :items="bubbleItems" />
-          <Actions :items="actionItems" />
-        </Flex>
-      </Flex>
-    </XProvider>
-  </Card>
+        <a-flex vertical justify="space-between" :style="{ flex: 1 }">
+          <ax-bubble-list :items="bubbleItems">
+            <template #avatar="{ item }">
+              <UserOutlined v-if="item.role === 'user'" />
+              <RobotOutlined v-else-if="item.role === 'ai'" />
+            </template>
+          </ax-bubble-list>
+          <ax-actions :items="actionItems">
+            <template #actionRender="{ item }">
+              <ax-actions-copy
+                v-if="item.key === 'copy'"
+                text="Hello Antdv Next X!"
+              />
+              <ax-actions-feedback v-else-if="item.key === 'feedback'" />
+            </template>
+          </ax-actions>
+        </a-flex>
+      </a-flex>
+    </ax-x-provider>
+  </a-card>
 </template>

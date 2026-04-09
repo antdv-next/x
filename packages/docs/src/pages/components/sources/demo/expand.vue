@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import type { SourcesProps } from "@antdv-next/x";
 
-import { Sources } from "@antdv-next/x";
-import { Button } from "antdv-next";
 import { ref } from "vue";
 
 const expanded = ref(true);
@@ -24,14 +22,14 @@ const items: SourcesProps["items"] = [
 </script>
 
 <template>
-  <Button
+  <a-button
     type="primary"
     @click="expanded = !expanded"
     style="margin-bottom: 8px"
   >
     Change expand
-  </Button>
-  <Sources title="Used 3 sources" :items="items" :expanded="expanded" />
+  </a-button>
+  <ax-sources title="Used 3 sources" :items="items" :expanded="expanded" />
 </template>
 
 <docs lang="zh-CN">

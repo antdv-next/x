@@ -6,26 +6,7 @@ import {
   InfoCircleOutlined,
   LoadingOutlined,
 } from "@antdv-next/icons";
-import { ThoughtChain } from "@antdv-next/x";
-import { Button, Card } from "antdv-next";
-import { h, ref } from "vue";
-
-function getStatusIcon(status: ThoughtChainItemType["status"]) {
-  switch (status) {
-    case "success":
-      return h(CheckCircleOutlined);
-    case "error":
-      return h(InfoCircleOutlined);
-    case "loading":
-      return h(LoadingOutlined);
-    default:
-      return undefined;
-  }
-}
-
-function snapshot(data: ThoughtChainItemType[]) {
-  return data.map(item => ({ ...item, icon: getStatusIcon(item.status) }));
-}
+import { ref } from "vue";
 
 const mockData: ThoughtChainItemType[] = [
   {
@@ -40,7 +21,7 @@ const mockData: ThoughtChainItemType[] = [
   },
 ];
 
-const items = ref<ThoughtChainItemType[]>(snapshot(mockData));
+const items = ref<ThoughtChainItemType[]>([...mockData]);
 const loading = ref(false);
 
 const delay = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
@@ -53,40 +34,46 @@ async function onClick() {
     status: "loading",
     description: "status: loading",
   });
-  items.value = snapshot(mockData);
+  items.value = [...mockData];
 
   const last = mockData[mockData.length - 1]!;
 
   await delay(800);
   last.status = "error";
   last.description = "status: error";
-  items.value = snapshot(mockData);
+  items.value = [...mockData];
 
   await delay(800);
   last.status = "loading";
   last.description = "status: loading";
-  items.value = snapshot(mockData);
+  items.value = [...mockData];
 
   await delay(800);
   last.status = "success";
   last.description = "status: success";
-  items.value = snapshot(mockData);
+  items.value = [...mockData];
 
   loading.value = false;
 }
 </script>
 
 <template>
-  <Card :style="{ width: '500px' }">
-    <Button
+  <a-card :style="{ width: '500px' }">
+    <a-button
       :style="{ marginBottom: '16px' }"
       :loading="loading"
       @click="onClick"
     >
       {{ loading ? "Running" : "Run Next" }}
-    </Button>
-    <ThoughtChain :items="items" />
-  </Card>
+    </a-button>
+    <ax-thought-chain :items="items">
+      <template #iconRender="{ status }">
+        <CheckCircleOutlined v-if="status === 'success'" />
+        <InfoCircleOutlined v-else-if="status === 'error'" />
+        <LoadingOutlined v-else-if="status === 'loading'" />
+      </template>
+    </ax-thought-chain>
+  </a-card>
 </template>
 
 <docs lang="zh-CN">
