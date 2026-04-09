@@ -18,12 +18,12 @@ const items: SuggestionItem[] = [
     icon: h(OpenAIFilled),
     children: [
       {
-        label: "About React",
-        value: "react",
+        label: "About Vue",
+        value: "vue",
       },
       {
-        label: "About Ant Design",
-        value: "antd",
+        label: "About Antdv Next X",
+        value: "antdv next x",
       },
     ],
   },

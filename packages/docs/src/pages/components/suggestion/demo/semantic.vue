@@ -46,8 +46,8 @@ const items: SuggestionItem[] = [
         value: "react",
       },
       {
-        label: "About Ant Design",
-        value: "antd",
+        label: "About Antdv Next X",
+        value: "Antdv Next X",
       },
     ],
   },

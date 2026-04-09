@@ -44,7 +44,7 @@ const bubbleItems: BubbleListProps["items"] = [
     key: "1",
     role: "user",
     placement: "end",
-    content: "Hello Ant Design X!",
+    content: "Hello Antdv Next X!",
     avatar: h(UserOutlined),
   },
   {
@@ -59,7 +59,7 @@ const actionItems: ActionsProps["items"] = [
   {
     key: "copy",
     label: "copy",
-    actionRender: () => h(Actions.Copy, { text: "Hello Ant Design X!" }),
+    actionRender: () => h(Actions.Copy, { text: "Hello Antdv Next X!" }),
   },
   {
     key: "feedback",
