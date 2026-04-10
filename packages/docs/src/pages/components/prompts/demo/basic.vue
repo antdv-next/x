@@ -40,7 +40,6 @@ const items: PromptsProps["items"] = [
 
 const { message } = App.useApp();
 function onItemClick(info: PromptsClickInfo) {
-  console.log("S");
   message.success(`You clicked a prompt: ${info.data.label}`);
 }
 </script>
