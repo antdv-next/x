@@ -43,13 +43,15 @@ watch(
 </script>
 
 <template>
-  <a-config-provider :locale="antdLocale" :theme="theme">
-    <ThemeProvider :theme-mode="themeMode">
-      <a-app>
-        <AppContextRegister>
-          <slot />
-        </AppContextRegister>
-      </a-app>
-    </ThemeProvider>
-  </a-config-provider>
+  <a-style-provider layer>
+    <a-config-provider :locale="antdLocale" :theme="theme">
+      <ThemeProvider :theme-mode="themeMode">
+        <a-app>
+          <AppContextRegister>
+            <slot />
+          </AppContextRegister>
+        </a-app>
+      </ThemeProvider>
+    </a-config-provider>
+  </a-style-provider>
 </template>

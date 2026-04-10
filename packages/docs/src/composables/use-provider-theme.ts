@@ -9,10 +9,12 @@ export function useProviderTheme() {
 
   const lightTheme: NonNullable<ConfigProviderProps["theme"]> = {
     algorithm: [themeConfig.defaultAlgorithm],
+    zeroRuntime: true,
   };
 
   const darkTheme: NonNullable<ConfigProviderProps["theme"]> = {
     algorithm: [themeConfig.darkAlgorithm],
+    zeroRuntime: true,
   };
 
   const theme = computed<NonNullable<ConfigProviderProps["theme"]>>(() =>
