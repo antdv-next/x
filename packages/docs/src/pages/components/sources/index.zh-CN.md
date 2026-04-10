@@ -31,11 +31,16 @@ description: 展示引用的数据来源地址。
 | expandIconPosition  | 折叠图标位置         | 'start' \| 'end'                                     | 'start' | -    |
 | defaultExpanded     | 默认是否展开         | boolean                                              | true    | -    |
 | expanded            | 是否展开             | boolean                                              | -       | -    |
-| onExpand            | 展开事件             | (expand: boolean) => void                            | -       | -    |
 | onClick             | 点击事件             | (item: SourcesItem) => void                          | -       | -    |
 | inline              | 行内模式             | boolean                                              | false   | -    |
 | activeKey           | 行内模式，激活的 key | string \| number                                     | -       | -    |
 | popoverOverlayWidth | 弹出层宽度           | number \| string                                     | 300     | -    |
+
+### 事件
+
+| 事件名   | 说明               | 类型                        |
+| -------- | ------------------ | --------------------------- |
+| `expand` | 展开状态变化时触发 | `(expand: boolean) => void` |
 
 ```typescript
 type SemanticType = "root" | "title" | "content";

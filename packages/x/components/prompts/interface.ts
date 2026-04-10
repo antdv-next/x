@@ -59,7 +59,6 @@ export interface PromptsProps extends Omit<
 > {
   items?: PromptsItemType[];
   title?: VNodeChild;
-  onItemClick?: (info: PromptsClickInfo) => void;
   vertical?: boolean;
   wrap?: boolean;
   styles?: Partial<Record<SemanticType, CSSProperties>>;

@@ -41,7 +41,7 @@ const handleKeyDown = (
         },
       ]
     "
-    :on-select="onSelect"
+    @select="onSelect"
   >
     <template #default="{ onTrigger, onKeyDown: onSuggestionKeyDown }">
       <Select

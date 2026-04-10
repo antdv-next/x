@@ -36,7 +36,6 @@ description: Display the collection of attachment information.
 | `multiple`              | Whether multiple selection is allowed                                    | `boolean`                                                                                                                                | `false` |
 | `directory`             | Whether folder upload is allowed                                         | `boolean`                                                                                                                                | `false` |
 | `beforeUpload`          | Hook before upload                                                       | `(file: File, fileList: File[]) => boolean \| Promise<boolean>`                                                                          | -       |
-| `onChange`              | Callback when list changes                                               | `(info: { file: Attachment; fileList: Attachment[] }) => void`                                                                           | -       |
 | `onRemove`              | Hook before remove                                                       | `(file: Attachment) => boolean \| Promise<boolean>`                                                                                      | -       |
 | `openFileDialogOnClick` | Whether clicking opens file dialog                                       | `boolean`                                                                                                                                | `true`  |
 | `rootClass`             | Root class name                                                          | `string`                                                                                                                                 | -       |
@@ -44,6 +43,12 @@ description: Display the collection of attachment information.
 | `styles`                | Semantic styles                                                          | `Partial<Record<'root' \| 'list' \| 'placeholder' \| 'upload' \| 'card' \| 'file' \| 'icon' \| 'name' \| 'description', CSSProperties>>` | -       |
 
 > Forwarded Upload-related props: `action`, `method`, `customRequest`, `withCredentials`.
+
+### Events
+
+| Event    | Description                            | Type                                                           |
+| -------- | -------------------------------------- | -------------------------------------------------------------- |
+| `change` | Triggered when attachment list changes | `(info: { file: Attachment; fileList: Attachment[] }) => void` |
 
 ### Slots
 

@@ -20,21 +20,26 @@ description: Show the source address of the referenced data.
 
 ### SourcesProps
 
-| Property            | Description                  | Type                                                 | Default | Version |
-| ------------------- | ---------------------------- | ---------------------------------------------------- | ------- | ------- |
-| classes             | DOM class                    | [Record<SemanticType, string>](#semantic-dom)        | -       | -       |
-| styles              | DOM style                    | [Record<SemanticType, CSSProperties>](#semantic-dom) | -       | -       |
-| rootClass           | Root element class name      | string                                               | -       | -       |
-| title               | Title content                | VNodeChild                                           | -       | -       |
-| items               | Sources content list         | SourcesItem[]                                        | -       | -       |
-| expandIconPosition  | Expand icon position         | 'start' \| 'end'                                     | 'start' | -       |
-| defaultExpanded     | Default expand state         | boolean                                              | true    | -       |
-| expanded            | Expand state                 | boolean                                              | -       | -       |
-| onExpand            | Callback when expand changes | (expand: boolean) => void                            | -       | -       |
-| onClick             | Callback when click          | (item: SourcesItem) => void                          | -       | -       |
-| inline              | Inline mode                  | boolean                                              | false   | -       |
-| activeKey           | Active key in inline mode    | string \| number                                     | -       | -       |
-| popoverOverlayWidth | Popover overlay width        | number \| string                                     | 300     | -       |
+| Property            | Description               | Type                                                 | Default | Version |
+| ------------------- | ------------------------- | ---------------------------------------------------- | ------- | ------- |
+| classes             | DOM class                 | [Record<SemanticType, string>](#semantic-dom)        | -       | -       |
+| styles              | DOM style                 | [Record<SemanticType, CSSProperties>](#semantic-dom) | -       | -       |
+| rootClass           | Root element class name   | string                                               | -       | -       |
+| title               | Title content             | VNodeChild                                           | -       | -       |
+| items               | Sources content list      | SourcesItem[]                                        | -       | -       |
+| expandIconPosition  | Expand icon position      | 'start' \| 'end'                                     | 'start' | -       |
+| defaultExpanded     | Default expand state      | boolean                                              | true    | -       |
+| expanded            | Expand state              | boolean                                              | -       | -       |
+| onClick             | Callback when click       | (item: SourcesItem) => void                          | -       | -       |
+| inline              | Inline mode               | boolean                                              | false   | -       |
+| activeKey           | Active key in inline mode | string \| number                                     | -       | -       |
+| popoverOverlayWidth | Popover overlay width     | number \| string                                     | 300     | -       |
+
+### Events
+
+| Event    | Description                   | Type                        |
+| -------- | ----------------------------- | --------------------------- |
+| `expand` | Triggered when expand changes | `(expand: boolean) => void` |
 
 ```typescript
 type SemanticType = "root" | "title" | "content";

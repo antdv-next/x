@@ -37,7 +37,6 @@ description: 用于展示一组附件信息集合。
 | `multiple`              | 是否支持多选                                         | `boolean`                                                                                                                                | `false` |
 | `directory`             | 是否支持目录上传                                     | `boolean`                                                                                                                                | `false` |
 | `beforeUpload`          | 上传前校验                                           | `(file: File, fileList: File[]) => boolean \| Promise<boolean>`                                                                          | -       |
-| `onChange`              | 列表变化回调                                         | `(info: { file: Attachment; fileList: Attachment[] }) => void`                                                                           | -       |
 | `onRemove`              | 删除前回调                                           | `(file: Attachment) => boolean \| Promise<boolean>`                                                                                      | -       |
 | `openFileDialogOnClick` | 点击时是否打开文件选择框                             | `boolean`                                                                                                                                | `true`  |
 | `rootClass`             | 根节点类名                                           | `string`                                                                                                                                 | -       |
@@ -45,6 +44,12 @@ description: 用于展示一组附件信息集合。
 | `styles`                | 语义化 style                                         | `Partial<Record<'root' \| 'list' \| 'placeholder' \| 'upload' \| 'card' \| 'file' \| 'icon' \| 'name' \| 'description', CSSProperties>>` | -       |
 
 > Upload 相关能力透传：`action`、`method`、`customRequest`、`withCredentials`。
+
+### 事件
+
+| 事件名   | 说明               | 类型                                                           |
+| -------- | ------------------ | -------------------------------------------------------------- |
+| `change` | 附件列表变化时触发 | `(info: { file: Attachment; fileList: Attachment[] }) => void` |
 
 ### 插槽
 

@@ -24,18 +24,23 @@ description: 用于在输入场景中提供快捷指令建议的组件。
 
 ### SuggestionProps
 
-| 属性           | 说明                         | 类型                                                             | 默认值  |
-| -------------- | ---------------------------- | ---------------------------------------------------------------- | ------- |
-| `items`        | 建议项列表，支持函数动态生成 | `SuggestionItem[] \| ((info?: T) => SuggestionItem[])`           | `[]`    |
-| `open`         | 受控打开面板                 | `boolean`                                                        | -       |
-| `onOpenChange` | 面板打开状态变化回调         | `(open: boolean) => void`                                        | -       |
-| `onSelect`     | 选中建议项回调               | `(value: string, selectedOptions: SuggestionItem[]) => void`     | -       |
-| `block`        | 是否整行宽度                 | `boolean`                                                        | `false` |
-| `classes`      | 语义化 class                 | `Partial<Record<'root' \| 'content' \| 'popup', string>>`        | -       |
-| `styles`       | 语义化 style                 | `Partial<Record<'root' \| 'content' \| 'popup', CSSProperties>>` | -       |
-| `rootClass`    | 根节点类名                   | `string`                                                         | -       |
+| 属性        | 说明                         | 类型                                                             | 默认值  |
+| ----------- | ---------------------------- | ---------------------------------------------------------------- | ------- |
+| `items`     | 建议项列表，支持函数动态生成 | `SuggestionItem[] \| ((info?: T) => SuggestionItem[])`           | `[]`    |
+| `open`      | 受控打开面板                 | `boolean`                                                        | -       |
+| `block`     | 是否整行宽度                 | `boolean`                                                        | `false` |
+| `classes`   | 语义化 class                 | `Partial<Record<'root' \| 'content' \| 'popup', string>>`        | -       |
+| `styles`    | 语义化 style                 | `Partial<Record<'root' \| 'content' \| 'popup', CSSProperties>>` | -       |
+| `rootClass` | 根节点类名                   | `string`                                                         | -       |
 
-其余可透传属性参考 [CascaderProps](https://antdv-next.com/components/cascader)（已排除 `open/onOpenChange/value/options/multiple/classes/styles` 等由 Suggestion 接管的字段）。
+其余可透传属性参考 [CascaderProps](https://antdv-next.com/components/cascader)（已排除 `open/value/options/multiple/classes/styles` 等由 Suggestion 接管的字段）。
+
+### 事件
+
+| 事件名       | 说明                   | 类型                                                         |
+| ------------ | ---------------------- | ------------------------------------------------------------ |
+| `openChange` | 面板打开状态变化时触发 | `(open: boolean) => void`                                    |
+| `select`     | 选中建议项时触发       | `(value: string, selectedOptions: SuggestionItem[]) => void` |
 
 ### 默认插槽（scoped slot）
 

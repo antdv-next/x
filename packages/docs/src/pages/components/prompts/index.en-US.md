@@ -24,19 +24,24 @@ description: Display a predefined set of questions or suggestions relevant to th
 
 ### PromptsProps
 
-| Property      | Description                                                 | Type                                           | Default |
-| ------------- | ----------------------------------------------------------- | ---------------------------------------------- | ------- |
-| `items`       | List of prompt items                                        | `PromptsItemType[]`                            | -       |
-| `title`       | Title displayed at the top of the prompt list               | `VNodeChild`                                   | -       |
-| `vertical`    | When set to `true`, the prompts will be arranged vertically | `boolean`                                      | `false` |
-| `wrap`        | When set to `true`, the prompts will wrap automatically     | `boolean`                                      | `false` |
-| `onItemClick` | Callback when a prompt item is clicked                      | `(info: PromptsClickInfo) => void`             | -       |
-| `fadeIn`      | Fade in effect                                              | `boolean`                                      | -       |
-| `fadeInLeft`  | Fade in from left effect                                    | `boolean`                                      | -       |
-| `styles`      | Semantic structure styles                                   | `Partial<Record<SemanticType, CSSProperties>>` | -       |
-| `classes`     | Semantic structure classNames                               | `Partial<Record<SemanticType, string>>`        | -       |
-| `rootClass`   | Root node class name                                        | `string`                                       | -       |
-| `prefixCls`   | Prefix for style class names                                | `string`                                       | -       |
+| Property     | Description                                                 | Type                                           | Default |
+| ------------ | ----------------------------------------------------------- | ---------------------------------------------- | ------- |
+| `items`      | List of prompt items                                        | `PromptsItemType[]`                            | -       |
+| `title`      | Title displayed at the top of the prompt list               | `VNodeChild`                                   | -       |
+| `vertical`   | When set to `true`, the prompts will be arranged vertically | `boolean`                                      | `false` |
+| `wrap`       | When set to `true`, the prompts will wrap automatically     | `boolean`                                      | `false` |
+| `fadeIn`     | Fade in effect                                              | `boolean`                                      | -       |
+| `fadeInLeft` | Fade in from left effect                                    | `boolean`                                      | -       |
+| `styles`     | Semantic structure styles                                   | `Partial<Record<SemanticType, CSSProperties>>` | -       |
+| `classes`    | Semantic structure classNames                               | `Partial<Record<SemanticType, string>>`        | -       |
+| `rootClass`  | Root node class name                                        | `string`                                       | -       |
+| `prefixCls`  | Prefix for style class names                                | `string`                                       | -       |
+
+### Events
+
+| Event       | Description                        | Type                               |
+| ----------- | ---------------------------------- | ---------------------------------- |
+| `itemClick` | Triggered when a prompt is clicked | `(info: PromptsClickInfo) => void` |
 
 ### PromptsItemType
 

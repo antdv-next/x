@@ -46,9 +46,7 @@ export interface SuggestionProps<T = any> extends Omit<
   class?: ClassValue;
   style?: StyleValue;
   open?: boolean;
-  onOpenChange?: (open: boolean) => void;
   items: SuggestionItem[] | ((info?: T) => SuggestionItem[]);
-  onSelect?: (value: string, selectedOptions: SuggestionItem[]) => void;
   block?: boolean;
   styles?: Partial<Record<SemanticType, CSSProperties>>;
   classes?: Partial<Record<SemanticType, string>>;

@@ -115,7 +115,7 @@ const onSubmit = () => {
             ref="attachmentsRef"
             :before-upload="() => false"
             :items="items"
-            :on-change="onChange"
+            @change="onChange"
             :placeholder="placeholder"
             :get-drop-container="() => senderRef?.nativeElement"
           >

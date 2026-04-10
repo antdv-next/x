@@ -877,7 +877,7 @@ const conversationItems = computed(() =>
               :title="t.iCanHelp"
               :items="promptItems"
               :class="styles.prompts"
-              :on-item-click="
+              @item-click="
                 info => handleSubmit(String(info?.data?.description || ''))
               "
             />
@@ -903,10 +903,7 @@ const conversationItems = computed(() =>
             </Button>
           </Flex>
 
-          <Suggestion
-            :items="suggestionItems"
-            :on-select="handleSuggestionSelect"
-          >
+          <Suggestion :items="suggestionItems" @select="handleSuggestionSelect">
             <template #default="{ onTrigger, onKeyDown }">
               <Sender
                 ref="senderRef"

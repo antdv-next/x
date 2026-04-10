@@ -57,10 +57,6 @@ export const XPrompts = defineComponent({
       type: [String, Number, Object, Array] as PropType<PromptsProps["title"]>,
       default: undefined,
     },
-    onItemClick: {
-      type: Function as PropType<PromptsProps["onItemClick"]>,
-      default: undefined,
-    },
     vertical: {
       type: Boolean,
       default: false,
@@ -172,7 +168,6 @@ export const XPrompts = defineComponent({
       if (item.disabled || (!nested && hasChildren(item))) return;
 
       const info: PromptsClickInfo = { data: item };
-      props.onItemClick?.(info);
       emit("itemClick", info);
     };
 

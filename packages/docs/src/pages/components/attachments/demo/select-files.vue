@@ -30,7 +30,7 @@
               :max-count="MAX_COUNT"
               :before-upload="() => false"
               :items="items"
-              :on-change="onChange"
+              @change="onChange"
               :placeholder="placeholder"
               :get-drop-container="() => senderRef?.nativeElement"
             >

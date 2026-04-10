@@ -55,7 +55,7 @@ function createSlot() {
 }
 
 describe("Suggestion", () => {
-  it("opens and closes by trigger, and calls onOpenChange", async () => {
+  it("opens and closes by trigger, and emits openChange listener", async () => {
     const onOpenChange = vi.fn();
     const wrapper = track(
       mount(Suggestion, {
@@ -81,7 +81,7 @@ describe("Suggestion", () => {
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
-  it("calls onSelect with value and selected path", async () => {
+  it("emits select with value and selected path", async () => {
     const onSelect = vi.fn();
     const wrapper = track(
       mount(Suggestion, {

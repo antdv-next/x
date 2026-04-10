@@ -52,7 +52,7 @@ const onSenderChange = (
 </script>
 
 <template>
-  <ax-suggestion block :items="items" :on-select="onSelect">
+  <ax-suggestion block :items="items" @select="onSelect">
     <template #default="{ onTrigger, onKeyDown }">
       <ax-sender
         :loading="loading"

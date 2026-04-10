@@ -48,6 +48,5 @@ export interface SourcesProps extends Omit<
   popoverOverlayWidth?: number | string;
   activeKey?: string | number;
   expanded?: boolean;
-  onExpand?: (expand: boolean) => void;
   defaultExpanded?: boolean;
 }

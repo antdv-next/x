@@ -83,10 +83,6 @@ export const XSources = defineComponent({
       type: Boolean,
       default: undefined,
     },
-    onExpand: {
-      type: Function as PropType<SourcesProps["onExpand"]>,
-      default: undefined,
-    },
   },
   emits: ["expand"],
   setup(props, { slots, expose, emit }) {
@@ -119,7 +115,6 @@ export const XSources = defineComponent({
     const toggleExpand = () => {
       const newExpand = !isExpand.value;
       if (props.expanded === undefined) innerExpanded.value = newExpand;
-      props.onExpand?.(newExpand);
       emit("expand", newExpand);
     };
 

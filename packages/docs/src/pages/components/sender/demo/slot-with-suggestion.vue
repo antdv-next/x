@@ -131,7 +131,7 @@ const onCancel = () => {
 
 <template>
   <a-flex vertical gap="middle">
-    <ax-suggestion :items="suggestions" :on-select="onSelectSuggestion">
+    <ax-suggestion :items="suggestions" @select="onSelectSuggestion">
       <template #default="{ onTrigger, onKeyDown }">
         <ax-sender
           ref="senderRef"

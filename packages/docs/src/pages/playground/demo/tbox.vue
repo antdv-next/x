@@ -765,7 +765,7 @@ const menuConfig = computed(() => (conversation: ConversationItemType) => ({
                     },
                     subItem: { padding: 0, background: 'transparent' },
                   }"
-                  :on-item-click="
+                  @item-click="
                     info => handleSubmit(String(info.data.description || ''))
                   "
                 />
@@ -783,7 +783,7 @@ const menuConfig = computed(() => (conversation: ConversationItemType) => ({
                     },
                     subItem: { background: '#ffffffa6' },
                   }"
-                  :on-item-click="
+                  @item-click="
                     info => handleSubmit(String(info.data.description || ''))
                   "
                 />
@@ -797,7 +797,7 @@ const menuConfig = computed(() => (conversation: ConversationItemType) => ({
             :items="senderPrompts"
             :class="styles.senderPrompts"
             :styles="{ item: { padding: '6px 12px' } }"
-            :on-item-click="
+            @item-click="
               info => handleSubmit(String(info.data.description || ''))
             "
           />

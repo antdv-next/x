@@ -6,7 +6,7 @@
           <template #prefix>
             <ax-attachments
               :before-upload="() => false"
-              :on-change="onChange"
+              @change="onChange"
               :get-drop-container="getDropContainer"
               :placeholder="placeholder"
             >

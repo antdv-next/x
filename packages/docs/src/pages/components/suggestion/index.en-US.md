@@ -24,18 +24,23 @@ description: A suggestion component that provides quick command choices in input
 
 ### SuggestionProps
 
-| Property       | Description                                | Type                                                             | Default |
-| -------------- | ------------------------------------------ | ---------------------------------------------------------------- | ------- |
-| `items`        | Suggestion list, supports dynamic function | `SuggestionItem[] \| ((info?: T) => SuggestionItem[])`           | `[]`    |
-| `open`         | Controlled popup open state                | `boolean`                                                        | -       |
-| `onOpenChange` | Callback when popup open state changes     | `(open: boolean) => void`                                        | -       |
-| `onSelect`     | Callback when selecting an item            | `(value: string, selectedOptions: SuggestionItem[]) => void`     | -       |
-| `block`        | Take full width                            | `boolean`                                                        | `false` |
-| `classes`      | Semantic class names                       | `Partial<Record<'root' \| 'content' \| 'popup', string>>`        | -       |
-| `styles`       | Semantic styles                            | `Partial<Record<'root' \| 'content' \| 'popup', CSSProperties>>` | -       |
-| `rootClass`    | Root class name                            | `string`                                                         | -       |
+| Property    | Description                                | Type                                                             | Default |
+| ----------- | ------------------------------------------ | ---------------------------------------------------------------- | ------- |
+| `items`     | Suggestion list, supports dynamic function | `SuggestionItem[] \| ((info?: T) => SuggestionItem[])`           | `[]`    |
+| `open`      | Controlled popup open state                | `boolean`                                                        | -       |
+| `block`     | Take full width                            | `boolean`                                                        | `false` |
+| `classes`   | Semantic class names                       | `Partial<Record<'root' \| 'content' \| 'popup', string>>`        | -       |
+| `styles`    | Semantic styles                            | `Partial<Record<'root' \| 'content' \| 'popup', CSSProperties>>` | -       |
+| `rootClass` | Root class name                            | `string`                                                         | -       |
 
-Other forwarded props are based on [CascaderProps](https://antdv-next.com/components/cascader), excluding fields controlled by Suggestion (`open/onOpenChange/value/options/multiple/classes/styles`, etc.).
+Other forwarded props are based on [CascaderProps](https://antdv-next.com/components/cascader), excluding fields controlled by Suggestion (`open/value/options/multiple/classes/styles`, etc.).
+
+### Events
+
+| Event        | Description                             | Type                                                         |
+| ------------ | --------------------------------------- | ------------------------------------------------------------ |
+| `openChange` | Triggered when popup open state changes | `(open: boolean) => void`                                    |
+| `select`     | Triggered when selecting an item        | `(value: string, selectedOptions: SuggestionItem[]) => void` |
 
 ### Default Slot (scoped slot)
 

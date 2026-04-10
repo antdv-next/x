@@ -68,7 +68,6 @@ export interface AttachmentsProps<T = any> {
   multiple?: boolean;
   maxCount?: number;
   beforeUpload?: UploadProps["beforeUpload"];
-  onChange?: (info: { file: Attachment; fileList: Attachment[] }) => void;
   onRemove?: (file: Attachment) => boolean | Promise<boolean>;
   customRequest?: UploadProps["customRequest"];
   withCredentials?: boolean;
@@ -183,12 +182,6 @@ const XAttachments = defineComponent({
       type: Function as PropType<UploadProps["beforeUpload"]>,
       default: undefined,
     },
-    onChange: {
-      type: Function as PropType<
-        (info: { file: Attachment; fileList: Attachment[] }) => void
-      >,
-      default: undefined,
-    },
     onRemove: {
       type: Function as PropType<
         (file: Attachment) => boolean | Promise<boolean>
@@ -246,7 +239,6 @@ const XAttachments = defineComponent({
       fileList: Attachment[];
     }) => {
       fileList.value = info.fileList as FileListAttachment[];
-      props.onChange?.(info);
       emit("change", info);
     };
 

@@ -48,14 +48,6 @@ const XSuggestion = defineComponent({
       type: Boolean,
       default: undefined,
     },
-    onOpenChange: {
-      type: Function as PropType<SuggestionProps["onOpenChange"]>,
-      default: undefined,
-    },
-    onSelect: {
-      type: Function as PropType<SuggestionProps["onSelect"]>,
-      default: undefined,
-    },
     items: {
       type: [Array, Function] as PropType<SuggestionProps["items"]>,
       default: () => [],
@@ -124,7 +116,6 @@ const XSuggestion = defineComponent({
         innerOpen.value = nextOpen;
       }
 
-      props.onOpenChange?.(nextOpen);
       emit("openChange", nextOpen);
     };
 
@@ -152,7 +143,6 @@ const XSuggestion = defineComponent({
 
       if (lastValue !== undefined) {
         const selectedValue = String(lastValue);
-        props.onSelect?.(selectedValue, selected);
         emit("select", selectedValue, selected);
       }
 

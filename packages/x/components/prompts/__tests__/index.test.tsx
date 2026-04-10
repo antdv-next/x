@@ -106,7 +106,7 @@ describe("Prompts", () => {
     ]);
   });
 
-  it("calls onItemClick prop when a clickable item is clicked", async () => {
+  it("calls @item-click listener when a clickable item is clicked", async () => {
     const onItemClick = vi.fn();
     const wrapper = track(
       mount(
@@ -115,7 +115,32 @@ describe("Prompts", () => {
           setup() {
             return { items, onItemClick };
           },
-          template: `<Prompts :items="items" :on-item-click="onItemClick" />`,
+          template: `<Prompts :items="items" @item-click="onItemClick" />`,
+        }),
+      ),
+    );
+
+    await wrapper.find(".antd-prompts-item").trigger("click");
+
+    expect(onItemClick).toHaveBeenCalledTimes(1);
+    expect(onItemClick).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        key: "1",
+        label: "Label 1",
+      }),
+    });
+  });
+
+  it("calls @item-click listener only once per click", async () => {
+    const onItemClick = vi.fn();
+    const wrapper = track(
+      mount(
+        defineComponent({
+          components: { Prompts },
+          setup() {
+            return { items, onItemClick };
+          },
+          template: `<Prompts :items="items" @item-click="onItemClick" />`,
         }),
       ),
     );
@@ -193,7 +218,7 @@ describe("Prompts", () => {
     ]);
   });
 
-  it("calls onItemClick for nested children but not parent groups", async () => {
+  it("calls @item-click for nested children but not parent groups", async () => {
     const onItemClick = vi.fn();
     const wrapper = track(
       mount(
@@ -202,7 +227,7 @@ describe("Prompts", () => {
           setup() {
             return { nestedItems, onItemClick };
           },
-          template: `<Prompts :items="nestedItems" :on-item-click="onItemClick" />`,
+          template: `<Prompts :items="nestedItems" @item-click="onItemClick" />`,
         }),
       ),
     );
