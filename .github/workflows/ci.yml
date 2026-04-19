@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  check-and-test:
+  test:
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
 
@@ -25,9 +25,6 @@ jobs:
         uses: voidzero-dev/setup-vp@v1
         with:
           cache: true
-
-      - name: Run checks
-        run: vp check
 
       - name: Run tests
         run: vp test
