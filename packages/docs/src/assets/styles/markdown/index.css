@@ -64,9 +64,11 @@
 
 /*
  * Normalize native button UI inside docs content to avoid UA defaults like `buttonface`.
+ * Keep XMarkdown isolated by default, but still include `antd-` prefixed buttons rendered inside it.
  * Antd component styles are in a higher layer, so they are not affected.
  */
-.vp-doc :where(button):not(.x-markdown):not(.x-markdown *) {
+.vp-doc :where(button):not(.x-markdown):not(.x-markdown *),
+.vp-doc .x-markdown :where(button[class^="antd-"], button[class*=" antd-"]) {
   appearance: none;
   -webkit-appearance: none;
   border: 0;
