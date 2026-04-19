@@ -368,7 +368,7 @@ export const XFileCard = defineComponent({
             style={mergedStyles.value.file}
           >
             <Image
-              class={`${props.prefixCls}-image-img`}
+              rootClass={`${props.prefixCls}-image-img`}
               width={mergedStyles.value.file?.width}
               height={mergedStyles.value.file?.height}
               alt={props.name}
