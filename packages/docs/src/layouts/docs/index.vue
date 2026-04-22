@@ -468,7 +468,19 @@ const editGithubUrl = computed(() => {
           class="ant-doc-main-sider-menu"
           mode="inline"
           @click="handleSiderMenuClick"
-        />
+        >
+          <template #labelRender="{ type, key, label }">
+            <a
+              v-if="type !== 'group'"
+              class="text-inherit transition-0!"
+              :href="typeof key === 'string' ? key : '#'"
+              @click.prevent
+            >
+              {{ label }}
+            </a>
+            <span v-else>{{ label }}</span>
+          </template>
+        </a-menu>
       </aside>
 
       <article class="antd-doc-layout-content">
