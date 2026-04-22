@@ -1,7 +1,7 @@
 import { mount } from "@vue/test-utils";
 import zhCN from "antdv-next/dist/locale/zh_CN";
 import { describe, expect, it, vi } from "vite-plus/test";
-import { h, nextTick } from "vue";
+import { h, nextTick, ref } from "vue";
 
 import XProvider from "../../x-provider";
 import Bubble from "../Bubble";
@@ -131,6 +131,92 @@ describe("Bubble", () => {
 
     expect(wrapper.find(".content-render-slot").exists()).toBe(true);
     expect(wrapper.text()).toContain("SlotContent-content-key-success");
+  });
+
+  it("refreshes content when slot turns renderable after initial empty", async () => {
+    const slotText = ref("");
+    const wrapper = mount({
+      setup() {
+        return () => (
+          <Bubble content="fallback-content">
+            {{
+              content: () =>
+                slotText.value ? (
+                  <div class="dynamic-content-slot">{slotText.value}</div>
+                ) : null,
+            }}
+          </Bubble>
+        );
+      },
+    });
+
+    expect(wrapper.text()).toContain("fallback-content");
+    expect(wrapper.find(".dynamic-content-slot").exists()).toBe(false);
+
+    slotText.value = "slot-now-visible";
+    await nextTick();
+
+    expect(wrapper.find(".dynamic-content-slot").exists()).toBe(true);
+    expect(wrapper.text()).toContain("slot-now-visible");
+    expect(wrapper.text()).not.toContain("fallback-content");
+  });
+
+  it("refreshes content when slot output changes", async () => {
+    const slotText = ref("slot-v1");
+    const wrapper = mount({
+      setup() {
+        return () => (
+          <Bubble content="fallback-content">
+            {{
+              content: () => (
+                <div class="dynamic-content-slot">{slotText.value}</div>
+              ),
+            }}
+          </Bubble>
+        );
+      },
+    });
+
+    expect(wrapper.text()).toContain("slot-v1");
+
+    slotText.value = "slot-v2";
+    await nextTick();
+
+    expect(wrapper.text()).toContain("slot-v2");
+    expect(wrapper.text()).not.toContain("slot-v1");
+  });
+
+  it("falls back to contentRender when content slot becomes empty", async () => {
+    const showSlot = ref(true);
+    const wrapper = mount({
+      setup() {
+        return () => (
+          <Bubble
+            content="source-content"
+            contentRender={content => (
+              <div class="content-render-fallback">{`render-${content}`}</div>
+            )}
+          >
+            {{
+              content: () =>
+                showSlot.value ? (
+                  <div class="dynamic-content-slot">slot-render</div>
+                ) : null,
+            }}
+          </Bubble>
+        );
+      },
+    });
+
+    expect(wrapper.text()).toContain("slot-render");
+    expect(wrapper.find(".content-render-fallback").exists()).toBe(false);
+
+    showSlot.value = false;
+    await nextTick();
+
+    expect(wrapper.find(".dynamic-content-slot").exists()).toBe(false);
+    expect(wrapper.find(".content-render-fallback").exists()).toBe(true);
+    expect(wrapper.text()).toContain("render-source-content");
   });
 
   it("supports contentRender prop", () => {
