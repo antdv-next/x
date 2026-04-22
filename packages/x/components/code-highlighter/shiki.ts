@@ -38,6 +38,7 @@ const LANG_LOADERS: Record<string, () => Promise<{ default: any }>> = {
 let highlighter: Highlighter | null = null;
 let highlighterPromise: Promise<Highlighter> | null = null;
 const loadedLangs = new Set<string>();
+const failedLangs = new Set<string>();
 
 function normalizeLanguage(language: string | undefined): string {
   const input = (language || "text").toLowerCase();
@@ -67,15 +68,35 @@ async function getHighlighter() {
 }
 
 async function loadLang(lang: string) {
-  const loader = LANG_LOADERS[lang];
-  if (!loader) return false;
   if (loadedLangs.has(lang)) return true;
+  if (failedLangs.has(lang)) return false;
 
-  const instance = await getHighlighter();
-  const mod = await loader();
-  await instance.loadLanguage(mod.default);
-  loadedLangs.add(lang);
-  return true;
+  const loader = LANG_LOADERS[lang];
+  const loadLangModule = async () => {
+    if (loader) return loader();
+    // Fallback to dynamic language loading so callers can use more Shiki langs
+    // without maintaining a static mapping in this package.
+    if (!/^[a-z0-9-]+$/i.test(lang)) return null;
+    return import(
+      /* @vite-ignore */
+      `shiki/dist/langs/${lang}.mjs`
+    );
+  };
+
+  try {
+    const mod = await loadLangModule();
+    if (!mod?.default) {
+      failedLangs.add(lang);
+      return false;
+    }
+    const instance = await getHighlighter();
+    await instance.loadLanguage(mod.default);
+    loadedLangs.add(lang);
+    return true;
+  } catch {
+    failedLangs.add(lang);
+    return false;
+  }
 }
 
 export async function codeToHtml(
