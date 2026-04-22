@@ -63,7 +63,7 @@
     "antdv-next": "catalog:prod",
     "dayjs": "catalog:prod",
     "mermaid": "catalog:prod",
-    "shiki": "catalog:docs",
+    "shiki": "catalog:prod",
     "vue": "catalog:prod"
   },
   "peerDependencies": {

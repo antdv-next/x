@@ -53,7 +53,6 @@ catalogs:
     markdown-it-emoji: ^3.0.0
     oxfmt: ^0.41.0
     pinia: ^3.0.4
-    shiki: ^3.13.0
     unocss: ^66.6.6
   prod:
     "@ant-design/fast-color": ^3.0.1
@@ -63,6 +62,7 @@ catalogs:
     antdv-next: ^1.2.0
     "@v-c/util": ^1.0.19
     dayjs: ^1.11.19
+    shiki: ^3.13.0
     lru-cache: ^11.2.2
     mlly: ^1.8.0
     mermaid: ^11.12.1

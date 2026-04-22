@@ -137,9 +137,6 @@ catalogs:
     pinia:
       specifier: ^3.0.4
       version: 3.0.4
-    shiki:
-      specifier: ^3.13.0
-      version: 3.23.0
     unocss:
       specifier: ^66.6.6
       version: 66.6.7
@@ -183,6 +180,9 @@ catalogs:
     picomatch:
       specifier: ^4.0.3
       version: 4.0.4
+    shiki:
+      specifier: ^3.13.0
+      version: 3.23.0
     vue:
       specifier: ^3.5.29
       version: 3.5.31
@@ -419,7 +419,7 @@ importers:
         specifier: catalog:docs
         version: 3.0.4(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3))
       shiki:
-        specifier: catalog:docs
+        specifier: catalog:prod
         version: 3.23.0
 
   packages/x:
@@ -449,7 +449,7 @@ importers:
         specifier: catalog:prod
         version: 11.13.0
       shiki:
-        specifier: catalog:docs
+        specifier: catalog:prod
         version: 3.23.0
       vue:
         specifier: catalog:prod

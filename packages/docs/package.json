@@ -38,6 +38,6 @@
     "markdown-it-emoji": "catalog:docs",
     "oxfmt": "catalog:docs",
     "pinia": "catalog:docs",
-    "shiki": "catalog:docs"
+    "shiki": "catalog:prod"
   }
 }
