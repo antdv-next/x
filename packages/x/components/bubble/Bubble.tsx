@@ -163,7 +163,13 @@ export const XBubble = defineComponent({
       return rest;
     });
 
-    const memoedContent = computed(() => {
+    const fallbackContent = computed(() => {
+      return props.contentRender
+        ? props.contentRender(props.content as never, props.info)
+        : props.content;
+    });
+
+    const resolveMainContent = () => {
       if (slots.content) {
         const slotNode = slots.content({
           content: props.content,
@@ -172,10 +178,8 @@ export const XBubble = defineComponent({
         if (hasRenderableNode(slotNode)) return slotNode;
       }
 
-      return props.contentRender
-        ? props.contentRender(props.content as never, props.info)
-        : props.content;
-    });
+      return fallbackContent.value;
+    };
 
     const mergedTyping = computed(() => {
       if (typeof props.typing === "function")
@@ -185,22 +189,22 @@ export const XBubble = defineComponent({
 
     const usingInnerAnimation = computed(() => {
       return (
-        Boolean(mergedTyping.value) && typeof memoedContent.value === "string"
+        Boolean(mergedTyping.value) && typeof fallbackContent.value === "string"
       );
     });
 
     watch(
       () =>
         [
-          memoedContent.value,
+          fallbackContent.value,
           usingInnerAnimation.value,
           props.streaming,
         ] as const,
       () => {
         if (usingInnerAnimation.value) return;
         if (props.streaming) return;
-        if (typeof memoedContent.value === "string")
-          props.onTypingComplete?.(memoedContent.value);
+        if (typeof fallbackContent.value === "string")
+          props.onTypingComplete?.(fallbackContent.value);
       },
       { immediate: true },
     );
@@ -275,7 +279,10 @@ export const XBubble = defineComponent({
       );
     };
 
-    const renderMainContent = () => {
+    const renderMainContent = (
+      mainContent: ReturnType<typeof resolveMainContent>,
+      usingInnerAnimationInRender: boolean,
+    ) => {
       if (isEditing.value) {
         if (typeof props.content !== "string")
           throw new Error(
@@ -299,17 +306,17 @@ export const XBubble = defineComponent({
       }
 
       const defaultMainContent =
-        usingInnerAnimation.value && typeof memoedContent.value === "string" ? (
+        usingInnerAnimationInRender && typeof mainContent === "string" ? (
           <TypingContent
             prefixCls={props.prefixCls}
             streaming={props.streaming}
             typing={mergedTyping.value as true | BubbleAnimationOption}
-            content={memoedContent.value}
+            content={mainContent}
             onTyping={props.onTyping}
             onTypingComplete={props.onTypingComplete}
           />
         ) : (
-          memoedContent.value
+          mainContent
         );
 
       return defaultMainContent;
@@ -331,6 +338,10 @@ export const XBubble = defineComponent({
         return <Loading prefixCls={props.prefixCls} />;
       }
 
+      const mainContent = resolveMainContent();
+      const usingInnerAnimationInRender =
+        Boolean(mergedTyping.value) && typeof mainContent === "string";
+
       return (
         <div class={getSlotClassName("body")} style={getSlotStyle("body")}>
           {renderHeader()}
@@ -343,7 +354,7 @@ export const XBubble = defineComponent({
               props.classes?.content,
               {
                 [`${prefixCls.value}-content-string`]:
-                  typeof memoedContent.value === "string",
+                  typeof mainContent === "string",
                 [`${prefixCls.value}-content-editing`]: isEditing.value,
                 [`${prefixCls.value}-content-${props.info.status}`]:
                   props.info.status,
@@ -357,12 +368,12 @@ export const XBubble = defineComponent({
             {isFooterInner.value ? (
               <>
                 <div class={`${prefixCls.value}-content-with-footer`}>
-                  {renderMainContent()}
+                  {renderMainContent(mainContent, usingInnerAnimationInRender)}
                 </div>
                 {!isEditing.value ? renderFooter() : null}
               </>
             ) : (
-              renderMainContent()
+              renderMainContent(mainContent, usingInnerAnimationInRender)
             )}
           </div>
           {!isEditing.value && !isFooterInner.value ? renderFooter() : null}
