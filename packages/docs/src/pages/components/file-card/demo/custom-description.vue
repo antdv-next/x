@@ -3,8 +3,6 @@ import { DownloadOutlined } from "@antdv-next/icons";
 import { App } from "antdv-next";
 const { message } = App.useApp();
 
-const [messageApi, contextHolder] = message.useMessage();
-
 const fileData = [
   {
     name: "Project Document.docx",
@@ -24,12 +22,11 @@ const fileData = [
 ];
 
 const handleDownload = (url: string, fileName: string) => {
-  messageApi.info(`Clicked download: ${fileName},${url}`);
+  message.info(`Clicked download: ${fileName},${url}`);
 };
 </script>
 
 <template>
-  <component :is="contextHolder" />
   <a-flex vertical gap="middle">
     <ax-file-card
       v-for="(file, index) in fileData"

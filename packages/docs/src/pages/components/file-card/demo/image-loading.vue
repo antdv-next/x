@@ -62,7 +62,7 @@ onBeforeUnmount(() => {
       :loading="loading"
       :styles="{
         file: {
-          width: 200,
+          width: '200px',
         },
       }"
       :spin-props="{
