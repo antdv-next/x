@@ -225,7 +225,6 @@ const useStyles = createStyles(({ token, css }) => ({
 
 const { locale: docsLocale } = useLocale();
 const { isDark } = useDarkMode();
-const [messageApi, contextHolder] = message.useMessage();
 const { styles } = useStyles();
 
 const markdownClass = computed(() =>
@@ -691,7 +690,7 @@ function handleSubmit(value: string) {
 
 function handleCreateConversation() {
   if (messages.value.length === 0) {
-    messageApi.error(locale.value.itIsNowANewConversation);
+    message.error(locale.value.itIsNowANewConversation);
     return;
   }
 
@@ -866,7 +865,7 @@ function footerItems(
       actionRender: () =>
         h(ActionsAudio, {
           onClick: () => {
-            messageApi.info(locale.value.isMock);
+            message.info(locale.value.isMock);
           },
         }),
     },
@@ -886,7 +885,7 @@ function footerItems(
                 feedback: value,
               },
             });
-            messageApi.success(`${id}: ${value}`);
+            message.success(`${id}: ${value}`);
           },
         }),
     },
@@ -1042,8 +1041,6 @@ const senderPrefix = () =>
 
 <template>
   <XProvider :locale="xProviderLocale">
-    <component :is="contextHolder" />
-
     <div :class="styles.layout">
       <div :class="styles.sider">
         <div :class="styles.logo">

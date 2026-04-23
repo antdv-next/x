@@ -262,7 +262,6 @@ const useStyles = createStyles(({ token, css }) => ({
 
 const { locale: docsLocale } = useLocale();
 const { isDark } = useDarkMode();
-const [messageApi, contextHolder] = message.useMessage();
 const { styles, cx } = useStyles();
 
 const xProviderLocale = computed<XProviderProps["locale"]>(() =>
@@ -563,7 +562,7 @@ function handleSubmit(content: string) {
 
 function handleCreateConversation() {
   if (messages.value.length === 0) {
-    messageApi.error(t.value.alreadyNewConversation);
+    message.error(t.value.alreadyNewConversation);
     return;
   }
 
@@ -700,7 +699,7 @@ const roleConfig = computed<BubbleListProps["role"]>(() => ({
           size: "small",
           icon: h(LikeOutlined),
           onClick: () => {
-            messageApi.success("Thanks for the feedback");
+            message.success("Thanks for the feedback");
           },
         }),
       ]),
@@ -925,8 +924,6 @@ const conversationItems = computed(() =>
       </div>
     </div>
   </XProvider>
-
-  <component :is="contextHolder" />
 </template>
 
 <docs lang="zh-CN">
