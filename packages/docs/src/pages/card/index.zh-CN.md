@@ -4,14 +4,451 @@ title: 介绍
 packageName: x-card
 ---
 
-`@antdv-next/x-card` 是一个面向 A2UI 协议的动态卡片渲染运行时，用于将 Agent 输出的结构化命令流渲染为可交互的 Vue 组件树。
+`@antdv-next/x-card` 是一个基于 [A2UI 协议](https://a2ui.org/concepts/data-flow/) 的动态卡片渲染组件，让 AI Agent 能够通过结构化的 JSON 消息流，动态构建和渲染交互式 Vue 组件树。
 
-## 核心能力
+## 什么是 A2UI？
 
-- 流式命令消费：按顺序处理 `createSurface / updateComponents / updateDataModel / deleteSurface`
-- 声明式组件渲染：通过组件注册表把协议节点映射为真实组件
-- 数据绑定：支持路径读写与 Action 回写
-- 协议隔离：按 `surfaceId` 维护独立运行时上下文
+A2UI（Agent-to-User Interface）是一个开放协议，允许 AI Agent 通过声明式的 JSON 消息序列描述交互意图，由前端运行时动态渲染为原生 UI 组件。
+
+### 核心设计理念
+
+A2UI 建立在三个核心思想之上：
+
+1. **流式消息（Streaming Messages）**：UI 更新以 JSON 消息序列的形式从 Agent 流向客户端
+2. **声明式组件（Declarative Components）**：UI 以数据形式描述，而非代码编程
+3. **数据绑定（Data Binding）**：UI 结构与应用状态分离，实现响应式更新
+
+### 为什么选择 A2UI？
+
+与传统让 AI 直接生成 HTML 不同，A2UI 采用结构化数据流的方式，具有显著优势：
+
+| 特性         | A2UI                                            | AI 生成 HTML                            |
+| ------------ | ----------------------------------------------- | --------------------------------------- |
+| **安全性**   | 仅使用预定义组件目录（Catalog），无代码执行风险 | 可能包含恶意脚本，存在注入风险          |
+| **跨平台**   | 一套数据结构自动适配 Web、移动端等多端原生组件  | HTML 需额外适配不同设备，易出现样式错乱 |
+| **流式渲染** | 支持渐进式渲染，用户体验流畅                    | 需等待完整响应，加载时间长              |
+| **LLM 友好** | 扁平 JSON 结构，支持增量生成，降低 AI 负担      | 需生成完整 HTML 结构，易出现语法错误    |
+| **维护成本** | 组件统一管理，更新只需修改客户端库              | 每个 HTML 界面需单独调试                |
+
+## 数据流架构
+
+A2UI 遵循单向数据流原则，确保数据流向清晰可预测：
+
+```
+Agent (LLM) → A2UI Generator → Transport (SSE/WebSocket/A2A)
+                    ↓
+Client (Stream Reader) → Message Parser → Renderer → Native UI
+```
+
+### 数据流生命周期
+
+以餐厅预订为例，展示完整的数据流过程：
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Client
+    participant Agent
+
+    User->>Client: "Book a table for 2 tomorrow at 7pm"
+    Client->>Agent: 发送用户请求
+
+    Note over Agent: 1. 创建界面容器
+    Agent->>Client: createSurface { surfaceId: "booking" }
+
+    Note over Agent: 2. 定义 UI 结构
+    Agent->>Client: updateComponents { components: [...] }
+
+    Note over Agent: 3. 填充初始数据
+    Agent->>Client: updateDataModel { datetime: "2025-12-16T19:00", guests: 2 }
+
+    Note over Client: 4. 渲染预订表单
+    Client->>User: 显示日期选择器和客人数量输入
+
+    User->>Client: 修改客人数量为 3
+    Note over Client: 自动更新 /reservation/guests
+
+    User->>Client: 点击"确认"按钮
+    Client->>Agent: userAction { name: "confirm", context: { guests: 3 } }
+
+    Note over Agent: 5. 处理用户操作
+    Agent->>Client: deleteSurface { surfaceId: "booking" }
+    Agent->>Client: 创建成功确认界面
+```
+
+## 协议版本
+
+`@antdv-next/x-card` 同时支持 A2UI 协议的 v0.8 和 v0.9 两个版本。了解两个版本的差异有助于选择合适的协议版本并进行迁移。
+
+### 版本对比
+
+| 特性             | v0.8                                         | v0.9                          |
+| ---------------- | -------------------------------------------- | ----------------------------- |
+| **版本标识**     | 无显式 version 字段                          | 显式的 `version: 'v0.9'` 字段 |
+| **Surface 创建** | 隐式创建（首个 surfaceUpdate 自动创建）      | 显式 `createSurface` 命令     |
+| **数据模型更新** | 使用 `contents` 数组（valueString/valueMap） | 使用 `path` 和 `value` 字段   |
+| **组件定义**     | 嵌套在 `component: { Name: { ... } }` 内     | 扁平的 `component: 'Name'`    |
+| **推荐程度**     | 兼容遗留 Agent                               | **推荐使用**                  |
+
+### v0.8 消息格式
+
+v0.8 使用隐式的 Surface 创建方式，并把组件 props 包裹在带类型名的对象内：
+
+```typescript
+// v0.8 没有显式的 version 字段
+{
+  surfaceUpdate: {
+    surfaceId: 'booking',
+    components: [
+      {
+        id: 'root',
+        component: {
+          Column: {
+            children: { explicitList: ['header', 'content'] },
+          },
+        },
+      },
+    ],
+  },
+}
+```
+
+**数据模型更新**使用 `contents` 数组（值统一以字符串表示）：
+
+```typescript
+{
+  dataModelUpdate: {
+    surfaceId: 'booking',
+    contents: [
+      { key: 'guests', valueString: '3' },
+    ],
+  },
+}
+```
+
+### v0.9 消息格式（推荐）
+
+v0.9 引入显式的版本标识和 Surface 创建命令，使协议更加清晰和可控：
+
+```typescript
+// 显式创建 Surface
+{
+  version: 'v0.9',
+  createSurface: {
+    surfaceId: 'booking',
+    catalogId: 'local://booking-catalog.json',
+  },
+}
+
+// 更新组件
+{
+  version: 'v0.9',
+  updateComponents: {
+    surfaceId: 'booking',
+    components: [
+      { id: 'root', component: 'Column', children: ['header', 'content'] },
+    ],
+  },
+}
+```
+
+**数据模型更新**使用更直观的 `path` 和 `value` 字段：
+
+```typescript
+{
+  version: 'v0.9',
+  updateDataModel: {
+    surfaceId: 'booking',
+    path: '/reservation/guests',
+    value: 3,
+  },
+}
+```
+
+### 向后兼容性
+
+`@antdv-next/x-card` 同时支持两个版本的命令流，组件会根据是否存在 `version` 字段自动判断协议版本：
+
+```ts
+import { XCardBox } from "@antdv-next/x-card";
+
+const commands = [
+  // v0.8 消息
+  {
+    surfaceUpdate: {
+      /* ... */
+    },
+  },
+
+  // v0.9 消息
+  {
+    version: "v0.9",
+    createSurface: {
+      /* ... */
+    },
+  },
+];
+```
+
+## 核心消息类型
+
+`@antdv-next/x-card` 完整实现了 A2UI 协议 v0.9 的核心命令系统：
+
+### 1. createSurface — 创建界面容器
+
+创建一个新的 UI 容器（Surface），每个 Surface 拥有独立的组件树和数据模型。
+
+```ts
+{
+  version: "v0.9",
+  createSurface: {
+    surfaceId: "booking",
+    catalogId: "local://booking-catalog.json",
+  },
+}
+```
+
+### 2. updateComponents — 更新组件结构
+
+定义或更新 Surface 中的 UI 组件，采用邻接表模型（Adjacency List）。
+
+```ts
+{
+  version: "v0.9",
+  updateComponents: {
+    surfaceId: "booking",
+    components: [
+      // 根容器
+      { id: "root", component: "Column", children: ["header", "guests-field", "submit-btn"] },
+      // 标题
+      { id: "header", component: "Text", text: "Confirm Reservation", variant: "h1" },
+      // 客人数量输入框
+      { id: "guests-field", component: "TextField", label: "Guests", value: { path: "/reservation/guests" } },
+      // 提交按钮
+      {
+        id: "submit-btn",
+        component: "Button",
+        variant: "primary",
+        child: "submit-text",
+        action: {
+          event: {
+            name: "confirm",
+            context: { details: { path: "/reservation" } },
+          },
+        },
+      },
+    ],
+  },
+}
+```
+
+### 3. updateDataModel — 更新数据模型
+
+更新 Surface 的应用状态，触发响应式 UI 更新。
+
+```ts
+{
+  version: "v0.9",
+  updateDataModel: {
+    surfaceId: "booking",
+    path: "/reservation",
+    value: {
+      datetime: "2025-12-16T19:00:00Z",
+      guests: 2,
+    },
+  },
+}
+```
+
+### 4. deleteSurface — 删除界面
+
+移除指定的 Surface 及其所有组件和数据模型。
+
+```ts
+{
+  version: "v0.9",
+  deleteSurface: { surfaceId: "booking" },
+}
+```
+
+## 数据绑定系统
+
+A2UI 将 UI 结构与应用状态分离，通过数据绑定实现响应式更新。
+
+### 数据模型（Data Model）
+
+每个 Surface 拥有独立的 JSON 数据模型：
+
+```json
+{
+  "user": { "name": "Alice", "email": "alice@example.com" },
+  "reservation": { "datetime": "2025-12-16T19:00:00Z", "guests": 2 }
+}
+```
+
+### JSON Pointer 路径
+
+使用 RFC 6901 标准的 JSON Pointer 访问数据：
+
+- `/user/name` → `"Alice"`
+- `/reservation/guests` → `2`
+
+### 字面值 vs. 路径绑定
+
+组件属性可以使用字面值或数据绑定：
+
+```ts
+// 字面值（静态）
+{ id: "title", component: "Text", text: "Welcome" }
+
+// 路径绑定（动态）
+{ id: "username", component: "Text", text: { path: "/user/name" } }
+```
+
+当 `/user/name` 从 `"Alice"` 变为 `"Bob"` 时，文本自动更新。
+
+### 输入绑定（双向绑定）
+
+交互式组件可以自动更新数据模型：
+
+```ts
+{ id: "name-input", component: "TextField", value: { path: "/form/name" } }
+```
+
+用户输入时，自动更新 `/form/name` 的值。
+
+## Action 事件处理
+
+用户交互通过 action 事件传递回 Agent。
+
+### 定义 Action
+
+```ts
+{
+  id: "submit-btn",
+  component: "Button",
+  child: "submit-text",
+  action: {
+    event: {
+      name: "confirm_booking",
+      context: {
+        date: { path: "/reservation/datetime" },
+        guests: { path: "/reservation/guests" },
+      },
+    },
+  },
+}
+```
+
+### 客户端事件
+
+用户点击按钮后，运行时通过 `onAction` 回调向上层透出事件：
+
+```ts
+import type { ActionPayload } from "@antdv-next/x-card";
+
+function handleAction(payload: ActionPayload) {
+  // payload.name === "confirm_booking"
+  // payload.context === { date: "...", guests: 3 }
+}
+```
+
+### Agent 响应
+
+Agent 收到事件后，可以：
+
+1. 更新 UI：发送 `updateComponents` 或 `updateDataModel`
+2. 关闭界面：发送 `deleteSurface`
+3. 创建新界面：发送新的 `createSurface`
+
+## 组件目录（Catalog）
+
+Catalog 定义了可用的组件及其属性 schema，确保类型安全和验证。
+
+### Catalog 结构
+
+```json
+{
+  "catalogId": "local://booking-catalog.json",
+  "components": {
+    "Text": {
+      "type": "object",
+      "properties": {
+        "text": { "type": "string" },
+        "variant": { "enum": ["h1", "h2", "h3", "body"] }
+      },
+      "required": ["text"]
+    },
+    "Button": {
+      "type": "object",
+      "properties": {
+        "variant": { "enum": ["primary", "default"] },
+        "action": { "type": "object" }
+      }
+    }
+  }
+}
+```
+
+### 组件映射
+
+通过 `registerCatalog` 注册 Catalog，再在 `XCardBox` 上提供组件实现：
+
+```ts
+import { registerCatalog, XCardBox, XCardCard } from "@antdv-next/x-card";
+import catalog from "./catalog.json";
+
+registerCatalog(catalog);
+```
+
+```vue
+<XCardBox
+  :commands="commands"
+  :on-action="handleAction"
+  :components="{ Text, Button, TextField }"
+>
+  <XCardCard id="booking" />
+</XCardBox>
+```
+
+## 核心特性
+
+### 1. 渐进式渲染
+
+用户无需等待完整响应，界面逐步构建。客户端收到每条消息后立即处理并渲染，提升用户体验。
+
+### 2. 邻接表模型
+
+采用扁平的组件列表，而非嵌套树结构：
+
+- LLM 友好：可以按任意顺序生成组件
+- 增量更新：只需发送新增或修改的组件
+- 容错性强：单个组件错误不影响其他组件
+
+```ts
+[
+  { id: "root", component: "Column", children: ["child1", "child2"] },
+  { id: "child1", component: "Text", text: "Hello" },
+  { id: "child2", component: "Text", text: "World" },
+];
+```
+
+### 3. 组件验证
+
+自动根据 Catalog 验证组件属性，开发环境下提供友好的错误提示，生产环境下优雅降级。
+
+### 4. 类型安全
+
+完整的 TypeScript 类型定义：
+
+```ts
+import type {
+  ActionPayload,
+  Catalog,
+  XCardCommand,
+  XCardComponent_v09,
+} from "@antdv-next/x-card";
+```
 
 ## 安装
 
@@ -19,42 +456,78 @@ packageName: x-card
 
 ## 快速开始
 
-```tsx
+```vue
+<script setup lang="tsx">
 import { defineComponent, ref } from "vue";
-import XCard from "@antdv-next/x-card";
+import { XCardBox, XCardCard, type ActionPayload } from "@antdv-next/x-card";
 
 const Text = defineComponent({
   props: { text: String },
   setup: props => () => <div>{props.text}</div>,
 });
 
-export default defineComponent({
-  setup() {
-    const commands = ref([
-      {
-        version: "v0.9",
-        createSurface: { surfaceId: "demo" },
-      },
-      {
-        version: "v0.9",
-        updateComponents: {
-          surfaceId: "demo",
-          components: [
-            {
-              id: "root",
-              component: "Text",
-              text: "Hello XCard",
-            },
-          ],
-        },
-      },
-    ]);
-
-    return () => (
-      <XCard.Box commands={commands.value} components={{ Text }}>
-        <XCard id="demo" />
-      </XCard.Box>
-    );
+const commands = ref([
+  {
+    version: "v0.9",
+    createSurface: { surfaceId: "demo" },
   },
-});
+  {
+    version: "v0.9",
+    updateComponents: {
+      surfaceId: "demo",
+      components: [{ id: "root", component: "Text", text: "Hello XCard" }],
+    },
+  },
+]);
+
+function handleAction(payload: ActionPayload) {
+  // eslint-disable-next-line no-console
+  console.log("Action:", payload.name, payload.context);
+}
+</script>
+
+<template>
+  <XCardBox
+    :commands="commands"
+    :on-action="handleAction"
+    :components="{ Text }"
+  >
+    <XCardCard id="demo" />
+  </XCardBox>
+</template>
 ```
+
+## 适用场景
+
+- **AI 助手界面**：让 AI Agent 动态生成表单、卡片等交互界面
+- **智能表单**：根据用户输入动态调整表单结构和验证规则
+- **数据可视化**：动态生成图表、列表等数据展示组件
+- **工作流编排**：根据业务流程动态渲染不同阶段的 UI
+- **多轮对话**：在聊天界面中嵌入动态交互组件
+- **个性化界面**：根据用户偏好和使用场景定制 UI
+
+## 性能优化建议
+
+1. **细粒度更新**：只更新变化的数据路径，而非整个数据模型
+
+   ```ts
+   { version: "v0.9", updateDataModel: { surfaceId: "demo", path: "/user/name", value: "Bob" } }
+   ```
+
+2. **按域组织数据**：将相关数据分组，避免命名冲突
+
+   ```json
+   {
+     "user": {},
+     "cart": {},
+     "ui": {}
+   }
+   ```
+
+3. **预计算显示值**：Agent 端格式化数据（货币、日期等），减少客户端逻辑
+
+## 下一步
+
+- 查看 [A2UI v0.9](/card/a2ui-v09) 了解最新协议规范和示例
+- 查看 [A2UI v0.8](/card/a2ui-v08) 了解兼容版本
+- 阅读 [A2UI 官方文档](https://a2ui.org/concepts/data-flow/) 了解协议设计理念
