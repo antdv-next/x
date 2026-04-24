@@ -6,6 +6,7 @@
       "@/*": ["./src/*"],
       "@antdv-next/x": ["../x/components/index.ts"],
       "@antdv-next/x-sdk": ["../x-sdk/src/index.ts"],
+      "@antdv-next/x-card": ["../x-card/src/index.tsx"],
       "@antdv-next/x-markdown": ["../x-markdown/src/index.ts"]
     },
     // Extra safety for array and object lookups, but may have false positives.

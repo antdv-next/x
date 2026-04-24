@@ -34,6 +34,15 @@ export const headerItems: HeaderItem[] = [
     },
   },
   {
+    key: "card",
+    path: "/card",
+    basePath: "/card",
+    label: {
+      "zh-CN": "Card",
+      "en-US": "Card",
+    },
+  },
+  {
     key: "sdk",
     path: "/sdk",
     basePath: "/sdk",

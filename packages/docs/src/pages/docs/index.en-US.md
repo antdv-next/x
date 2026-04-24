@@ -13,6 +13,10 @@ A Vue UI library based on the Antdv Next system, designed for AI-driven interfac
 
 An optimized Markdown rendering solution for streaming content, with powerful extension capabilities. Supports formulas, code highlighting, mermaid charts, and delivers excellent performance for smooth content display. For details, click [here](/markdown).
 
+**`@antdv-next/x-card` - Dynamic Card Runtime**
+
+A dynamic runtime for the A2UI protocol, supporting command-stream-driven UI rendering, path-based binding, and Action data write-back for Agent-driven structured interaction scenarios. For details, click [here](/card).
+
 **`@antdv-next/x-sdk` - AI Conversation Data Flow Management**
 
 Provides a complete set of tool APIs, out-of-the-box AI conversation data flow management, simplifying development and improving efficiency. For details, click [here](/sdk).
