@@ -17,7 +17,7 @@ const actionItems = [
   <a-space direction="vertical" style="display: flex; width: 100%" :size="10">
     <ax-bubble content="outer footer" header="footer">
       <template #avatar>
-        <a-avatar size="small">
+        <a-avatar>
           <template #icon>
             <UserOutlined />
           </template>
@@ -39,7 +39,7 @@ const actionItems = [
       header="footer"
     >
       <template #avatar>
-        <a-avatar size="small">
+        <a-avatar>
           <template #icon>
             <UserOutlined />
           </template>
@@ -60,7 +60,7 @@ const actionItems = [
       header="footer"
     >
       <template #avatar>
-        <a-avatar size="small">
+        <a-avatar>
           <template #icon>
             <UserOutlined />
           </template>
@@ -82,7 +82,7 @@ const actionItems = [
       header="footer"
     >
       <template #avatar>
-        <a-avatar size="small">
+        <a-avatar>
           <template #icon>
             <UserOutlined />
           </template>

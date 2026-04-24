@@ -22,7 +22,7 @@ const text = "Hello World\nNext line\nTab\tindent";
     header="Antdv Design X"
   >
     <template #avatar>
-      <a-avatar size="small">
+      <a-avatar>
         <template #icon>
           <AntDesignOutlined />
         </template>

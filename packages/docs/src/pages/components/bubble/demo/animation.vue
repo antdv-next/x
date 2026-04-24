@@ -84,7 +84,7 @@ function loadB() {
       <a-switch v-model:checked="keepPrefix" />
     </a-space>
 
-    <a-divider style="margin: 4px 0" />
+    <a-divider />
 
     <ax-provider :theme="theme">
       <ax-bubble
@@ -96,7 +96,7 @@ function loadB() {
         @typing-complete="() => console.log('typing complete')"
       >
         <template #avatar>
-          <a-avatar size="small">
+          <a-avatar>
             <template #icon>
               <UserOutlined />
             </template>

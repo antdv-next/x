@@ -108,7 +108,7 @@ onBeforeUnmount(() => clearTimer());
       "
     >
       <template #avatar>
-        <a-avatar size="small">
+        <a-avatar>
           <template #icon>
             <UserOutlined />
           </template>

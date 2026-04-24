@@ -38,7 +38,7 @@ const role = computed<BubbleListProps["role"]>(() => ({
 <template>
   <ax-bubble-list style="height: 420px" :items="items" :role="role">
     <template #avatar="{ role: itemRole }">
-      <a-avatar size="small">
+      <a-avatar>
         {{ itemRole === "user" ? "U" : "AI" }}
       </a-avatar>
     </template>

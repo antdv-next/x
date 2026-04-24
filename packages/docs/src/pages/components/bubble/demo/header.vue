@@ -6,7 +6,7 @@ import { UserOutlined } from "@antdv-next/icons";
   <a-space direction="vertical" style="display: flex; width: 100%" :size="10">
     <ax-bubble content="align left" header="header">
       <template #avatar>
-        <a-avatar size="small">
+        <a-avatar>
           <template #icon>
             <UserOutlined />
           </template>
@@ -15,7 +15,7 @@ import { UserOutlined } from "@antdv-next/icons";
     </ax-bubble>
     <ax-bubble content="align right" placement="end" header="header">
       <template #avatar>
-        <a-avatar size="small">
+        <a-avatar>
           <template #icon>
             <UserOutlined />
           </template>

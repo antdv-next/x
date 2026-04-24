@@ -42,7 +42,7 @@ function handleEditConfirmB(value: string) {
       @edit-confirm="handleEditConfirmA"
     >
       <template #avatar>
-        <a-avatar size="small">
+        <a-avatar>
           <template #icon>
             <UserOutlined />
           </template>
@@ -65,7 +65,7 @@ function handleEditConfirmB(value: string) {
       @edit-confirm="handleEditConfirmB"
     >
       <template #avatar>
-        <a-avatar size="small">
+        <a-avatar>
           <template #icon>
             <UserOutlined />
           </template>

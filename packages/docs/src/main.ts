@@ -10,6 +10,7 @@ import Installdependencies from "./components/install-dependencies/index.vue";
 import { i18n } from "./locales";
 import "./assets/styles/index.css";
 import "uno.css";
+import "@antdv-next/x-markdown/style.css";
 import router from "./router";
 
 const app = createApp(App);
