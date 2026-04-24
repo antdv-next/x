@@ -185,7 +185,6 @@ const useStyles = createStyles(({ token, css }) => ({
 
 const { locale: docsLocale } = useLocale();
 const { isDark } = useDarkMode();
-const [messageApi, contextHolder] = message.useMessage();
 const { styles } = useStyles();
 
 const markdownClass = computed(() =>
@@ -509,7 +508,7 @@ function handleCreateConversation() {
     return;
   }
 
-  messageApi.error(t.value.alreadyNewConversation);
+  message.error(t.value.alreadyNewConversation);
 }
 
 const thinkComponent = defineComponent({
@@ -609,7 +608,7 @@ const roleConfig = computed<BubbleListProps["role"]>(() => ({
               label: "",
               icon: h(EllipsisOutlined),
               onItemClick: () => {
-                messageApi.info(t.value.isMock);
+                message.info(t.value.isMock);
               },
             },
           ],
@@ -657,7 +656,7 @@ const menuConfig = computed(() => (conversation: ConversationItemType) => ({
       key: "rename",
       icon: h(EditOutlined),
       onItemClick: () => {
-        messageApi.info(t.value.demoButtonNoFunction);
+        message.info(t.value.demoButtonNoFunction);
       },
     },
     {
@@ -709,7 +708,7 @@ const menuConfig = computed(() => (conversation: ConversationItemType) => ({
           <Button
             type="text"
             :icon="h(QuestionCircleOutlined)"
-            @click="messageApi.info(t.demoButtonNoFunction)"
+            @click="message.info(t.demoButtonNoFunction)"
           />
         </div>
       </div>
@@ -816,8 +815,6 @@ const menuConfig = computed(() => (conversation: ConversationItemType) => ({
       </div>
     </div>
   </XProvider>
-
-  <component :is="contextHolder" />
 </template>
 
 <docs lang="zh-CN">

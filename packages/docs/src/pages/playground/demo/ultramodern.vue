@@ -138,7 +138,6 @@ const useStyles = createStyles(({ token, css }) => ({
 
 const { locale: docsLocale } = useLocale();
 const { isDark } = useDarkMode();
-const [messageApi, contextHolder] = message.useMessage();
 
 const markdownClass = computed(() =>
   isDark.value ? "x-markdown-dark" : "x-markdown-light",
@@ -450,7 +449,7 @@ function handleSubmit(value: string) {
 
 function handleCreateConversation() {
   if (!conversationActivity.value[curConversation.value]) {
-    messageApi.error(t.value.newConversationWarn);
+    message.error(t.value.newConversationWarn);
     return;
   }
 
@@ -467,8 +466,6 @@ function handleCreateConversation() {
 
 <template>
   <XProvider :locale="xProviderLocale">
-    <component :is="contextHolder" />
-
     <div :class="styles.layout">
       <div :class="styles.side">
         <div :class="styles.logo">
