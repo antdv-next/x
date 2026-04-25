@@ -823,16 +823,6 @@ const components = {
   </div>
 </template>
 
-<style scoped>
-:deep(.ant-picker) {
-  padding-block: 0;
-}
-:deep(.ant-picker .ant-picker-input > input),
-:deep(.ant-picker .ant-picker-input) {
-  height: 30px;
-}
-</style>
-
 <docs lang="zh-CN">
 使用 XCard 实现 A2UI v0.9 协议的基础示例。演示了如何使用 `XAgentCommand_v0_9` 命令配合本地 `catalog.json` 来创建咖啡预订场景的交互卡片。v0.9 版本引入了更简洁的命令结构和 catalog 机制。
 </docs>
