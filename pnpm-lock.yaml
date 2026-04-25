@@ -151,8 +151,8 @@ catalogs:
       specifier: ^1.0.4
       version: 1.0.6
     '@antdv-next/icons':
-      specifier: ^1.0.4
-      version: 1.0.5
+      specifier: ^1.0.6
+      version: 1.0.6
     '@v-c/util':
       specifier: ^1.0.19
       version: 1.0.19
@@ -218,7 +218,7 @@ importers:
     devDependencies:
       '@antdv-next/icons':
         specifier: catalog:prod
-        version: 1.0.5(vue@3.5.31(typescript@5.9.3))
+        version: 1.0.6(vue@3.5.31(typescript@5.9.3))
       '@antdv-next/unocss':
         specifier: catalog:docs
         version: 1.0.2(unocss@66.6.7(@voidzero-dev/vite-plus-core@0.1.14(@types/node@24.12.0)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)))
@@ -347,7 +347,7 @@ importers:
     dependencies:
       '@antdv-next/icons':
         specifier: catalog:prod
-        version: 1.0.5(vue@3.5.31(typescript@5.9.3))
+        version: 1.0.6(vue@3.5.31(typescript@5.9.3))
       '@antdv-next/x-card':
         specifier: workspace:*
         version: link:../x-card
@@ -435,7 +435,7 @@ importers:
         version: 1.0.6(vue@3.5.31(typescript@5.9.3))
       '@antdv-next/icons':
         specifier: catalog:prod
-        version: 1.0.5(vue@3.5.31(typescript@5.9.3))
+        version: 1.0.6(vue@3.5.31(typescript@5.9.3))
       '@v-c/util':
         specifier: catalog:prod
         version: 1.0.19(vue@3.5.31(typescript@5.9.3))
@@ -541,11 +541,6 @@ packages:
 
   '@antdv-next/cssinjs@1.0.6':
     resolution: {integrity: sha512-8NL+AzjFZVHfG9A2l+r4rNWdRfbS5FFFozGU9jVl7WNgd7y+wEYSzl+qvRjJuqd3IryacrDfsTxIgcSQkVlr5Q==}
-    peerDependencies:
-      vue: '>=3.2.0'
-
-  '@antdv-next/icons@1.0.5':
-    resolution: {integrity: sha512-gPUuhhB449hwnLZLS3j+CYIPGowpu2jJQJXX9vLT5insbmmFlizp9RwEH8zLqQOmLw7srSh87xnzGj6uzXW7fA==}
     peerDependencies:
       vue: '>=3.2.0'
 
@@ -4296,13 +4291,6 @@ snapshots:
       '@v-c/util': 1.0.19(vue@3.5.31(typescript@5.9.3))
       csstype: 3.2.3
       stylis: 4.3.6
-      vue: 3.5.31(typescript@5.9.3)
-
-  '@antdv-next/icons@1.0.5(vue@3.5.31(typescript@5.9.3))':
-    dependencies:
-      '@ant-design/colors': 7.2.1
-      '@ant-design/icons-svg': 4.4.2
-      '@v-c/util': 1.0.19(vue@3.5.31(typescript@5.9.3))
       vue: 3.5.31(typescript@5.9.3)
 
   '@antdv-next/icons@1.0.6(vue@3.5.31(typescript@5.9.3))':
