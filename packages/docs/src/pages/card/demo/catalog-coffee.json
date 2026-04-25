@@ -1,0 +1,323 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "local://coffee_booking_catalog.json",
+  "title": "Coffee Booking Catalog",
+  "description": "Custom catalog for coffee booking demo components.",
+  "catalogId": "local://coffee_booking_catalog.json",
+  "components": {
+    "Text": {
+      "type": "object",
+      "properties": {
+        "component": {
+          "const": "Text"
+        },
+        "text": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                }
+              },
+              "required": ["path"],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "variant": {
+          "type": "string",
+          "enum": ["h1", "h2", "h3", "body", "success"]
+        },
+        "status": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                }
+              },
+              "required": ["path"],
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      "required": ["component"],
+      "additionalProperties": true
+    },
+    "DateTimeInput": {
+      "type": "object",
+      "properties": {
+        "component": {
+          "const": "DateTimeInput"
+        },
+        "status": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                }
+              },
+              "required": ["path"],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "action": {
+          "type": "object",
+          "properties": {
+            "event": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "context": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "required": ["name"]
+            }
+          },
+          "required": ["event"]
+        }
+      },
+      "required": ["component"],
+      "additionalProperties": true
+    },
+    "CoffeeList": {
+      "type": "object",
+      "properties": {
+        "component": {
+          "const": "CoffeeList"
+        },
+        "list": {
+          "oneOf": [
+            {
+              "type": "array"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                }
+              },
+              "required": ["path"],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "description": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                }
+              },
+              "required": ["path"],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "status": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                }
+              },
+              "required": ["path"],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "action": {
+          "type": "object",
+          "properties": {
+            "event": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "context": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "required": ["name"]
+            }
+          },
+          "required": ["event"]
+        }
+      },
+      "required": ["component"],
+      "additionalProperties": true
+    },
+    "ActionButton": {
+      "type": "object",
+      "properties": {
+        "component": {
+          "const": "ActionButton"
+        },
+        "child": {
+          "type": "string"
+        },
+        "variant": {
+          "type": "string",
+          "enum": ["default", "primary"]
+        },
+        "status": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                }
+              },
+              "required": ["path"],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "res": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string"
+            }
+          },
+          "required": ["path"],
+          "additionalProperties": false
+        },
+        "action": {
+          "type": "object",
+          "properties": {
+            "event": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "context": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "required": ["name"]
+            }
+          },
+          "required": ["event"]
+        }
+      },
+      "required": ["component", "action"],
+      "additionalProperties": true
+    },
+    "BookForm": {
+      "type": "object",
+      "properties": {
+        "component": {
+          "const": "BookForm"
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": ["component"],
+      "additionalProperties": true
+    },
+    "CoffeeResultCard": {
+      "type": "object",
+      "properties": {
+        "component": {
+          "const": "CoffeeResultCard"
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "price": {
+          "oneOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "tag": {
+          "type": "string"
+        },
+        "image": {
+          "type": "string"
+        },
+        "date": {
+          "type": "string"
+        }
+      },
+      "required": ["component"],
+      "additionalProperties": true
+    }
+  },
+  "functions": {},
+  "$defs": {
+    "DynamicValue": {
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string"
+            }
+          },
+          "required": ["path"],
+          "additionalProperties": false
+        }
+      ]
+    }
+  }
+}

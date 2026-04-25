@@ -1,0 +1,29 @@
+{
+  "name": "@antdv-next/x-card",
+  "version": "0.0.1",
+  "license": "MIT",
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "type-check": "vue-tsc --project tsconfig.build.json --noEmit",
+    "build": "vp build --config vite.build.config.ts"
+  },
+  "peerDependencies": {
+    "vue": ">=3.5.0"
+  }
+}

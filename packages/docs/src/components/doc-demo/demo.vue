@@ -165,7 +165,7 @@ const useStyles = createStyles(({ token }) => ({
 const route = useRoute();
 const router = useRouter();
 const showCode = shallowRef(false);
-const codeType = shallowRef<"ts" | "js">("ts");
+const codeType = shallowRef<string>("ts");
 const demo = shallowRef<any>(null);
 const demoLoading = shallowRef(true);
 let demoLoadVersion = 0;
@@ -215,21 +215,37 @@ const component = computed<Component | undefined>(() => {
 
 const id = computed(() => getDemoId(props.src));
 const hasJsSource = computed(() => Boolean(demo.value?.jsSource?.trim()));
-const activeCodeType = computed<"ts" | "js">({
+const extraFiles = computed<
+  { name: string; lang: string; code: string; html: string }[]
+>(() => demo.value?.extraFiles ?? []);
+const hasExtraFiles = computed(() => extraFiles.value.length > 0);
+const hasCodeTabs = computed(() => hasJsSource.value || hasExtraFiles.value);
+const codeTabKeys = computed(() => {
+  const keys: string[] = ["ts"];
+  if (hasJsSource.value) keys.push("js");
+  for (const file of extraFiles.value) keys.push(file.name);
+  return keys;
+});
+const activeCodeType = computed<string>({
   get() {
-    if (codeType.value === "js" && hasJsSource.value) return "js";
+    if (codeTabKeys.value.includes(codeType.value)) return codeType.value;
     return "ts";
   },
   set(value) {
     codeType.value = value;
   },
 });
+const activeExtraFile = computed(() =>
+  extraFiles.value.find(file => file.name === activeCodeType.value),
+);
 const sourceCode = computed(() => {
+  if (activeExtraFile.value) return activeExtraFile.value.code;
   if (activeCodeType.value === "js")
     return demo.value?.jsSource || demo.value?.source || "";
   return demo.value?.source || "";
 });
 const sourceHtml = computed(() => {
+  if (activeExtraFile.value) return activeExtraFile.value.html;
   if (activeCodeType.value === "js")
     return demo.value?.jsHtml || demo.value?.html || "";
   return demo.value?.html || "";
@@ -332,10 +348,15 @@ function navigateToAnchor(event: MouseEvent) {
       </section>
 
       <template v-if="showCode">
-        <div v-if="hasJsSource" class="ant-doc-demo-box-code-tabs">
+        <div v-if="hasCodeTabs" class="ant-doc-demo-box-code-tabs">
           <a-tabs v-model:active-key="activeCodeType" centered size="small">
             <a-tab-pane key="ts" tab="TypeScript" />
-            <a-tab-pane key="js" tab="JavaScript" />
+            <a-tab-pane v-if="hasJsSource" key="js" tab="JavaScript" />
+            <a-tab-pane
+              v-for="file in extraFiles"
+              :key="file.name"
+              :tab="file.name"
+            />
           </a-tabs>
         </div>
         <div class="ant-doc-demo-box-code">

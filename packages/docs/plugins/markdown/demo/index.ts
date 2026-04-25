@@ -1,12 +1,74 @@
 import type { PluginOption } from "vite-plus";
 
 import fs from "node:fs/promises";
+import path from "node:path";
 import pm from "picomatch";
 import { normalizePath } from "vite-plus";
 import { parse } from "vue/compiler-sfc";
 
 import { createMarkdown, loadBaseMd, loadShiki } from "../markdown";
 import { tsToJs } from "./tsToJs";
+
+interface DemoExtraFile {
+  name: string;
+  lang: string;
+  code: string;
+  html: string;
+}
+
+const EXT_LANG_MAP: Record<string, string> = {
+  ".json": "json",
+  ".ts": "ts",
+  ".tsx": "tsx",
+  ".js": "js",
+  ".jsx": "jsx",
+  ".mjs": "js",
+  ".cjs": "js",
+  ".vue": "vue",
+  ".css": "css",
+  ".less": "less",
+  ".scss": "scss",
+  ".md": "md",
+  ".html": "html",
+};
+
+function extLang(ext: string) {
+  return EXT_LANG_MAP[ext.toLowerCase()] ?? "text";
+}
+
+async function collectExtraFiles(
+  filePath: string,
+  sourceCode: string,
+  md: ReturnType<ReturnType<typeof createMarkdown>>,
+): Promise<DemoExtraFile[]> {
+  const dir = path.dirname(filePath);
+  const seen = new Set<string>();
+  const files: DemoExtraFile[] = [];
+
+  // Match `from './xxx'` or side-effect `import './xxx'`.
+  const importRegex = /(?:from|import)\s*[(]?\s*["'](\.{1,2}\/[^"']+)["']/g;
+
+  let match: RegExpExecArray | null;
+  while ((match = importRegex.exec(sourceCode)) !== null) {
+    const rel = match[1];
+    if (seen.has(rel)) continue;
+    seen.add(rel);
+
+    const ext = path.extname(rel);
+    if (!ext) continue; // skip extension-less imports (likely .ts modules we don't want to inline)
+
+    const resolved = path.resolve(dir, rel);
+    try {
+      const content = await fs.readFile(resolved, "utf-8");
+      const lang = extLang(ext);
+      const html = await md.renderAsync(`\`\`\`${lang}\n${content}\n\`\`\``);
+      files.push({ name: rel, lang, code: content, html });
+    } catch {
+      // ignore non-existent / non-readable files
+    }
+  }
+  return files;
+}
 
 function toRelativePath(absolutePath: string, root: string) {
   const normalizedPath = normalizePath(absolutePath);
@@ -62,6 +124,7 @@ async function parseDemoFile(
   const jsSourceHtml = await md.renderAsync(
     `\`\`\`vue\n${jsSourceCode}\n\`\`\``,
   );
+  const extraFiles = await collectExtraFiles(filePath, sourceCode, md);
 
   return {
     locales,
@@ -69,6 +132,7 @@ async function parseDemoFile(
     jsSourceCode,
     sourceHtml,
     jsSourceHtml,
+    extraFiles,
   };
 }
 
@@ -192,8 +256,20 @@ export default demos
         const normalizedFile = normalizePath(filePath);
         this.addWatchFile(filePath);
 
-        const { locales, sourceCode, jsSourceCode, sourceHtml, jsSourceHtml } =
-          await parseDemoFile(filePath, md);
+        const {
+          locales,
+          sourceCode,
+          jsSourceCode,
+          sourceHtml,
+          jsSourceHtml,
+          extraFiles,
+        } = await parseDemoFile(filePath, md);
+
+        // Watch extra files so HMR re-runs this loader when they change.
+        for (const file of extraFiles) {
+          this.addWatchFile(path.resolve(path.dirname(filePath), file.name));
+        }
+
         return {
           code: `
 import { ref } from 'vue'
@@ -203,6 +279,7 @@ const sourceRef = ref(${JSON.stringify(sourceCode)})
 const jsSourceRef = ref(${JSON.stringify(jsSourceCode)})
 const htmlRef = ref(${JSON.stringify(sourceHtml)})
 const jsHtmlRef = ref(${JSON.stringify(jsSourceHtml)})
+const extraFilesRef = ref(${JSON.stringify(extraFiles)})
 
 const demoData = {
   component: () => import(${JSON.stringify(filePath)}),
@@ -210,7 +287,8 @@ const demoData = {
   get source() { return sourceRef.value },
   get jsSource() { return jsSourceRef.value },
   get html() { return htmlRef.value },
-  get jsHtml() { return jsHtmlRef.value }
+  get jsHtml() { return jsHtmlRef.value },
+  get extraFiles() { return extraFilesRef.value }
 }
 
 if (import.meta.hot) {
@@ -221,6 +299,7 @@ if (import.meta.hot) {
     if ('jsSource' in data) jsSourceRef.value = data.jsSource
     if ('html' in data) htmlRef.value = data.html
     if ('jsHtml' in data) jsHtmlRef.value = data.jsHtml
+    if ('extraFiles' in data) extraFilesRef.value = data.extraFiles
   })
 }
 
@@ -234,8 +313,14 @@ export default demoData
       if (!isDemoFile(ctx.file, ctx.server.config.root, DEMO_GLOB)) return;
 
       const normalizedFile = normalizePath(ctx.file);
-      const { locales, sourceCode, jsSourceCode, sourceHtml, jsSourceHtml } =
-        await parseDemoFile(ctx.file, md);
+      const {
+        locales,
+        sourceCode,
+        jsSourceCode,
+        sourceHtml,
+        jsSourceHtml,
+        extraFiles,
+      } = await parseDemoFile(ctx.file, md);
       ctx.server.ws.send({
         type: "custom",
         event: `demo-update:${normalizedFile}`,
@@ -245,6 +330,7 @@ export default demoData
           jsSource: jsSourceCode,
           html: sourceHtml,
           jsHtml: jsSourceHtml,
+          extraFiles,
         },
       });
       return ctx.modules;

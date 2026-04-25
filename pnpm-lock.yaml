@@ -348,6 +348,9 @@ importers:
       '@antdv-next/icons':
         specifier: catalog:prod
         version: 1.0.6(vue@3.5.31(typescript@5.9.3))
+      '@antdv-next/x-card':
+        specifier: workspace:*
+        version: link:../x-card
       '@antdv-next/x-markdown':
         specifier: workspace:*
         version: link:../x-markdown
@@ -453,6 +456,12 @@ importers:
         version: 3.23.0
       vue:
         specifier: catalog:prod
+        version: 3.5.31(typescript@5.9.3)
+
+  packages/x-card:
+    dependencies:
+      vue:
+        specifier: '>=3.5.0'
         version: 3.5.31(typescript@5.9.3)
 
   packages/x-markdown:

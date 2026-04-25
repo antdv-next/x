@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@antdv-next/icons": "catalog:prod",
+    "@antdv-next/x-card": "workspace:*",
     "@antdv-next/x-markdown": "workspace:*",
     "@antv/infographic": "^0.2.16"
   },
