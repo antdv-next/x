@@ -49,6 +49,9 @@ export default defineConfig({
       "@antdv-next/x-sdk": fileURLToPath(
         new URL("../x-sdk/src/index.ts", import.meta.url),
       ),
+      "@antdv-next/x-card": fileURLToPath(
+        new URL("../x-card/src/index.tsx", import.meta.url),
+      ),
       "@antdv-next/x-markdown": fileURLToPath(
         new URL("../x-markdown/src", import.meta.url),
       ),
