@@ -11,6 +11,7 @@ order: 3
 
 ```vue
 <script setup>
+import "@antdv-next/x-markdown/themes/index.css";
 import "@antdv-next/x-markdown/themes/light.css";
 </script>
 

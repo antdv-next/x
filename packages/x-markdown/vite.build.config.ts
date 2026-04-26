@@ -21,17 +21,21 @@ const buildBaseOptions = {
 const entries = Object.fromEntries(
   globSync(["./src/**/*.ts", "!./src/plugins/**"])
     .sort()
-    .map(file => [`./${file}`.replace("./src/", "").replace(/\.ts$/, ""), `./${file}`]),
+    .map(file => [
+      `./${file}`.replace("./src/", "").replace(/\.ts$/, ""),
+      `./${file}`,
+    ]),
 );
 
-const pluginEntries = globSync(["src/plugins/*/index.ts"]).reduce<Record<string, string>>(
-  (acc, file) => {
-    const entryName = file.replace(/^src\/plugins\//, "").replace(/\/index\.ts$/, "");
-    acc[entryName] = resolve(__dirname, file);
-    return acc;
-  },
-  {},
-);
+const pluginEntries = globSync(["src/plugins/*/index.ts"]).reduce<
+  Record<string, string>
+>((acc, file) => {
+  const entryName = file
+    .replace(/^src\/plugins\//, "")
+    .replace(/\/index\.ts$/, "");
+  acc[entryName] = resolve(__dirname, file);
+  return acc;
+}, {});
 
 export default defineConfig(({ mode }) => {
   if (mode === "plugins") {
@@ -66,7 +70,12 @@ export default defineConfig(({ mode }) => {
       dts({
         ...dtsBaseOptions,
         entryRoot: "src",
-        include: ["src/**/*.ts", "!src/plugins/**", "src/**/*.d.ts", "src/**/*.vue"],
+        include: [
+          "src/**/*.ts",
+          "!src/plugins/**",
+          "src/**/*.d.ts",
+          "src/**/*.vue",
+        ],
         outDirs: DIST_DIR,
         processor: "vue",
       }),

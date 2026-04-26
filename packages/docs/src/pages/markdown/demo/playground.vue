@@ -17,6 +17,7 @@ import {
   theme,
 } from "antdv-next";
 import { computed, defineComponent, h, onUnmounted, ref, watch } from "vue";
+import "@antdv-next/x-markdown/themes/index.css";
 import "@antdv-next/x-markdown/themes/light.css";
 import "@antdv-next/x-markdown/themes/dark.css";
 import { useDarkMode } from "@/composables/use-dark-mode";
@@ -212,9 +213,7 @@ const controlCardStyle = computed(() => ({
 
 const previewShellStyle = computed(() => ({
   background: isDarkMode.value ? "#141414" : token.value.colorBgContainer,
-  height: viewportHeight,
-  display: "flex",
-  flexDirection: "column",
+  "--xmd-playground-viewport-height": viewportHeight,
 }));
 
 watch(source, () => {
@@ -481,10 +480,15 @@ const themeOptions = [
             :style="{ flex: '1 1 0', minWidth: '0' }"
             :bodyStyle="{ padding: '1px' }"
           >
-            <div :style="previewShellStyle">
+            <div :style="previewShellStyle" class="h-[var(--xmd-playground-viewport-height)] flex flex-col">
               <div
                 :class="markdownClassName"
-                :style="{ padding: '12px', flex: '1', overflowY: 'auto' }"
+                :style="{
+                  padding: '12px',
+                  flex: '1',
+                  overflowY: 'auto',
+                  '--xmd-playground-viewport-height': viewportHeight,
+                }"
               >
                 <XMarkdown
                   :content="previewContent"

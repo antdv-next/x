@@ -11,6 +11,7 @@ Import the theme stylesheet and set the theme class on the root:
 
 ```vue
 <script setup>
+import "@antdv-next/x-markdown/themes/index.css";
 import "@antdv-next/x-markdown/themes/light.css";
 </script>
 

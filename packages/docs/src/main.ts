@@ -1,4 +1,5 @@
 import Antdx from "@antdv-next/x";
+import "@antdv-next/x-markdown/themes/index.css";
 import dayjs from "dayjs";
 import advancedFormat from "dayjs/plugin/advancedFormat";
 import customParseFormat from "dayjs/plugin/customParseFormat";

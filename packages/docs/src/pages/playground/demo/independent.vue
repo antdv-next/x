@@ -86,6 +86,7 @@ import {
   shallowRef,
   watch,
 } from "vue";
+import "@antdv-next/x-markdown/themes/index.css";
 import "@antdv-next/x-markdown/themes/dark.css";
 import "@antdv-next/x-markdown/themes/light.css";
 import { useDarkMode } from "@/composables/use-dark-mode";

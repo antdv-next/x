@@ -42,6 +42,7 @@ import zhCN from "antdv-next/dist/locale/zh_CN";
 import { createStyles } from "antdv-style";
 import dayjs from "dayjs";
 import { computed, h, nextTick, onMounted, ref, watch } from "vue";
+import "@antdv-next/x-markdown/themes/index.css";
 import "@antdv-next/x-markdown/themes/dark.css";
 import "@antdv-next/x-markdown/themes/light.css";
 import { useDarkMode } from "@/composables/use-dark-mode";
