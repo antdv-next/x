@@ -1,6 +1,6 @@
 {
   "name": "@antdv-next/x-markdown",
-  "version": "0.0.2",
+  "version": "0.1.0-beta.1",
   "license": "MIT",
   "files": [
     "dist",
