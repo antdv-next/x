@@ -23,7 +23,7 @@ export default defineConfig({
     minify: true,
     sourcemap: false,
     rolldownOptions: {
-      external: ["vue", "antdv-next"],
+      external: ["vue", "antdv-next", /^antdv-next\//],
     },
     emptyOutDir: true,
     lib: {
