@@ -1,7 +1,7 @@
 import type { PropType, StyleValue, VNodeChild } from "vue";
 
 import { Typography } from "antdv-next";
-import { useConfig } from "antdv-next/dist/config-provider/context";
+import { useConfig } from "antdv-next/config-provider/context";
 import { computed, defineComponent, ref, useAttrs } from "vue";
 
 import type { WelcomeProps, WelcomeRef } from "./interface";

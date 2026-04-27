@@ -1,7 +1,7 @@
 import type { CSSProperties, PropType, StyleValue, VNodeChild } from "vue";
 
 import { LoadingOutlined, RightOutlined } from "@antdv-next/icons";
-import { useConfig } from "antdv-next/dist/config-provider/context";
+import { useConfig } from "antdv-next/config-provider/context";
 import {
   Transition,
   computed,

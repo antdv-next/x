@@ -13,7 +13,7 @@ import {
   ZoomOutOutlined,
 } from "@antdv-next/icons";
 import { Button, Segmented, Tooltip } from "antdv-next";
-import { useConfig } from "antdv-next/dist/config-provider/context";
+import { useConfig } from "antdv-next/config-provider/context";
 import {
   computed,
   defineComponent,

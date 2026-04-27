@@ -2,7 +2,7 @@ import type { ButtonProps } from "antdv-next";
 import type { CSSProperties, PropType, StyleValue, VNodeChild } from "vue";
 
 import { Button } from "antdv-next";
-import { useConfig } from "antdv-next/dist/config-provider/context";
+import { useConfig } from "antdv-next/config-provider/context";
 import { computed, defineComponent, ref, useAttrs, watch } from "vue";
 
 import useXComponentConfig from "../_utils/hooks/use-x-component-config";

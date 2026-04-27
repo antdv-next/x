@@ -1,6 +1,6 @@
 import type { CSSProperties, PropType, StyleValue, TransitionProps } from "vue";
 
-import { useConfig } from "antdv-next/dist/config-provider/context";
+import { useConfig } from "antdv-next/config-provider/context";
 import {
   computed,
   defineComponent,

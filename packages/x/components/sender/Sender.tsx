@@ -1,7 +1,7 @@
 import type { PropType, StyleValue } from "vue";
 import type { CSSProperties } from "vue";
 
-import { useConfig } from "antdv-next/dist/config-provider/context";
+import { useConfig } from "antdv-next/config-provider/context";
 import { computed, defineComponent, ref, useAttrs, watch } from "vue";
 
 import type { SlotTextAreaRef } from "./components/SlotTextArea";

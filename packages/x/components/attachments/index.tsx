@@ -8,7 +8,7 @@ import type {
   VNodeChild,
 } from "vue";
 
-import { useConfig } from "antdv-next/dist/config-provider/context";
+import { useConfig } from "antdv-next/config-provider/context";
 import { computed, defineComponent, provide, ref, watch } from "vue";
 
 import type { FileCardProps } from "../file-card";

@@ -1,4 +1,4 @@
-import { useConfig } from "antdv-next/dist/config-provider/context";
+import { useConfig } from "antdv-next/config-provider/context";
 
 export const defaultPrefixCls = "ant";
 

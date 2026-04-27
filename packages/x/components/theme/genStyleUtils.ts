@@ -1,5 +1,5 @@
 import { genStyleUtils } from "@antdv-next/cssinjs/cssinjs-utils";
-import { useConfig } from "antdv-next/dist/config-provider/context";
+import { useConfig } from "antdv-next/config-provider/context";
 import { computed } from "vue";
 
 import type { AliasToken, SeedToken } from "./interface";

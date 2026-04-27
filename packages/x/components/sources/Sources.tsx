@@ -2,7 +2,7 @@ import type { PropType, StyleValue } from "vue";
 
 import { RightOutlined } from "@antdv-next/icons";
 import { Popover } from "antdv-next";
-import { useConfig } from "antdv-next/dist/config-provider/context";
+import { useConfig } from "antdv-next/config-provider/context";
 import { computed, defineComponent, ref, Transition, useAttrs } from "vue";
 
 import type {

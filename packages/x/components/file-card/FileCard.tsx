@@ -22,7 +22,7 @@ import {
   PythonOutlined,
 } from "@antdv-next/icons";
 import { Image } from "antdv-next";
-import { useConfig } from "antdv-next/dist/config-provider/context";
+import { useConfig } from "antdv-next/config-provider/context";
 import { computed, defineComponent, useAttrs } from "vue";
 
 import useXComponentConfig from "../_utils/hooks/use-x-component-config";

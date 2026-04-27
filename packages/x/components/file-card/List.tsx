@@ -13,7 +13,7 @@ import {
 } from "@antdv-next/icons";
 import { useResizeObserver } from "@vueuse/core";
 import { Button } from "antdv-next";
-import { useConfig } from "antdv-next/dist/config-provider/context";
+import { useConfig } from "antdv-next/config-provider/context";
 import { computed, defineComponent, ref, TransitionGroup, watch } from "vue";
 
 import type {
