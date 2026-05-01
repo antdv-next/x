@@ -1,19 +1,28 @@
 ---
 title: Notification
 subtitle: 系统通知
-description: 封装浏览器原生 Notification API，用于向用户推送系统级通知。
+description: 系统级别发送在页面外部显示的通知。
 ---
 
 ## 何时使用
 
-需要在 AI 场景中（如任务完成、异常告警等）推送浏览器系统通知时使用。
+- 在智能体执行复杂任务时，可推送系统应用级别通知，使用户随时掌握任务进展。
+- 受操作系统通知权限管控，仅用于弱通知使用。
+
+## 注意
+
+- **`Notification`为系统应用通知，受操作系统通知权限管控，如果系统通知权限被关闭，XNotification的 `open` 方法调用将无任何效果。[系统权限设置](#系统权限设置)。**
+- XNotification 是由扩展 `window.Notification`实现的，如果浏览器环境不支持Notification，XNotification的方法调用将无任何效果。
+
+- XNotification 通知样式与效果均已当前浏览器环境对Notification的支持为准，例如`dir`属性会被大部分浏览器忽略。
+- XNotification 仅对当前实例下的通知进行关闭管理，实例变更后（例：浏览器页面刷新）对已发送的通知无管理关闭能力。
 
 ## 代码演示
 
-<demo src="./demo/hooks.vue">Hooks 用法</demo>
+<demo src="./demo/hooks.vue">Hooks调用</demo>
+<demo src="./demo/duration.vue">自动关闭延迟</demo>
+<demo src="./demo/close-tag.vue">关闭指定通知</demo>
 <demo src="./demo/static-method.vue">静态方法</demo>
-<demo src="./demo/duration.vue">自动关闭</demo>
-<demo src="./demo/close-tag.vue">按 Tag 关闭</demo>
 
 ## API
 
@@ -54,3 +63,19 @@ type UseNotificationType = [
   },
 ];
 ```
+
+## 系统权限设置
+
+### 在 Windows 上更改 `通知` 设置
+
+在 Windows 系统上不同版本系统的设置路径会有不同，可大概参考路径：“开始”菜单 > “设置”> “系统” > 然后在左侧选择 “通知和操作”，之后可以对全局通知以及应用通知等进行操作。
+
+### 在 Mac 上更改 `通知` 设置
+
+在 Mac 上，使用 ”通知“ 设置来指定不想被通知打扰的时段，并控制通知在 ”通知中心“ 中的显示方式。若要更改这些设置，请选取 ”苹果“菜单> ”系统设置“，然后点按边栏中的 ”通知”（你可能需要向下滚动）。
+
+## FAQ
+
+### 已经获取了当前来源 `origin` 显示系统通知的权限，`onShow` 回调也触发了，为何还是无法展示推送的通知？
+
+`Notification` 为系统通知，需要确保设备开启了对应浏览器应用的通知权限。

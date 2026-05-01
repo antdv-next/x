@@ -1,25 +1,24 @@
 <script setup lang="ts">
 import { Notification as notification } from "@antdv-next/x";
+import { onMounted, ref } from "vue";
 
 const describeInfo: Record<NotificationPermission, string> = {
-  denied: "通知权限已被拒绝，你需要在浏览器网站设置中手动重置通知权限。",
-  granted: "通知权限已授予，你可以点击「发送通知」按钮来推送一条通知。",
-  default: "请先请求权限，授权后即可推送通知。",
+  denied:
+    "Notification permission has been denied, You need to manually reset the notification permissions in the website settings to trigger the permission request pop-up.",
+  granted:
+    'Notification permission has been granted, you can click the "Open a notification" button to push a  notification.',
+  default:
+    "Please Request Permission,After the request is approved, you can push notifications.",
 };
 
-// 静态方法：不使用 useNotification()，直接调用实例方法
-// permission 仍通过 useNotification 获取响应式状态
-const [{ permission }] = notification.useNotification();
-
-const request = async () => {
-  await notification.requestPermission();
-};
+const permission = ref<NotificationPermission>();
 
 const open = () => {
   notification.open({
-    title: "任务完成",
-    body: "任务于 13:12 完成",
-    icon: "https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*eco6RrQhxbMAAAAAAAAAAAAADgCCAQ/original",
+    title: "Task completed",
+    body: "The task was completed at 13:12",
+    badge: "https://x.antdv-next.com/x.svg",
+    icon: "https://x.antdv-next.com/x.svg",
     onClick: (event, close) => {
       console.log("onClick", event, close);
       close?.();
@@ -36,32 +35,54 @@ const open = () => {
   });
 };
 
-const closeAll = () => {
+const close = () => {
   notification.close();
 };
+
+const request = async () => {
+  permission.value = await notification.requestPermission();
+};
+
+onMounted(() => {
+  permission.value = notification.permission;
+});
 </script>
 
 <template>
   <a-flex vertical gap="middle">
-    <span>{{ describeInfo[permission] }}</span>
+    <template v-if="permission">
+      {{ describeInfo[permission] }}
+    </template>
     <a-flex gap="middle">
       <a-button
         type="primary"
         :disabled="permission !== 'default'"
         @click="request"
       >
-        {{ permission === "default" ? "请求权限" : `通知权限：${permission}` }}
+        {{
+          permission === "default"
+            ? "Please Request Permission"
+            : `Notification permission has been ${permission}`
+        }}
       </a-button>
       <a-button
         type="primary"
         :disabled="permission !== 'granted'"
         @click="open"
       >
-        发送通知
+        Open a notification
       </a-button>
-      <a-button danger :disabled="permission !== 'granted'" @click="closeAll">
-        关闭所有
+      <a-button danger :disabled="permission !== 'granted'" @click="close">
+        Destroy All
       </a-button>
     </a-flex>
   </a-flex>
 </template>
+
+<docs lang="zh-CN">
+静态方法调用。发送通知前需要向用户请求通知权限，授权可通知后可发送通知， 若授权禁止通知则不可以发送通知。
+</docs>
+
+<docs lang="en-US">
+Static method invocation.Before sending notifications, it is necessary to request notification permission from the user. Once authorized, notifications can be sent. If authorization prohibits notifications, notifications cannot be sent.
+</docs>
