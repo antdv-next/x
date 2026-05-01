@@ -2,9 +2,12 @@
 import { Notification as notification } from "@antdv-next/x";
 
 const describeInfo: Record<NotificationPermission, string> = {
-  denied: "通知权限已被拒绝，你需要在浏览器网站设置中手动重置通知权限。",
-  granted: "通知权限已授予，你可以点击「发送通知」按钮来推送一条通知。",
-  default: "请先请求权限，授权后即可推送通知。",
+  denied:
+    "Notification permission has been denied, You need to manually reset the notification permissions in the website settings to trigger the permission request pop-up.",
+  granted:
+    'Notification permission has been granted, you can click the "Open a notification" button to push a  notification.',
+  default:
+    "Please Request Permission,After the request is approved, you can push notifications.",
 };
 
 const [{ permission }, { open, close, requestPermission }] =
@@ -12,16 +15,22 @@ const [{ permission }, { open, close, requestPermission }] =
 
 const openClick = () => {
   open({
-    title: "任务完成",
-    body: "任务于 13:12 完成",
+    title: "Task completed",
+    body: "The task was completed at 13:12",
     tag: "tag_task_completed",
-    icon: "https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*eco6RrQhxbMAAAAAAAAAAAAADgCCAQ/original",
-    onClick: (event, closeFn) => {
-      console.log("onClick", event, closeFn);
-      closeFn?.();
+    icon: "https://x.antdv-next.com/x.svg",
+    onClick: (event, close) => {
+      console.log("onClick", event, close);
+      close?.();
     },
     onClose: event => {
       console.log("onClose", event);
+    },
+    onError: event => {
+      console.log("onError", event);
+    },
+    onShow: event => {
+      console.log("onShow", event);
     },
   });
 };
@@ -29,29 +38,41 @@ const openClick = () => {
 
 <template>
   <a-flex vertical gap="middle">
-    <span>{{ describeInfo[permission] }}</span>
+    {{ describeInfo[permission] }}
     <a-flex gap="middle">
       <a-button
         type="primary"
         :disabled="permission !== 'default'"
-        @click="requestPermission()"
+        @click="requestPermission"
       >
-        {{ permission === "default" ? "请求权限" : `通知权限：${permission}` }}
+        {{
+          permission === "default"
+            ? "Please Request Permission"
+            : `Notification permission has been ${permission}`
+        }}
       </a-button>
       <a-button
         type="primary"
         :disabled="permission !== 'granted'"
         @click="openClick"
       >
-        发送通知
+        Open a notification
       </a-button>
       <a-button
         danger
         :disabled="permission !== 'granted'"
         @click="close(['tag_task_completed'])"
       >
-        按 Tag 关闭
+        Destroy tag
       </a-button>
     </a-flex>
   </a-flex>
 </template>
+
+<docs lang="zh-CN">
+关闭指定`tag`通知框。
+</docs>
+
+<docs lang="en-US">
+Close the specified `tag` notification box.
+</docs>
