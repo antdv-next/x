@@ -19,6 +19,10 @@ description: File tree component for displaying hierarchical file structure.
 <demo src="./demo/preview-render.vue">Custom Preview Content</demo>
 <demo src="./demo/slots.vue">Custom Slots</demo>
 
+## Semantic DOM
+
+<demo src="./demo/semantic.vue" simplify>Folder Semantic DOM</demo>
+
 ## API
 
 ### FolderProps

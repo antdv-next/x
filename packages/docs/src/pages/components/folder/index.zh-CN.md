@@ -20,6 +20,10 @@ description: 用于展示层级文件结构的文件树组件。
 <demo src="./demo/preview-render.vue">自定义预览内容</demo>
 <demo src="./demo/slots.vue">自定义插槽</demo>
 
+## 语义化 DOM
+
+<demo src="./demo/semantic.vue" simplify>Folder 语义结构</demo>
+
 ## API
 
 ### FolderProps
