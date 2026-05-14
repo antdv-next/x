@@ -9,6 +9,7 @@ import type { BubbleProps } from "../bubble";
 import type { CodeHighlighterProps } from "../code-highlighter";
 import type { ConversationsProps } from "../conversations";
 import type { FileCardProps } from "../file-card";
+import type { FolderProps } from "../folder";
 import type { MermaidProps } from "../mermaid";
 import type { PromptsProps } from "../prompts";
 import type { SenderProps } from "../sender";
@@ -40,6 +41,7 @@ export interface XComponentsConfig {
   sources?: Pick<SourcesProps, "style" | "styles" | "classes">;
   fileCard?: Pick<FileCardProps, "style" | "styles" | "classes">;
   codeHighlighter?: Pick<CodeHighlighterProps, "style" | "styles" | "classes">;
+  folder?: Pick<FolderProps, "style" | "styles" | "classes">;
   mermaid?: Pick<MermaidProps, "style" | "styles" | "classes">;
   prompts?: Pick<PromptsProps, "style" | "styles" | "classes">;
   sender?: Pick<SenderProps, "style" | "styles" | "classNames"> & {

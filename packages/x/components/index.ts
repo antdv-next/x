@@ -12,6 +12,7 @@ import Bubble, { BubbleDivider, BubbleList, BubbleSystem } from "./bubble";
 import CodeHighlighter from "./code-highlighter";
 import Conversations, { ConversationsCreation } from "./conversations";
 import FileCard, { FileCardList } from "./file-card";
+import Folder from "./folder";
 import Mermaid from "./mermaid";
 import Notification, { XNotification } from "./notification";
 import Prompts from "./prompts";
@@ -42,6 +43,7 @@ const components = [
   ActionsItem,
   FileCard,
   FileCardList,
+  Folder,
   Mermaid,
   Attachments,
   Sender,
@@ -80,6 +82,7 @@ export {
   ConversationsCreation,
   FileCard,
   FileCardList,
+  Folder,
   Mermaid,
   Notification,
   XNotification,
@@ -117,6 +120,17 @@ export type {
 } from "./bubble";
 
 export type { FileCardListProps, FileCardProps } from "./file-card";
+export type {
+  DirectoryIconsMap,
+  FileContentService,
+  FolderProps,
+  FolderRef,
+  FolderSemanticType,
+  FolderSlots,
+  FolderTreeData,
+  PreviewFileInfo,
+  SelectedFileInfo,
+} from "./folder";
 export type {
   MermaidActions,
   MermaidProps,
