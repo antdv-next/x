@@ -10,10 +10,14 @@ description: File tree component for displaying hierarchical file structure.
 
 ## Examples
 
-<demo src="./demo/basic.vue">Basic</demo>
+<demo src="./demo/basic.vue">Basic Usage</demo>
+<demo src="./demo/custom-service.vue">Custom File Service</demo>
+<demo src="./demo/file-controlled.vue">Controlled File Selection</demo>
+<demo src="./demo/fully-controlled.vue">Fully Controlled Mode</demo>
+<demo src="./demo/searchable.vue">Searchable File Tree</demo>
 <demo src="./demo/custom-icons.vue">Custom Icons</demo>
-<demo src="./demo/file-controlled.vue">Controlled Selection</demo>
-<demo src="./demo/slots.vue">Slots</demo>
+<demo src="./demo/preview-render.vue">Custom Preview Content</demo>
+<demo src="./demo/slots.vue">Custom Slots</demo>
 
 ## API
 

@@ -177,8 +177,12 @@ const FolderDirectoryTree = defineComponent({
               blockNode: true,
               showLine: props.showLine,
               defaultExpandAll: props.defaultExpandAll,
-              class: `${prefixCls}-directory-tree-content`,
-              classNames: {
+              class: [
+                `${prefixCls}-directory-tree-content`,
+                props.classes?.directoryTree,
+              ],
+              style: props.styles?.directoryTree,
+              classes: {
                 itemTitle: `${prefixCls}-directory-tree-item-title`,
               },
               onSelect: (keys: any, info: any) =>

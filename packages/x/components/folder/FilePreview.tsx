@@ -11,9 +11,12 @@ import type {
   PreviewTitleRender,
 } from "./interface";
 
+import useXComponentConfig from "../_utils/hooks/use-x-component-config";
 import { XActionsCopy } from "../actions/ActionsCopy";
+import CodeHighlighter from "../code-highlighter";
 import { useLocale } from "../locale";
 import enUS from "../locale/en_US";
+import useStyle from "./style";
 
 export interface FilePreviewProps {
   prefixCls: string;
@@ -102,18 +105,25 @@ const FilePreview = defineComponent({
   },
   setup(props) {
     const [locale] = useLocale("Folder", enUS.Folder);
+    const contextConfig = useXComponentConfig("folder");
+    const [hashId, cssVarCls] = useStyle(computed(() => props.prefixCls));
 
     const previewCls = computed(() => `${props.prefixCls}-preview`);
 
     const renderOriginContent = (fileContent: string, language: string) => (
-      <pre
-        class={`${previewCls.value}-code language-${language}`}
-        style={{ margin: 0, background: "transparent" }}
-      >
-        <code class={`language-${language}`}>
-          {fileContent.replace(/\n$/, "")}
-        </code>
-      </pre>
+      <CodeHighlighter
+        content={fileContent.replace(/\n$/, "")}
+        language={language}
+        showLanguage={false}
+        showLineNumbers={false}
+        showCopyButton={false}
+        style={{
+          background: "transparent",
+          border: 0,
+          borderRadius: 0,
+          padding: 0,
+        }}
+      />
     );
 
     const renderEmpty = () => {
@@ -252,8 +262,17 @@ const FilePreview = defineComponent({
 
     return () => (
       <div
-        class={[`${previewCls.value}`, props.classes?.filePreview]}
-        style={[props.styles?.filePreview, props.style]}
+        class={[
+          `${previewCls.value}`,
+          props.classes?.filePreview,
+          hashId.value,
+          cssVarCls.value,
+        ]}
+        style={[
+          contextConfig.value.styles?.filePreview,
+          props.styles?.filePreview,
+          props.style,
+        ]}
       >
         {renderContent()}
       </div>

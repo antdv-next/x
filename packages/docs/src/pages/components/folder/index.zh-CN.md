@@ -12,9 +12,13 @@ description: 用于展示层级文件结构的文件树组件。
 ## 代码演示
 
 <demo src="./demo/basic.vue">基础用法</demo>
+<demo src="./demo/custom-service.vue">自定义文件服务</demo>
+<demo src="./demo/file-controlled.vue">受控文件选择</demo>
+<demo src="./demo/fully-controlled.vue">完全受控模式</demo>
+<demo src="./demo/searchable.vue">可搜索的文件树</demo>
 <demo src="./demo/custom-icons.vue">自定义图标</demo>
-<demo src="./demo/file-controlled.vue">受控选中</demo>
-<demo src="./demo/slots.vue">插槽</demo>
+<demo src="./demo/preview-render.vue">自定义预览内容</demo>
+<demo src="./demo/slots.vue">自定义插槽</demo>
 
 ## API
 

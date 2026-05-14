@@ -3,53 +3,73 @@ import type { FolderTreeData } from "@antdv-next/x";
 
 const treeData: FolderTreeData[] = [
   {
-    title: "src",
-    path: "src",
+    title: "use-x-chat",
+    path: "use-x-chat",
     children: [
       {
-        title: "components",
-        path: "components",
+        title: "SKILL.md",
+        path: "SKILL.md",
+        content: `---
+name: use-x-chat
+version: 2.3.0
+description: Focus on explaining how to use the useXChat Hook, including custom Provider integration, message management, error handling, etc.
+---
+
+# Quick Start
+
+Use the useXChat Hook to build professional AI conversation applications.
+
+## Requirements
+
+- @ant-design/x-sdk: 2.2.2+
+- @ant-design/x: latest
+`,
+      },
+      {
+        title: "reference",
+        path: "reference",
         children: [
           {
-            title: "Button.tsx",
-            path: "Button.tsx",
-            content: "export const Button = () => <button>Click</button>;",
+            title: "API.md",
+            path: "API.md",
+            content: `### useXChat
+
+\`\`\`tsx
+const { messages, onRequest, isRequesting } = useXChat({ provider });
+\`\`\`
+
+Message list and request state are exposed from the hook.`,
           },
           {
-            title: "Input.tsx",
-            path: "Input.tsx",
-            content: "export const Input = () => <input />;",
+            title: "CORE.md",
+            path: "CORE.md",
+            content: `### Message Management
+
+- Read current messages
+- Append new messages
+- Abort active request
+- Reload an existing message`,
           },
         ],
       },
-      {
-        title: "index.ts",
-        path: "index.ts",
-        content: "export * from './components';",
-      },
     ],
-  },
-  {
-    title: "package.json",
-    path: "package.json",
-    content: '{\n  "name": "demo-app"\n}',
   },
 ];
 </script>
 
 <template>
-  <div style="height: 480px">
+  <div style="height: 420px">
     <ax-folder
       :tree-data="treeData"
-      :default-selected-file="['src', 'components', 'Button.tsx']"
+      :default-selected-file="['use-x-chat', 'SKILL.md']"
     />
   </div>
 </template>
 
 <docs lang="zh-CN">
-基础用法，展示文件树及选中文件的内容预览。
+基础用法。
 </docs>
 
 <docs lang="en-US">
-Basic usage. Render a file tree and preview the selected file's content.
+Basic usage.
 </docs>
