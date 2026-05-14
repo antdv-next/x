@@ -206,6 +206,28 @@ export const componentOverviewItems: ComponentOverviewItem[] = [
       "https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*6ySvTqb7XhkAAAAAAAAAAAAADgCCAQ/original",
   },
   {
+    slug: "folder",
+    path: "/components/folder",
+    title: "Folder",
+    subtitle: {
+      "zh-CN": "文件树",
+    },
+    description: {
+      "zh-CN": "用于展示层级文件结构的文件树组件。",
+      "en-US":
+        "File tree component for displaying hierarchical file structure.",
+    },
+    group: {
+      "zh-CN": "反馈",
+      "en-US": "Feedback",
+    },
+    groupOrder: 4,
+    cover:
+      "https://mdn.alipayobjects.com/huamei_lkxviz/afts/img/uWJQS7CnYE0AAAAAQCAAAAgADtFMAQFr/original",
+    coverDark:
+      "https://mdn.alipayobjects.com/huamei_lkxviz/afts/img/iUnnR43iHu8AAAAAQCAAAAgADtFMAQFr/original",
+  },
+  {
     slug: "sender",
     path: "/components/sender",
     title: "Sender",
