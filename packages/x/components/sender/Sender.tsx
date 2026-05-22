@@ -1,6 +1,7 @@
 import type { PropType, StyleValue } from "vue";
 import type { CSSProperties } from "vue";
 
+import { Flex } from "antdv-next";
 import { useConfig } from "antdv-next/config-provider/context";
 import { computed, defineComponent, ref, useAttrs, watch } from "vue";
 
@@ -363,10 +364,10 @@ export default defineComponent({
       const actionListCls = `${cls}-actions-list`;
 
       const actionNode = (
-        <div class={`${actionListCls}-presets`}>
+        <Flex class={`${actionListCls}-presets`}>
           {props.allowSpeech && <SpeechButton />}
           {props.loading ? <LoadingButton /> : <SendButton />}
-        </div>
+        </Flex>
       );
 
       const suffixNode =

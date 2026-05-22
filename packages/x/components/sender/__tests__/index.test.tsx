@@ -1,7 +1,11 @@
 import { mount } from "@vue/test-utils";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import Sender from "..";
+
+beforeEach(() => {
+  document.head.innerHTML = "";
+});
 
 describe("Sender", () => {
   it("should render with default props", () => {
@@ -115,6 +119,15 @@ describe("Sender", () => {
     const wrapper = mount(Sender);
     const buttons = wrapper.findAll("button");
     expect(buttons.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("should render action presets with Flex", () => {
+    const wrapper = mount(Sender, {
+      props: { allowSpeech: true },
+    });
+
+    const presets = wrapper.find(".antd-sender-actions-list-presets");
+    expect(presets.classes()).toContain("ant-flex");
   });
 
   it("should render loading button when loading", () => {
