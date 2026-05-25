@@ -201,7 +201,7 @@ const XAttachments = defineComponent({
       default: true,
     },
   },
-  emits: ["change"],
+  emits: ["update:items", "change"],
   setup(props, { attrs, emit, slots, expose }) {
     const configCtx = useConfig();
     const contextConfig = useXComponentConfig("attachments");
@@ -239,6 +239,7 @@ const XAttachments = defineComponent({
       fileList: Attachment[];
     }) => {
       fileList.value = info.fileList as FileListAttachment[];
+      emit("update:items", info.fileList);
       emit("change", info);
     };
 
