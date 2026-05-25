@@ -68,6 +68,21 @@ describe("Sources", () => {
     expect(wrapper.findAll(".slot-description")[0]?.text()).toBe("desc-1");
   });
 
+  it("emits update:expanded when title is clicked", async () => {
+    const wrapper = mount(Sources, {
+      props: {
+        title: "Used 2 sources",
+        items,
+        defaultExpanded: true,
+      },
+    });
+
+    await wrapper.find(".antdx-sources-title-wrapper").trigger("click");
+
+    expect(wrapper.emitted("update:expanded")).toEqual([[false]]);
+    expect(wrapper.emitted("expand")).toEqual([[false]]);
+  });
+
   it("supports item slots in carousel card", () => {
     const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
 
