@@ -81,6 +81,28 @@ describe("Suggestion", () => {
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
+  it("emits update:open when open state changes", async () => {
+    const wrapper = track(
+      mount(Suggestion, {
+        attachTo: document.body,
+        props: {
+          items,
+        },
+        slots: createSlot(),
+      }),
+    );
+
+    await wrapper.find(".trigger-input").trigger("keydown", { key: "@" });
+    await flush();
+
+    expect(wrapper.emitted("update:open")).toEqual([[true]]);
+
+    await wrapper.find(".trigger-input").trigger("keydown", { key: "Delete" });
+    await flush();
+
+    expect(wrapper.emitted("update:open")).toEqual([[true], [false]]);
+  });
+
   it("emits select with value and selected path", async () => {
     const onSelect = vi.fn();
     const wrapper = track(

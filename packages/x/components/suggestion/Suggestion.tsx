@@ -57,7 +57,7 @@ const XSuggestion = defineComponent({
       default: false,
     },
   },
-  emits: ["openChange", "select"],
+  emits: ["update:open", "openChange", "select"],
   setup(props, { slots, emit }) {
     const attrs = useAttrs();
     const configCtx = useConfig();
@@ -116,6 +116,7 @@ const XSuggestion = defineComponent({
         innerOpen.value = nextOpen;
       }
 
+      emit("update:open", nextOpen);
       emit("openChange", nextOpen);
     };
 
