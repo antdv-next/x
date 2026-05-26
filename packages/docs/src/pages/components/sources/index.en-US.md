@@ -29,7 +29,7 @@ description: Show the source address of the referenced data.
 | items               | Sources content list      | SourcesItem[]                                        | -       | -       |
 | expandIconPosition  | Expand icon position      | 'start' \| 'end'                                     | 'start' | -       |
 | defaultExpanded     | Default expand state      | boolean                                              | true    | -       |
-| expanded            | Expand state              | boolean                                              | -       | -       |
+| expanded (v-model)  | Expand state              | boolean                                              | -       | -       |
 | onClick             | Callback when click       | (item: SourcesItem) => void                          | -       | -       |
 | inline              | Inline mode               | boolean                                              | false   | -       |
 | activeKey           | Active key in inline mode | string \| number                                     | -       | -       |
@@ -37,9 +37,10 @@ description: Show the source address of the referenced data.
 
 ### Events
 
-| Event    | Description                   | Type                        |
-| -------- | ----------------------------- | --------------------------- |
-| `expand` | Triggered when expand changes | `(expand: boolean) => void` |
+| Event             | Description                   | Type                        |
+| ----------------- | ----------------------------- | --------------------------- |
+| `update:expanded` | v-model update for `expanded` | `(expand: boolean) => void` |
+| `expand`          | Triggered when expand changes | `(expand: boolean) => void` |
 
 ```typescript
 type SemanticType = "root" | "title" | "content";

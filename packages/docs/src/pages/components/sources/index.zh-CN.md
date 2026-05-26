@@ -30,7 +30,7 @@ description: 展示引用的数据来源地址。
 | items               | 来源内容             | SourcesItem[]                                        | -       | -    |
 | expandIconPosition  | 折叠图标位置         | 'start' \| 'end'                                     | 'start' | -    |
 | defaultExpanded     | 默认是否展开         | boolean                                              | true    | -    |
-| expanded            | 是否展开             | boolean                                              | -       | -    |
+| expanded (v-model)  | 是否展开             | boolean                                              | -       | -    |
 | onClick             | 点击事件             | (item: SourcesItem) => void                          | -       | -    |
 | inline              | 行内模式             | boolean                                              | false   | -    |
 | activeKey           | 行内模式，激活的 key | string \| number                                     | -       | -    |
@@ -38,9 +38,10 @@ description: 展示引用的数据来源地址。
 
 ### 事件
 
-| 事件名   | 说明               | 类型                        |
-| -------- | ------------------ | --------------------------- |
-| `expand` | 展开状态变化时触发 | `(expand: boolean) => void` |
+| 事件名            | 说明                    | 类型                        |
+| ----------------- | ----------------------- | --------------------------- |
+| `update:expanded` | v-model 更新 `expanded` | `(expand: boolean) => void` |
+| `expand`          | 展开状态变化时触发      | `(expand: boolean) => void` |
 
 ```typescript
 type SemanticType = "root" | "title" | "content";

@@ -26,7 +26,7 @@ description: Display the collection of attachment information.
 
 | Property                | Description                                                              | Type                                                                                                                                     | Default |
 | ----------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| `items`                 | Controlled attachment list                                               | `Attachment[]`                                                                                                                           | `[]`    |
+| `items` (v-model)       | Controlled attachment list                                               | `Attachment[]`                                                                                                                           | `[]`    |
 | `placeholder`           | Placeholder content, supports object, vnode, or function (`inline/drop`) | `PlaceholderType \| ((type: 'inline' \| 'drop') => PlaceholderType)`                                                                     | -       |
 | `overflow`              | Layout when file list overflows                                          | `'wrap' \| 'scrollX' \| 'scrollY'`                                                                                                       | -       |
 | `getDropContainer`      | Drop target container getter                                             | `() => HTMLElement \| null \| undefined`                                                                                                 | -       |
@@ -46,9 +46,10 @@ description: Display the collection of attachment information.
 
 ### Events
 
-| Event    | Description                            | Type                                                           |
-| -------- | -------------------------------------- | -------------------------------------------------------------- |
-| `change` | Triggered when attachment list changes | `(info: { file: Attachment; fileList: Attachment[] }) => void` |
+| Event          | Description                            | Type                                                           |
+| -------------- | -------------------------------------- | -------------------------------------------------------------- |
+| `update:items` | v-model update for `items`             | `(items: Attachment[]) => void`                                |
+| `change`       | Triggered when attachment list changes | `(info: { file: Attachment; fileList: Attachment[] }) => void` |
 
 ### Slots
 
