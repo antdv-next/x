@@ -2,6 +2,7 @@
 title: Folder
 subtitle: 文件树
 description: 用于展示层级文件结构的文件树组件。
+tag: 1.1.0
 ---
 
 ## 何时使用

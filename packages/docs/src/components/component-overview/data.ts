@@ -10,6 +10,7 @@ export interface ComponentOverviewItem {
   groupOrder: number;
   cover: string;
   coverDark: string;
+  tag?: string;
 }
 
 export const componentOverviewItems: ComponentOverviewItem[] = [

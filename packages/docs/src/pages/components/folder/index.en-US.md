@@ -1,6 +1,7 @@
 ---
 title: Folder
 description: File tree component for displaying hierarchical file structure.
+tag: 1.1.0
 ---
 
 ## When To Use

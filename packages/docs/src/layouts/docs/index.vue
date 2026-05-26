@@ -148,6 +148,7 @@ interface ParsedPageMeta {
   groupTitle?: string;
   groupOrder?: number;
   hidden?: boolean;
+  tag?: string;
 }
 
 const docsRawPageLoaders = import.meta.glob("../../pages/**/*.md", {
@@ -191,6 +192,8 @@ function parseFrontmatterMeta(markdown: string): ParsedPageMeta {
   const order = toOptionalNumber(frontmatter.match(/^order:\s*(.+)$/m)?.[1]);
   const hidden = toOptionalBoolean(frontmatter.match(/^hidden:\s*(.+)$/m)?.[1]);
 
+  const tag = toOptionalText(frontmatter.match(/^tag:\s*(.+)$/m)?.[1]);
+
   const groupBlock = frontmatter.match(/^group:\s*\n((?:[ \t].*\n?)*)/m)?.[1];
   const groupTitle = toOptionalText(
     groupBlock?.match(/^[ \t]+title:\s*(.+)$/m)?.[1],
@@ -202,6 +205,7 @@ function parseFrontmatterMeta(markdown: string): ParsedPageMeta {
   return {
     title,
     subtitle,
+    tag,
     order,
     groupTitle,
     groupOrder,
@@ -229,6 +233,7 @@ function getFallbackPageMeta(
     title: meta.title,
     groupTitle: meta.group[localeKey],
     groupOrder: meta.groupOrder,
+    tag: meta.tag,
   };
 }
 
@@ -249,6 +254,7 @@ function createGroupedSiderItems(
     isSectionIndex: boolean;
     groupTitle?: string;
     groupOrder: number;
+    tag?: string;
   }>,
 ) {
   const visibleItems = items.filter(item => !item.hidden);
@@ -258,7 +264,10 @@ function createGroupedSiderItems(
   const ungroupedItems = contentItems
     .filter(item => !item.groupTitle)
     .sort(sortSiderEntries)
-    .map(({ key, label }) => ({ key, label }));
+    .map(
+      ({ key, label, tag }) =>
+        ({ key, label, tag }) as MenuItemType & { tag?: string },
+    );
 
   const groups = new Map<
     string,
@@ -266,7 +275,13 @@ function createGroupedSiderItems(
       key: string;
       label: string;
       order: number;
-      children: Array<{ key: string; label: string; order: number }>;
+      tag?: string;
+      children: Array<{
+        key: string;
+        label: string;
+        order: number;
+        tag?: string;
+      }>;
     }
   >();
 
@@ -289,6 +304,7 @@ function createGroupedSiderItems(
         key: item.key,
         label: item.label,
         order: item.order,
+        tag: item.tag,
       });
     });
 
@@ -300,12 +316,21 @@ function createGroupedSiderItems(
       label: group.label,
       children: group.children
         .sort(sortSiderEntries)
-        .map(({ key, label }) => ({ key, label })),
+        .map(
+          ({ key, label, tag }) =>
+            ({ key, label, tag }) as MenuItemType & { tag?: string },
+        ),
     }));
 
   return [
     ...(overviewItem
-      ? [{ key: overviewItem.key, label: overviewItem.label }]
+      ? [
+          {
+            key: overviewItem.key,
+            label: overviewItem.label,
+            tag: overviewItem.tag,
+          } as MenuItemType & { tag?: string },
+        ]
       : []),
     ...ungroupedItems,
     ...groupedItems,
@@ -322,6 +347,28 @@ function toOptionalText(value?: string) {
   if (!value) return undefined;
   return value.trim().replace(/^['"]|['"]$/g, "");
 }
+
+// ============ Tag helpers (ref: Ant Design X) ============
+function isVersionNumber(value?: string) {
+  return value && /^\d+\.\d+\.\d+$/.test(value);
+}
+
+function getTagColor(val?: string) {
+  if (isVersionNumber(val)) {
+    return "success";
+  }
+  if (val?.toUpperCase() === "NEW") {
+    return "success";
+  }
+  if (val?.toUpperCase() === "UPDATED") {
+    return "processing";
+  }
+  if (val?.toUpperCase() === "DEPRECATED") {
+    return "red";
+  }
+  return "success";
+}
+// ======================================================
 
 const normalizedCurrentPath = computed(() => normalizePath(route.path));
 const currentPathWithoutLocale = computed(() =>
@@ -424,6 +471,7 @@ const siderItems = computed<MenuItemType[]>(() => {
         pageMeta?.groupOrder ??
         fallbackMeta.groupOrder ??
         Number.MAX_SAFE_INTEGER,
+      tag: pageMeta?.tag ?? fallbackMeta.tag,
       label: [
         pageMeta?.title ||
           fallbackMeta.title ||
@@ -469,16 +517,31 @@ const editGithubUrl = computed(() => {
           mode="inline"
           @click="handleSiderMenuClick"
         >
-          <template #labelRender="{ type, key, label }">
+          <template #labelRender="item">
             <a
-              v-if="type !== 'group'"
+              v-if="item.type !== 'group'"
               class="text-inherit transition-0!"
-              :href="typeof key === 'string' ? key : '#'"
+              :href="typeof item.key === 'string' ? item.key : '#'"
               @click.prevent
+              style="
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 8px;
+              "
             >
-              {{ label }}
+              <span>{{ item.label }}</span>
+              <a-tag
+                v-if="item.tag"
+                variant="filled"
+                size="small"
+                :color="getTagColor(item.tag)"
+                style="margin-inline-end: 0; flex-shrink: 0"
+              >
+                {{ item.tag }}
+              </a-tag>
             </a>
-            <span v-else>{{ label }}</span>
+            <span v-else>{{ item.label }}</span>
           </template>
         </a-menu>
       </aside>
