@@ -154,7 +154,8 @@ export default defineComponent({
       default: undefined,
     },
   },
-  setup(props, { expose, slots }) {
+  emits: ["update:value"],
+  setup(props, { expose, slots, emit }) {
     const attrs = useAttrs();
     const configCtx = useConfig();
     const contextConfig = useXComponentConfig("sender");
@@ -186,6 +187,7 @@ export default defineComponent({
       skill?: SkillType,
     ) => {
       innerValue.value = nextValue;
+      emit("update:value", nextValue);
       props.onChange?.(nextValue, event, slotConfig, skill);
     };
 

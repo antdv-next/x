@@ -43,6 +43,15 @@ describe("Sender", () => {
     expect(args[1]).toBeDefined();
   });
 
+  it("emits update:value when value changes", async () => {
+    const wrapper = mount(Sender);
+
+    const textarea = wrapper.find("textarea");
+    await textarea.setValue("hello");
+
+    expect(wrapper.emitted("update:value")).toEqual([["hello"]]);
+  });
+
   it("should support controlled value", async () => {
     const wrapper = mount(Sender, {
       props: { value: "controlled" },
