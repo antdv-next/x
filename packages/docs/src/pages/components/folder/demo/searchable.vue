@@ -133,7 +133,8 @@ function filterTreeData(
     if (titleMatch || filteredChildren.length > 0) {
       acc.push({
         ...item,
-        children: filteredChildren.length > 0 ? filteredChildren : item.children,
+        children:
+          filteredChildren.length > 0 ? filteredChildren : item.children,
       });
     }
 
@@ -157,12 +158,13 @@ function onSelectedFileChange(info: SelectedFileInfo) {
 </script>
 
 <template>
-  <div style="padding: 24px; height: 600px">
-    <a-space direction="vertical" style="width: 100%; margin-bottom: 16px">
+  <div class="p-[24px] h-[600px] flex flex-col">
+    <div class="mb-[16px] flex-shrink-0">
       <a-input-search
         v-model:value="searchValue"
         placeholder="Search files or folders..."
         allow-clear
+        class="mb-[8px]"
       />
       <a-space>
         <a-tag color="blue">Total Files: {{ countFiles(treeData) }}</a-tag>
@@ -170,30 +172,24 @@ function onSelectedFileChange(info: SelectedFileInfo) {
           Matching Results: {{ countFiles(filteredTreeData) }}
         </a-tag>
       </a-space>
-    </a-space>
-    <ax-folder
-      :tree-data="filteredTreeData"
-      :selected-file="selectedFile"
-      @selected-file-change="onSelectedFileChange"
-    >
-      <template #directoryTitle>
-        <div
-          style="
-            white-space: nowrap;
-            padding: 12px;
-            border-bottom: 1px solid #f0f0f0;
-          "
-        >
-          <strong>Project File Browser</strong>
-          <div
-            v-if="searchValue"
-            style="font-size: 12px; color: #666; margin-top: 4px"
-          >
-            Search: "{{ searchValue }}"
+    </div>
+
+    <div class="flex-1 min-h-0">
+      <ax-folder
+        :tree-data="filteredTreeData"
+        :selected-file="selectedFile"
+        @selected-file-change="onSelectedFileChange"
+      >
+        <template #directoryTitle>
+          <div class="whitespace-nowrap p-[12px] border-b border-[#f0f0f0]">
+            <strong>Project File Browser</strong>
+            <div v-if="searchValue" class="text-xs text-[#666] mt-[4px]">
+              Search: "{{ searchValue }}"
+            </div>
           </div>
-        </div>
-      </template>
-    </ax-folder>
+        </template>
+      </ax-folder>
+    </div>
   </div>
 </template>
 
