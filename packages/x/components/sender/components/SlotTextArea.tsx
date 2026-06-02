@@ -835,8 +835,51 @@ export default defineComponent({
       senderCtx.value.onKeyUp?.(event);
     };
 
+    const normalizeSkillTextInput = () => {
+      const editable = editableRef.value;
+      const skillDom = skillDomRef.value;
+      if (!editable || !skillDom) return;
+
+      const selection = getSelection();
+      const cursorNode =
+        selection?.anchorNode && skillDom.contains(selection.anchorNode)
+          ? selection.anchorNode
+          : null;
+      const cursorOffset = selection?.anchorOffset ?? 0;
+      const wrapperCls = `${prefixCls.value}-skill-wrapper`;
+      const textNodes = Array.from(skillDom.childNodes).filter(node => {
+        if (
+          node instanceof HTMLElement &&
+          node.classList.contains(wrapperCls)
+        ) {
+          return false;
+        }
+
+        return node.textContent;
+      });
+
+      const referenceNode = skillDom.nextSibling;
+      textNodes.forEach(node => {
+        editable.insertBefore(node, referenceNode);
+      });
+
+      if (cursorNode && editable.contains(cursorNode)) {
+        const range = document.createRange();
+        const nextOffset =
+          cursorNode.nodeType === Node.TEXT_NODE
+            ? Math.min(cursorOffset, cursorNode.textContent?.length ?? 0)
+            : Math.min(cursorOffset, cursorNode.childNodes.length);
+
+        range.setStart(cursorNode, nextOffset);
+        range.collapse(true);
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+      }
+    };
+
     const onInternalInput = (event?: Event) => {
       removeSpecificBRs();
+      normalizeSkillTextInput();
       triggerValueChange(event);
     };
 

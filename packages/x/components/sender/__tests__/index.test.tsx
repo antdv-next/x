@@ -1,6 +1,8 @@
 import { mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { SlotConfigType } from "../interface";
+
 import Sender from "..";
 
 beforeEach(() => {
@@ -290,6 +292,89 @@ describe("Sender", () => {
         }),
       ]),
     );
+  });
+
+  it("should keep user input when typing after removing content slot with skill", async () => {
+    const onChange = vi.fn();
+    const skill = {
+      value: "test_skill",
+      title: "Test skill",
+      closable: true,
+    };
+    const wrapper = mount(Sender, {
+      props: {
+        skill,
+        slotConfig: [
+          { type: "content", key: "input", props: { placeholder: "Content" } },
+        ],
+        placeholder: "Type something...",
+        onChange,
+      },
+    });
+
+    await wrapper.vm.$nextTick();
+    await wrapper.setProps({ slotConfig: undefined });
+    await wrapper.vm.$nextTick();
+    onChange.mockClear();
+
+    const editable = wrapper.find(".antd-sender-input-slot");
+    const skillNode = wrapper.find(".antd-sender-skill");
+
+    skillNode.element.appendChild(document.createTextNode("hello"));
+    await editable.trigger("input");
+
+    expect(onChange).toHaveBeenCalled();
+    const lastChange = onChange.mock.calls[onChange.mock.calls.length - 1]!;
+    expect(lastChange[0]).toBe("hello");
+    expect((wrapper.vm as any).getValue().value).toBe("hello");
+  });
+
+  it("should keep cursor after restoring slotConfig and typing into skill placeholder", async () => {
+    const skill = {
+      value: "test_skill",
+      title: "Test skill",
+      closable: true,
+    };
+    const slotConfig: SlotConfigType[] = [
+      { type: "content", key: "input", props: { placeholder: "Content" } },
+    ];
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const wrapper = mount(Sender, {
+      attachTo: host,
+      props: {
+        skill,
+        slotConfig,
+        placeholder: "Type something...",
+      },
+    });
+
+    await wrapper.vm.$nextTick();
+    await wrapper.setProps({ slotConfig: undefined });
+    await wrapper.vm.$nextTick();
+    await wrapper.setProps({ slotConfig: [...slotConfig] });
+    await wrapper.vm.$nextTick();
+
+    const editable = wrapper.find(".antd-sender-input-slot");
+    const skillNode = wrapper.find(".antd-sender-skill");
+    const textNode = document.createTextNode("a");
+    const selection = window.getSelection();
+    const range = document.createRange();
+
+    skillNode.element.appendChild(textNode);
+    range.setStart(textNode, 1);
+    range.collapse(true);
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+
+    await editable.trigger("input");
+
+    expect((wrapper.vm as any).getValue().value).toContain("a");
+    expect(selection?.anchorNode).toBe(textNode);
+    expect(selection?.anchorOffset).toBe(1);
+
+    wrapper.unmount();
+    host.remove();
   });
 });
 
