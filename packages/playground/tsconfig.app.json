@@ -1,0 +1,25 @@
+{
+  "extends": "@vue/tsconfig/tsconfig.dom.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@antdv-next/x": ["../x/components/index.ts"],
+      "@antdv-next/x/*": ["../x/components/*"],
+      "@antdv-next/x-markdown": ["../x-markdown/src/index.ts"],
+      "@antdv-next/x-markdown/*": ["../x-markdown/src/*"],
+      "@antdv-next/x-sdk": ["../x-sdk/src/index.ts"],
+      "@antdv-next/x-sdk/*": ["../x-sdk/src/*"],
+      "@antdv-next/x-card": ["../x-card/src/index.ts"],
+      "@antdv-next/x-card/*": ["../x-card/src/*"]
+    },
+    "types": ["vite/client"],
+    "strict": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "erasableSyntaxOnly": true,
+    "noUncheckedSideEffectImports": true
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue"]
+}

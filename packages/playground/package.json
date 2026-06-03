@@ -1,0 +1,29 @@
+{
+  "name": "playground",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vp dev",
+    "build": "vp build",
+    "preview": "vp preview"
+  },
+  "dependencies": {
+    "@antdv-next/icons": "catalog:prod",
+    "@vueuse/core": "catalog:prod",
+    "antdv-next": "catalog:prod",
+    "dayjs": "catalog:prod",
+    "vue": "catalog:prod",
+    "vue-i18n": "catalog:prod",
+    "vue-router": "catalog:prod"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "catalog:dev",
+    "@vitejs/plugin-vue-jsx": "catalog:dev",
+    "@vue/tsconfig": "catalog:dev",
+    "typescript": "catalog:dev",
+    "vite": "catalog:",
+    "vite-plugin-tsx-resolve-types": "catalog:dev",
+    "vue-tsc": "catalog:dev"
+  }
+}
