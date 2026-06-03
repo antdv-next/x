@@ -431,6 +431,52 @@ importers:
         specifier: catalog:docs
         version: 3.23.0
 
+  packages/playground:
+    dependencies:
+      '@antdv-next/icons':
+        specifier: catalog:prod
+        version: 1.0.6(vue@3.5.31(typescript@5.9.3))
+      '@vueuse/core':
+        specifier: catalog:prod
+        version: 14.2.1(vue@3.5.31(typescript@5.9.3))
+      antdv-next:
+        specifier: catalog:prod
+        version: 1.2.0(vue@3.5.31(typescript@5.9.3))
+      dayjs:
+        specifier: catalog:prod
+        version: 1.11.20
+      vue:
+        specifier: catalog:prod
+        version: 3.5.31(typescript@5.9.3)
+      vue-i18n:
+        specifier: catalog:prod
+        version: 11.3.0(vue@3.5.31(typescript@5.9.3))
+      vue-router:
+        specifier: catalog:prod
+        version: 5.0.4(@vue/compiler-sfc@3.5.31)(pinia@3.0.4(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3)))(vue@3.5.31(typescript@5.9.3))
+    devDependencies:
+      '@vitejs/plugin-vue':
+        specifier: catalog:dev
+        version: 6.0.5(@voidzero-dev/vite-plus-core@0.1.24(@types/node@24.12.0)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.9.0))(vue@3.5.31(typescript@5.9.3))
+      '@vitejs/plugin-vue-jsx':
+        specifier: catalog:dev
+        version: 5.1.5(@voidzero-dev/vite-plus-core@0.1.24(@types/node@24.12.0)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.9.0))(vue@3.5.31(typescript@5.9.3))
+      '@vue/tsconfig':
+        specifier: catalog:dev
+        version: 0.9.1(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3))
+      typescript:
+        specifier: catalog:dev
+        version: 5.9.3
+      vite:
+        specifier: npm:@voidzero-dev/vite-plus-core@latest
+        version: '@voidzero-dev/vite-plus-core@0.1.24(@types/node@24.12.0)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.9.0)'
+      vite-plugin-tsx-resolve-types:
+        specifier: catalog:dev
+        version: 1.0.1(@voidzero-dev/vite-plus-core@0.1.24(@types/node@24.12.0)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.9.0))(typescript@5.9.3)
+      vue-tsc:
+        specifier: catalog:dev
+        version: 3.2.6(typescript@5.9.3)
+
   packages/x:
     dependencies:
       '@ant-design/fast-color':
@@ -516,52 +562,6 @@ importers:
       tsx:
         specifier: ^4.19.1
         version: 4.21.0
-
-  playground:
-    dependencies:
-      '@antdv-next/icons':
-        specifier: catalog:prod
-        version: 1.0.6(vue@3.5.31(typescript@5.9.3))
-      '@vueuse/core':
-        specifier: catalog:prod
-        version: 14.2.1(vue@3.5.31(typescript@5.9.3))
-      antdv-next:
-        specifier: catalog:prod
-        version: 1.2.0(vue@3.5.31(typescript@5.9.3))
-      dayjs:
-        specifier: catalog:prod
-        version: 1.11.20
-      vue:
-        specifier: catalog:prod
-        version: 3.5.31(typescript@5.9.3)
-      vue-i18n:
-        specifier: catalog:prod
-        version: 11.3.0(vue@3.5.31(typescript@5.9.3))
-      vue-router:
-        specifier: catalog:prod
-        version: 5.0.4(@vue/compiler-sfc@3.5.31)(pinia@3.0.4(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3)))(vue@3.5.31(typescript@5.9.3))
-    devDependencies:
-      '@vitejs/plugin-vue':
-        specifier: catalog:dev
-        version: 6.0.5(@voidzero-dev/vite-plus-core@0.1.24(@types/node@24.12.0)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.9.0))(vue@3.5.31(typescript@5.9.3))
-      '@vitejs/plugin-vue-jsx':
-        specifier: catalog:dev
-        version: 5.1.5(@voidzero-dev/vite-plus-core@0.1.24(@types/node@24.12.0)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.9.0))(vue@3.5.31(typescript@5.9.3))
-      '@vue/tsconfig':
-        specifier: catalog:dev
-        version: 0.9.1(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3))
-      typescript:
-        specifier: catalog:dev
-        version: 5.9.3
-      vite:
-        specifier: npm:@voidzero-dev/vite-plus-core@latest
-        version: '@voidzero-dev/vite-plus-core@0.1.24(@types/node@24.12.0)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.9.0)'
-      vite-plugin-tsx-resolve-types:
-        specifier: catalog:dev
-        version: 1.0.1(@voidzero-dev/vite-plus-core@0.1.24(@types/node@24.12.0)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.9.0))(typescript@5.9.3)
-      vue-tsc:
-        specifier: catalog:dev
-        version: 3.2.6(typescript@5.9.3)
 
 packages:
 
