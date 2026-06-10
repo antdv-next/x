@@ -756,31 +756,29 @@ export default defineComponent({
       const editable = editableRef.value;
       if (!editable) return false;
 
-      let anchorNode = selection.anchorNode;
-      let offset = selection.anchorOffset;
+      const anchorNode = selection.anchorNode;
+      const offset = selection.anchorOffset;
 
       if (!anchorNode || !editable.contains(anchorNode)) {
         return false;
       }
 
-      if (anchorNode === editable && offset > 0) {
-        anchorNode = editable.childNodes[offset - 1] ?? anchorNode;
-        offset = 0;
+      let previous: Node | null | undefined;
+      if (anchorNode === editable) {
+        if (offset <= 0) return false;
+        previous = editable.childNodes[offset - 1];
+      } else {
+        if (anchorNode.nodeType === Node.TEXT_NODE && offset > 0) {
+          return false;
+        }
+
+        const target =
+          anchorNode.nodeType === Node.TEXT_NODE
+            ? (anchorNode.parentNode as HTMLElement | null)
+            : (anchorNode as HTMLElement);
+
+        previous = target?.previousSibling;
       }
-
-      if (anchorNode.nodeType === Node.TEXT_NODE && offset > 0) {
-        return false;
-      }
-
-      const target =
-        anchorNode.nodeType === Node.TEXT_NODE
-          ? (anchorNode.parentNode as HTMLElement | null)
-          : (anchorNode as HTMLElement);
-
-      const previous =
-        target === editable
-          ? editable.childNodes[Math.max(0, selection.anchorOffset - 1)]
-          : target?.previousSibling;
 
       if (!(previous instanceof HTMLElement)) {
         return false;
