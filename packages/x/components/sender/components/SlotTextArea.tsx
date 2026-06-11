@@ -672,7 +672,8 @@ export default defineComponent({
       const isEmpty =
         !value.value &&
         value.slotConfig.length === 0 &&
-        !!senderCtx.value.placeholder;
+        !!senderCtx.value.placeholder &&
+        !skillDom.hasChildNodes();
 
       if (isEmpty) {
         skillDom.setAttribute("contenteditable", "true");
@@ -763,24 +764,46 @@ export default defineComponent({
         return false;
       }
 
-      let previous: Node | null | undefined;
+      // Find the nearest slot/skill node before the cursor.
+      // Skip non-slot/skill nodes (e.g. empty text nodes) — the cursor
+      // may be several siblings away from the actual slot after editing.
+      const isSlotOrSkill = (node: Node): node is HTMLElement => {
+        if (!(node instanceof HTMLElement)) return false;
+        const info = getNodeInfo(node);
+        return !!(info?.slotKey || info?.skillKey);
+      };
+
+      let previous: HTMLElement | null = null;
       if (anchorNode === editable) {
-        if (offset <= 0) return false;
-        previous = editable.childNodes[offset - 1];
+        for (let i = offset - 1; i >= 0; i--) {
+          if (isSlotOrSkill(editable.childNodes[i]!)) {
+            previous = editable.childNodes[i] as HTMLElement;
+            break;
+          }
+        }
       } else {
         if (anchorNode.nodeType === Node.TEXT_NODE && offset > 0) {
           return false;
         }
 
-        const target =
+        // Use anchorNode directly — traversing to parentNode breaks when
+        // the text node is a direct child of the editable div (parentNode
+        // is the editable div itself, which has no siblings).
+        let current: Node | null =
           anchorNode.nodeType === Node.TEXT_NODE
-            ? (anchorNode.parentNode as HTMLElement | null)
-            : (anchorNode as HTMLElement);
+            ? anchorNode.previousSibling
+            : (anchorNode as HTMLElement).previousSibling;
 
-        previous = target?.previousSibling;
+        while (current) {
+          if (isSlotOrSkill(current)) {
+            previous = current;
+            break;
+          }
+          current = current.previousSibling;
+        }
       }
 
-      if (!(previous instanceof HTMLElement)) {
+      if (!previous) {
         return false;
       }
 
