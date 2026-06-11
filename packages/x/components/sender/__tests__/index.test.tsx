@@ -455,6 +455,60 @@ describe("Sender", () => {
     expect(skillNode.classes()).not.toContain("antd-sender-skill-empty");
   });
 
+  it("should replace characters when insert is called with replaceCharacters", async () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const wrapper = mount(Sender, {
+      attachTo: host,
+      props: {
+        slotConfig: [{ type: "text", value: "Prefix " }],
+      },
+    });
+    await wrapper.vm.$nextTick();
+
+    const editable = wrapper.find(".antd-sender-input-slot");
+
+    // Simulate user typing "@" into the editor
+    editable.element.appendChild(document.createTextNode("@"));
+    await editable.trigger("input");
+
+    // Place cursor right after "@"
+    const textNode = editable.element.lastChild!;
+    const selection = window.getSelection();
+    const range = document.createRange();
+    range.setStart(textNode, 1);
+    range.collapse(true);
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+
+    // Insert a slot with replaceCharacters="@"
+    const vm = wrapper.vm as any;
+    vm.insert(
+      [
+        {
+          type: "input",
+          key: "test_input",
+          props: { placeholder: "replaced" },
+        },
+      ],
+      "cursor",
+      "@",
+    );
+    await wrapper.vm.$nextTick();
+
+    // "@" should have been removed, replaced by the slot
+    const value = vm.getValue();
+    expect(value.value).not.toContain("@");
+    expect(value.slotConfig).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ key: "test_input", type: "input" }),
+      ]),
+    );
+
+    wrapper.unmount();
+    host.remove();
+  });
+
   it("should keep cursor after restoring slotConfig and typing into skill placeholder", async () => {
     const skill = {
       value: "test_skill",

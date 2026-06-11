@@ -1012,11 +1012,15 @@ export default defineComponent({
       editable.focus({ preventScroll });
 
       if (replaceCharacters) {
-        const textBefore = getSelection()?.toString() ?? "";
+        const { startContainer, startOffset } = range;
+        const textBefore =
+          startContainer.nodeType === Node.TEXT_NODE
+            ? (startContainer.textContent?.slice(0, startOffset) ?? "")
+            : "";
         if (textBefore.endsWith(replaceCharacters)) {
           range.setStart(
-            range.startContainer,
-            Math.max(0, range.startOffset - replaceCharacters.length),
+            startContainer,
+            Math.max(0, startOffset - replaceCharacters.length),
           );
         }
       }
