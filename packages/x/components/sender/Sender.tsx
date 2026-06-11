@@ -259,7 +259,7 @@ export default defineComponent({
       clear() {
         triggerClear();
       },
-      insert(text, position?: InsertPosition) {
+      insert(text, position?: InsertPosition, replaceCharacters?: string) {
         if (isSlotMode.value) {
           const slotList = Array.isArray(text)
             ? text
@@ -267,6 +267,7 @@ export default defineComponent({
           (inputRef.value as SlotTextAreaRef | undefined)?.insert?.(
             slotList,
             position,
+            replaceCharacters,
           );
           return;
         }
