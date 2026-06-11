@@ -379,6 +379,82 @@ describe("Sender", () => {
     expect((wrapper.vm as any).getValue().value).toBe("hello");
   });
 
+  it("should remove slot when backspacing past empty text nodes at editor boundary", async () => {
+    const onChange = vi.fn();
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const wrapper = mount(Sender, {
+      attachTo: host,
+      props: {
+        slotConfig: [
+          {
+            type: "tag",
+            key: "a1",
+            props: { label: "@A1", value: "a1" },
+          },
+          {
+            type: "tag",
+            key: "a2",
+            props: { label: "@A2", value: "a2" },
+          },
+        ],
+        onChange,
+      },
+    });
+    await wrapper.vm.$nextTick();
+    onChange.mockClear();
+
+    const editable = wrapper.find(".antd-sender-input-slot");
+
+    // Insert empty text nodes between the last slot and the cursor
+    // to simulate DOM state after editing (browser may leave orphan text nodes)
+    editable.element.appendChild(document.createTextNode(""));
+    editable.element.appendChild(document.createTextNode(""));
+
+    const selection = window.getSelection();
+    const range = document.createRange();
+    range.setStart(editable.element, editable.element.childNodes.length);
+    range.collapse(true);
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+
+    await editable.trigger("keydown", { key: "Backspace" });
+
+    const lastChange = onChange.mock.calls[onChange.mock.calls.length - 1]!;
+    expect(lastChange[2].map((item: SlotConfigType) => item.key)).toEqual([
+      "a1",
+    ]);
+
+    wrapper.unmount();
+    host.remove();
+  });
+
+  it("should not show empty placeholder when skill has child nodes", async () => {
+    const skill = {
+      value: "test_skill",
+      title: "Test skill",
+      closable: true,
+    };
+    const wrapper = mount(Sender, {
+      props: {
+        skill,
+        placeholder: "Type something...",
+      },
+    });
+    await wrapper.vm.$nextTick();
+
+    const skillNode = wrapper.find(".antd-sender-skill");
+    // Simulate user typing into the skill area
+    skillNode.element.appendChild(document.createTextNode("hello"));
+
+    const editable = wrapper.find(".antd-sender-input-slot");
+    await editable.trigger("input");
+    await wrapper.vm.$nextTick();
+
+    // The empty class should NOT be applied since the skill has child nodes
+    expect(skillNode.classes()).not.toContain("antd-sender-skill-empty");
+  });
+
   it("should keep cursor after restoring slotConfig and typing into skill placeholder", async () => {
     const skill = {
       value: "test_skill",
