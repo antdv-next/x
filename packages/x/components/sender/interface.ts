@@ -188,7 +188,11 @@ export interface SenderRef {
   focus: (options?: SenderFocusOptions) => void;
   blur: () => void;
   clear: () => void;
-  insert: (value: string | SlotConfigType[], position?: InsertPosition) => void;
+  insert: (
+    value: string | SlotConfigType[],
+    position?: InsertPosition,
+    replaceCharacters?: string,
+  ) => void;
   getValue: () => {
     value: string;
     slotConfig?: SlotConfigType[];
