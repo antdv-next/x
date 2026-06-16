@@ -1,20 +1,28 @@
 <script setup lang="ts">
 import { OpenAIOutlined } from "@antdv-next/icons";
 import { App } from "antdv-next";
-import { ref } from "vue";
+import { onBeforeUnmount, ref, watch } from "vue";
+
 const { message } = App.useApp();
 
 const value = ref("");
 const loading = ref(false);
 
-function handleSubmit() {
-  loading.value = true;
-  setTimeout(() => {
-    loading.value = false;
-    value.value = "";
-    message.success("Send message successfully!");
-  }, 2000);
-}
+let timer: ReturnType<typeof setTimeout> | undefined;
+
+watch(loading, val => {
+  if (val) {
+    timer = setTimeout(() => {
+      loading.value = false;
+      value.value = "";
+      message.success("Send message successfully!");
+    }, 2000);
+  }
+});
+
+onBeforeUnmount(() => {
+  if (timer) clearTimeout(timer);
+});
 </script>
 
 <template>
@@ -23,7 +31,7 @@ function handleSubmit() {
     :value="value"
     :loading="loading"
     :on-change="(v: string) => (value = v)"
-    :on-submit="handleSubmit"
+    :on-submit="() => (loading = true)"
     :on-cancel="() => (loading = false)"
   >
     <template #suffix="{ components }">
@@ -34,11 +42,27 @@ function handleSubmit() {
         <component :is="components.ClearButton" />
         <component :is="components.SpeechButton" />
         <component
-          :is="loading ? components.LoadingButton : components.SendButton"
+          v-if="loading"
+          :is="components.LoadingButton"
+          type="default"
+          variant="filled"
+          disabled
+        >
+          <template #icon>
+            <a-spin
+              size="small"
+              :style="{ display: 'flex' }"
+              :styles="{ indicator: { color: '#fff' } }"
+            />
+          </template>
+        </component>
+        <component
+          v-else
+          :is="components.SendButton"
           type="primary"
           :disabled="false"
         >
-          <template v-if="!loading" #icon>
+          <template #icon>
             <OpenAIOutlined />
           </template>
         </component>

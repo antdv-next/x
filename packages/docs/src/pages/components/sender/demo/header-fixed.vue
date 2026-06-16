@@ -29,7 +29,7 @@ function handleSubmit() {
             <a-space>
               <EnterOutlined />
               <a-typography-text type="secondary">
-                "Tell more about Antdv Next X"
+                "Tell more about Ant Design X"
               </a-typography-text>
             </a-space>
           </template>

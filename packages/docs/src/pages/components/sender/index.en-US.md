@@ -19,17 +19,17 @@ description: A chat input component for sending messages.
 <demo src="./demo/speech.vue">Voice Input</demo>
 <demo src="./demo/speech-custom.vue">Custom Voice Input</demo>
 <demo src="./demo/suffix.vue">Custom Suffix</demo>
-<demo src="./demo/layout-slots.vue">Layout Slots</demo>
 <demo src="./demo/disable-ctrl.vue">Disable Ctrl</demo>
 <demo src="./demo/disable-ctrl-slot.vue">Disable Ctrl with Slots</demo>
 <demo src="./demo/header.vue">Expand Panel</demo>
-<demo src="./demo/header-title-slot.vue">Header Title Slot</demo>
-<demo src="./demo/switch-slots.vue">Switch Slots</demo>
 <demo src="./demo/slot-with-suggestion.vue">Quick Commands</demo>
 <demo src="./demo/header-fixed.vue">References</demo>
 <demo src="./demo/footer.vue">Custom Footer Content</demo>
 <demo src="./demo/send-style.vue">Style Adjustment</demo>
 <demo src="./demo/paste-image.vue">Paste Files</demo>
+<demo src="./demo/layout-slots.vue">Layout Slots</demo>
+<demo src="./demo/header-title-slot.vue">Header Title Slot</demo>
+<demo src="./demo/switch-slots.vue">Switch Slots</demo>
 <demo src="./demo/loading.vue">Loading</demo>
 
 ## API

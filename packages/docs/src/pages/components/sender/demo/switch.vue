@@ -17,7 +17,7 @@ const controlled = ref(false);
       </ax-sender-switch>
     </a-flex>
     <a-flex align="center" gap="small">
-      Custom checked/unchecked:
+      Custom checked/unchecked content:
       <ax-sender-switch
         checked-children="Deep Search: on"
         un-checked-children="Deep Search: off"
@@ -49,7 +49,9 @@ const controlled = ref(false);
       DefaultValue:
       <ax-sender-switch
         :default-value="true"
-        :on-change="(checked: boolean) => console.log('toggled', checked)"
+        :on-change="
+          (checked: boolean) => console.log('Switch toggled', checked)
+        "
       >
         <template #icon>
           <SearchOutlined />
@@ -58,7 +60,7 @@ const controlled = ref(false);
       </ax-sender-switch>
     </a-flex>
     <a-flex align="center" gap="small">
-      Controlled:
+      Controlled mode:
       <ax-sender-switch
         :value="controlled"
         :on-change="(v: boolean) => (controlled = v)"

@@ -7,7 +7,7 @@ import type {
 } from "@antdv-next/x";
 
 import { CloudUploadOutlined, PaperClipOutlined } from "@antdv-next/icons";
-import { computed, onBeforeUnmount, ref } from "vue";
+import { computed, onBeforeUnmount, ref, shallowRef } from "vue";
 
 type Attachment = Exclude<AttachmentsProps["items"], undefined>[number];
 
@@ -56,10 +56,12 @@ const onChange = ({
       file.status !== "removed" &&
       item.originFileObj
     ) {
+      // clear URL
       if (item.url?.startsWith("blob:")) {
         URL.revokeObjectURL(item.url);
       }
 
+      // create new preview URL
       return {
         ...item,
         url: URL.createObjectURL(item.originFileObj),
@@ -101,7 +103,7 @@ const onSubmit = () => {
           value = v;
         }
       "
-      placeholder="按 Enter 发送消息"
+      placeholder="Enter to send message"
       :on-submit="onSubmit"
     >
       <template #header>
@@ -128,14 +130,7 @@ const onSubmit = () => {
 
       <template #prefix>
         <a-badge :dot="items.length > 0 && !open">
-          <a-button
-            type="text"
-            @click="
-              open
-                ? (open = false)
-                : attachmentsRef?.select({ multiple: true }) || (open = true)
-            "
-          >
+          <a-button type="text" @click="open = !open">
             <template #icon>
               <PaperClipOutlined :style="{ fontSize: '16px' }" />
             </template>
@@ -144,7 +139,7 @@ const onSubmit = () => {
       </template>
 
       <template #suffix="{ components }">
-        <a-tooltip v-if="loading" title="点击取消">
+        <a-tooltip v-if="loading" title="Click to cancel">
           <component :is="components.LoadingButton" />
         </a-tooltip>
         <component

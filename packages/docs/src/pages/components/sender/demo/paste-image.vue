@@ -6,7 +6,7 @@ import type {
 } from "@antdv-next/x";
 
 import { CloudUploadOutlined, PaperClipOutlined } from "@antdv-next/icons";
-import { onBeforeUnmount, ref } from "vue";
+import { ref } from "vue";
 
 type Attachment = Exclude<AttachmentsProps["items"], undefined>[number];
 
@@ -17,14 +17,6 @@ const items = shallowRef<Attachment[]>([]);
 const senderRef = ref<SenderRef>();
 const attachmentsRef = ref<AttachmentsRef>();
 
-onBeforeUnmount(() => {
-  items.value.forEach(item => {
-    if (item.url?.startsWith("blob:")) {
-      URL.revokeObjectURL(item.url);
-    }
-  });
-});
-
 const onPasteFile = (files: FileList) => {
   for (const file of files) {
     attachmentsRef.value?.upload(file);
@@ -32,31 +24,8 @@ const onPasteFile = (files: FileList) => {
   open.value = true;
 };
 
-const onChange = ({
-  file,
-  fileList,
-}: {
-  file: Attachment;
-  fileList: Attachment[];
-}) => {
-  items.value = fileList.map(item => {
-    if (
-      item.uid === file.uid &&
-      file.status !== "removed" &&
-      item.originFileObj
-    ) {
-      if (item.url?.startsWith("blob:")) {
-        URL.revokeObjectURL(item.url);
-      }
-
-      return {
-        ...item,
-        url: URL.createObjectURL(item.originFileObj),
-      };
-    }
-
-    return item;
-  });
+const onChange = ({ fileList }: { fileList: Attachment[] }) => {
+  items.value = fileList;
 };
 
 const placeholder = (type: "inline" | "drop") =>
@@ -65,8 +34,8 @@ const placeholder = (type: "inline" | "drop") =>
         title: "Drop file here",
       }
     : {
-        title: "Paste or upload files",
-        description: "Paste files into the input box or click to select files",
+        title: "Upload files",
+        description: "Click or drag files to this area to upload",
       };
 
 const onSubmit = () => {
@@ -92,6 +61,7 @@ const onSubmit = () => {
         <ax-sender-header
           title="Attachments"
           :open="open"
+          force-render
           :on-open-change="
             (val: boolean) => {
               open = val;
@@ -117,9 +87,7 @@ const onSubmit = () => {
         <a-button
           type="text"
           :style="{ fontSize: '16px' }"
-          @click="
-            open ? (open = false) : attachmentsRef?.select({ multiple: true })
-          "
+          @click="open = !open"
         >
           <template #icon>
             <PaperClipOutlined />

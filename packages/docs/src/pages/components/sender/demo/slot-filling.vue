@@ -1,166 +1,306 @@
 <script setup lang="ts">
-import type { SenderProps } from "@antdv-next/x";
+import type { SenderProps, SenderRef } from "@antdv-next/x";
 
-import { Sender } from "@antdv-next/x";
-import { Button, Flex, message } from "antdv-next";
-import { ref } from "vue";
+import { App } from "antdv-next";
+import { h, ref } from "vue";
 
-const senderRef = ref<InstanceType<typeof Sender>>();
-const value = ref("");
-const slotValue = ref("");
-const skillValue = ref("");
+type SlotConfig = SenderProps["slotConfig"];
 
-const slotConfigMap = {
-  travel: [
-    { type: "text", value: "I want to travel to " },
-    {
-      type: "content",
-      key: "location",
-      props: {
-        defaultValue: "Beijing",
-        placeholder: "[Please enter location]",
-      },
+const otherSlotConfig: SlotConfig = [
+  { type: "text", value: "I want to travel to " },
+  {
+    type: "content",
+    key: "location",
+    props: {
+      defaultValue: "Beijing",
+      placeholder: "[Please enter the location]",
     },
-    { type: "text", value: " by " },
-    {
-      type: "select",
-      key: "transportation",
-      props: {
-        defaultValue: "airplane",
-        options: ["airplane", "high-speed rail", "ship"],
-        placeholder: "Please choose a mode of transportation",
-      },
+  },
+  { type: "text", value: "by" },
+  {
+    type: "select",
+    key: "transportation",
+    props: {
+      defaultValue: "airplane",
+      options: ["airplane", "high-speed rail", "cruise ship"],
+      placeholder: "Please choose a mode of transportation",
     },
-    { type: "text", value: " and budget is " },
-    {
-      type: "input",
-      key: "budget",
-      props: { placeholder: "Please enter budget" },
+  },
+  {
+    type: "text",
+    value: "with a group of 3 people, and each person has a budget of",
+  },
+  {
+    type: "custom",
+    key: "priceRange",
+    props: {
+      defaultValue: [3000, 6000],
     },
-    { type: "text", value: ". " },
-    {
-      type: "tag",
-      key: "assistant",
-      props: { label: "@Travel Planner", value: "travel" },
+    customRender: (value: any, onChange: (value: any) => void, props) => {
+      return h(
+        "div",
+        {
+          style: {
+            width: "200px",
+            paddingInline: "20px",
+            display: "inline-block",
+            alignItems: "center",
+          },
+        },
+        [
+          h("a-slider", {
+            ...props,
+            max: 8000,
+            min: 1000,
+            style: { margin: 0 },
+            range: true,
+            value,
+            onChange,
+          }),
+        ],
+      );
     },
-  ] as NonNullable<SenderProps["slotConfig"]>,
-  meeting: [
-    { type: "text", value: "Please schedule a meeting with " },
-    {
-      type: "input",
-      key: "person",
-      props: { placeholder: "name" },
+    formatResult: (value: any) => {
+      return `between ${value[0]} and ${value[1]} RMB.`;
     },
-    { type: "text", value: " at " },
-    {
-      type: "content",
-      key: "time",
-      props: { defaultValue: "10:00", placeholder: "time" },
+  },
+  { type: "text", value: "Please" },
+  {
+    type: "tag",
+    key: "tag",
+    props: { label: "@Travel Planner ", value: "travelTool" },
+  },
+  { type: "text", value: "help me create a travel itinerary,Use account " },
+  {
+    type: "input",
+    key: "account",
+    props: {
+      placeholder: "Please enter a account",
     },
-    { type: "text", value: "." },
-  ] as NonNullable<SenderProps["slotConfig"]>,
+  },
+  { type: "text", value: "." },
+];
+
+const altSlotConfig: SlotConfig = [
+  { type: "text", value: "My favorite city is " },
+  {
+    type: "select",
+    key: "city",
+    props: {
+      defaultValue: "London",
+      options: ["London", "Paris", "New York"],
+      placeholder: "Select a city",
+    },
+  },
+  { type: "text", value: ", and I want to travel with " },
+  { type: "input", key: "partner", props: { placeholder: "Enter a name" } },
+];
+
+const slotConfig = {
+  otherSlotConfig,
+  altSlotConfig,
 };
 
-const slotConfigKey = ref<keyof typeof slotConfigMap>("travel");
-const skill = ref<SenderProps["skill"]>({
-  value: "travel_skill",
+const skillConfig = {
+  value: "travelId",
   title: "Travel Planner",
-  toolTip: { title: "Travel Skill" },
-  closable: true,
-});
+  toolTip: {
+    title: "Travel Skill",
+  },
+  closable: {
+    onClose: () => {
+      console.log("close");
+    },
+  },
+};
 
-const onSubmit: SenderProps["onSubmit"] = (
+const { message } = App.useApp();
+
+const slotConfigKey = ref<keyof typeof slotConfig | false>("otherSlotConfig");
+const senderRef = ref<SenderRef>();
+const value = ref("");
+const skill = ref<SenderProps["skill"]>(skillConfig);
+const skillValue = ref("");
+const slotValue = ref("");
+
+const onSubmit: SenderProps["onSubmit"] = nextValue => {
+  value.value = nextValue;
+  slotConfigKey.value = false;
+  message.open({
+    type: "success",
+    content: `Send message success: ${nextValue}`,
+  });
+  senderRef.value?.clear?.();
+};
+
+const onChange: SenderProps["onChange"] = (
   nextValue,
+  event,
   nextSlotConfig,
   nextSkill,
 ) => {
-  value.value = nextValue;
-  slotValue.value = JSON.stringify(nextSlotConfig ?? []);
-  skillValue.value = nextSkill?.value ?? "";
-  message.success(`Send message success: ${nextValue}`);
-  senderRef.value?.clear();
+  console.log(nextValue, event, nextSlotConfig, nextSkill);
+  if (!nextSkill) {
+    skill.value = undefined;
+  }
 };
 
 const onGetValue = () => {
-  const val = senderRef.value?.getValue();
-  value.value = val?.value ?? "";
-  slotValue.value = JSON.stringify(val?.slotConfig ?? []);
-  skillValue.value = val?.skill?.value ?? "";
+  const val = senderRef.value?.getValue?.();
+  if (val?.skill) {
+    skillValue.value = val?.skill?.value;
+  }
+  value.value = val?.value ? val.value : "No value";
+  slotValue.value = val?.slotConfig
+    ? JSON.stringify(val.slotConfig)
+    : "No value";
 };
 
 const toggleSlotConfig = () => {
-  slotConfigKey.value = slotConfigKey.value === "travel" ? "meeting" : "travel";
+  slotConfigKey.value =
+    slotConfigKey.value === "otherSlotConfig"
+      ? "altSlotConfig"
+      : "otherSlotConfig";
 };
 
-const toggleSkill = () => {
-  skill.value =
-    skill.value?.value === "travel_skill"
-      ? {
-          value: "meeting_skill",
-          title: "Meeting Planner",
-          toolTip: { title: "Meeting Skill" },
-          closable: true,
-        }
-      : {
-          value: "travel_skill",
-          title: "Travel Planner",
-          toolTip: { title: "Travel Skill" },
-          closable: true,
-        };
+const changeSkill = () => {
+  skill.value = {
+    value: "travelId_1",
+    title: "Travel Planner2",
+    toolTip: {
+      title: "Travel Skill2",
+    },
+    closable: {
+      onClose: () => {
+        console.log("close");
+      },
+    },
+  };
+};
+
+const xProviderTheme = {
+  components: {
+    Sender: {
+      fontSize: 16,
+    },
+  },
 };
 </script>
 
 <template>
-  <Flex vertical :gap="16">
-    <Flex wrap :gap="8">
-      <Button @click="senderRef?.clear()"> Clear </Button>
-      <Button @click="onGetValue"> Get Value </Button>
-      <Button @click="senderRef?.insert(' some text ', 'cursor')">
+  <a-flex vertical :gap="16">
+    <!-- 操作按钮区 -->
+    <a-flex wrap :gap="8">
+      <a-button @click="senderRef?.clear?.()"> Clear </a-button>
+      <a-button @click="onGetValue"> Get Value </a-button>
+      <a-button
+        @click="senderRef?.insert?.([{ type: 'text', value: ' some text A' }])"
+      >
         Insert Text
-      </Button>
-      <Button
+      </a-button>
+      <a-button
         @click="
-          senderRef?.insert([
+          senderRef?.insert?.([
+            { type: 'text', value: ' some text B' },
             {
-              type: 'input',
-              key: `name_${Date.now()}`,
-              props: { placeholder: 'Enter a name' },
+              type: 'content',
+              key: `partner_3_${Date.now()}`,
+              props: { defaultValue: '11' },
+            },
+          ])
+        "
+      >
+        Insert Slots
+      </a-button>
+      <a-button
+        @click="
+          senderRef?.insert?.([
+            {
+              type: 'content',
+              key: `partner_1_${Date.now()}`,
+              props: { defaultValue: 'NingNing', placeholder: 'Enter a name' },
             },
           ])
         "
       >
         Insert Slot
-      </Button>
-      <Button @click="toggleSlotConfig"> Change SlotConfig </Button>
-      <Button @click="senderRef?.focus()"> Focus </Button>
-      <Button @click="senderRef?.focus({ cursor: 'start' })">
-        Focus Start
-      </Button>
-      <Button @click="senderRef?.focus({ cursor: 'end' })"> Focus End </Button>
-      <Button @click="senderRef?.focus({ cursor: 'slot' })">
-        Focus Slot
-      </Button>
-      <Button @click="senderRef?.focus({ cursor: 'slot', key: 'budget' })">
-        Focus Slot By Key
-      </Button>
-      <Button @click="toggleSkill"> Change Skill </Button>
-    </Flex>
+      </a-button>
+      <a-button
+        @click="
+          senderRef?.insert?.(
+            [
+              {
+                type: 'input',
+                key: `partner_2_${Date.now()}`,
+                props: { placeholder: 'Enter a name' },
+              },
+            ],
+            'start',
+          )
+        "
+      >
+        Insert Slot Start
+      </a-button>
+      <a-button
+        @click="
+          senderRef?.insert?.(
+            [
+              {
+                type: 'input',
+                key: `partner_3_${Date.now()}`,
+                props: { placeholder: 'Enter a name' },
+              },
+            ],
+            'end',
+          )
+        "
+      >
+        Insert Slot End
+      </a-button>
+      <a-button @click="toggleSlotConfig"> Change SlotConfig </a-button>
+      <a-button @click="senderRef?.focus()"> Focus </a-button>
+      <a-button @click="senderRef?.focus({ cursor: 'start' })">
+        Focus at first
+      </a-button>
+      <a-button @click="senderRef?.focus({ cursor: 'end' })">
+        Focus at last
+      </a-button>
+      <a-button @click="senderRef?.focus({ cursor: 'slot' })">
+        Focus at slot
+      </a-button>
+      <a-button @click="senderRef?.focus({ cursor: 'slot', key: 'account' })">
+        Focus at slot with key
+      </a-button>
+      <a-button @click="senderRef?.focus({ cursor: 'all' })">
+        Focus to select all
+      </a-button>
+      <a-button @click="senderRef?.focus({ preventScroll: true })">
+        Focus prevent scroll
+      </a-button>
+      <a-button @click="senderRef?.blur()"> Blur </a-button>
+      <a-button @click="changeSkill"> Change Skill </a-button>
+    </a-flex>
 
-    <Sender
-      ref="senderRef"
-      :slot-config="slotConfigMap[slotConfigKey]"
-      :skill="skill"
-      :auto-size="{ minRows: 3, maxRows: 4 }"
-      placeholder="Enter to send message"
-      :on-submit="onSubmit"
-    />
+    <!-- Sender 词槽填空示例 -->
+    <ax-x-provider :theme="xProviderTheme">
+      <ax-sender
+        ref="senderRef"
+        :skill="skill"
+        allow-speech
+        :auto-size="{ minRows: 3, maxRows: 4 }"
+        placeholder="Enter to send message"
+        :slot-config="slotConfigKey ? slotConfig?.[slotConfigKey] : []"
+        :on-submit="onSubmit"
+        :on-change="onChange"
+      />
+    </ax-x-provider>
 
-    <Flex vertical gap="small">
-      <div v-if="value">value: {{ value }}</div>
-      <div v-if="slotValue">slotConfig: {{ slotValue }}</div>
-      <div v-if="skillValue">skill: {{ skillValue }}</div>
-    </Flex>
-  </Flex>
+    <a-flex vertical gap="middle">
+      <div>{{ skillValue ? `skill:${skillValue}` : null }}</div>
+      <div>{{ value ? `value:${value}` : null }}</div>
+      <div>{{ slotValue ? `slotValue:${slotValue}` : null }}</div>
+    </a-flex>
+  </a-flex>
 </template>
 
 <docs lang="zh-CN">
