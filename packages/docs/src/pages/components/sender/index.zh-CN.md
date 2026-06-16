@@ -19,17 +19,17 @@ description: 用于聊天的输入框组件。
 <demo src="./demo/speech.vue">语音输入</demo>
 <demo src="./demo/speech-custom.vue">自定义语音输入</demo>
 <demo src="./demo/suffix.vue">自定义后缀</demo>
-<demo src="./demo/layout-slots.vue">区域插槽</demo>
 <demo src="./demo/disable-ctrl.vue">发送控制</demo>
 <demo src="./demo/disable-ctrl-slot.vue">词槽发送控制</demo>
 <demo src="./demo/header.vue">展开面板</demo>
-<demo src="./demo/header-title-slot.vue">头部标题插槽</demo>
-<demo src="./demo/switch-slots.vue">开关插槽</demo>
 <demo src="./demo/slot-with-suggestion.vue">快捷指令</demo>
 <demo src="./demo/header-fixed.vue">引用</demo>
 <demo src="./demo/footer.vue">自定义底部内容</demo>
 <demo src="./demo/send-style.vue">调整样式</demo>
 <demo src="./demo/paste-image.vue">黏贴文件</demo>
+<demo src="./demo/layout-slots.vue">区域插槽</demo>
+<demo src="./demo/header-title-slot.vue">头部标题插槽</demo>
+<demo src="./demo/switch-slots.vue">开关插槽</demo>
 <demo src="./demo/loading.vue">加载状态</demo>
 
 ## API

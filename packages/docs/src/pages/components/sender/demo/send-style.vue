@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import type { ButtonProps } from "antdv-next";
+import type { ButtonProps, CSSProperties } from "antdv-next";
 
 import { SendOutlined } from "@antdv-next/icons";
 import { App } from "antdv-next";
 import { onBeforeUnmount, ref, watch } from "vue";
+
 const { message } = App.useApp();
 
 const value = ref("Ask something?");
@@ -11,9 +12,10 @@ const loading = ref(false);
 
 interface SenderConfig {
   key: string;
-  placeholder: string;
+  placeholder?: string;
   ignoreLoading?: boolean;
   showIcon?: boolean;
+  buttonStyle?: CSSProperties;
   buttonProps: Partial<ButtonProps>;
 }
 
@@ -23,8 +25,8 @@ const senderConfigs: SenderConfig[] = [
     placeholder: "Change button border radius",
     buttonProps: {
       shape: "default",
-      styles: "border-radius: 12px",
     },
+    buttonStyle: { borderRadius: "12px" },
   },
   {
     key: "icon",
@@ -88,7 +90,11 @@ const onSubmit = (msg: string) => {
           v-else-if="!config.ignoreLoading"
           :title="value ? 'Send ↵' : 'Please type something'"
         >
-          <component :is="components.SendButton" v-bind="config.buttonProps">
+          <component
+            :is="components.SendButton"
+            v-bind="config.buttonProps"
+            :style="config.buttonStyle"
+          >
             <template v-if="config.showIcon" #icon>
               <SendOutlined />
             </template>
@@ -98,6 +104,7 @@ const onSubmit = (msg: string) => {
           v-else
           :is="components.SendButton"
           v-bind="config.buttonProps"
+          :style="config.buttonStyle"
         >
           <template v-if="config.showIcon" #icon>
             <SendOutlined />

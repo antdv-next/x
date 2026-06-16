@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { ApiOutlined, LinkOutlined, SearchOutlined } from "@antdv-next/icons";
-import { onBeforeUnmount, ref, watch } from "vue";
+import { theme } from "antdv-next";
+import { computed, onBeforeUnmount, ref, watch } from "vue";
+
+const { token } = theme.useToken();
 
 const loading = ref(false);
 const value = ref("");
@@ -21,7 +24,10 @@ onBeforeUnmount(() => {
   if (timer) clearTimeout(timer);
 });
 
-const iconStyle = { fontSize: "18px" };
+const iconStyle = computed(() => ({
+  fontSize: "18px",
+  color: token.value.colorText,
+}));
 </script>
 
 <template>

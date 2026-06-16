@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { SuggestionItem } from "@antdv-next/x";
+import type { SenderProps, SuggestionItem } from "@antdv-next/x";
 import type { MenuProps } from "antdv-next";
 
 import {
@@ -15,17 +15,87 @@ import {
   SearchOutlined,
 } from "@antdv-next/icons";
 import { App } from "antdv-next";
-import { nextTick, onBeforeUnmount, ref } from "vue";
+import { h, onBeforeUnmount, ref, watch } from "vue";
+
 const { message } = App.useApp();
 
-const agentMap: Record<string, { icon: any; label: string }> = {
-  deep_search: { icon: SearchOutlined, label: "Deep Search" },
-  ai_code: { icon: CodeOutlined, label: "AI Code" },
-  ai_writing: { icon: EditOutlined, label: "Writing" },
+interface AgentInfoItem {
+  icon: any;
+  label: string;
+  slotConfig: SenderProps["slotConfig"];
+}
+
+const AgentInfo: Record<string, AgentInfoItem> = {
+  deep_search: {
+    icon: SearchOutlined,
+    label: "Deep Search",
+    slotConfig: [
+      { type: "text", value: "Please help me search for news about " },
+      {
+        type: "select",
+        key: "search_type",
+        props: {
+          options: ["AI", "Technology", "Entertainment"],
+          placeholder: "Please select a category",
+        },
+      },
+      { type: "text", value: " and summarize it into a list." },
+    ],
+  },
+  ai_code: {
+    icon: CodeOutlined,
+    label: "AI Code",
+    slotConfig: [
+      { type: "text", value: "Please use " },
+      {
+        type: "select",
+        key: "code_lang",
+        props: {
+          options: ["JS", "C++", "Java"],
+          placeholder: "Please select a programming language",
+        },
+      },
+      { type: "text", value: " to write a mini game." },
+    ],
+  },
+  ai_writing: {
+    icon: EditOutlined,
+    label: "Writing",
+    slotConfig: [
+      { type: "text", value: "Please write an article about " },
+      {
+        type: "select",
+        key: "writing_type",
+        props: {
+          options: ["Campus", "Travel", "Reading"],
+          placeholder: "Please enter a topic",
+        },
+      },
+      { type: "text", value: ". The requirement is " },
+      {
+        type: "input",
+        key: "writing_num",
+        props: {
+          defaultValue: "800",
+          placeholder: "Please enter the number of words.",
+        },
+      },
+      { type: "text", value: " words." },
+    ],
+  },
 };
 
-const fileMap: Record<string, { icon: any; label: string }> = {
+const FileInfo: Record<string, { icon: any; label: string }> = {
   file_image: { icon: FileImageOutlined, label: "x-image" },
+};
+
+const iconStyle = { fontSize: "16px" };
+
+const switchTextStyle = {
+  display: "inline-flex",
+  width: "28px",
+  justifyContent: "center",
+  alignItems: "center",
 };
 
 const suggestions: SuggestionItem[] = [
@@ -34,6 +104,7 @@ const suggestions: SuggestionItem[] = [
   {
     label: "Check some knowledge",
     value: "knowledge",
+    icon: h(OpenAIFilled),
     children: [
       { label: "About React", value: "react" },
       { label: "About Ant Design", value: "antd" },
@@ -44,59 +115,67 @@ const suggestions: SuggestionItem[] = [
 const loading = ref(false);
 const deepThink = ref(true);
 const activeAgentKey = ref("deep_search");
-const value = ref("");
 
 const senderRef = useTemplateRef("senderRef");
 
-const agentItems = Object.entries(agentMap).map(([key, { icon, label }]) => ({
-  key,
-  label,
-  icon,
-}));
+const agentItems = Object.keys(AgentInfo).map(agent => {
+  const { icon, label } = AgentInfo[agent];
+  return { key: agent, icon: h(icon), label };
+});
 
-const fileItems = Object.entries(fileMap).map(([key, { icon, label }]) => ({
-  key,
-  label,
-  icon,
-}));
+const fileItems = Object.keys(FileInfo).map(file => {
+  const { icon, label } = FileInfo[file];
+  return { key: file, icon: h(icon), label };
+});
 
 const agentItemClick: MenuProps["onClick"] = item => {
   activeAgentKey.value = item.key as string;
 };
 
 const fileItemClick: MenuProps["onClick"] = item => {
-  const file = fileMap[item.key as string];
-  if (!file) return;
-  senderRef.value?.insert(` [${file.label}] `, "cursor");
+  const { icon, label } = FileInfo[item.key as string];
+  senderRef.value?.insert?.([
+    {
+      type: "tag",
+      key: `${item.key}_${Date.now()}`,
+      props: {
+        label: h("div", { style: { display: "flex", gap: "8px" } }, [
+          h(icon),
+          label,
+        ]),
+        value: item.key as string,
+      },
+    },
+  ]);
 };
 
-const switchTextStyle = {
-  display: "inline-flex",
-  width: "28px",
-  justifyContent: "center",
-  alignItems: "center",
-};
-
-const iconStyle = { fontSize: "16px" };
-
+// Mock send message
 let timer: ReturnType<typeof setTimeout> | undefined;
+watch(loading, val => {
+  if (val) {
+    timer = setTimeout(() => {
+      loading.value = false;
+      message.success("Send message successfully!");
+    }, 3000);
+  }
+});
 
 onBeforeUnmount(() => {
   if (timer) clearTimeout(timer);
 });
 
 const onSelectSuggestion = () => {
-  if (value.value.endsWith("@")) {
-    value.value = value.value.slice(0, -1);
-  }
-
-  nextTick(() => {
-    senderRef.value?.insert("[Enter a name] ", "cursor");
-  });
-};
-
-const onSenderChange = (nextValue: string) => {
-  value.value = nextValue;
+  senderRef.value?.insert?.(
+    [
+      {
+        type: "content",
+        key: `partner_2_${Date.now()}`,
+        props: { placeholder: "Enter a name" },
+      },
+    ],
+    "cursor",
+    "@",
+  );
 };
 
 const onSenderKeyDown = (
@@ -107,23 +186,16 @@ const onSenderKeyDown = (
   if (event.key === "@") {
     onTrigger();
   }
-
   return onSuggestionKeyDown(event);
 };
 
 const onSubmit = (content: string) => {
   loading.value = true;
   message.info(`Send message: ${content}`);
-  senderRef.value?.clear();
-  if (timer) clearTimeout(timer);
-  timer = setTimeout(() => {
-    loading.value = false;
-    message.success("Send message successfully!");
-  }, 3000);
+  senderRef.value?.clear?.();
 };
 
 const onCancel = () => {
-  if (timer) clearTimeout(timer);
   loading.value = false;
   message.error("Cancel sending!");
 };
@@ -136,11 +208,10 @@ const onCancel = () => {
         <ax-sender
           ref="senderRef"
           :loading="loading"
-          :value="value"
           placeholder="Press Enter to send message"
           :suffix="false"
           :auto-size="{ minRows: 3, maxRows: 6 }"
-          :on-change="onSenderChange"
+          :slot-config="AgentInfo[activeAgentKey].slotConfig"
           :on-key-down="
             (event: KeyboardEvent) =>
               onSenderKeyDown(event, onTrigger, onKeyDown)
@@ -148,7 +219,7 @@ const onCancel = () => {
           :on-submit="onSubmit"
           :on-cancel="onCancel"
         >
-          <template #footer="{ components }">
+          <template #footer="{ defaultNode }">
             <a-flex justify="space-between" align="center">
               <a-flex gap="small" align="center">
                 <a-button :style="iconStyle" type="text">
@@ -165,14 +236,12 @@ const onCancel = () => {
                   </template>
                   <template #checkedChildren>
                     <div>
-                      Deep Think:
-                      <span :style="switchTextStyle">on</span>
+                      Deep Think:<span :style="switchTextStyle">on</span>
                     </div>
                   </template>
                   <template #unCheckedChildren>
                     <div>
-                      Deep Think:
-                      <span :style="switchTextStyle">off</span>
+                      Deep Think:<span :style="switchTextStyle">off</span>
                     </div>
                   </template>
                 </ax-sender-switch>
@@ -183,11 +252,6 @@ const onCancel = () => {
                     items: agentItems,
                   }"
                 >
-                  <template #iconRender="{ key }">
-                    <SearchOutlined v-if="key === 'deep_search'" />
-                    <CodeOutlined v-else-if="key === 'ai_code'" />
-                    <EditOutlined v-else-if="key === 'ai_writing'" />
-                  </template>
                   <ax-sender-switch :value="false">
                     <template #icon>
                       <AntDesignOutlined />
@@ -202,9 +266,6 @@ const onCancel = () => {
                     items: fileItems,
                   }"
                 >
-                  <template #iconRender="{ key }">
-                    <FileImageOutlined v-if="key === 'file_image'" />
-                  </template>
                   <ax-sender-switch :value="false">
                     <template #icon>
                       <ProfileOutlined />
@@ -220,21 +281,11 @@ const onCancel = () => {
                   </template>
                 </a-button>
                 <a-divider type="vertical" />
-                <component :is="components.SpeechButton" />
-                <a-divider type="vertical" />
-                <component
-                  :is="
-                    loading ? components.LoadingButton : components.SendButton
-                  "
-                />
+                <component :is="defaultNode" />
               </a-flex>
             </a-flex>
           </template>
         </ax-sender>
-      </template>
-
-      <template #iconRender="{ item }">
-        <OpenAIFilled v-if="item.value === 'knowledge'" />
       </template>
     </ax-suggestion>
   </a-flex>

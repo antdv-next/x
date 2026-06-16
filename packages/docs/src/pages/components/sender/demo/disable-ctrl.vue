@@ -1,9 +1,5 @@
 <script setup lang="ts">
-import type {
-  AttachmentsProps,
-  AttachmentsRef,
-  SenderRef,
-} from "@antdv-next/x";
+import type { AttachmentsProps, SenderRef } from "@antdv-next/x";
 
 import { CloudUploadOutlined, PaperClipOutlined } from "@antdv-next/icons";
 import { computed, onBeforeUnmount, ref } from "vue";
@@ -14,7 +10,6 @@ const open = ref(false);
 const value = ref("");
 const items = shallowRef<Attachment[]>([]);
 const senderRef = ref<SenderRef>();
-const attachmentsRef = ref<AttachmentsRef>();
 
 const submitDisabled = computed(
   () => items.value.length === 0 && !value.value && !loading.value,
@@ -86,7 +81,7 @@ const onSubmit = () => {
           value = v;
         }
       "
-      placeholder="按 Enter 发送消息"
+      placeholder="Enter to send message"
       :on-submit="onSubmit"
     >
       <template #header>
@@ -97,7 +92,6 @@ const onSubmit = () => {
           :styles="{ content: { padding: 0 } }"
         >
           <ax-attachments
-            ref="attachmentsRef"
             :before-upload="() => false"
             :items="items"
             @change="onChange"
@@ -113,14 +107,7 @@ const onSubmit = () => {
 
       <template #prefix>
         <a-badge :dot="items.length > 0 && !open">
-          <a-button
-            type="text"
-            @click="
-              open
-                ? (open = false)
-                : attachmentsRef?.select({ multiple: true }) || (open = true)
-            "
-          >
+          <a-button type="text" @click="open = !open">
             <template #icon>
               <PaperClipOutlined :style="{ fontSize: '16px' }" />
             </template>
@@ -129,7 +116,7 @@ const onSubmit = () => {
       </template>
 
       <template #suffix="{ components }">
-        <a-tooltip v-if="loading" title="点击取消">
+        <a-tooltip v-if="loading" title="Click to cancel">
           <component :is="components.LoadingButton" />
         </a-tooltip>
         <component

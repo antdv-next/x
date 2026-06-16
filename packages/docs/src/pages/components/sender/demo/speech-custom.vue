@@ -1,17 +1,23 @@
 <script setup lang="ts">
+import { App } from "antdv-next";
 import { ref } from "vue";
 
+const { message } = App.useApp();
+
+// When setting `recording`, the built-in speech recognition feature will be disabled
 const recording = ref(false);
+
+function handleRecordingChange(nextRecording: boolean) {
+  message.info(`Mock Customize Recording: ${nextRecording}`);
+  recording.value = nextRecording;
+}
 </script>
 
 <template>
   <ax-sender
     :allow-speech="{
       recording,
-      onRecordingChange: (next: boolean) => {
-        recording = next;
-        console.log('Recording:', next);
-      },
+      onRecordingChange: handleRecordingChange,
     }"
   />
 </template>
