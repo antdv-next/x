@@ -141,6 +141,36 @@ describe("Sender", () => {
     expect(presets.classes()).toContain("ant-flex");
   });
 
+  it("should follow controlled speech recording state", async () => {
+    const onRecordingChange = vi.fn();
+    const wrapper = mount(Sender, {
+      props: {
+        allowSpeech: {
+          recording: false,
+          onRecordingChange,
+        },
+      },
+    });
+
+    await wrapper.findAll(".antd-sender-actions-btn")[0]!.trigger("click");
+    expect(onRecordingChange).toHaveBeenLastCalledWith(true);
+
+    onRecordingChange.mockClear();
+    await wrapper.setProps({
+      allowSpeech: {
+        recording: true,
+        onRecordingChange,
+      },
+    });
+
+    expect(
+      wrapper.find(".antd-sender-actions-btn-recording-icon").exists(),
+    ).toBe(true);
+
+    await wrapper.findAll(".antd-sender-actions-btn")[0]!.trigger("click");
+    expect(onRecordingChange).toHaveBeenLastCalledWith(false);
+  });
+
   it("should render loading button when loading", () => {
     const wrapper = mount(Sender, {
       props: { loading: true },

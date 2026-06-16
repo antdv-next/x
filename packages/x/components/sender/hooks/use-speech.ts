@@ -78,6 +78,9 @@ export default function useSpeech(
         (getSpeechRecognition() && permissionState.value !== "denied")
       ),
   );
+  const mergedRecording = computed(() =>
+    isControlled.value ? !!speechConfig.value?.recording : recording.value,
+  );
 
   const ensureRecognition = () => {
     if (!mergedAllowSpeech.value || recognition) return;
@@ -102,21 +105,21 @@ export default function useSpeech(
   };
 
   const triggerSpeech = (doForceBreak: boolean) => {
-    if (doForceBreak && !recording.value) return;
+    const currentRecording = mergedRecording.value;
+    if (doForceBreak && !currentRecording) return;
 
     forceBreak = doForceBreak;
 
-    if (isControlled.value) {
-      const nextRecording = !speechConfig.value.recording;
-      recording.value = nextRecording;
-      speechConfig.value?.onRecordingChange(nextRecording);
+    const config = speechConfig.value;
+    if (typeof config?.recording === "boolean") {
+      config.onRecordingChange(!config.recording);
       return;
     }
 
     ensureRecognition();
     if (!recognition) return;
 
-    if (recording.value) {
+    if (currentRecording) {
       recognition.stop();
       speechConfig.value?.onRecordingChange?.(false);
     } else {
@@ -125,5 +128,5 @@ export default function useSpeech(
     }
   };
 
-  return [mergedAllowSpeech, triggerSpeech, recording] as const;
+  return [mergedAllowSpeech, triggerSpeech, mergedRecording] as const;
 }
