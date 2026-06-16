@@ -107,7 +107,9 @@ export default function useSpeech(
     forceBreak = doForceBreak;
 
     if (isControlled.value) {
-      speechConfig.value?.onRecordingChange(!recording.value);
+      const nextRecording = !speechConfig.value.recording;
+      recording.value = nextRecording;
+      speechConfig.value?.onRecordingChange(nextRecording);
       return;
     }
 
