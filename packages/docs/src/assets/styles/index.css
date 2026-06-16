@@ -1,8 +1,9 @@
-@layer reset, preflights, default, markdown, antdx, layout, common, components, utilities;
+@layer reset, preflights, default, markdown,antd, antdx, layout, common, components, utilities;
 
 @import "antdv-next/dist/reset.css" layer(reset);
 /* antdv-next styles must use the same layer name as the top-level @layer declaration. */
-@import "antdv-next/dist/antd.css" layer(antdx);
+@import "antdv-next/dist/antd.css" layer(antd);
 /* markdown styles also keep a unified layer name with the top-level @layer declaration. */
 @import "./markdown/index.css" layer(markdown);
+
 @import "./common.css" layer(common);
