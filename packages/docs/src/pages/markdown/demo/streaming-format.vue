@@ -351,8 +351,15 @@ const handleDemoChange = (value: string | number) => {
       <Card
         title="Rendered Output"
         size="small"
-        class="flex flex-1 flex-col min-w-0"
-        :bodyStyle="{ flex: 1, minHeight: 0 }"
+        style="flex: 1; display: flex; flex-direction: column; min-width: 0"
+        :styles="{
+          body: {
+            flex: 1,
+            minHeight: 0,
+            display: 'flex',
+            flexDirection: 'column',
+          },
+        }"
       >
         <template #extra>
           <Button size="small" @click="rerender">Re-Render</Button>
