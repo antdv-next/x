@@ -221,7 +221,7 @@ const IncompleteEmphasis = defineComponent({
       if (!match || !match[2]) return null;
 
       const [, symbols, content] = match;
-      const level = symbols.length;
+      const level = symbols?.length;
 
       if (level === 1) return h("em", content);
       if (level === 2) return h("strong", content);
@@ -329,8 +329,15 @@ const handleDemoChange = (value: string | number) => {
       <Card
         title="Markdown Source"
         size="small"
-        class="flex flex-1 flex-col min-w-0"
-        :bodyStyle="{ flex: 1, minHeight: 0 }"
+        style="flex: 1; display: flex; flex-direction: column; min-width: 0"
+        :styles="{
+          body: {
+            flex: 1,
+            minHeight: 0,
+            display: 'flex',
+            flexDirection: 'column',
+          },
+        }"
       >
         <div
           ref="sourceRef"
