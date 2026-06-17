@@ -1,4 +1,4 @@
-import type { CSSProperties, HTMLAttributes } from "vue";
+import type { CSSProperties, HTMLAttributes, VNodeChild } from "vue";
 
 export type CodeHighlighterSemanticType =
   | "root"
@@ -9,6 +9,36 @@ export type CodeHighlighterSemanticType =
 
 export interface CodeHighlighterRef {
   nativeElement: HTMLDivElement;
+}
+
+export interface CodeHighlighterHeaderSlotScope {
+  /**
+   * 当前代码语言
+   */
+  language: string;
+  /**
+   * 当前主题模式
+   */
+  theme: "light" | "dark";
+  /**
+   * 是否处于"已复制"状态
+   */
+  copied: boolean;
+  /**
+   * 复制代码内容
+   */
+  copy: () => void;
+  /**
+   * 切换主题模式
+   */
+  toggleTheme: () => void;
+}
+
+export interface CodeHighlighterSlots {
+  /**
+   * 自定义头部区，作用域参数提供语言、主题及复制/主题切换能力
+   */
+  header?: (scope: CodeHighlighterHeaderSlotScope) => VNodeChild;
 }
 
 export interface CodeHighlighterProps extends Omit<
