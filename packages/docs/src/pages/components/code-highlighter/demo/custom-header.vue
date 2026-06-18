@@ -1,12 +1,33 @@
 <script setup lang="ts">
+import { App } from "antdv-next";
+import { ref } from "vue";
+
 const code = `import { createApp } from "vue";
 import App from "./App.vue";
 
 createApp(App).mount("#app");`;
+
+const theme = ref<"light" | "dark">("light");
+
+const { message } = App.useApp();
+
+function handleCopy(content: string) {
+  message.success(`已复制 ${content.length} 个字符`);
+}
+
+function handleThemeChange(value: "light" | "dark") {
+  theme.value = value;
+}
 </script>
 
 <template>
-  <ax-code-highlighter :content="code" language="typescript">
+  <ax-code-highlighter
+    :content="code"
+    language="typescript"
+    :theme="theme"
+    @copy="handleCopy"
+    @update:theme="handleThemeChange"
+  >
     <template #header="{ language, copied, copy, theme, toggleTheme }">
       <div class="custom-header">
         <span class="custom-title">{{ language }}</span>
