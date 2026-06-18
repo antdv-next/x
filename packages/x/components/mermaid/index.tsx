@@ -7,6 +7,7 @@ export type {
   MermaidRef,
   MermaidRenderType,
   MermaidSemanticType,
+  MermaidSlots,
 } from "./Mermaid";
 
 export default Mermaid;

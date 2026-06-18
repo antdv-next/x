@@ -3,6 +3,7 @@ import type {
   CSSProperties,
   HTMLAttributes,
   PropType,
+  SlotsType,
   StyleValue,
   VNodeChild,
 } from "vue";
@@ -76,6 +77,21 @@ export interface MermaidCustomActionSlotInfo {
   item: ItemType;
   index: number;
   originNode: VNodeChild;
+}
+
+export interface MermaidSlots {
+  /**
+   * 自定义头部区，优先级高于 `header` 属性
+   */
+  header?: () => VNodeChild;
+  /**
+   * 自定义 `actions.customActions` 的图标
+   */
+  customActionIconRender?: (info: MermaidCustomActionSlotInfo) => VNodeChild;
+  /**
+   * 自定义 `actions.customActions` 的操作区
+   */
+  customActionRender?: (info: MermaidCustomActionSlotInfo) => VNodeChild;
 }
 
 enum RenderType {
@@ -195,6 +211,7 @@ const XMermaid = defineComponent({
     },
   },
   emits: ["update:renderType", "renderTypeChange"],
+  slots: Object as SlotsType<MermaidSlots>,
   setup(props, { emit, expose, slots }) {
     const attrs = useAttrs();
     const configCtx = useConfig();
@@ -250,8 +267,14 @@ const XMermaid = defineComponent({
 
     const getNamedSlot = (
       name: "customActionIconRender" | "customActionRender",
-    ) =>
-      slots[name] ?? slots[name.replace(/[A-Z]/g, s => `-${s.toLowerCase()}`)];
+    ) => {
+      const kebabName = name.replace(/[A-Z]/g, s => `-${s.toLowerCase()}`);
+      const slotMap = slots as Record<
+        string,
+        ((info: MermaidCustomActionSlotInfo) => VNodeChild) | undefined
+      >;
+      return slotMap[name] ?? slotMap[kebabName];
+    };
 
     const resolvedCustomActions = computed<ItemType[]>(() =>
       mergedActions.value.customActions.map((item, index) => {
