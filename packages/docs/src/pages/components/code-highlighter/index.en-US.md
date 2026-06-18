@@ -20,6 +20,8 @@ description: Display code blocks in AI conversation scenarios with syntax highli
 
 <demo src="./demo/copyable.vue">Copy Functionality</demo>
 
+<demo src="./demo/custom-header.vue">Custom Header</demo>
+
 ## API
 
 ### Props
@@ -43,6 +45,24 @@ description: Display code blocks in AI conversation scenarios with syntax highli
 | ------------ | ---------------------------- | ------------------------------------ |
 | copy         | Callback when code is copied | `(content: string) => void`          |
 | update:theme | Emitted when theme changes   | `(theme: 'light' \| 'dark') => void` |
+
+### Slots
+
+| Slot     | Description                                                        | Type                                     |
+| -------- | ------------------------------------------------------------------ | ---------------------------------------- |
+| `header` | Custom header area, exposing language, theme and copy capabilities | `(scope: HeaderSlotScope) => VNodeChild` |
+
+`header` slot scope `HeaderSlotScope`:
+
+| Parameter     | Description                 | Type                |
+| ------------- | --------------------------- | ------------------- |
+| `language`    | Current code language       | `string`            |
+| `theme`       | Current theme mode          | `'light' \| 'dark'` |
+| `copied`      | Whether in the copied state | `boolean`           |
+| `copy`        | Copy the code content       | `() => void`        |
+| `toggleTheme` | Toggle the theme mode       | `() => void`        |
+
+When the `header` slot is provided, it fully replaces the default header (language label, theme toggle and copy button).
 
 ### Ref
 

@@ -20,6 +20,8 @@ description: 用于 AI 对话场景中展示代码块，提供语法高亮、行
 
 <demo src="./demo/copyable.vue">复制功能</demo>
 
+<demo src="./demo/custom-header.vue">自定义 Header</demo>
+
 ## API
 
 ### 属性
@@ -43,6 +45,24 @@ description: 用于 AI 对话场景中展示代码块，提供语法高亮、行
 | ------------ | -------------- | ------------------------------------ |
 | copy         | 复制成功回调   | `(content: string) => void`          |
 | update:theme | 主题切换时触发 | `(theme: 'light' \| 'dark') => void` |
+
+### 插槽
+
+| 插槽名   | 说明                                     | 类型                                     |
+| -------- | ---------------------------------------- | ---------------------------------------- |
+| `header` | 自定义头部区，提供语言、主题及复制等能力 | `(scope: HeaderSlotScope) => VNodeChild` |
+
+`header` 插槽作用域参数 `HeaderSlotScope`：
+
+| 参数          | 说明               | 类型                |
+| ------------- | ------------------ | ------------------- |
+| `language`    | 当前代码语言       | `string`            |
+| `theme`       | 当前主题模式       | `'light' \| 'dark'` |
+| `copied`      | 是否处于已复制状态 | `boolean`           |
+| `copy`        | 复制代码内容       | `() => void`        |
+| `toggleTheme` | 切换主题模式       | `() => void`        |
+
+提供 `header` 插槽时将整体替换默认头部（语言标识、主题切换与复制按钮）。
 
 ### Ref
 

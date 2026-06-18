@@ -1,4 +1,4 @@
-import type { CSSProperties, PropType, StyleValue } from "vue";
+import type { CSSProperties, PropType, SlotsType, StyleValue } from "vue";
 
 import {
   CopyOutlined,
@@ -20,6 +20,7 @@ import type {
   CodeHighlighterProps,
   CodeHighlighterRef,
   CodeHighlighterSemanticType,
+  CodeHighlighterSlots,
 } from "./interface";
 
 import useXComponentConfig from "../_utils/hooks/use-x-component-config";
@@ -96,7 +97,8 @@ export const XCodeHighlighter = defineComponent({
     },
   },
   emits: ["update:theme"],
-  setup(props, { emit, expose }) {
+  slots: Object as SlotsType<CodeHighlighterSlots>,
+  setup(props, { emit, expose, slots }) {
     const attrs = useAttrs();
     const contextConfig = useXComponentConfig("codeHighlighter");
     const rootRef = ref<HTMLDivElement>();
@@ -181,6 +183,16 @@ export const XCodeHighlighter = defineComponent({
     };
 
     const renderHeader = () => {
+      if (slots.header) {
+        return slots.header({
+          language: props.language || "text",
+          theme: props.theme,
+          copied: copied.value,
+          copy: handleCopy,
+          toggleTheme,
+        });
+      }
+
       const hasHeaderContent =
         props.showLanguage || props.showThemeToggle || props.showCopyButton;
       if (!hasHeaderContent) return null;
