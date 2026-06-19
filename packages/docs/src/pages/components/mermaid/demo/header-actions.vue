@@ -3,7 +3,7 @@ import type { MermaidProps } from "@antdv-next/x";
 
 import { EditOutlined, ShareAltOutlined } from "@antdv-next/icons";
 import { App } from "antdv-next";
-import { computed, ref } from "vue";
+import { computed, h, ref } from "vue";
 const { message } = App.useApp();
 
 const enableZoom = ref(true);
@@ -22,6 +22,7 @@ const content = `flowchart TD
 const customActions: NonNullable<MermaidProps["actions"]>["customActions"] = [
   {
     key: "edit",
+    icon: h(EditOutlined),
     label: "Edit",
     onItemClick: () => {
       message.info("Edit button clicked");
@@ -29,6 +30,7 @@ const customActions: NonNullable<MermaidProps["actions"]>["customActions"] = [
   },
   {
     key: "share",
+    icon: h(ShareAltOutlined),
     label: "Share",
     onItemClick: () => {
       message.success("Chart link copied to clipboard");
@@ -45,38 +47,54 @@ const actions = computed<MermaidProps["actions"]>(() => ({
 </script>
 
 <template>
-  <a-flex vertical :gap="16">
-    <a-space wrap>
-      <a-checkbox v-model:checked="enableZoom">Enable Zoom</a-checkbox>
-      <a-checkbox v-model:checked="enableDownload">Enable Download</a-checkbox>
-      <a-checkbox v-model:checked="enableCopy">Enable Copy</a-checkbox>
-      <a-checkbox v-model:checked="showCustom">Show Custom Actions</a-checkbox>
-    </a-space>
+  <div class="demo-wrapper">
+    <div class="config-panel">
+      <h2 class="config-title">Header Actions Configuration</h2>
+      <a-space :size="24" wrap>
+        <a-checkbox v-model:checked="enableZoom">Enable Zoom</a-checkbox>
+        <a-checkbox v-model:checked="enableDownload">
+          Enable Download
+        </a-checkbox>
+        <a-checkbox v-model:checked="enableCopy">Enable Copy</a-checkbox>
+        <a-checkbox v-model:checked="showCustom">
+          Show Custom Actions
+        </a-checkbox>
+      </a-space>
+    </div>
 
-    <ax-mermaid :content="content" :actions="actions">
-      <template #customActionIconRender="{ item }">
-        <EditOutlined v-if="item.key === 'edit'" />
-        <ShareAltOutlined v-else-if="item.key === 'share'" />
-      </template>
-
-      <template #customActionRender="{ item }">
-        <a-button
-          v-if="item.key === 'share'"
-          type="text"
-          size="small"
-          @click="item.onItemClick?.(item)"
-        >
-          Share Link
-        </a-button>
-      </template>
-    </ax-mermaid>
-  </a-flex>
+    <div class="mermaid-wrapper">
+      <ax-mermaid :content="content" :actions="actions" />
+    </div>
+  </div>
 </template>
 
+<style scoped>
+.demo-wrapper {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.config-panel {
+  margin-bottom: 24px;
+}
+
+.config-title {
+  margin-bottom: 16px;
+  color: var(--ant-color-text, #1a1a1a);
+}
+
+.mermaid-wrapper {
+  overflow: hidden;
+  border: 1px solid var(--ant-color-border-secondary, #f0f0f0);
+  border-radius: 8px;
+}
+</style>
+
 <docs lang="zh-CN">
-配置默认头部操作项及自定义操作。
+配置头部操作项。
 </docs>
 
 <docs lang="en-US">
-Configure built-in header actions and custom actions.
+Configure header actions.
 </docs>

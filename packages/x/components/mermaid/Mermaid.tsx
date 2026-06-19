@@ -28,7 +28,6 @@ import type { ItemType } from "../actions";
 import type { CodeHighlighterProps } from "../code-highlighter";
 
 import useXComponentConfig from "../_utils/hooks/use-x-component-config";
-import { isEmptyNode } from "../_utils/vue";
 import warning from "../_utils/warning";
 import Actions from "../actions";
 import CodeHighlighter from "../code-highlighter";
@@ -73,25 +72,11 @@ export interface MermaidRef {
   nativeElement: HTMLDivElement;
 }
 
-export interface MermaidCustomActionSlotInfo {
-  item: ItemType;
-  index: number;
-  originNode: VNodeChild;
-}
-
 export interface MermaidSlots {
   /**
    * 自定义头部区，优先级高于 `header` 属性
    */
   header?: () => VNodeChild;
-  /**
-   * 自定义 `actions.customActions` 的图标
-   */
-  customActionIconRender?: (info: MermaidCustomActionSlotInfo) => VNodeChild;
-  /**
-   * 自定义 `actions.customActions` 的操作区
-   */
-  customActionRender?: (info: MermaidCustomActionSlotInfo) => VNodeChild;
 }
 
 enum RenderType {
@@ -264,55 +249,6 @@ const XMermaid = defineComponent({
       const { class: _class, style: _style, ...rest } = attrs;
       return rest;
     });
-
-    const getNamedSlot = (
-      name: "customActionIconRender" | "customActionRender",
-    ) => {
-      const kebabName = name.replace(/[A-Z]/g, s => `-${s.toLowerCase()}`);
-      const slotMap = slots as Record<
-        string,
-        ((info: MermaidCustomActionSlotInfo) => VNodeChild) | undefined
-      >;
-      return slotMap[name] ?? slotMap[kebabName];
-    };
-
-    const resolvedCustomActions = computed<ItemType[]>(() =>
-      mergedActions.value.customActions.map((item, index) => {
-        const iconSlotInfo: MermaidCustomActionSlotInfo = {
-          item,
-          index,
-          originNode: item.icon,
-        };
-        const iconFromSlot = getNamedSlot("customActionIconRender")?.(
-          iconSlotInfo,
-        );
-        const actionOriginNode =
-          item.actionRender !== undefined
-            ? typeof item.actionRender === "function"
-              ? item.actionRender(item)
-              : item.actionRender
-            : undefined;
-        const actionSlotInfo: MermaidCustomActionSlotInfo = {
-          item,
-          index,
-          originNode: actionOriginNode,
-        };
-        const actionFromSlot =
-          getNamedSlot("customActionRender")?.(actionSlotInfo);
-
-        return {
-          ...item,
-          icon:
-            iconFromSlot !== undefined && !isEmptyNode(iconFromSlot)
-              ? iconFromSlot
-              : item.icon,
-          actionRender:
-            actionFromSlot !== undefined && !isEmptyNode(actionFromSlot)
-              ? actionFromSlot
-              : item.actionRender,
-        };
-      }),
-    );
 
     function applySvgTransform() {
       if (mergedRenderType.value !== RenderType.Image) return;
@@ -496,7 +432,7 @@ const XMermaid = defineComponent({
         });
       }
 
-      return [...items, ...resolvedCustomActions.value];
+      return [...items, ...mergedActions.value.customActions];
     });
 
     function renderHeader() {
