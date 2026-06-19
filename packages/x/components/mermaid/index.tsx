@@ -2,7 +2,6 @@ import Mermaid from "./Mermaid";
 
 export type {
   MermaidActions,
-  MermaidCustomActionSlotInfo,
   MermaidProps,
   MermaidRef,
   MermaidRenderType,

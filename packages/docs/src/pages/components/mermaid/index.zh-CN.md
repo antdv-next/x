@@ -21,7 +21,7 @@ group:
 
 <demo src="./demo/header-actions.vue">头部操作</demo>
 
-<demo src="./demo/custom-render.vue">自定义渲染</demo>
+<demo src="./demo/with-xmarkdown.vue">结合 XMarkdown</demo>
 
 ## API
 
@@ -61,14 +61,11 @@ type ItemType = {
 
 ### 插槽
 
-| 插槽名                   | 说明                          | 类型                                          |
-| ------------------------ | ----------------------------- | --------------------------------------------- |
-| `header`                 | 自定义头部区                  | `() => VNodeChild`                            |
-| `customActionIconRender` | 自定义 `customActions` 图标   | `({ item, index, originNode }) => VNodeChild` |
-| `customActionRender`     | 自定义 `customActions` 操作区 | `({ item, index, originNode }) => VNodeChild` |
+| 插槽名   | 说明         | 类型               |
+| -------- | ------------ | ------------------ |
+| `header` | 自定义头部区 | `() => VNodeChild` |
 
 `header` 插槽优先级高于 `header` 属性；传入 `header={null}` 时可隐藏默认头部。
-`customActionIconRender` 与 `customActionRender` 仅作用于 `actions.customActions`。
 
 ### 事件
 
@@ -85,4 +82,4 @@ type ItemType = {
 
 ## 语义化 DOM
 
-<demo src="./demo/semantic.vue" simplify>Mermaid 语义结构</demo>
+<demo src="./demo/semantic.vue" simplify>语义化结构</demo>

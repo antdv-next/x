@@ -20,7 +20,7 @@ group:
 
 <demo src="./demo/header-actions.vue">Header Actions</demo>
 
-<demo src="./demo/custom-render.vue">Custom Render</demo>
+<demo src="./demo/with-xmarkdown.vue">With XMarkdown</demo>
 
 ## API
 
@@ -60,14 +60,11 @@ type ItemType = {
 
 ### Slots
 
-| Slot Name                | Description                             | Type                                          |
-| ------------------------ | --------------------------------------- | --------------------------------------------- |
-| `header`                 | Custom header area                      | `() => VNodeChild`                            |
-| `customActionIconRender` | Custom icon for `actions.customActions` | `({ item, index, originNode }) => VNodeChild` |
-| `customActionRender`     | Custom action node for `customActions`  | `({ item, index, originNode }) => VNodeChild` |
+| Slot Name | Description        | Type               |
+| --------- | ------------------ | ------------------ |
+| `header`  | Custom header area | `() => VNodeChild` |
 
 The `header` slot takes precedence over the `header` prop. Passing `header={null}` hides the default header.
-`customActionIconRender` and `customActionRender` only apply to `actions.customActions`.
 
 ### Events
 
@@ -84,4 +81,4 @@ The `header` slot takes precedence over the `header` prop. Passing `header={null
 
 ## Semantic DOM
 
-<demo src="./demo/semantic.vue" simplify>Mermaid Semantic DOM</demo>
+<demo src="./demo/semantic.vue" simplify>Semantic DOM</demo>
