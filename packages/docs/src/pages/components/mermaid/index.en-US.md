@@ -20,6 +20,8 @@ group:
 
 <demo src="./demo/header-actions.vue">Header Actions</demo>
 
+<demo src="./demo/custom-render.vue">Custom Render</demo>
+
 ## API
 
 ### Props

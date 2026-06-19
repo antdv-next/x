@@ -19,7 +19,9 @@ group:
 
 <demo src="./demo/custom-header.vue">自定义 Header</demo>
 
-<demo src="./demo/header-actions.vue">Header Actions</demo>
+<demo src="./demo/header-actions.vue">头部操作</demo>
+
+<demo src="./demo/custom-render.vue">自定义渲染</demo>
 
 ## API
 
