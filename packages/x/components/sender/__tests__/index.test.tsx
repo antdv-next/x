@@ -374,6 +374,53 @@ describe("Sender", () => {
     host.remove();
   });
 
+  it("should clear content slot text when backspacing inside the slot", async () => {
+    const onChange = vi.fn();
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const wrapper = mount(Sender, {
+      attachTo: host,
+      props: {
+        slotConfig: [
+          {
+            type: "content",
+            key: "content",
+            props: { defaultValue: "A", placeholder: "Content" },
+          },
+        ],
+        onChange,
+      },
+    });
+    await wrapper.vm.$nextTick();
+    onChange.mockClear();
+
+    const editable = wrapper.find(".antd-sender-input-slot");
+    const contentSlot = wrapper.find(".antd-sender-slot-content");
+    if (!contentSlot.element.firstChild) {
+      contentSlot.element.appendChild(document.createTextNode("A"));
+    }
+    const textNode = contentSlot.element.firstChild!;
+    const selection = window.getSelection();
+    const range = document.createRange();
+    range.setStart(textNode, 1);
+    range.collapse(true);
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+
+    await editable.trigger("keydown", { key: "Backspace" });
+
+    expect((wrapper.vm as any).getValue().slotConfig).toEqual([
+      expect.objectContaining({
+        key: "content",
+        type: "content",
+        value: "",
+      }),
+    ]);
+
+    wrapper.unmount();
+    host.remove();
+  });
+
   it("should keep user input when typing after removing content slot with skill", async () => {
     const onChange = vi.fn();
     const skill = {
