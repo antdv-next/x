@@ -374,7 +374,7 @@ describe("Sender", () => {
     host.remove();
   });
 
-  it("should remove the slot after cursor when deleting at the editor boundary", async () => {
+  it("should clear content slot text when backspacing inside the slot", async () => {
     const onChange = vi.fn();
     const host = document.createElement("div");
     document.body.appendChild(host);
@@ -383,19 +383,9 @@ describe("Sender", () => {
       props: {
         slotConfig: [
           {
-            type: "tag",
-            key: "assistant1",
-            props: { label: "@Travel Planner1", value: "travel1" },
-          },
-          {
-            type: "tag",
-            key: "assistant2",
-            props: { label: "@Travel Planner2", value: "travel2" },
-          },
-          {
-            type: "tag",
-            key: "assistant3",
-            props: { label: "@Travel Planner3", value: "travel3" },
+            type: "content",
+            key: "content",
+            props: { defaultValue: "A", placeholder: "Content" },
           },
         ],
         onChange,
@@ -405,19 +395,26 @@ describe("Sender", () => {
     onChange.mockClear();
 
     const editable = wrapper.find(".antd-sender-input-slot");
+    const contentSlot = wrapper.find(".antd-sender-slot-content");
+    if (!contentSlot.element.firstChild) {
+      contentSlot.element.appendChild(document.createTextNode("A"));
+    }
+    const textNode = contentSlot.element.firstChild!;
     const selection = window.getSelection();
     const range = document.createRange();
-    range.setStart(editable.element, 0);
+    range.setStart(textNode, 1);
     range.collapse(true);
     selection?.removeAllRanges();
     selection?.addRange(range);
 
-    await editable.trigger("keydown", { key: "Delete" });
+    await editable.trigger("keydown", { key: "Backspace" });
 
-    const lastChange = onChange.mock.calls[onChange.mock.calls.length - 1]!;
-    expect(lastChange[2].map((item: SlotConfigType) => item.key)).toEqual([
-      "assistant2",
-      "assistant3",
+    expect((wrapper.vm as any).getValue().slotConfig).toEqual([
+      expect.objectContaining({
+        key: "content",
+        type: "content",
+        value: "",
+      }),
     ]);
 
     wrapper.unmount();

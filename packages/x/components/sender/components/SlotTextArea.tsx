@@ -781,12 +781,10 @@ export default defineComponent({
         ) {
           event.preventDefault();
           parentElement.innerHTML = "";
+          parentElement.innerText = "";
           return true;
         }
       }
-
-      const direction =
-        operationType === "delete" ? "forward" : ("backward" as const);
 
       const isIgnorableBoundaryNode = (node: Node) => {
         if (node.nodeType === Node.TEXT_NODE) {
@@ -804,29 +802,17 @@ export default defineComponent({
         return !node.textContent;
       };
 
-      const getAdjacentNode = () => {
-        if (anchorNode === editable) {
-          return direction === "backward"
-            ? editable.childNodes[focusOffset - 1] || null
-            : editable.childNodes[focusOffset] || null;
+      const getPreviousSibling = () => {
+        if (operationType !== "backspace") {
+          return null;
         }
 
-        if (anchorNode.nodeType === Node.TEXT_NODE) {
-          const textLength = anchorNode.textContent?.length ?? 0;
-          if (
-            (direction === "backward" && focusOffset > 0) ||
-            (direction === "forward" && focusOffset < textLength)
-          ) {
-            return null;
-          }
-        } else {
-          const childCount = anchorNode.childNodes.length;
-          if (
-            (direction === "backward" && focusOffset > 0) ||
-            (direction === "forward" && focusOffset < childCount)
-          ) {
-            return null;
-          }
+        if (anchorNode === editable) {
+          return editable.childNodes[focusOffset - 1] || null;
+        }
+
+        if (focusOffset !== 0) {
+          return null;
         }
 
         const outer = findOuterContainer(anchorNode);
@@ -837,12 +823,10 @@ export default defineComponent({
               ? anchorNode
               : (anchorNode as HTMLElement);
 
-        return direction === "backward"
-          ? boundaryNode.previousSibling
-          : boundaryNode.nextSibling;
+        return boundaryNode.previousSibling;
       };
 
-      const findDeletableNode = (node: Node | null) => {
+      const findPreviousDeletableNode = (node: Node | null) => {
         let current = node;
         while (current) {
           if (current instanceof HTMLElement) {
@@ -856,16 +840,13 @@ export default defineComponent({
             return null;
           }
 
-          current =
-            direction === "backward"
-              ? current.previousSibling
-              : current.nextSibling;
+          current = current.previousSibling;
         }
 
         return null;
       };
 
-      const target = findDeletableNode(getAdjacentNode());
+      const target = findPreviousDeletableNode(getPreviousSibling());
 
       if (!target) {
         return false;
@@ -897,10 +878,6 @@ export default defineComponent({
         event.key === "Backspace" &&
         handleDeleteOperation(event, "backspace")
       ) {
-        return;
-      }
-
-      if (event.key === "Delete" && handleDeleteOperation(event, "delete")) {
         return;
       }
 
