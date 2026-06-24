@@ -750,64 +750,128 @@ export default defineComponent({
       return null;
     };
 
-    const handleBackspaceDelete = (event: KeyboardEvent) => {
+    const handleDeleteOperation = (
+      event: KeyboardEvent | ClipboardEvent,
+      operationType: "backspace" | "cut" | "delete",
+    ) => {
       const selection = getSelection();
-      if (!selection || !selection.isCollapsed) return false;
-
       const editable = editableRef.value;
-      if (!editable) return false;
+      if (!editable || !selection || selection.rangeCount === 0) return false;
+
+      const range = selection.getRangeAt(0);
 
       const anchorNode = selection.anchorNode;
-      const offset = selection.anchorOffset;
+      const focusOffset = selection.focusOffset;
 
       if (!anchorNode || !editable.contains(anchorNode)) {
         return false;
       }
 
-      // Find the nearest slot/skill node before the cursor.
-      // Skip non-slot/skill nodes (e.g. empty text nodes) — the cursor
-      // may be several siblings away from the actual slot after editing.
-      const isSlotOrSkill = (node: Node): node is HTMLElement => {
-        if (!(node instanceof HTMLElement)) return false;
-        const info = getNodeInfo(node);
-        return !!(info?.slotKey || info?.skillKey);
-      };
+      if (anchorNode.nodeType === Node.TEXT_NODE && range) {
+        const parentElement = anchorNode.parentNode as HTMLElement;
+        const nodeInfo = getNodeInfo(parentElement);
+        const selectedText = range.toString();
+        const textLength = anchorNode.textContent?.length ?? 0;
+        const isFullTextSelected = textLength === selectedText.length;
+        const isSingleCharAtEnd = textLength === 1 && focusOffset === 1;
 
-      let previous: HTMLElement | null = null;
-      if (anchorNode === editable) {
-        for (let i = offset - 1; i >= 0; i--) {
-          if (isSlotOrSkill(editable.childNodes[i]!)) {
-            previous = editable.childNodes[i] as HTMLElement;
-            break;
-          }
-        }
-      } else {
-        if (anchorNode.nodeType === Node.TEXT_NODE && offset > 0) {
-          return false;
-        }
-
-        // Use anchorNode directly — traversing to parentNode breaks when
-        // the text node is a direct child of the editable div (parentNode
-        // is the editable div itself, which has no siblings).
-        let current: Node | null =
-          anchorNode.nodeType === Node.TEXT_NODE
-            ? anchorNode.previousSibling
-            : (anchorNode as HTMLElement).previousSibling;
-
-        while (current) {
-          if (isSlotOrSkill(current)) {
-            previous = current;
-            break;
-          }
-          current = current.previousSibling;
+        if (
+          nodeInfo?.slotConfig?.type === "content" &&
+          (isFullTextSelected || isSingleCharAtEnd)
+        ) {
+          event.preventDefault();
+          parentElement.innerHTML = "";
+          return true;
         }
       }
 
-      if (!previous) {
+      const direction =
+        operationType === "delete" ? "forward" : ("backward" as const);
+
+      const isIgnorableBoundaryNode = (node: Node) => {
+        if (node.nodeType === Node.TEXT_NODE) {
+          return !(node.textContent ?? "");
+        }
+
+        if (!(node instanceof HTMLElement)) {
+          return true;
+        }
+
+        if (node.tagName === "BR") {
+          return true;
+        }
+
+        return !node.textContent;
+      };
+
+      const getAdjacentNode = () => {
+        if (anchorNode === editable) {
+          return direction === "backward"
+            ? editable.childNodes[focusOffset - 1] || null
+            : editable.childNodes[focusOffset] || null;
+        }
+
+        if (anchorNode.nodeType === Node.TEXT_NODE) {
+          const textLength = anchorNode.textContent?.length ?? 0;
+          if (
+            (direction === "backward" && focusOffset > 0) ||
+            (direction === "forward" && focusOffset < textLength)
+          ) {
+            return null;
+          }
+        } else {
+          const childCount = anchorNode.childNodes.length;
+          if (
+            (direction === "backward" && focusOffset > 0) ||
+            (direction === "forward" && focusOffset < childCount)
+          ) {
+            return null;
+          }
+        }
+
+        const outer = findOuterContainer(anchorNode);
+        const boundaryNode =
+          outer && editable.contains(outer)
+            ? outer
+            : anchorNode.nodeType === Node.TEXT_NODE
+              ? anchorNode
+              : (anchorNode as HTMLElement);
+
+        return direction === "backward"
+          ? boundaryNode.previousSibling
+          : boundaryNode.nextSibling;
+      };
+
+      const findDeletableNode = (node: Node | null) => {
+        let current = node;
+        while (current) {
+          if (current instanceof HTMLElement) {
+            const nodeInfo = getNodeInfo(current);
+            if (nodeInfo?.slotKey || nodeInfo?.skillKey) {
+              return current;
+            }
+          }
+
+          if (!isIgnorableBoundaryNode(current)) {
+            return null;
+          }
+
+          current =
+            direction === "backward"
+              ? current.previousSibling
+              : current.nextSibling;
+        }
+
+        return null;
+      };
+
+      const target = findDeletableNode(getAdjacentNode());
+
+      if (!target) {
         return false;
       }
 
-      const info = getNodeInfo(previous);
+      const info = getNodeInfo(target);
       if (info?.slotKey) {
         event.preventDefault();
         removeSlot(info.slotKey, event);
@@ -829,7 +893,14 @@ export default defineComponent({
         return;
       }
 
-      if (event.key === "Backspace" && handleBackspaceDelete(event)) {
+      if (
+        event.key === "Backspace" &&
+        handleDeleteOperation(event, "backspace")
+      ) {
+        return;
+      }
+
+      if (event.key === "Delete" && handleDeleteOperation(event, "delete")) {
         return;
       }
 
