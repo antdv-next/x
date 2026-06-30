@@ -1,7 +1,7 @@
 ---
 group:
   title: 其他
-  order: 1
+  order: 2
 title: 贡献指南
 ---
 
