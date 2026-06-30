@@ -1,7 +1,7 @@
 ---
 group:
   title: AI
-  order: 0
+  order: 1
 order: 1
 title: LLMs.txt
 tag: New
