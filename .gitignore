@@ -48,3 +48,5 @@ packages/docs/public/**/*.md
 packages/docs/public/llms.txt
 packages/docs/public/llms-full.txt
 packages/docs/public/llms-full-cn.txt
+.sync-upstream.local.json
+.sync-checklist-*.md

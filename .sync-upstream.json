@@ -1,0 +1,53 @@
+{
+  "version": "1",
+  "downstream": {
+    "name": "antdv-next-x",
+    "local_path": "./"
+  },
+  "settings": {
+    "parallel": true,
+    "max_workers": 4,
+    "max_prs": 50,
+    "base_branch": "main"
+  },
+  "upstreams": [
+    {
+      "name": "ant-design-x",
+      "repo": "ant-design/x",
+      "remote_url": "https://github.com/ant-design/x.git",
+      "local_path": null,
+      "packages": [
+        {
+          "upstream_path": "packages/x",
+          "downstream_path": "packages/x",
+          "description": "Ant Design X React 组件库 -> Antdv X Vue 组件库"
+        },
+        {
+          "upstream_path": "packages/x-sdk",
+          "downstream_path": "packages/x-sdk",
+          "description": "Ant Design X SDK -> Antdv X SDK"
+        },
+        {
+          "upstream_path": "packages/x-markdown",
+          "downstream_path": "packages/x-markdown",
+          "description": "Ant Design X Markdown -> Antdv X Markdown"
+        },
+        {
+          "upstream_path": "packages/x-card",
+          "downstream_path": "packages/x-card",
+          "description": "Ant Design X Card -> Antdv X Card"
+        },
+        {
+          "upstream_path": "packages/x-skill",
+          "downstream_path": "packages/x-skill",
+          "description": "Ant Design X Skill -> Antdv X Skill"
+        }
+      ],
+      "last_synced_commit": "ea0ac7ba3024811117f602541ea2483908bce0f8",
+      "last_synced_commit_short": "ea0ac7b",
+      "last_synced_at": "2026-07-01T23:27:11Z",
+      "last_synced_tag": "",
+      "sync_count": 0
+    }
+  ]
+}
