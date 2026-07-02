@@ -7,7 +7,7 @@ import {
   it,
   vi,
 } from "vite-plus/test";
-import { nextTick } from "vue";
+import { defineComponent, h, nextTick, ref, shallowRef } from "vue";
 
 import BubbleList from "../BubbleList";
 
@@ -434,6 +434,55 @@ describe("Bubble.List", () => {
     expect(scrollIntoViewMock).toHaveBeenCalledWith({
       behavior: "smooth",
       block: "end",
+    });
+  });
+
+  it("resolves exposed nativeElement on the next tick before scrollTo by key", async () => {
+    const DelayedNativeElementBubble = defineComponent({
+      name: "DelayedNativeElementBubble",
+      setup(_, { expose }) {
+        const rootRef = ref<HTMLElement>();
+        const nativeElement = shallowRef<HTMLElement>();
+
+        expose({
+          get nativeElement() {
+            if (!nativeElement.value) {
+              void nextTick(() => {
+                nativeElement.value = rootRef.value;
+              });
+            }
+            return nativeElement.value;
+          },
+        });
+
+        return () => h("div", { ref: rootRef, class: "delayed-bubble" });
+      },
+    });
+
+    const wrapper = mount(BubbleList, {
+      props: {
+        items: [{ key: "delayed", role: "delayed", content: "Delayed" }],
+        autoScroll: false,
+      },
+      global: {
+        stubs: {
+          AxBubble: DelayedNativeElementBubble,
+        },
+      },
+    });
+
+    await nextTick();
+    scrollIntoViewMock.mockClear();
+
+    (wrapper.vm as any).scrollTo({
+      key: "delayed",
+      behavior: "smooth",
+      block: "center",
+    });
+
+    expect(scrollIntoViewMock).toHaveBeenCalledWith({
+      behavior: "smooth",
+      block: "center",
     });
   });
 
