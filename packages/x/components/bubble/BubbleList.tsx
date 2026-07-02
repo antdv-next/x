@@ -1,5 +1,6 @@
 import type { PropType, Ref, StyleValue } from "vue";
 
+import { createElementRef } from "@v-c/util/dist/vnode";
 import { computed, defineComponent, ref } from "vue";
 
 import type {
@@ -20,14 +21,6 @@ function roleCfgIsFunction(
   roleCfg: RoleProps | FuncRoleProps,
 ): roleCfg is FuncRoleProps {
   return typeof roleCfg === "function";
-}
-
-function pickBubbleRef(instance: any) {
-  if (!instance) return null;
-
-  if ("nativeElement" in instance) return instance.nativeElement ?? null;
-
-  return instance as Element;
 }
 
 const bubbleSlotNames = [
@@ -150,11 +143,11 @@ export const XBubbleList = defineComponent({
       };
     });
 
-    const setBubbleRef = (key: string | number) => (instance: any) => {
-      const element = pickBubbleRef(instance);
-      if (element) bubbleRefs.set(key, element as HTMLElement);
-      else bubbleRefs.delete(key);
-    };
+    const setBubbleRef = (key: string | number) =>
+      createElementRef<HTMLElement>(element => {
+        if (element) bubbleRefs.set(key, element);
+        else bubbleRefs.delete(key);
+      });
 
     const scrollTo: BubbleListRef["scrollTo"] = ({
       key,
