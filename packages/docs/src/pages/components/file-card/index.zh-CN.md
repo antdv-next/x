@@ -106,6 +106,8 @@ type PresetIcons =
 
 <demo src="./demo/semantic-list.vue" simplify>FileCardList 语义结构</demo>
 
-## 组件 Token
+## 主题变量（Design Token）
 
 <ComponentTokenTable component="FileCard"></ComponentTokenTable>
+
+查看 [定制主题](/docs/customize-theme) 了解如何使用主题变量。

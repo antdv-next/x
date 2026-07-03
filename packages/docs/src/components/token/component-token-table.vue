@@ -211,7 +211,7 @@ const globalOpen = ref(import.meta.env.DEV);
 
 // Code generation
 const componentCode = computed(() => {
-  return `<a-config-provider
+  return `<XProvider
   :theme="{
     components: {
       ${props.component}: {
@@ -221,11 +221,11 @@ const componentCode = computed(() => {
   }"
 >
   ...
-</a-config-provider>`;
+</XProvider>`;
 });
 
 const globalCode = computed(() => {
-  return `<a-config-provider
+  return `<XProvider
   :theme="{
     token: {
       /* ${t("components.componentTokenTable.globalComment")} */
@@ -233,7 +233,7 @@ const globalCode = computed(() => {
   }"
 >
   ...
-</a-config-provider>`;
+</XProvider>`;
 });
 </script>
 

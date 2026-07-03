@@ -83,6 +83,8 @@ The `header` slot takes precedence over the `header` prop. Passing `header={null
 
 <demo src="./demo/semantic.vue" simplify>Semantic DOM</demo>
 
-## Component Token
+## Design Token
 
 <ComponentTokenTable component="Mermaid"></ComponentTokenTable>
+
+See [Customize Theme](/docs/customize-theme-en) to learn how to use Design Token.

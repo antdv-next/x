@@ -83,6 +83,8 @@ When the `header` slot is provided, it fully replaces the default header (langua
 | codeFontFamily | Code font family | `string` | `'Fira Code', monospace` |
 | codeFontSize   | Code font size   | `number` | `14`                     |
 
-## Component Token
+## Design Token
 
 <ComponentTokenTable component="CodeHighlighter"></ComponentTokenTable>
+
+See [Customize Theme](/docs/customize-theme-en) to learn how to use Design Token.

@@ -94,6 +94,8 @@ description: The ThoughtChain component is used to visualize and track the call 
 
 <demo src="./demo/semantic-item.vue" simplify>ThoughtChain.Item Semantic Structure</demo>
 
-## Component Token
+## Design Token
 
 <ComponentTokenTable component="ThoughtChain"></ComponentTokenTable>
+
+See [Customize Theme](/docs/customize-theme-en) to learn how to use Design Token.

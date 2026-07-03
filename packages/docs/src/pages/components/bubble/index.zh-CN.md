@@ -147,6 +147,8 @@ scrollTo(options: {
 
 <demo src="./demo/semantic-list.vue" simplify>BubbleList 语义结构</demo>
 
-## 组件 Token
+## 主题变量（Design Token）
 
 <ComponentTokenTable component="Bubble"></ComponentTokenTable>
+
+查看 [定制主题](/docs/customize-theme) 了解如何使用主题变量。

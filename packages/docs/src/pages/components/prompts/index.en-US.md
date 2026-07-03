@@ -88,6 +88,8 @@ Slots take precedence over prop content and apply to both root items and nested 
 
 <demo src="./demo/semantic.vue" simplify>Semantic DOM for Prompts</demo>
 
-## Component Token
+## Design Token
 
 <ComponentTokenTable component="Prompts"></ComponentTokenTable>
+
+See [Customize Theme](/docs/customize-theme-en) to learn how to use Design Token.

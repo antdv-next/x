@@ -98,6 +98,8 @@ type FolderSemanticType =
   | "previewRender";
 ```
 
-## Component Token
+## Design Token
 
 <ComponentTokenTable component="Folder"></ComponentTokenTable>
+
+See [Customize Theme](/docs/customize-theme-en) to learn how to use Design Token.

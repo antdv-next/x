@@ -49,6 +49,8 @@ description: 展示大模型深度思考过程。
 
 <demo src="./demo/semantic.vue" simplify>Think 语义结构</demo>
 
-## 组件 Token
+## 主题变量（Design Token）
 
 <ComponentTokenTable component="Think"></ComponentTokenTable>
+
+查看 [定制主题](/docs/customize-theme) 了解如何使用主题变量。

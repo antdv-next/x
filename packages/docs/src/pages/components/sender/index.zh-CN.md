@@ -251,6 +251,8 @@ interface SenderFocusOptions extends FocusOptions {
 
 <demo src="./demo/_semantic-switch.vue" simplify>Sender.Switch 语义结构</demo>
 
-## 组件 Token
+## 主题变量（Design Token）
 
 <ComponentTokenTable component="Sender"></ComponentTokenTable>
+
+查看 [定制主题](/docs/customize-theme) 了解如何使用主题变量。

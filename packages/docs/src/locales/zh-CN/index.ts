@@ -36,8 +36,8 @@ export default {
       componentComment: "这里是你的组件 token",
       globalComment: "这里是你的全局 token",
       help: "如何定制?",
-      customizeTokenLink: "/docs/customize-theme#修改组件变量",
-      customizeComponentTokenLink: "/docs/customize-theme#修改组件变量",
+      customizeTokenLink: "/docs/customize-theme#customize-component-token",
+      customizeComponentTokenLink: "/docs/customize-theme#修改主题变量",
     },
     bezierVisualizer: {
       open: "在 cubic-bezier.com 中打开",

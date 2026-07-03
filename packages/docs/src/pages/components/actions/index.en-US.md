@@ -123,6 +123,8 @@ import { Actions, ActionsCopy } from "@antdv-next/x";
 
 <demo src="./demo/semantic-item.vue" simplify>ActionsItem Semantic DOM</demo>
 
-## Component Token
+## Design Token
 
 <ComponentTokenTable component="Actions"></ComponentTokenTable>
+
+See [Customize Theme](/docs/customize-theme-en) to learn how to use Design Token.

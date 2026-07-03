@@ -48,6 +48,8 @@ Slot priority:
 
 <demo src="./demo/semantic.vue" simplify>Think Semantic Structure</demo>
 
-## Component Token
+## Design Token
 
 <ComponentTokenTable component="Think"></ComponentTokenTable>
+
+See [Customize Theme](/docs/customize-theme-en) to learn how to use Design Token.

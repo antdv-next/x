@@ -38,7 +38,7 @@ export default {
       help: "How to use?",
       customizeTokenLink: "/docs/customize-theme-en#customize-component-token",
       customizeComponentTokenLink:
-        "/docs/customize-theme-en#customize-component-token",
+        "/docs/customize-theme-en#modify-theme-variables",
     },
     bezierVisualizer: {
       open: "Open in cubic-bezier.com",
