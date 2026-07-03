@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useTemplateRef } from "vue";
+
 const senderRef = useTemplateRef("senderRef");
 </script>
 

@@ -7,7 +7,7 @@ import {
   RedoOutlined,
   UserOutlined,
 } from "@antdv-next/icons";
-import { ref } from "vue";
+import { ref, useTemplateRef } from "vue";
 
 let seed = 0;
 const nextKey = () => `bubble_${seed++}`;

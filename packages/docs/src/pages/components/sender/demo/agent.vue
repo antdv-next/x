@@ -14,7 +14,7 @@ import {
   SearchOutlined,
 } from "@antdv-next/icons";
 import { App } from "antdv-next";
-import { h, ref, watch } from "vue";
+import { h, ref, useTemplateRef, watch } from "vue";
 const { message } = App.useApp();
 
 interface AgentInfoItem {

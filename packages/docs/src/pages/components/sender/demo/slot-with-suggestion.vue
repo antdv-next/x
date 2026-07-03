@@ -15,7 +15,7 @@ import {
   SearchOutlined,
 } from "@antdv-next/icons";
 import { App } from "antdv-next";
-import { h, onBeforeUnmount, ref, watch } from "vue";
+import { h, onBeforeUnmount, ref, useTemplateRef, watch } from "vue";
 
 const { message } = App.useApp();
 
