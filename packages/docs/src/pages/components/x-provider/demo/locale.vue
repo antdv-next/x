@@ -110,7 +110,7 @@ const actionItems: ActionsProps["items"] = [
     </a-radio-group>
   </a-flex>
 
-  <ax-x-provider :locale="locale">
+  <ax-provider :locale="locale">
     <a-flex :gap="12" vertical>
       <a-card>
         <ax-conversations
@@ -141,5 +141,5 @@ const actionItems: ActionsProps["items"] = [
         </ax-actions>
       </a-card>
     </a-flex>
-  </ax-x-provider>
+  </ax-provider>
 </template>

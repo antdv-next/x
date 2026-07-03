@@ -70,7 +70,7 @@ function onColorChange(value: { toHexString?: () => string } | string) {
   </a-flex>
 
   <a-card>
-    <ax-x-provider :theme="theme">
+    <ax-provider :theme="theme">
       <a-flex :gap="12" vertical>
         <ax-conversations
           :style="{ width: '220px' }"
@@ -103,6 +103,6 @@ function onColorChange(value: { toHexString?: () => string } | string) {
           </ax-actions>
         </a-card>
       </a-flex>
-    </ax-x-provider>
+    </ax-provider>
   </a-card>
 </template>

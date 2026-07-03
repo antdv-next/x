@@ -282,7 +282,7 @@ const xProviderTheme = {
     </a-flex>
 
     <!-- Sender 词槽填空示例 -->
-    <ax-x-provider :theme="xProviderTheme">
+    <ax-provider :theme="xProviderTheme">
       <ax-sender
         ref="senderRef"
         :skill="skill"
@@ -293,7 +293,7 @@ const xProviderTheme = {
         :on-submit="onSubmit"
         :on-change="onChange"
       />
-    </ax-x-provider>
+    </ax-provider>
 
     <a-flex vertical gap="middle">
       <div>{{ skillValue ? `skill:${skillValue}` : null }}</div>
