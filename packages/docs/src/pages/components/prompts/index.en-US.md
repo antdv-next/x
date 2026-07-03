@@ -92,4 +92,4 @@ Slots take precedence over prop content and apply to both root items and nested 
 
 <ComponentTokenTable component="Prompts"></ComponentTokenTable>
 
-See [Customize Theme](/docs/customize-theme-en) to learn how to use Design Token.
+See [Customize Theme](https://www.antdv-next.com/docs/vue/customize-theme) to learn how to use Design Token.

@@ -20,12 +20,6 @@ export default {
     semanticPreview: {
       usage: "Usage Example",
     },
-    tokenTable: {
-      token: "Token Name",
-      description: "Description",
-      type: "Type",
-      value: "Default Value",
-    },
     componentTokenTable: {
       token: "Token Name",
       description: "Description",
@@ -36,12 +30,10 @@ export default {
       componentComment: "here is your component tokens",
       globalComment: "here is your global tokens",
       help: "How to use?",
-      customizeTokenLink: "/docs/customize-theme-en#customize-component-token",
+      customizeTokenLink:
+        "https://www.antdv-next.com/docs/vue/customize-theme#customize-component-token",
       customizeComponentTokenLink:
-        "/docs/customize-theme-en#modify-theme-variables",
-    },
-    bezierVisualizer: {
-      open: "Open in cubic-bezier.com",
+        "https://www.antdv-next.com/docs/vue/customize-theme#customize-design-token",
     },
   },
   home: {

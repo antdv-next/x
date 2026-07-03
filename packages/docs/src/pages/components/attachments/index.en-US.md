@@ -98,4 +98,4 @@ interface Attachment<T = any>
 
 <ComponentTokenTable component="Attachments"></ComponentTokenTable>
 
-See [Customize Theme](/docs/customize-theme-en) to learn how to use Design Token.
+See [Customize Theme](https://www.antdv-next.com/docs/vue/customize-theme) to learn how to use Design Token.

@@ -20,12 +20,6 @@ export default {
     semanticPreview: {
       usage: "使用示例",
     },
-    tokenTable: {
-      token: "Token 名称",
-      description: "描述",
-      type: "类型",
-      value: "默认值",
-    },
     componentTokenTable: {
       token: "Token 名称",
       description: "描述",
@@ -36,11 +30,10 @@ export default {
       componentComment: "这里是你的组件 token",
       globalComment: "这里是你的全局 token",
       help: "如何定制?",
-      customizeTokenLink: "/docs/customize-theme#customize-component-token",
-      customizeComponentTokenLink: "/docs/customize-theme#修改主题变量",
-    },
-    bezierVisualizer: {
-      open: "在 cubic-bezier.com 中打开",
+      customizeTokenLink:
+        "https://www.antdv-next.com/docs/vue/customize-theme-cn#修改组件变量",
+      customizeComponentTokenLink:
+        "https://www.antdv-next.com/docs/vue/customize-theme-cn#修改主题变量",
     },
   },
   home: {

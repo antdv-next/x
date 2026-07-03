@@ -87,4 +87,4 @@ When the `header` slot is provided, it fully replaces the default header (langua
 
 <ComponentTokenTable component="CodeHighlighter"></ComponentTokenTable>
 
-See [Customize Theme](/docs/customize-theme-en) to learn how to use Design Token.
+See [Customize Theme](https://www.antdv-next.com/docs/vue/customize-theme) to learn how to use Design Token.

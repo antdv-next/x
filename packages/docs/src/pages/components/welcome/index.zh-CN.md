@@ -53,4 +53,4 @@ description: 用于展示欢迎语、能力说明和附加操作。
 
 <ComponentTokenTable component="Welcome"></ComponentTokenTable>
 
-查看 [定制主题](/docs/customize-theme) 了解如何使用主题变量。
+查看 [定制主题](https://www.antdv-next.com/docs/vue/customize-theme-cn) 了解如何使用主题变量。

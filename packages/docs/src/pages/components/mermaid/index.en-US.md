@@ -87,4 +87,4 @@ The `header` slot takes precedence over the `header` prop. Passing `header={null
 
 <ComponentTokenTable component="Mermaid"></ComponentTokenTable>
 
-See [Customize Theme](/docs/customize-theme-en) to learn how to use Design Token.
+See [Customize Theme](https://www.antdv-next.com/docs/vue/customize-theme) to learn how to use Design Token.

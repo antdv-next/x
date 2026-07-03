@@ -73,4 +73,4 @@ Slots take precedence over prop content. The same item slots apply to both defau
 
 <ComponentTokenTable component="Sources"></ComponentTokenTable>
 
-See [Customize Theme](/docs/customize-theme-en) to learn how to use Design Token.
+See [Customize Theme](https://www.antdv-next.com/docs/vue/customize-theme) to learn how to use Design Token.

@@ -151,4 +151,4 @@ scrollTo(options: {
 
 <ComponentTokenTable component="Bubble"></ComponentTokenTable>
 
-查看 [定制主题](/docs/customize-theme) 了解如何使用主题变量。
+查看 [定制主题](https://www.antdv-next.com/docs/vue/customize-theme-cn) 了解如何使用主题变量。

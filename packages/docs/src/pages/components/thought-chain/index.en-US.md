@@ -98,4 +98,4 @@ description: The ThoughtChain component is used to visualize and track the call 
 
 <ComponentTokenTable component="ThoughtChain"></ComponentTokenTable>
 
-See [Customize Theme](/docs/customize-theme-en) to learn how to use Design Token.
+See [Customize Theme](https://www.antdv-next.com/docs/vue/customize-theme) to learn how to use Design Token.
