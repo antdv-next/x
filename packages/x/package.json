@@ -55,7 +55,7 @@
     "build:esm": "vp build --config vite.esm.config.ts",
     "build:umd": "vp build --config vite.umd.config.ts",
     "build:token-meta": "tsx ./scripts/token/generate-token-meta.ts",
-    "build:token-statistic": "tsx ./scripts/token/collect-token-statistic.ts",
+    "build:token-statistic": "vp run build:comp && tsx ./scripts/token/collect-token-statistic.ts",
     "build:token": "run-p build:token-meta build:token-statistic",
     "build": "vp run build:comp && vp run build:esm && vp run build:umd"
   },
