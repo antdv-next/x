@@ -122,3 +122,7 @@ import { Actions, ActionsCopy } from "@antdv-next/x";
 <demo src="./demo/semantic-audio.vue" simplify>ActionsAudio Semantic DOM</demo>
 
 <demo src="./demo/semantic-item.vue" simplify>ActionsItem Semantic DOM</demo>
+
+## Component Token
+
+<ComponentTokenTable component="Actions"></ComponentTokenTable>

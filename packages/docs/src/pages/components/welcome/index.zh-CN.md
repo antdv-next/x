@@ -48,3 +48,7 @@ description: 用于展示欢迎语、能力说明和附加操作。
 ## 语义化 DOM {#semantic-dom}
 
 <demo src="./demo/semantic.vue" simplify>Welcome 语义结构</demo>
+
+## 组件 Token
+
+<ComponentTokenTable component="Welcome"></ComponentTokenTable>

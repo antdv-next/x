@@ -250,3 +250,7 @@ interface SenderFocusOptions extends FocusOptions {
 <demo src="./demo/_semantic.vue" simplify>Sender 语义结构</demo>
 
 <demo src="./demo/_semantic-switch.vue" simplify>Sender.Switch 语义结构</demo>
+
+## 组件 Token
+
+<ComponentTokenTable component="Sender"></ComponentTokenTable>

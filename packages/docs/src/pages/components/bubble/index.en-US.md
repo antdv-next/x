@@ -145,3 +145,7 @@ A divider style wrapper around `Bubble`, forwarding `dividerProps` to `Divider`.
 <demo src="./demo/semantic-divider.vue" simplify>BubbleDivider Semantic DOM</demo>
 
 <demo src="./demo/semantic-list.vue" simplify>BubbleList Semantic DOM</demo>
+
+## Component Token
+
+<ComponentTokenTable component="Bubble"></ComponentTokenTable>

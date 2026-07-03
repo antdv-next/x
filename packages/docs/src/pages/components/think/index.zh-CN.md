@@ -48,3 +48,7 @@ description: 展示大模型深度思考过程。
 ## 语义化 DOM
 
 <demo src="./demo/semantic.vue" simplify>Think 语义结构</demo>
+
+## 组件 Token
+
+<ComponentTokenTable component="Think"></ComponentTokenTable>

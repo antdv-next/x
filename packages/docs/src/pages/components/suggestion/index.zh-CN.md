@@ -78,3 +78,7 @@ type RenderChildrenProps<T = any> = {
 ## 语义化 DOM
 
 <demo src="./demo/semantic.vue" simplify>Suggestion 语义结构</demo>
+
+## 组件 Token
+
+<ComponentTokenTable component="Suggestion"></ComponentTokenTable>

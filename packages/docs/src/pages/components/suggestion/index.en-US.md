@@ -78,3 +78,7 @@ Each slot receives the current suggestion `item` and its default rendered node a
 ## Semantic DOM
 
 <demo src="./demo/semantic.vue" simplify>Suggestion Semantic DOM</demo>
+
+## Component Token
+
+<ComponentTokenTable component="Suggestion"></ComponentTokenTable>

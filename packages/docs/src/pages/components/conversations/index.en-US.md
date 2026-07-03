@@ -103,3 +103,7 @@ type ItemType = ConversationItemType | DividerItemType;
 ## Semantic DOM
 
 <demo src="./demo/semantic.vue" simplify>Conversations Semantic DOM</demo>
+
+## Component Token
+
+<ComponentTokenTable component="Conversations"></ComponentTokenTable>

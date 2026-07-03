@@ -20,6 +20,29 @@ export default {
     semanticPreview: {
       usage: "Usage Example",
     },
+    tokenTable: {
+      token: "Token Name",
+      description: "Description",
+      type: "Type",
+      value: "Default Value",
+    },
+    componentTokenTable: {
+      token: "Token Name",
+      description: "Description",
+      type: "Type",
+      value: "Default Value",
+      componentToken: "Component Token",
+      globalToken: "Global Token",
+      componentComment: "here is your component tokens",
+      globalComment: "here is your global tokens",
+      help: "How to use?",
+      customizeTokenLink: "/docs/customize-theme-en#customize-component-token",
+      customizeComponentTokenLink:
+        "/docs/customize-theme-en#customize-component-token",
+    },
+    bezierVisualizer: {
+      open: "Open in cubic-bezier.com",
+    },
   },
   home: {
     desc: "A community-driven AI design system for Vue. Build intelligent interfaces with ease.",

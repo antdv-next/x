@@ -47,3 +47,7 @@ Slot priority:
 ## Semantic DOM
 
 <demo src="./demo/semantic.vue" simplify>Think Semantic Structure</demo>
+
+## Component Token
+
+<ComponentTokenTable component="Think"></ComponentTokenTable>

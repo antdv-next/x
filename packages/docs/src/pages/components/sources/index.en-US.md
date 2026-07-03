@@ -68,3 +68,7 @@ Slots take precedence over prop content. The same item slots apply to both defau
 ## Semantic DOM {#semantic-dom}
 
 <demo src="./demo/semantic.vue" simplify>Sources Semantic DOM</demo>
+
+## Component Token
+
+<ComponentTokenTable component="Sources"></ComponentTokenTable>

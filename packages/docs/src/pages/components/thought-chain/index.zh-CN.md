@@ -94,3 +94,7 @@ description: 思维链组件用于可视化和追踪 Agent 对 Actions 和 Tools
 ### ThoughtChain.Item
 
 <demo src="./demo/semantic-item.vue" simplify>ThoughtChain.Item 语义结构</demo>
+
+## 组件 Token
+
+<ComponentTokenTable component="ThoughtChain"></ComponentTokenTable>

@@ -97,3 +97,7 @@ type FolderSemanticType =
   | "previewTitle"
   | "previewRender";
 ```
+
+## Component Token
+
+<ComponentTokenTable component="Folder"></ComponentTokenTable>

@@ -93,3 +93,7 @@ interface Attachment<T = any>
 ## Semantic DOM
 
 <demo src="./demo/_semantic.vue" simplify>Attachments Semantic DOM</demo>
+
+## Component Token
+
+<ComponentTokenTable component="Attachments"></ComponentTokenTable>

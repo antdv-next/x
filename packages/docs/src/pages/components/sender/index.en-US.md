@@ -250,3 +250,7 @@ Render priority: `icon` / `checkedChildren` / `unCheckedChildren` corresponding 
 <demo src="./demo/_semantic.vue" simplify>Sender Semantic DOM</demo>
 
 <demo src="./demo/_semantic-switch.vue" simplify>Sender.Switch Semantic DOM</demo>
+
+## Component Token
+
+<ComponentTokenTable component="Sender"></ComponentTokenTable>

@@ -9,6 +9,7 @@ catalog:
 catalogs:
   dev:
     "@antdv-next/auto-import-resolver": ^1.0.5
+    typedoc: ^0.28.19
     "@tsconfig/node24": ^24.0.4
     bumpp: ^11.1.0
     "@vitejs/plugin-vue": ^6.0.4

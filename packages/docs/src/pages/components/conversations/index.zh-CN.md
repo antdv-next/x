@@ -104,3 +104,7 @@ type ItemType = ConversationItemType | DividerItemType;
 ## 语义化 DOM
 
 <demo src="./demo/semantic.vue" simplify>Conversations 语义结构</demo>
+
+## 组件 Token
+
+<ComponentTokenTable component="Conversations"></ComponentTokenTable>

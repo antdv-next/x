@@ -48,3 +48,7 @@ Render priority: corresponding slot > corresponding prop.
 ## Semantic DOM {#semantic-dom}
 
 <demo src="./demo/semantic.vue" simplify>Welcome semantic structure</demo>
+
+## Component Token
+
+<ComponentTokenTable component="Welcome"></ComponentTokenTable>

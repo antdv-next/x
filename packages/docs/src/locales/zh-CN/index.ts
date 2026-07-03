@@ -20,6 +20,28 @@ export default {
     semanticPreview: {
       usage: "使用示例",
     },
+    tokenTable: {
+      token: "Token 名称",
+      description: "描述",
+      type: "类型",
+      value: "默认值",
+    },
+    componentTokenTable: {
+      token: "Token 名称",
+      description: "描述",
+      type: "类型",
+      value: "默认值",
+      componentToken: "组件 Token",
+      globalToken: "全局 Token",
+      componentComment: "这里是你的组件 token",
+      globalComment: "这里是你的全局 token",
+      help: "如何定制?",
+      customizeTokenLink: "/docs/customize-theme#修改组件变量",
+      customizeComponentTokenLink: "/docs/customize-theme#修改组件变量",
+    },
+    bezierVisualizer: {
+      open: "在 cubic-bezier.com 中打开",
+    },
   },
   home: {
     desc: "社区共建的 Vue AI 设计体系，让智能应用界面开发更简单。",

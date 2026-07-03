@@ -146,3 +146,7 @@ scrollTo(options: {
 <demo src="./demo/semantic-divider.vue" simplify>BubbleDivider 语义结构</demo>
 
 <demo src="./demo/semantic-list.vue" simplify>BubbleList 语义结构</demo>
+
+## 组件 Token
+
+<ComponentTokenTable component="Bubble"></ComponentTokenTable>

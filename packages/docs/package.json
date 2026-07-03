@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vp dev .",
-    "build": "node ./scripts/llm/generate-llms-semantic.mjs && node ./scripts/llm/generate-llms.mjs && vp build .",
+    "build": "vp run --filter @antdv-next/x build:token && node ./scripts/llm/generate-llms-semantic.mjs && node ./scripts/llm/generate-llms.mjs && vp build .",
     "preview": "vp preview .",
     "build:llm": "node ./scripts/llm/generate-llms-semantic.mjs && node ./scripts/llm/generate-llms.mjs",
     "build:llm:text": "node ./scripts/llm/generate-llms.mjs",

@@ -94,3 +94,7 @@ interface Attachment<T = any>
 ## 语义化 DOM
 
 <demo src="./demo/_semantic.vue" simplify>Attachments 语义结构</demo>
+
+## 组件 Token
+
+<ComponentTokenTable component="Attachments"></ComponentTokenTable>

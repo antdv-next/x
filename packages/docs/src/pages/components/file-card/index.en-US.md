@@ -104,3 +104,7 @@ Prefer the `FileCardList` export. Legacy `FileCard.List` syntax remains compatib
 <demo src="./demo/semantic.vue" simplify>FileCard Semantic DOM</demo>
 
 <demo src="./demo/semantic-list.vue" simplify>FileCardList Semantic DOM</demo>
+
+## Component Token
+
+<ComponentTokenTable component="FileCard"></ComponentTokenTable>

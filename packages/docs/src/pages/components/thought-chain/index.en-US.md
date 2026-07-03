@@ -93,3 +93,7 @@ description: The ThoughtChain component is used to visualize and track the call 
 ### ThoughtChain.Item
 
 <demo src="./demo/semantic-item.vue" simplify>ThoughtChain.Item Semantic Structure</demo>
+
+## Component Token
+
+<ComponentTokenTable component="ThoughtChain"></ComponentTokenTable>

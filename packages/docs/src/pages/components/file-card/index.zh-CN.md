@@ -105,3 +105,7 @@ type PresetIcons =
 <demo src="./demo/semantic.vue" simplify>FileCard 语义结构</demo>
 
 <demo src="./demo/semantic-list.vue" simplify>FileCardList 语义结构</demo>
+
+## 组件 Token
+
+<ComponentTokenTable component="FileCard"></ComponentTokenTable>
