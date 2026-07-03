@@ -22,6 +22,7 @@ catalogs:
     npm-run-all2: ^8.0.4
     postcss-selector-parser: ^7.1.0
     tinyglobby: ^0.2.15
+    tsx: ^4.19.1
     typescript: ~5.9.3
     unplugin-auto-import: ^21.0.0
     unplugin-dts: 1.0.0-beta.6
