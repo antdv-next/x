@@ -71,7 +71,7 @@ const actionItems: ActionsProps["items"] = [
   </a-flex>
 
   <a-card>
-    <ax-x-provider :direction="direction">
+    <ax-provider :direction="direction">
       <a-flex :gap="12" style="height: 440px">
         <ax-conversations
           :style="{ width: '220px' }"
@@ -104,6 +104,6 @@ const actionItems: ActionsProps["items"] = [
           </ax-actions>
         </a-flex>
       </a-flex>
-    </ax-x-provider>
+    </ax-provider>
   </a-card>
 </template>

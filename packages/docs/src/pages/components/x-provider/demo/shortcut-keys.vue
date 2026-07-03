@@ -53,7 +53,7 @@ const items: ConversationsProps["items"] = [
   </a-flex>
 
   <a-card>
-    <ax-x-provider :conversations="providerConversationsConfig">
+    <ax-provider :conversations="providerConversationsConfig">
       <ax-conversations
         :style="{ width: '220px' }"
         default-active-key="write"
@@ -66,6 +66,6 @@ const items: ConversationsProps["items"] = [
           <FileSearchOutlined v-else-if="item.key === 'deepSearch'" />
         </template>
       </ax-conversations>
-    </ax-x-provider>
+    </ax-provider>
   </a-card>
 </template>
