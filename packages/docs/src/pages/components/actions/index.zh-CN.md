@@ -123,3 +123,9 @@ import { Actions, ActionsCopy } from "@antdv-next/x";
 <demo src="./demo/semantic-audio.vue" simplify>ActionsAudio 语义结构</demo>
 
 <demo src="./demo/semantic-item.vue" simplify>ActionsItem 语义结构</demo>
+
+## 主题变量（Design Token）
+
+<ComponentTokenTable component="Actions"></ComponentTokenTable>
+
+查看 [定制主题](https://www.antdv-next.com/docs/vue/customize-theme-cn) 了解如何使用主题变量。

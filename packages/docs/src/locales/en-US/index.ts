@@ -20,6 +20,21 @@ export default {
     semanticPreview: {
       usage: "Usage Example",
     },
+    componentTokenTable: {
+      token: "Token Name",
+      description: "Description",
+      type: "Type",
+      value: "Default Value",
+      componentToken: "Component Token",
+      globalToken: "Global Token",
+      componentComment: "here is your component tokens",
+      globalComment: "here is your global tokens",
+      help: "How to use?",
+      customizeTokenLink:
+        "https://www.antdv-next.com/docs/vue/customize-theme#customize-component-token",
+      customizeComponentTokenLink:
+        "https://www.antdv-next.com/docs/vue/customize-theme#customize-design-token",
+    },
   },
   home: {
     desc: "A community-driven AI design system for Vue. Build intelligent interfaces with ease.",

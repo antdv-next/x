@@ -68,3 +68,9 @@ Slots take precedence over prop content. The same item slots apply to both defau
 ## Semantic DOM {#semantic-dom}
 
 <demo src="./demo/semantic.vue" simplify>Sources Semantic DOM</demo>
+
+## Design Token
+
+<ComponentTokenTable component="Sources"></ComponentTokenTable>
+
+See [Customize Theme](https://www.antdv-next.com/docs/vue/customize-theme) to learn how to use Design Token.

@@ -103,3 +103,9 @@ type ItemType = ConversationItemType | DividerItemType;
 ## Semantic DOM
 
 <demo src="./demo/semantic.vue" simplify>Conversations Semantic DOM</demo>
+
+## Design Token
+
+<ComponentTokenTable component="Conversations"></ComponentTokenTable>
+
+See [Customize Theme](https://www.antdv-next.com/docs/vue/customize-theme) to learn how to use Design Token.

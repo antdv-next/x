@@ -47,3 +47,9 @@ Slot priority:
 ## Semantic DOM
 
 <demo src="./demo/semantic.vue" simplify>Think Semantic Structure</demo>
+
+## Design Token
+
+<ComponentTokenTable component="Think"></ComponentTokenTable>
+
+See [Customize Theme](https://www.antdv-next.com/docs/vue/customize-theme) to learn how to use Design Token.

@@ -122,3 +122,9 @@ import { Actions, ActionsCopy } from "@antdv-next/x";
 <demo src="./demo/semantic-audio.vue" simplify>ActionsAudio Semantic DOM</demo>
 
 <demo src="./demo/semantic-item.vue" simplify>ActionsItem Semantic DOM</demo>
+
+## Design Token
+
+<ComponentTokenTable component="Actions"></ComponentTokenTable>
+
+See [Customize Theme](https://www.antdv-next.com/docs/vue/customize-theme) to learn how to use Design Token.

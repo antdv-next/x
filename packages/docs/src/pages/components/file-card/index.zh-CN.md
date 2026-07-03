@@ -105,3 +105,9 @@ type PresetIcons =
 <demo src="./demo/semantic.vue" simplify>FileCard 语义结构</demo>
 
 <demo src="./demo/semantic-list.vue" simplify>FileCardList 语义结构</demo>
+
+## 主题变量（Design Token）
+
+<ComponentTokenTable component="FileCard"></ComponentTokenTable>
+
+查看 [定制主题](https://www.antdv-next.com/docs/vue/customize-theme-cn) 了解如何使用主题变量。

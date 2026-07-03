@@ -48,3 +48,9 @@ Render priority: corresponding slot > corresponding prop.
 ## Semantic DOM {#semantic-dom}
 
 <demo src="./demo/semantic.vue" simplify>Welcome semantic structure</demo>
+
+## Design Token
+
+<ComponentTokenTable component="Welcome"></ComponentTokenTable>
+
+See [Customize Theme](https://www.antdv-next.com/docs/vue/customize-theme) to learn how to use Design Token.

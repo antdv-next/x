@@ -94,3 +94,9 @@ interface Attachment<T = any>
 ## 语义化 DOM
 
 <demo src="./demo/_semantic.vue" simplify>Attachments 语义结构</demo>
+
+## 主题变量（Design Token）
+
+<ComponentTokenTable component="Attachments"></ComponentTokenTable>
+
+查看 [定制主题](https://www.antdv-next.com/docs/vue/customize-theme-cn) 了解如何使用主题变量。

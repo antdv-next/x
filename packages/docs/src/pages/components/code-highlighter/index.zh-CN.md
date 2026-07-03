@@ -82,3 +82,9 @@ description: 用于 AI 对话场景中展示代码块，提供语法高亮、行
 | -------------- | ------------ | -------- | ------------------------ |
 | codeFontFamily | 代码字体     | `string` | `'Fira Code', monospace` |
 | codeFontSize   | 代码字体大小 | `number` | `14`                     |
+
+## 主题变量（Design Token）
+
+<ComponentTokenTable component="CodeHighlighter"></ComponentTokenTable>
+
+查看 [定制主题](https://www.antdv-next.com/docs/vue/customize-theme-cn) 了解如何使用主题变量。

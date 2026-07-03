@@ -22,6 +22,7 @@ import ComponentOverview from "./components/component-overview/index.vue";
 import DemoGroup from "./components/doc-demo/demo-group.vue";
 import Demo from "./components/doc-demo/demo.vue";
 import Installdependencies from "./components/install-dependencies/index.vue";
+import ComponentTokenTable from "./components/token/component-token-table.vue";
 import { i18n } from "./locales";
 import "./assets/styles/index.css";
 import "uno.css";
@@ -36,5 +37,6 @@ app.component("Demo", Demo);
 app.component("DemoGroup", DemoGroup);
 app.component("ComponentOverview", ComponentOverview);
 app.component("InstallDependencies", Installdependencies);
+app.component("ComponentTokenTable", ComponentTokenTable);
 
 app.mount("#app");

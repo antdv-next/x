@@ -97,3 +97,9 @@ type FolderSemanticType =
   | "previewTitle"
   | "previewRender";
 ```
+
+## Design Token
+
+<ComponentTokenTable component="Folder"></ComponentTokenTable>
+
+See [Customize Theme](https://www.antdv-next.com/docs/vue/customize-theme) to learn how to use Design Token.

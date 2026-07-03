@@ -48,3 +48,9 @@ description: 用于展示欢迎语、能力说明和附加操作。
 ## 语义化 DOM {#semantic-dom}
 
 <demo src="./demo/semantic.vue" simplify>Welcome 语义结构</demo>
+
+## 主题变量（Design Token）
+
+<ComponentTokenTable component="Welcome"></ComponentTokenTable>
+
+查看 [定制主题](https://www.antdv-next.com/docs/vue/customize-theme-cn) 了解如何使用主题变量。

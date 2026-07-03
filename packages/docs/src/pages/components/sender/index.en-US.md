@@ -250,3 +250,9 @@ Render priority: `icon` / `checkedChildren` / `unCheckedChildren` corresponding 
 <demo src="./demo/_semantic.vue" simplify>Sender Semantic DOM</demo>
 
 <demo src="./demo/_semantic-switch.vue" simplify>Sender.Switch Semantic DOM</demo>
+
+## Design Token
+
+<ComponentTokenTable component="Sender"></ComponentTokenTable>
+
+See [Customize Theme](https://www.antdv-next.com/docs/vue/customize-theme) to learn how to use Design Token.

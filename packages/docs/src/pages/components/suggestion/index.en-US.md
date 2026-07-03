@@ -78,3 +78,9 @@ Each slot receives the current suggestion `item` and its default rendered node a
 ## Semantic DOM
 
 <demo src="./demo/semantic.vue" simplify>Suggestion Semantic DOM</demo>
+
+## Design Token
+
+<ComponentTokenTable component="Suggestion"></ComponentTokenTable>
+
+See [Customize Theme](https://www.antdv-next.com/docs/vue/customize-theme) to learn how to use Design Token.

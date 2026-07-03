@@ -93,3 +93,9 @@ description: The ThoughtChain component is used to visualize and track the call 
 ### ThoughtChain.Item
 
 <demo src="./demo/semantic-item.vue" simplify>ThoughtChain.Item Semantic Structure</demo>
+
+## Design Token
+
+<ComponentTokenTable component="ThoughtChain"></ComponentTokenTable>
+
+See [Customize Theme](https://www.antdv-next.com/docs/vue/customize-theme) to learn how to use Design Token.

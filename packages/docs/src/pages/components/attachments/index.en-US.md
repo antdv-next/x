@@ -93,3 +93,9 @@ interface Attachment<T = any>
 ## Semantic DOM
 
 <demo src="./demo/_semantic.vue" simplify>Attachments Semantic DOM</demo>
+
+## Design Token
+
+<ComponentTokenTable component="Attachments"></ComponentTokenTable>
+
+See [Customize Theme](https://www.antdv-next.com/docs/vue/customize-theme) to learn how to use Design Token.
