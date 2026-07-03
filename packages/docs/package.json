@@ -12,6 +12,7 @@
     "build:llm:semantic": "node ./scripts/llm/generate-llms-semantic.mjs"
   },
   "dependencies": {
+    "@ant-design/fast-color": "catalog:prod",
     "@antdv-next/icons": "catalog:prod",
     "@antdv-next/x-card": "workspace:*",
     "@antdv-next/x-markdown": "workspace:*",
