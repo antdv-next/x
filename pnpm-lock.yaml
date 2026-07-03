@@ -49,6 +49,9 @@ catalogs:
     tinyglobby:
       specifier: ^0.2.15
       version: 0.2.15
+    tsx:
+      specifier: ^4.19.1
+      version: 4.21.0
     typedoc:
       specifier: ^0.28.19
       version: 0.28.19
@@ -515,6 +518,10 @@ importers:
       vue:
         specifier: catalog:prod
         version: 3.5.31(typescript@5.9.3)
+    devDependencies:
+      tsx:
+        specifier: catalog:dev
+        version: 4.21.0
 
   packages/x-card:
     dependencies:

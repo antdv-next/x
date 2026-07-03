@@ -71,6 +71,9 @@
     "shiki": "catalog:docs",
     "vue": "catalog:prod"
   },
+  "devDependencies": {
+    "tsx": "catalog:dev"
+  },
   "peerDependencies": {
     "antdv-next": ">=1.0.0",
     "vue": ">=3.5.0"
