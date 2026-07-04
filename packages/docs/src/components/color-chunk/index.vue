@@ -17,6 +17,9 @@ const dotColor = computed(() => new FastColor(props.value).toHexString());
 
 const styles = computed(() => ({
   codeSpan: {
+    display: "inline-flex",
+    alignItems: "center",
+    whiteSpace: "nowrap",
     padding: "0.2em 0.4em",
     fontSize: "0.9em",
     background: token.value.colorFillQuaternary,
