@@ -27,6 +27,7 @@ import { containerPlugin } from "./plugins/container";
 import { demoPlugin } from "./plugins/demo";
 import { gitHubAlertsPlugin } from "./plugins/github-alerts";
 import { imagePlugin } from "./plugins/image";
+import { linkPlugin } from "./plugins/link";
 import { preWrapperPlugin } from "./plugins/pre-wrapper";
 import { stackblitzPlugin } from "./plugins/stackblitz";
 import { tablePlugin } from "./plugins/table";
@@ -81,6 +82,7 @@ export function loadBaseMd(md: MarkdownItAsync) {
   md.use(titlePlugin);
   md.use(emoji);
   md.use(attrsPlugin);
+  md.use(linkPlugin);
   md.use(containerPlugin);
   md.use(gitHubAlertsPlugin);
 }
