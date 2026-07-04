@@ -61,6 +61,73 @@ import { Bubble, XProvider } from "@antdv-next/x";
 
 好了，现在你应该能看到页面上已经有了 `@antdv-next/x` 的气泡组件，接下来就可以继续选用其他组件开发应用了。其他开发流程你可以参考 Rsbuild 的[官方文档](https://rsbuild.dev/zh/)。
 
+## 按需自动引入
+
+如果你希望组件按需自动引入、无需手动 `import`，可以使用 [`@antdv-next/auto-import-resolver-x`](https://github.com/antdv-next/auto-import-resolver-x) 配合 [`unplugin-vue-components`](https://github.com/unplugin/unplugin-vue-components)。
+
+安装依赖：
+
+<InstallDependencies npm='$ npm install @antdv-next/auto-import-resolver-x unplugin-vue-components -D' yarn='$ yarn add @antdv-next/auto-import-resolver-x unplugin-vue-components -D' pnpm='$ pnpm install @antdv-next/auto-import-resolver-x unplugin-vue-components -D' bun='$ bun add @antdv-next/auto-import-resolver-x unplugin-vue-components -D'></InstallDependencies>
+
+在 `rsbuild.config.ts` 中通过 `tools.rspack` 配置解析器：
+
+```ts
+// rsbuild.config.ts
+import { defineConfig } from "@rsbuild/core";
+import Components from "unplugin-vue-components/rspack";
+import { AntdvNextXResolver } from "@antdv-next/auto-import-resolver-x";
+
+export default defineConfig({
+  tools: {
+    rspack: {
+      plugins: [
+        Components({
+          resolvers: [AntdvNextXResolver()],
+        }),
+      ],
+    },
+  },
+});
+```
+
+配置完成后，在模板中直接使用 `Ax` 前缀的组件即可，无需手动引入。`src/App.vue` 可以简化为：
+
+```vue
+<template>
+  <AxProvider>
+    <AxBubble content="Hello world!" />
+  </AxProvider>
+</template>
+```
+
+> 注意：自动引入时模板里需使用 `Ax` 前缀的全局名（如 `AxBubble`、`AxProvider`），解析器会自动映射到 `@antdv-next/x` 中对应的导出（`Bubble`、`XProvider`）。
+
+`@antdv-next/x` 基于 `antdv-next` 构建，如果你同时使用 `antdv-next` 组件与 `@antdv-next/icons` 图标，可以把两个解析器一起注册：
+
+```ts
+import { AntdvNextResolver } from "@antdv-next/auto-import-resolver";
+import { AntdvNextXResolver } from "@antdv-next/auto-import-resolver-x";
+import Components from "unplugin-vue-components/rspack";
+import { defineConfig } from "@rsbuild/core";
+
+export default defineConfig({
+  tools: {
+    rspack: {
+      plugins: [
+        Components({
+          resolvers: [
+            AntdvNextResolver({ resolveIcons: true }),
+            AntdvNextXResolver(),
+          ],
+        }),
+      ],
+    },
+  },
+});
+```
+
+更多选项（如 `exclude` 排除某些组件）请参考 [auto-import-resolver-x 文档](https://github.com/antdv-next/auto-import-resolver-x#options)。
+
 ## 自定义主题
 
 可以通过 `XProvider` 配置主题 Token。
