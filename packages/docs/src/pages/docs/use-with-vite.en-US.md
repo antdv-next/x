@@ -59,6 +59,67 @@ import { Bubble, XProvider } from "@antdv-next/x";
 
 You should now see the `@antdv-next/x` bubble component on the page. You can continue building your application with other components. For the rest of the development workflow, refer to the [Vite documentation](https://vite.dev/).
 
+## On-demand Auto Import
+
+If you prefer components to be imported on demand without manual `import` statements, use [`@antdv-next/auto-import-resolver-x`](https://github.com/antdv-next/auto-import-resolver-x) together with [`unplugin-vue-components`](https://github.com/unplugin/unplugin-vue-components).
+
+Install the dependencies:
+
+<InstallDependencies npm='$ npm install @antdv-next/auto-import-resolver-x unplugin-vue-components -D' yarn='$ yarn add @antdv-next/auto-import-resolver-x unplugin-vue-components -D' pnpm='$ pnpm install @antdv-next/auto-import-resolver-x unplugin-vue-components -D' bun='$ bun add @antdv-next/auto-import-resolver-x unplugin-vue-components -D'></InstallDependencies>
+
+Configure the resolver in `vite.config.ts`:
+
+```ts
+// vite.config.ts
+import { defineConfig } from "vite";
+import vue from "@vitejs/plugin-vue";
+import Components from "unplugin-vue-components/vite";
+import { AntdvNextXResolver } from "@antdv-next/auto-import-resolver-x";
+
+export default defineConfig({
+  plugins: [
+    vue(),
+    Components({
+      resolvers: [AntdvNextXResolver()],
+    }),
+  ],
+});
+```
+
+Now you can use `Ax`-prefixed components directly in templates without importing them. `src/App.vue` can be simplified to:
+
+```vue
+<template>
+  <AxProvider>
+    <AxBubble content="Hello world!" />
+  </AxProvider>
+</template>
+```
+
+> Note: With auto import, use the `Ax`-prefixed global names in templates (e.g. `AxBubble`, `AxProvider`). The resolver maps them to the corresponding exports of `@antdv-next/x` (`Bubble`, `XProvider`).
+
+Since `@antdv-next/x` is built on top of `antdv-next`, you can register both resolvers together if you also use `antdv-next` components and `@antdv-next/icons` icons:
+
+```ts
+import { AntdvNextResolver } from "@antdv-next/auto-import-resolver";
+import { AntdvNextXResolver } from "@antdv-next/auto-import-resolver-x";
+import Components from "unplugin-vue-components/vite";
+
+export default defineConfig({
+  plugins: [
+    vue(),
+    Components({
+      resolvers: [
+        AntdvNextResolver({ resolveIcons: true }),
+        AntdvNextXResolver(),
+      ],
+    }),
+  ],
+});
+```
+
+For more options (such as `exclude` to skip certain components), see the [auto-import-resolver-x documentation](https://github.com/antdv-next/auto-import-resolver-x#options).
+
 ## Custom Theme
 
 Configure theme tokens through `XProvider`.
