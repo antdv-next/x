@@ -154,7 +154,7 @@
   background-color: var(--cite-hover-bg);
 }
 
-.x-markdown-light pre code:not([class$="-highlightCode-code"] pre code) {
+.x-markdown-light pre code:not([class$="-highlighter-code"] pre code) {
   display: block;
   background: var(--light-bg) !important;
   padding: var(--padding-code);
@@ -165,7 +165,7 @@
   margin: var(--margin-pre);
 }
 
-.x-markdown-light code:not([class$="-highlightCode-code"] code):not(pre code) {
+.x-markdown-light code:not([class$="-highlighter-code"] code):not(pre code) {
   background-color: var(--light-bg) !important;
   color: var(--text-color) !important;
   border-radius: var(--border-radius-small);
