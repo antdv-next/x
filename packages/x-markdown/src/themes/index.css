@@ -225,3 +225,18 @@ xmd-tail {
   display: block;
   margin: 1em 0;
 }
+
+/*
+ * Local overrides (NOT part of upstream @ant-design/x-markdown).
+ *
+ * The rules above are kept verbatim in sync with upstream so that future
+ * syncs remain a clean diff with minimal cognitive overhead. Do not edit
+ * the upstream rules in place — add local overrides in this section below
+ * so they are clearly separated and easy to drop on the next sync.
+ *
+ * Override the upstream `line-height: 2` on `pre code` so code blocks
+ * inherit the container line-height instead.
+ */
+.x-markdown:not(.x-md-disable-all):not(.x-md-disable-code) pre code {
+  line-height: inherit;
+}
