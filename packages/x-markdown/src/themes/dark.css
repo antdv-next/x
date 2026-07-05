@@ -21,7 +21,6 @@
   --margin-li: 0 0 14px 0;
   --hr-margin: 24px 0;
   --table-margin: 0 0 24px 0;
-  --margin-pre: 0 0 16px 0;
   --padding-code: 16px;
   --xmd-tail-color: var(--text-color);
 }
@@ -47,6 +46,7 @@
 
 .x-markdown-dark h3 {
   font-size: 18px;
+  /* 18px */
   line-height: 30px;
 }
 
@@ -60,6 +60,7 @@
   margin: var(--margin-block);
 }
 
+/* 列表项通用样式 */
 .x-markdown-dark li {
   position: relative;
 }
@@ -98,14 +99,12 @@
 .x-markdown-dark hr {
   border: 0;
   border-top: 1px solid var(--line-color);
-  margin: var(--hr-margin);
 }
 
 .x-markdown-dark table {
   border-collapse: collapse;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(255, 255, 255, 0.05);
-  margin: var(--table-margin);
 }
 
 .x-markdown-dark thead {
@@ -119,10 +118,10 @@
 .x-markdown-dark tbody tr {
   background-color: var(--table-body-bg);
   transition: background-color 200ms linear;
-}
 
-.x-markdown-dark tbody tr:hover {
-  background-color: var(--table-head-bg);
+  &:hover {
+    background-color: var(--table-head-bg);
+  }
 }
 
 .x-markdown-dark th,
@@ -152,11 +151,7 @@
   background-color: var(--cite-hover-bg);
 }
 
-.x-markdown-dark
-  pre
-  > code:not([class$="-highlightCode-code"]):not(
-    [class$="-codeHighlighter-code"]
-  ) {
+.x-markdown-dark pre code:not([class$="-codeHighlighter-code"] pre code) {
   display: block;
   background: var(--dark-bg) !important;
   padding: var(--padding-code);
@@ -167,10 +162,7 @@
   margin: var(--margin-pre);
 }
 
-.x-markdown-dark
-  code:not(pre code):not([class$="-highlightCode-code"]):not(
-    [class$="-codeHighlighter-code"]
-  ) {
+.x-markdown-dark code:not([class$="-codeHighlighter-code"] code):not(pre code) {
   background-color: var(--dark-bg) !important;
   color: var(--text-color) !important;
   border-radius: var(--border-radius-small);
@@ -197,7 +189,7 @@
 }
 
 .x-markdown-dark a::after {
-  content: "\2197";
+  content: "↗";
   margin-left: 4px;
   vertical-align: super;
   opacity: 0.7;

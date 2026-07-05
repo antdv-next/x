@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from "vue";
 
+import "./DebugPanel.css";
+
 interface Props {
   className?: string;
 }
