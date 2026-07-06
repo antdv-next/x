@@ -8,6 +8,7 @@ import {
   nextTick,
   onBeforeUnmount,
   ref,
+  resolveComponent,
   watch,
   type VNode,
 } from "vue";
