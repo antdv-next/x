@@ -15,6 +15,16 @@ export default {
       tooltip1: "中文 / English",
       tooltip2: "English / 中文",
     },
+    docSearch: {
+      placeholder: "输入关键字搜索...",
+      loadingText: "搜索中...",
+      emptyText: "未找到结果",
+      sections: {
+        components: "组件",
+        docs: "文档",
+        blog: "博客",
+      },
+    },
   },
   components: {
     semanticPreview: {

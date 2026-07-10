@@ -3,6 +3,7 @@ import { createStyles } from "antdv-style";
 import { computed } from "vue";
 import { useRoute } from "vue-router";
 
+import DocSearch from "@/components/doc-search/index.vue";
 import { headerItems } from "@/config/header";
 import { resolveDocRoutePath } from "@/router/docs";
 import { clsx } from "@/utils";
@@ -41,7 +42,6 @@ const useStyles = createStyles(({ token, css }) => ({
   `,
   pc: css`
     height: 48px;
-    overflow: hidden;
     position: absolute;
     top: 50%;
     inset-inline-start: 50%;
@@ -69,6 +69,10 @@ const useStyles = createStyles(({ token, css }) => ({
     color: ${token.colorText} !important;
     font-weight: 500;
   `,
+  searchItem: css`
+    display: flex;
+    align-items: center;
+  `,
 }));
 
 const styleState = useStyles();
@@ -94,6 +98,9 @@ function getItemPath(path: string) {
       )
     "
   >
+    <div v-if="!isMobile" :class="styleState.styles.searchItem">
+      <DocSearch />
+    </div>
     <router-link
       v-for="item in headerItems"
       :key="item.key"

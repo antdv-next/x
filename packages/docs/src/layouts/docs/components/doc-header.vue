@@ -5,6 +5,7 @@ import { createStyles } from "antdv-style";
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 
+import DocSearch from "@/components/doc-search/index.vue";
 import { useAppStore } from "@/stores/app";
 import { clsx } from "@/utils";
 
@@ -107,7 +108,6 @@ const useStyles = createStyles(({ token, css }) => ({
     padding: 0 ${token.paddingLG}px;
     margin: 0 ${token.paddingLG}px;
     top: ${(DOC_HEADER_HEIGHT - token.paddingLG * 2) / 2}px;
-    overflow: hidden;
     border-radius: ${DOC_HEADER_RADIUS}px;
   `,
   mini: css`
@@ -172,6 +172,10 @@ const useStyles = createStyles(({ token, css }) => ({
 }));
 
 const styleState = useStyles();
+
+const cssVars = computed(() => ({
+  "--ant-doc-header-height": `${isMobile.value ? DOC_HEADER_MOBILE_HEIGHT : DOC_HEADER_HEIGHT}px`,
+}));
 </script>
 
 <template>
@@ -186,6 +190,7 @@ const styleState = useStyles();
         isHidden && styleState.styles.hidden,
       )
     "
+    :style="cssVars"
   >
     <HeaderLogo
       :isZhCN="isZhCN"
@@ -195,6 +200,10 @@ const styleState = useStyles();
     />
 
     <template v-if="isMobile">
+      <div style="flex: 1; min-width: 0; padding: 0 8px">
+        <DocSearch />
+      </div>
+
       <a-button
         type="text"
         :class="styleState.styles.menuButton"
@@ -213,6 +222,10 @@ const styleState = useStyles();
         :style="{ height: '100%' }"
         :z-index="999"
       >
+        <div class="px-16px py-12px">
+          <DocSearch />
+        </div>
+
         <HeaderNavigation
           :isZhCN="isZhCN"
           :isRTL="isRTL"
