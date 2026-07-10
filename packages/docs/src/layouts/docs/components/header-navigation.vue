@@ -28,6 +28,7 @@ const useStyles = createStyles(({ token, css }) => ({
     align-items: center;
 
     a {
+      min-width: 0;
       font-size: ${token.fontSizeLG}px;
       color: ${token.colorTextSecondary};
       text-decoration: none;
@@ -69,6 +70,41 @@ const useStyles = createStyles(({ token, css }) => ({
     color: ${token.colorText} !important;
     font-weight: 500;
   `,
+  item: css`
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    line-height: 1;
+    position: relative;
+  `,
+  itemLabel: css`
+    white-space: nowrap;
+  `,
+  versionTag: css`
+    position: absolute;
+    top: calc(100% + 3px);
+    inset-inline-start: 50%;
+    transform: translateX(-50%);
+    margin: 0;
+    font-size: 10px;
+    font-weight: 500;
+    line-height: 14px;
+    color: ${token.colorTextTertiary};
+    transition:
+      color ${token.motionDurationMid},
+      opacity ${token.motionDurationMid};
+
+    a:hover &,
+    &.version-tag-active {
+      color: ${token.colorPrimary};
+    }
+
+    @media only screen and (max-width: 767.99px) {
+      position: static;
+      margin-top: 2px;
+      transform: none;
+    }
+  `,
   searchItem: css`
     display: flex;
     align-items: center;
@@ -107,7 +143,20 @@ function getItemPath(path: string) {
       :to="{ path: getItemPath(item.path), query: route.query }"
       :class="clsx(activeKey === item.key && styleState.styles.itemActive)"
     >
-      {{ item.label[isZhCN ? "zh-CN" : "en-US"] }}
+      <span :class="styleState.styles.item">
+        <span :class="styleState.styles.itemLabel">
+          {{ item.label[isZhCN ? "zh-CN" : "en-US"] }}
+        </span>
+        <span
+          v-if="item.version"
+          :class="[
+            styleState.styles.versionTag,
+            activeKey === item.key && 'version-tag-active',
+          ]"
+        >
+          v{{ item.version }}
+        </span>
+      </span>
     </router-link>
   </nav>
 </template>
