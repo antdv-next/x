@@ -33,7 +33,7 @@ const useStyles = createStyles(({ token, css }) => ({
     margin: 0 ${token.margin}px;
   `,
   versionSelect: css`
-    min-width: 86px;
+    min-width: 70px;
     margin-inline-end: ${token.marginXXS}px;
   `,
   mobile: css`
@@ -96,7 +96,7 @@ function changeLocale(value: 1 | 2) {
       :options="versionOptions"
       size="small"
       variant="filled"
-      :class="styleState.styles.versionSelect"
+      :class="[styleState.styles.versionSelect]"
       :popup-match-select-width="false"
     />
 
