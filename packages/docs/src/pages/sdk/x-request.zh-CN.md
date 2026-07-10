@@ -6,8 +6,6 @@ title: XRequest
 subtitle: 请求
 description: 通用流式请求工具，适用于 AI 对话与 SSE 场景。
 order: 1
-tag: 2.0.0
-
 packageName: x-sdk
 ---
 
