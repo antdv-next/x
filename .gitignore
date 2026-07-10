@@ -48,6 +48,8 @@ packages/docs/public/**/*.md
 packages/docs/public/llms.txt
 packages/docs/public/llms-full.txt
 packages/docs/public/llms-full-cn.txt
+packages/docs/public/search.cn.json
+packages/docs/public/search.en.json
 packages/docs/src/assets/token-meta.json
 packages/docs/src/assets/token.json
 .sync-upstream.local.json
