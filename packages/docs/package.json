@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vp run --filter @antdv-next/x build:token && vp dev .",
+    "dev": "vp run --filter @antdv-next/x build:token && node ./scripts/gen-search.mjs && vp dev .",
     "build": "vp run --filter @antdv-next/x build:token && node ./scripts/llm/generate-llms-semantic.mjs && node ./scripts/llm/generate-llms.mjs && node ./scripts/gen-search.mjs && vp build .",
     "preview": "vp preview .",
     "build:llm": "node ./scripts/llm/generate-llms-semantic.mjs && node ./scripts/llm/generate-llms.mjs",
