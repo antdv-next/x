@@ -1,8 +1,15 @@
+import { version as cardVersion } from "../../../x-card/package.json";
+import { version as markdownVersion } from "../../../x-markdown/package.json";
+import { version as sdkVersion } from "../../../x-sdk/package.json";
+import { version as skillVersion } from "../../../x-skill/package.json";
+import { version as xVersion } from "../../../x/package.json";
+
 export interface HeaderItem {
   key: string;
   path: string;
   basePath: string;
   label: Record<"zh-CN" | "en-US", string>;
+  version?: string;
 }
 
 export const headerItems: HeaderItem[] = [
@@ -23,6 +30,7 @@ export const headerItems: HeaderItem[] = [
       "zh-CN": "组件",
       "en-US": "Components",
     },
+    version: xVersion,
   },
   {
     key: "markdown",
@@ -32,6 +40,7 @@ export const headerItems: HeaderItem[] = [
       "zh-CN": "Markdown",
       "en-US": "Markdown",
     },
+    version: markdownVersion,
   },
   {
     key: "card",
@@ -41,6 +50,7 @@ export const headerItems: HeaderItem[] = [
       "zh-CN": "Card",
       "en-US": "Card",
     },
+    version: cardVersion,
   },
   {
     key: "sdk",
@@ -50,6 +60,7 @@ export const headerItems: HeaderItem[] = [
       "zh-CN": "SDK",
       "en-US": "SDK",
     },
+    version: sdkVersion,
   },
   {
     key: "skill",
@@ -59,6 +70,7 @@ export const headerItems: HeaderItem[] = [
       "zh-CN": "Skill",
       "en-US": "Skill",
     },
+    version: skillVersion,
   },
   {
     key: "demo",
