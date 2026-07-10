@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { createStyles } from "antdv-style";
-import { computed } from "vue";
 import { useRoute } from "vue-router";
 
 import DocSearch from "@/components/doc-search/index.vue";
+import { useActiveHeaderItem } from "@/composables/use-header-active";
 import { headerItems } from "@/config/header";
 import { resolveDocRoutePath } from "@/router/docs";
 import { clsx } from "@/utils";
@@ -70,40 +70,8 @@ const useStyles = createStyles(({ token, css }) => ({
     color: ${token.colorText} !important;
     font-weight: 500;
   `,
-  item: css`
-    display: inline-flex;
-    flex-direction: column;
-    align-items: center;
-    line-height: 1;
-    position: relative;
-  `,
   itemLabel: css`
     white-space: nowrap;
-  `,
-  versionTag: css`
-    position: absolute;
-    top: calc(100% + 3px);
-    inset-inline-start: 50%;
-    transform: translateX(-50%);
-    margin: 0;
-    font-size: 10px;
-    font-weight: 500;
-    line-height: 14px;
-    color: ${token.colorTextTertiary};
-    transition:
-      color ${token.motionDurationMid},
-      opacity ${token.motionDurationMid};
-
-    a:hover &,
-    &.version-tag-active {
-      color: ${token.colorPrimary};
-    }
-
-    @media only screen and (max-width: 767.99px) {
-      position: static;
-      margin-top: 2px;
-      transform: none;
-    }
   `,
   searchItem: css`
     display: flex;
@@ -113,9 +81,7 @@ const useStyles = createStyles(({ token, css }) => ({
 
 const styleState = useStyles();
 
-const activeKey = computed(
-  () => headerItems.find(item => route.path.includes(item.basePath))?.key,
-);
+const { activeKey } = useActiveHeaderItem();
 
 function getItemPath(path: string) {
   return resolveDocRoutePath(path, props.isZhCN ? "zh-CN" : "en-US") ?? path;
@@ -143,19 +109,8 @@ function getItemPath(path: string) {
       :to="{ path: getItemPath(item.path), query: route.query }"
       :class="clsx(activeKey === item.key && styleState.styles.itemActive)"
     >
-      <span :class="styleState.styles.item">
-        <span :class="styleState.styles.itemLabel">
-          {{ item.label[isZhCN ? "zh-CN" : "en-US"] }}
-        </span>
-        <span
-          v-if="item.version"
-          :class="[
-            styleState.styles.versionTag,
-            activeKey === item.key && 'version-tag-active',
-          ]"
-        >
-          v{{ item.version }}
-        </span>
+      <span :class="styleState.styles.itemLabel">
+        {{ item.label[isZhCN ? "zh-CN" : "en-US"] }}
       </span>
     </router-link>
   </nav>
