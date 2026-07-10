@@ -9,7 +9,7 @@
   "type": "module",
   "scripts": {
     "dev:play": "vp dev packages/playground",
-    "docs:dev": "vp dev packages/docs",
+    "docs:dev": "vp run --filter @antdv-next/x build:token && vp dev packages/docs",
     "docs:preview": "vp preview packages/docs",
     "docs:build": "vp run --filter @antdv-next/docs build",
     "docs:llm": "vp run --filter @antdv-next/docs build:llm",
