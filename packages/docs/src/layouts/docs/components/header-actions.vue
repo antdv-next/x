@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { GithubOutlined } from "@antdv-next/icons";
 import { createStyles } from "antdv-style";
-import { computed } from "vue";
+import { computed, shallowRef, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
+import { useActiveHeaderItem } from "@/composables/use-header-active";
 import { useLocale } from "@/composables/use-locale";
 import { resolveDocRoutePath } from "@/router/docs";
 import { useAppStore } from "@/stores/app";
@@ -31,6 +32,10 @@ const useStyles = createStyles(({ token, css }) => ({
     align-items: center;
     margin: 0 ${token.margin}px;
   `,
+  versionSelect: css`
+    min-width: 86px;
+    margin-inline-end: ${token.marginXXS}px;
+  `,
   mobile: css`
     width: 100%;
     justify-content: center;
@@ -41,6 +46,19 @@ const useStyles = createStyles(({ token, css }) => ({
 }));
 
 const styleState = useStyles();
+
+const { activeVersion } = useActiveHeaderItem();
+
+// 当前模块对应子包的版本切换，options 暂时只包含当前版本，为后续 versionList 铺垫
+const versionOptions = computed(() =>
+  activeVersion.value
+    ? [{ label: `v${activeVersion.value}`, value: activeVersion.value }]
+    : [],
+);
+const currentVersion = shallowRef<string | undefined>(activeVersion.value);
+watch(activeVersion, next => {
+  currentVersion.value = next;
+});
 
 const localeValue = computed(() => (props.isZhCN ? 1 : 2));
 
@@ -72,6 +90,16 @@ function changeLocale(value: 1 | 2) {
       )
     "
   >
+    <a-select
+      v-if="currentVersion"
+      v-model:value="currentVersion"
+      :options="versionOptions"
+      size="small"
+      variant="filled"
+      :class="styleState.styles.versionSelect"
+      :popup-match-select-width="false"
+    />
+
     <SwitchBtn
       :value="localeValue"
       :tooltip1="t('ui.localeBtn.tooltip1')"
