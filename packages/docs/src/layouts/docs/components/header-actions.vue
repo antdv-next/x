@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { GithubOutlined } from "@antdv-next/icons";
+import { version } from "@antdv-next/x";
 import { createStyles } from "antdv-style";
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
@@ -72,6 +73,8 @@ function changeLocale(value: 1 | 2) {
       )
     "
   >
+    <span class="text-12px c-text-secondary mr-8px">v{{ version }}</span>
+
     <SwitchBtn
       :value="localeValue"
       :tooltip1="t('ui.localeBtn.tooltip1')"
