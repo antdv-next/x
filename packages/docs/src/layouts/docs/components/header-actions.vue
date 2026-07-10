@@ -52,7 +52,7 @@ const { activeVersion } = useActiveHeaderItem();
 // 当前模块对应子包的版本切换，options 暂时只包含当前版本，为后续 versionList 铺垫
 const versionOptions = computed(() =>
   activeVersion.value
-    ? [{ label: `v${activeVersion.value}`, value: activeVersion.value }]
+    ? [{ label: activeVersion.value, value: activeVersion.value }]
     : [],
 );
 const currentVersion = shallowRef<string | undefined>(activeVersion.value);
