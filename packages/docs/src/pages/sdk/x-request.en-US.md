@@ -6,8 +6,6 @@ title: XRequest
 subtitle: Request
 description: Universal streaming request utility for AI chat and SSE scenarios.
 order: 1
-tag: 2.0.0
-
 packageName: x-sdk
 ---
 

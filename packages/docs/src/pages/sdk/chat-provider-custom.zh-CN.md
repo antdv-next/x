@@ -6,7 +6,6 @@ group:
 title: Custom Chat Provider
 order: 4
 subtitle: 自定义
-tag: 2.0.0
 packageName: x-sdk
 ---
 

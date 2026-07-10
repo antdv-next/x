@@ -6,8 +6,6 @@ title: XStream
 subtitle: 流
 description: 转换可读数据流。
 order: 2
-tag: 2.0.0
-
 packageName: x-sdk
 ---
 

@@ -5,7 +5,6 @@ group:
   order: 2
 title: DeepSeekChatProvider
 order: 3
-tag: 2.0.0
 packageName: x-sdk
 ---
 
