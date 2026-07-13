@@ -2,7 +2,7 @@ import { mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { nextTick } from "vue";
 
-import Mermaid from "../Mermaid";
+import Mermaid, { type MermaidHeaderSlotScope } from "../Mermaid";
 
 const mermaidMock = vi.hoisted(() => ({
   initialize: vi.fn(),
@@ -131,6 +131,54 @@ describe("Mermaid", () => {
 
     expect(wrapper.find(".slot-header").exists()).toBe(true);
     expect(wrapper.find(".prop-header").exists()).toBe(false);
+  });
+
+  it("exposes diagram controls through the header slot scope", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: { writeText },
+    });
+
+    const wrapper = mount(Mermaid, {
+      props: {
+        content,
+      },
+      slots: {
+        header: (scope: MermaidHeaderSlotScope) => (
+          <div class="slot-header">
+            <span class="slot-render-type">{scope.renderType}</span>
+            <button class="slot-zoom-in" onClick={scope.zoomIn} />
+            <button class="slot-reset-zoom" onClick={scope.resetZoom} />
+            <button
+              class="slot-set-code"
+              onClick={() => scope.setRenderType("code")}
+            />
+            <button class="slot-download" onClick={scope.download} />
+            <button class="slot-copy" onClick={scope.copy} />
+          </div>
+        ),
+      },
+    });
+
+    await flushPromises();
+
+    await wrapper.find(".slot-zoom-in").trigger("click");
+    await nextTick();
+    const svgEl = wrapper.find(".antd-mermaid-graph svg").element as SVGElement;
+    expect(readScale(svgEl.style.transform)).toBe(1.2);
+
+    await wrapper.find(".slot-reset-zoom").trigger("click");
+    await nextTick();
+    expect(readScale(svgEl.style.transform)).toBe(1);
+
+    await wrapper.find(".slot-set-code").trigger("click");
+    await nextTick();
+    expect(wrapper.find(".slot-render-type").text()).toBe("code");
+    expect(wrapper.emitted("update:renderType")?.[0]).toEqual(["code"]);
+
+    await wrapper.find(".slot-copy").trigger("click");
+    expect(writeText).toHaveBeenCalledWith(content);
+    expect(wrapper.find(".slot-download").exists()).toBe(true);
   });
 
   it("clamps zoom scale between 0.5 and 3", async () => {

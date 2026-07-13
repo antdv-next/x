@@ -10,12 +10,37 @@ const content = `flowchart LR
 <template>
   <div class="demo-wrapper">
     <ax-mermaid :content="content">
-      <template #header>
+      <template
+        #header="{
+          renderType,
+          setRenderType,
+          zoomIn,
+          zoomOut,
+          resetZoom,
+          download,
+          copy,
+        }"
+      >
         <div class="custom-header">
-          <a-space :size="16">
-            <span class="custom-title">Login Flow</span>
-            <a-button type="primary" size="small">Export</a-button>
-            <a-button size="small">Reset</a-button>
+          <span class="custom-title">Login Flow</span>
+          <a-space>
+            <a-button
+              size="small"
+              @click="setRenderType(renderType === 'image' ? 'code' : 'image')"
+            >
+              {{ renderType === "image" ? "Code" : "Diagram" }}
+            </a-button>
+            <template v-if="renderType === 'image'">
+              <a-button size="small" @click="zoomOut">-</a-button>
+              <a-button size="small" @click="zoomIn">+</a-button>
+              <a-button size="small" @click="resetZoom">Reset</a-button>
+              <a-button type="primary" size="small" @click="download">
+                Download
+              </a-button>
+            </template>
+            <a-button v-else type="primary" size="small" @click="copy">
+              Copy
+            </a-button>
           </a-space>
         </div>
       </template>
@@ -29,6 +54,10 @@ const content = `flowchart LR
 }
 
 .custom-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   padding: 12px 16px;
   border: 1px solid var(--ant-color-border-secondary, #f0f0f0);
   border-bottom: none;
@@ -43,9 +72,9 @@ const content = `flowchart LR
 </style>
 
 <docs lang="zh-CN">
-自定义头部内容。
+自定义头部内容，并通过插槽作用域复用内置的视图切换、缩放、下载与复制操作。
 </docs>
 
 <docs lang="en-US">
-Customize header content.
+Customize header content and reuse the built-in view switching, zoom, download, and copy actions from the slot scope.
 </docs>
