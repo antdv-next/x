@@ -33,7 +33,7 @@ group:
 | defaultRenderType    | Initial render type (uncontrolled)                      | `'image' \| 'code'`                                                                                    | `'image'`                                                      |
 | header               | Custom header node, set `null` to hide header           | `VNodeChild \| null`                                                                                   | -                                                              |
 | config               | Mermaid initialize config                               | `MermaidConfig`                                                                                        | -                                                              |
-| actions              | Header action config                                    | `{ enableZoom?: boolean; enableDownload?: boolean; enableCopy?: boolean; customActions?: ItemType[] }` | `{ enableZoom: true, enableDownload: true, enableCopy: true }` |
+| actions              | Default header action config                            | `{ enableZoom?: boolean; enableDownload?: boolean; enableCopy?: boolean; customActions?: ItemType[] }` | `{ enableZoom: true, enableDownload: true, enableCopy: true }` |
 | codeHighlighterProps | Extra props for built-in `CodeHighlighter` in code mode | `Partial<Omit<CodeHighlighterProps, 'content' \| 'language'>>`                                         | -                                                              |
 | classes              | Semantic class overrides                                | `Partial<Record<'root' \| 'header' \| 'graph' \| 'code', string>>`                                     | -                                                              |
 | styles               | Semantic style overrides                                | `Partial<Record<'root' \| 'header' \| 'graph' \| 'code', CSSProperties>>`                              | -                                                              |
@@ -60,11 +60,23 @@ type ItemType = {
 
 ### Slots
 
-| Slot Name | Description        | Type               |
-| --------- | ------------------ | ------------------ |
-| `header`  | Custom header area | `() => VNodeChild` |
+| Slot Name | Description        | Type                                            |
+| --------- | ------------------ | ----------------------------------------------- |
+| `header`  | Custom header area | `(scope: MermaidHeaderSlotScope) => VNodeChild` |
 
-The `header` slot takes precedence over the `header` prop. Passing `header={null}` hides the default header.
+`MermaidHeaderSlotScope` provides the following properties:
+
+| Property      | Description                                  | Type                                |
+| ------------- | -------------------------------------------- | ----------------------------------- |
+| renderType    | Current render type                          | `'image' \| 'code'`                 |
+| setRenderType | Switches the render type                     | `(type: MermaidRenderType) => void` |
+| zoomIn        | Increases the diagram scale in image mode    | `() => void`                        |
+| zoomOut       | Decreases the diagram scale in image mode    | `() => void`                        |
+| resetZoom     | Restores the diagram scale and position      | `() => void`                        |
+| download      | Downloads the diagram as a PNG in image mode | `() => void`                        |
+| copy          | Copies the Mermaid source                    | `() => Promise<void>`               |
+
+The `header` slot takes precedence over the `header` prop. Passing `header={null}` hides the default header. The `actions` prop only configures actions in the default header.
 
 ### Events
 

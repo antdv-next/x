@@ -72,11 +72,21 @@ export interface MermaidRef {
   nativeElement: HTMLDivElement;
 }
 
+export interface MermaidHeaderSlotScope {
+  renderType: MermaidRenderType;
+  setRenderType: (type: MermaidRenderType) => void;
+  zoomIn: () => void;
+  zoomOut: () => void;
+  resetZoom: () => void;
+  download: () => void;
+  copy: () => Promise<void>;
+}
+
 export interface MermaidSlots {
   /**
    * 自定义头部区，优先级高于 `header` 属性
    */
-  header?: () => VNodeChild;
+  header?: (scope: MermaidHeaderSlotScope) => VNodeChild;
 }
 
 enum RenderType {
@@ -339,19 +349,32 @@ const XMermaid = defineComponent({
     }
 
     function handleZoomIn() {
+      if (mergedRenderType.value !== RenderType.Image) return;
       scale.value = Math.min(scale.value + 0.2, 3);
     }
 
     function handleZoomOut() {
+      if (mergedRenderType.value !== RenderType.Image) return;
       scale.value = Math.max(scale.value - 0.2, 0.5);
     }
 
     function handleReset() {
+      if (mergedRenderType.value !== RenderType.Image) return;
       scale.value = 1;
       position.value = { x: 0, y: 0 };
     }
 
+    async function handleCopy() {
+      try {
+        await navigator.clipboard.writeText(props.content);
+      } catch (error) {
+        warning(false, "Mermaid", `Copy failed: ${String(error)}`);
+      }
+    }
+
     function handleDownload() {
+      if (mergedRenderType.value !== RenderType.Image) return;
+
       const svgElement = graphRef.value?.querySelector(
         "svg",
       ) as SVGSVGElement | null;
@@ -437,7 +460,17 @@ const XMermaid = defineComponent({
 
     function renderHeader() {
       if (props.header === null) return null;
-      if (slots.header) return slots.header();
+      if (slots.header) {
+        return slots.header({
+          renderType: mergedRenderType.value,
+          setRenderType: switchRenderType,
+          zoomIn: handleZoomIn,
+          zoomOut: handleZoomOut,
+          resetZoom: handleReset,
+          download: handleDownload,
+          copy: handleCopy,
+        });
+      }
       if (props.header !== undefined) return props.header;
 
       return (

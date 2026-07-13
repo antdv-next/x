@@ -34,7 +34,7 @@ group:
 | defaultRenderType    | 初始渲染模式（非受控）                      | `'image' \| 'code'`                                                                                    | `'image'`                                                      |
 | header               | 自定义头部内容，传 `null` 可隐藏头部        | `VNodeChild \| null`                                                                                   | -                                                              |
 | config               | Mermaid 初始化配置                          | `MermaidConfig`                                                                                        | -                                                              |
-| actions              | 头部操作配置                                | `{ enableZoom?: boolean; enableDownload?: boolean; enableCopy?: boolean; customActions?: ItemType[] }` | `{ enableZoom: true, enableDownload: true, enableCopy: true }` |
+| actions              | 默认头部操作配置                            | `{ enableZoom?: boolean; enableDownload?: boolean; enableCopy?: boolean; customActions?: ItemType[] }` | `{ enableZoom: true, enableDownload: true, enableCopy: true }` |
 | codeHighlighterProps | 代码模式下内置 `CodeHighlighter` 的额外参数 | `Partial<Omit<CodeHighlighterProps, 'content' \| 'language'>>`                                         | -                                                              |
 | classes              | 语义化类名覆写                              | `Partial<Record<'root' \| 'header' \| 'graph' \| 'code', string>>`                                     | -                                                              |
 | styles               | 语义化样式覆写                              | `Partial<Record<'root' \| 'header' \| 'graph' \| 'code', CSSProperties>>`                              | -                                                              |
@@ -61,11 +61,23 @@ type ItemType = {
 
 ### 插槽
 
-| 插槽名   | 说明         | 类型               |
-| -------- | ------------ | ------------------ |
-| `header` | 自定义头部区 | `() => VNodeChild` |
+| 插槽名   | 说明         | 类型                                            |
+| -------- | ------------ | ----------------------------------------------- |
+| `header` | 自定义头部区 | `(scope: MermaidHeaderSlotScope) => VNodeChild` |
 
-`header` 插槽优先级高于 `header` 属性；传入 `header={null}` 时可隐藏默认头部。
+`MermaidHeaderSlotScope` 提供以下属性：
+
+| 属性          | 说明                      | 类型                                |
+| ------------- | ------------------------- | ----------------------------------- |
+| renderType    | 当前渲染模式              | `'image' \| 'code'`                 |
+| setRenderType | 切换渲染模式              | `(type: MermaidRenderType) => void` |
+| zoomIn        | 在图形模式下放大          | `() => void`                        |
+| zoomOut       | 在图形模式下缩小          | `() => void`                        |
+| resetZoom     | 还原图形缩放比例与位置    | `() => void`                        |
+| download      | 在图形模式下下载 PNG 图表 | `() => void`                        |
+| copy          | 复制 Mermaid 源码         | `() => Promise<void>`               |
+
+`header` 插槽优先级高于 `header` 属性；传入 `header={null}` 时可隐藏默认头部。`actions` 属性仅配置默认头部中的操作。
 
 ### 事件
 
