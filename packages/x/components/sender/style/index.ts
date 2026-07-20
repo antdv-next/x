@@ -85,6 +85,12 @@ const genSenderStyle: GenerateStyle<SenderToken> = token => {
         alignSelf: "center",
         caretColor: token.colorPrimary,
         fontSize: token.fontSize,
+        [`&${antCls}-input-borderless`]: {
+          "&:focus-visible, &:has(input:focus-visible), &:has(textarea:focus-visible)":
+            {
+              outline: "none",
+            },
+        },
       },
       [`${componentCls}-actions-list`]: {
         flex: "none",
