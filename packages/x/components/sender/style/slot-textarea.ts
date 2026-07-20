@@ -7,6 +7,7 @@ const genSlotTextAreaStyle: GenerateStyle<SenderToken> = token => {
   const { componentCls, antCls, calc } = token;
   const slotCls = `${componentCls}-slot`;
   const antInputCls = `${antCls}-input`;
+  const antInputBorderlessCls = `${antInputCls}-borderless`;
   const antDropdownCls = `${antCls}-dropdown-trigger`;
   const slotInputCls = `${componentCls}-slot-input`;
   const slotSelectCls = `${componentCls}-slot-select`;
@@ -48,6 +49,12 @@ const genSlotTextAreaStyle: GenerateStyle<SenderToken> = token => {
         fontSize: "inherit",
         lineHeight: "inherit",
         position: "relative",
+        [`&${antInputBorderlessCls}`]: {
+          "&:focus-visible, &:has(input:focus-visible), &:has(textarea:focus-visible)":
+            {
+              outline: "none",
+            },
+        },
         [`&::placeholder`]: {
           color: token.colorTextSlotPlaceholder,
           fontSize: "inherit",
