@@ -25,6 +25,13 @@ export default {
         blog: "博客",
       },
     },
+    geoRedirect: {
+      title: "访问国内优化通道",
+      content:
+        "检测到你正在中国访问，是否切换到 x.antdv-next.cn 国内优化通道？",
+      okText: "立即切换",
+      cancelText: "继续访问当前站点",
+    },
   },
   components: {
     semanticPreview: {

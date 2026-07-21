@@ -25,6 +25,13 @@ export default {
         blog: "Blog",
       },
     },
+    geoRedirect: {
+      title: "Use China optimized site?",
+      content:
+        "We detected you are visiting from China. Would you like to switch to the China-optimized channel on x.antdv-next.cn?",
+      okText: "Switch Now",
+      cancelText: "Stay Here",
+    },
   },
   components: {
     semanticPreview: {

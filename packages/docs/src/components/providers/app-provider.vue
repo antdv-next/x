@@ -4,6 +4,7 @@ import type { Locale } from "antdv-next/locale/index";
 import { ThemeProvider } from "antdv-style";
 import dayjs from "dayjs";
 
+import GeoRedirectHandler from "@/components/geo-redirect-handler.vue";
 import { useCodeCopy } from "@/composables/use-code-copy";
 import { useProviderTheme } from "@/composables/use-provider-theme";
 import { useResolvedDarkMode } from "@/composables/use-resolved-dark-mode";
@@ -48,7 +49,9 @@ watch(
       <ThemeProvider :theme-mode="themeMode">
         <a-app>
           <AppContextRegister>
-            <slot />
+            <GeoRedirectHandler>
+              <slot />
+            </GeoRedirectHandler>
           </AppContextRegister>
         </a-app>
       </ThemeProvider>
