@@ -13,7 +13,7 @@ import {
   ProfileOutlined,
   SearchOutlined,
 } from "@antdv-next/icons";
-import { App } from "antdv-next";
+import { App, Flex } from "antdv-next";
 import { h, ref, useTemplateRef, watch } from "vue";
 const { message } = App.useApp();
 
@@ -241,7 +241,7 @@ const fileItemClick = (item: { key: string }, type?: string) => {
       type: "tag",
       key: `${item.key}_${Date.now()}`,
       props: {
-        label: h("div", { style: { display: "flex", gap: "8px" } }, [
+        label: h(Flex, { gap: 8, style: { display: "inline-flex" } }, () => [
           h(icon),
           label,
         ]),
