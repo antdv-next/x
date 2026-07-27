@@ -179,6 +179,7 @@ function handleAffixChange(affixed?: boolean) {
 
 <template>
   <section class="component-overview" :class="styleState.styles.root">
+    <a-divider />
     <a-affix :offset-top="80" @change="handleAffixChange">
       <div
         class="component-overview-search-affix"
@@ -198,6 +199,7 @@ function handleAffixChange(affixed?: boolean) {
         </a-input>
       </div>
     </a-affix>
+    <a-divider />
 
     <template v-if="groupedItems.length">
       <section
