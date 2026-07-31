@@ -14,16 +14,20 @@ description: 用于 AI 对话场景中展示代码块，提供语法高亮、行
 
 组件默认内置 6 种常用语言并按需加载语法：`typescript`（含 `ts`）、`javascript`（含 `js`）、`python`（含 `py`）、`json`、`html`、`css`。其他语言会安全降级为纯文本显示。
 
-如需支持更多语言，可通过 `setupCodeHighlighter` 注入自定义语言加载器，接入 Shiki 全量 `bundledLanguages` 或 CDN 等任意来源：
+如需支持更多语言，可通过 `setupCodeHighlighter` 注入自定义语言加载器，按需 `import` 对应语言模块（避免引入全量语言包）：
 
 ```ts
-import { bundledLanguages } from "shiki/langs";
 import { setupCodeHighlighter } from "@antdv-next/x";
 
-// 接入 Shiki 全量内置语言
+// 按需加载额外语言，仅打包用到的语言
 setupCodeHighlighter({
   loadLanguage: async lang => {
-    const loader = bundledLanguages[lang as keyof typeof bundledLanguages];
+    const loaders: Record<string, () => Promise<{ default: any }>> = {
+      go: () => import("shiki/dist/langs/go.mjs"),
+      rust: () => import("shiki/dist/langs/rust.mjs"),
+      java: () => import("shiki/dist/langs/java.mjs"),
+    };
+    const loader = loaders[lang];
     return loader ? (await loader()).default : null;
   },
 });

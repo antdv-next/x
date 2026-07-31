@@ -14,16 +14,20 @@ description: Display code blocks in AI conversation scenarios with syntax highli
 
 The component ships with six built-in languages loaded on demand: `typescript` (`ts`), `javascript` (`js`), `python` (`py`), `json`, `html`, and `css`. Other languages safely fall back to plain text.
 
-To support more languages, inject a custom loader via `setupCodeHighlighter` — backed by Shiki's full `bundledLanguages`, a CDN, or any other source:
+To support more languages, inject a custom loader via `setupCodeHighlighter` and `import` only the language modules you need (avoids pulling in the full language bundle):
 
 ```ts
-import { bundledLanguages } from "shiki/langs";
 import { setupCodeHighlighter } from "@antdv-next/x";
 
-// Load every bundled Shiki language
+// Load extra languages on demand - only the ones you ship are bundled
 setupCodeHighlighter({
   loadLanguage: async lang => {
-    const loader = bundledLanguages[lang as keyof typeof bundledLanguages];
+    const loaders: Record<string, () => Promise<{ default: any }>> = {
+      go: () => import("shiki/dist/langs/go.mjs"),
+      rust: () => import("shiki/dist/langs/rust.mjs"),
+      java: () => import("shiki/dist/langs/java.mjs"),
+    };
+    const loader = loaders[lang];
     return loader ? (await loader()).default : null;
   },
 });

@@ -37,16 +37,19 @@ let activeLoader: LanguageLoader = defaultLoader;
 
 /**
  * 注入自定义语言加载器，覆盖默认内置白名单。
- * 可接入 Shiki 全量 `bundledLanguages`、CDN 等任意来源。
+ * 建议按需 `import` 语言模块，避免引入全量语言包。
  *
- * @example 接入全量 Shiki 语言
+ * @example 按需加载额外语言
  * ```ts
- * import { bundledLanguages } from "shiki/langs";
  * import { setupCodeHighlighter } from "@antdv-next/x";
  *
  * setupCodeHighlighter({
  *   loadLanguage: async (lang) => {
- *     const loader = bundledLanguages[lang as keyof typeof bundledLanguages];
+ *     const loaders: Record<string, () => Promise<{ default: any }>> = {
+ *       go: () => import("shiki/dist/langs/go.mjs"),
+ *       rust: () => import("shiki/dist/langs/rust.mjs"),
+ *     };
+ *     const loader = loaders[lang];
  *     return loader ? (await loader()).default : null;
  *   },
  * });
