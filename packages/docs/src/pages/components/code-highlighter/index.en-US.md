@@ -12,7 +12,22 @@ description: Display code blocks in AI conversation scenarios with syntax highli
 
 ## Language Support
 
-The component loads bundled Shiki languages and their official aliases on demand based on `language`, including `go`, `rust`, `rs`, and `c++`. Unknown languages safely fall back to plain text.
+The component ships with six built-in languages loaded on demand: `typescript` (`ts`), `javascript` (`js`), `python` (`py`), `json`, `html`, and `css`. Other languages safely fall back to plain text.
+
+To support more languages, inject a custom loader via `setupCodeHighlighter` — backed by Shiki's full `bundledLanguages`, a CDN, or any other source:
+
+```ts
+import { bundledLanguages } from "shiki/langs";
+import { setupCodeHighlighter } from "@antdv-next/x";
+
+// Load every bundled Shiki language
+setupCodeHighlighter({
+  loadLanguage: async lang => {
+    const loader = bundledLanguages[lang as keyof typeof bundledLanguages];
+    return loader ? (await loader()).default : null;
+  },
+});
+```
 
 ## Examples
 
@@ -75,6 +90,14 @@ When the `header` slot is provided, it fully replaces the default header (langua
 | Property      | Description            | Type             |
 | ------------- | ---------------------- | ---------------- |
 | nativeElement | Get native DOM element | `HTMLDivElement` |
+
+### Extending Languages
+
+| Function             | Description                                                               | Params                                                     |
+| -------------------- | ------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| setupCodeHighlighter | Inject a custom language loader, overriding the default builtin whitelist | `{ loadLanguage: (lang: string) => Promise<any \| null> }` |
+
+`loadLanguage` receives the language name and returns a Shiki language registration or `null` (falls back to plain text).
 
 ## Semantic DOM
 

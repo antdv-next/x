@@ -7,11 +7,13 @@ import {
   vi,
 } from "vite-plus/test";
 
-const highlightedLanguages = [
-  ["go", "package main\nfunc main() {}"],
-  ["rust", "fn main() {}"],
-  ["rs", "fn main() {}"],
-  ["c++", "int main() {}"],
+const builtinLanguages = [
+  ["typescript", "const x: number = 1;"],
+  ["javascript", "const x = 1;"],
+  ["python", "x = 1"],
+  ["json", '{"a":1}'],
+  ["html", "<div>hi</div>"],
+  ["css", "a { color: red; }"],
 ] as const;
 
 describe("CodeHighlighter Shiki integration", () => {
@@ -23,8 +25,8 @@ describe("CodeHighlighter Shiki integration", () => {
     vi.restoreAllMocks();
   });
 
-  it.each(highlightedLanguages)(
-    "loads the bundled %s grammar on demand",
+  it.each(builtinLanguages)(
+    "highlights builtin %s on demand",
     async (language, code) => {
       const { codeToHtml } = await import("../shiki");
 
@@ -35,21 +37,22 @@ describe("CodeHighlighter Shiki integration", () => {
     },
   );
 
-  it("warns and escapes code when a language cannot be loaded", async () => {
+  it("resolves aliases (ts -> typescript)", async () => {
+    const { codeToHtml } = await import("../shiki");
+
+    const html = await codeToHtml("const x = 1;", { lang: "ts" });
+
+    expect(html).toContain('class="shiki vitesse-light"');
+  });
+
+  it("falls back to plain text for non-builtin languages without warning", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const { codeToHtml } = await import("../shiki");
 
-    const html = await codeToHtml('<unknown data-value="a&b">', {
-      lang: "not-a-language",
-    });
+    const html = await codeToHtml('x = "a&b"', { lang: "go" });
 
-    expect(html).toBe(
-      "<pre><code>&lt;unknown data-value=&quot;a&amp;b&quot;&gt;</code></pre>",
-    );
-    expect(warn).toHaveBeenCalledWith(
-      "[CodeHighlighter] Failed to load language: not-a-language",
-      expect.any(Error),
-    );
+    expect(html).toBe("<pre><code>x = &quot;a&amp;b&quot;</code></pre>");
+    expect(warn).not.toHaveBeenCalled();
   });
 
   it("renders plain text without attempting to load a grammar", async () => {
@@ -62,35 +65,62 @@ describe("CodeHighlighter Shiki integration", () => {
     expect(warn).not.toHaveBeenCalled();
   });
 
+  it("loads a non-builtin language via setupCodeHighlighter", async () => {
+    const { setupCodeHighlighter, codeToHtml } = await import("../shiki");
+    setupCodeHighlighter({
+      loadLanguage: async lang => {
+        if (lang !== "go") return null;
+        const mod = await import("shiki/dist/langs/go.mjs");
+        return mod.default;
+      },
+    });
+
+    const html = await codeToHtml("package main", { lang: "go" });
+
+    expect(html).toContain('class="shiki vitesse-light"');
+  });
+
+  it("warns and escapes code when a custom loader throws", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const { setupCodeHighlighter, codeToHtml } = await import("../shiki");
+    setupCodeHighlighter({
+      loadLanguage: async () => {
+        throw new Error("boom");
+      },
+    });
+
+    const html = await codeToHtml("x", { lang: "go" });
+
+    expect(html).toBe("<pre><code>x</code></pre>");
+    expect(warn).toHaveBeenCalledWith(
+      "[CodeHighlighter] Failed to load language: go",
+      expect.any(Error),
+    );
+  });
+
   it("shares an in-flight language load between concurrent calls", async () => {
-    const { bundledLanguages } = await import("shiki/langs");
-    const originalLoader = bundledLanguages.go;
-    let releaseLoader!: () => void;
-    const loaderGate = new Promise<void>(resolve => {
-      releaseLoader = resolve;
+    const { setupCodeHighlighter, codeToHtml } = await import("../shiki");
+    let release!: () => void;
+    const gate = new Promise<void>(resolve => {
+      release = resolve;
     });
     const loader = vi.fn(async () => {
-      await loaderGate;
-      return originalLoader();
+      await gate;
+      const mod = await import("shiki/dist/langs/typescript.mjs");
+      return mod.default;
     });
-    bundledLanguages.go = loader;
+    setupCodeHighlighter({ loadLanguage: loader });
 
-    try {
-      const { codeToHtml } = await import("../shiki");
-      const first = codeToHtml("package main", { lang: "go" });
-      const second = codeToHtml("package example", { lang: "go" });
+    const first = codeToHtml("const a = 1", { lang: "typescript" });
+    const second = codeToHtml("const b = 2", { lang: "typescript" });
 
-      await vi.waitFor(() => {
-        expect(loader).toHaveBeenCalledTimes(1);
-      });
-      releaseLoader();
-
-      const results = await Promise.all([first, second]);
+    await vi.waitFor(() => {
       expect(loader).toHaveBeenCalledTimes(1);
-      expect(results.every(html => html.includes('class="shiki'))).toBe(true);
-    } finally {
-      releaseLoader();
-      bundledLanguages.go = originalLoader;
-    }
+    });
+    release();
+
+    const results = await Promise.all([first, second]);
+    expect(loader).toHaveBeenCalledTimes(1);
+    expect(results.every(html => html.includes('class="shiki'))).toBe(true);
   });
 });

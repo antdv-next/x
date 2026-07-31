@@ -12,23 +12,15 @@ const snippets = {
 const result = greet("World");
 console.log(result);`,
   },
-  go: {
-    label: "Go",
-    code: `package main
+  javascript: {
+    label: "JavaScript",
+    code: `function greet(name) {
+  console.log(\`Hello, \${name}!\`);
+  return { message: \`Welcome, \${name}\`, timestamp: Date.now() };
+}
 
-import "fmt"
-
-func main() {
-  fmt.Println("Hello from Go")
-}`,
-  },
-  rust: {
-    label: "Rust",
-    code: `fn main() {
-    let numbers = vec![1, 2, 3, 4, 5];
-    let sum: i32 = numbers.iter().sum();
-    println!("Sum: {}", sum);
-}`,
+const result = greet("World");
+console.log(result);`,
   },
   python: {
     label: "Python",
@@ -39,11 +31,37 @@ func main() {
 
 print([fibonacci(i) for i in range(10)])`,
   },
-  bash: {
-    label: "Bash",
-    code: `#!/bin/bash
-count=$(ls *.txt 2>/dev/null | wc -l)
-echo "Found $count text files"`,
+  json: {
+    label: "JSON",
+    code: `{
+  "name": "antdv-next",
+  "version": "1.1.3",
+  "dependencies": {
+    "vue": "^3.5.0",
+    "antdv-next": "catalog:latest"
+  }
+}`,
+  },
+  html: {
+    label: "HTML",
+    code: `<!DOCTYPE html>
+<html lang="en">
+  <body>
+    <h1 id="title">Hello World</h1>
+    <button onclick="alert('hi')">Click</button>
+  </body>
+</html>`,
+  },
+  css: {
+    label: "CSS",
+    code: `.card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 8px;
+  color: var(--text-color);
+}`,
   },
 } as const;
 
@@ -52,7 +70,7 @@ const options = [
   { value: "text", label: "Plain Text" },
 ];
 
-const language = ref<string>("go");
+const language = ref<string>("typescript");
 
 const current = computed(() => {
   if (language.value === "text") {
@@ -74,9 +92,9 @@ const current = computed(() => {
 </template>
 
 <docs lang="zh-CN">
-组件根据 `language` 按需加载 Shiki 内置语言及其官方别名（如 `go`、`rust`、`rs`、`c++`），切换语言时自动加载对应语法；无法识别的语言会安全降级为纯文本显示。
+组件内置 `typescript`、`javascript`、`python`、`json`、`html`、`css` 六种常用语言，切换时按需加载对应语法；其他语言可通过 `setupCodeHighlighter` 注入自定义加载器扩展。
 </docs>
 
 <docs lang="en-US">
-The component loads bundled Shiki languages and their official aliases (e.g. `go`, `rust`, `rs`, `c++`) on demand based on `language`. Switching languages automatically loads the matching grammar, while unrecognized languages safely fall back to plain text.
+The component ships with six built-in languages: `typescript`, `javascript`, `python`, `json`, `html`, and `css`, loading each grammar on demand. Additional languages can be added via `setupCodeHighlighter`.
 </docs>

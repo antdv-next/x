@@ -174,6 +174,8 @@ export type {
   CodeHighlighterSemanticType,
 } from "./code-highlighter";
 
+export { setupCodeHighlighter } from "./code-highlighter";
+
 export type { SenderProps, SenderRef } from "./sender";
 export type {
   RenderChildrenProps,

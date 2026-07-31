@@ -12,7 +12,22 @@ description: 用于 AI 对话场景中展示代码块，提供语法高亮、行
 
 ## 语言支持
 
-组件会根据 `language` 按需加载 Shiki 内置语言及其官方别名，例如 `go`、`rust`、`rs` 和 `c++`。无法识别的语言会安全降级为纯文本显示。
+组件默认内置 6 种常用语言并按需加载语法：`typescript`（含 `ts`）、`javascript`（含 `js`）、`python`（含 `py`）、`json`、`html`、`css`。其他语言会安全降级为纯文本显示。
+
+如需支持更多语言，可通过 `setupCodeHighlighter` 注入自定义语言加载器，接入 Shiki 全量 `bundledLanguages` 或 CDN 等任意来源：
+
+```ts
+import { bundledLanguages } from "shiki/langs";
+import { setupCodeHighlighter } from "@antdv-next/x";
+
+// 接入 Shiki 全量内置语言
+setupCodeHighlighter({
+  loadLanguage: async lang => {
+    const loader = bundledLanguages[lang as keyof typeof bundledLanguages];
+    return loader ? (await loader()).default : null;
+  },
+});
+```
 
 ## 代码演示
 
@@ -75,6 +90,14 @@ description: 用于 AI 对话场景中展示代码块，提供语法高亮、行
 | 属性          | 说明              | 类型             |
 | ------------- | ----------------- | ---------------- |
 | nativeElement | 获取原生 DOM 元素 | `HTMLDivElement` |
+
+### 扩展语言
+
+| 函数名               | 说明                                     | 参数                                                       |
+| -------------------- | ---------------------------------------- | ---------------------------------------------------------- |
+| setupCodeHighlighter | 注入自定义语言加载器，覆盖默认内置白名单 | `{ loadLanguage: (lang: string) => Promise<any \| null> }` |
+
+`loadLanguage` 接收语言名，返回 Shiki 语言注册信息或 `null`（降级为纯文本）。
 
 ## 语义化 DOM
 
