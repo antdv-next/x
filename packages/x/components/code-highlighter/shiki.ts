@@ -4,44 +4,71 @@ import lightTheme from "shiki/dist/themes/vitesse-light.mjs";
 import { createJavaScriptRegexEngine } from "shiki/engine/javascript";
 
 type Highlighter = Awaited<ReturnType<typeof createHighlighterCore>>;
+type LanguageLoader = (lang: string) => Promise<any>;
 
-const SUPPORTED_LANG_ALIASES: Record<string, string> = {
+const PLAIN_TEXT_LANGUAGES = new Set(["text", "plaintext", "txt", "plain"]);
+
+/**
+ * 内置热门语言白名单。
+ * 使用静态 import 路径，打包时仅生成这几个语言对应的 chunk。
+ */
+const BUILTIN_LANGUAGES: Record<string, () => Promise<{ default: any }>> = {
+  typescript: () => import("shiki/dist/langs/typescript.mjs"),
+  javascript: () => import("shiki/dist/langs/javascript.mjs"),
+  python: () => import("shiki/dist/langs/python.mjs"),
+  json: () => import("shiki/dist/langs/json.mjs"),
+  html: () => import("shiki/dist/langs/html.mjs"),
+  css: () => import("shiki/dist/langs/css.mjs"),
+};
+
+/** 常用别名 -> 基础语言 */
+const BUILTIN_ALIASES: Record<string, string> = {
   ts: "typescript",
   js: "javascript",
   py: "python",
-  md: "markdown",
-  yml: "yaml",
-  shell: "bash",
-  zsh: "bash",
-  sh: "bash",
-  vue: "vue",
 };
 
-const LANG_LOADERS: Record<string, () => Promise<{ default: any }>> = {
-  javascript: () => import("shiki/dist/langs/javascript.mjs"),
-  typescript: () => import("shiki/dist/langs/typescript.mjs"),
-  jsx: () => import("shiki/dist/langs/jsx.mjs"),
-  tsx: () => import("shiki/dist/langs/tsx.mjs"),
-  json: () => import("shiki/dist/langs/json.mjs"),
-  bash: () => import("shiki/dist/langs/bash.mjs"),
-  markdown: () => import("shiki/dist/langs/markdown.mjs"),
-  html: () => import("shiki/dist/langs/html.mjs"),
-  css: () => import("shiki/dist/langs/css.mjs"),
-  vue: () => import("shiki/dist/langs/vue.mjs"),
-  "vue-html": () => import("shiki/dist/langs/vue-html.mjs"),
-  python: () => import("shiki/dist/langs/python.mjs"),
-  mermaid: () => import("shiki/dist/langs/mermaid.mjs"),
-  yaml: () => import("shiki/dist/langs/yaml.mjs"),
-  diff: () => import("shiki/dist/langs/diff.mjs"),
+const defaultLoader: LanguageLoader = async lang => {
+  const loader = BUILTIN_LANGUAGES[BUILTIN_ALIASES[lang] ?? lang];
+  return loader ? (await loader()).default : null;
 };
+
+let activeLoader: LanguageLoader = defaultLoader;
+
+/**
+ * 注入自定义语言加载器，覆盖默认内置白名单。
+ * 建议按需 `import` 语言模块，避免引入全量语言包。
+ *
+ * @example 按需加载额外语言
+ * ```ts
+ * import { setupCodeHighlighter } from "@antdv-next/x";
+ *
+ * setupCodeHighlighter({
+ *   loadLanguage: async (lang) => {
+ *     const loaders: Record<string, () => Promise<{ default: any }>> = {
+ *       go: () => import("shiki/dist/langs/go.mjs"),
+ *       rust: () => import("shiki/dist/langs/rust.mjs"),
+ *     };
+ *     const loader = loaders[lang];
+ *     return loader ? (await loader()).default : null;
+ *   },
+ * });
+ * ```
+ */
+export function setupCodeHighlighter(options: {
+  loadLanguage?: LanguageLoader;
+}) {
+  if (options?.loadLanguage) activeLoader = options.loadLanguage;
+}
 
 let highlighter: Highlighter | null = null;
 let highlighterPromise: Promise<Highlighter> | null = null;
 const loadedLangs = new Set<string>();
+const failedLangs = new Set<string>();
+const languageLoadPromises = new Map<string, Promise<boolean>>();
 
 function normalizeLanguage(language: string | undefined): string {
-  const input = (language || "text").toLowerCase();
-  return SUPPORTED_LANG_ALIASES[input] || input;
+  return (language || "text").toLowerCase();
 }
 
 function escapeHtml(str: string): string {
@@ -67,15 +94,39 @@ async function getHighlighter() {
 }
 
 async function loadLang(lang: string) {
-  const loader = LANG_LOADERS[lang];
-  if (!loader) return false;
   if (loadedLangs.has(lang)) return true;
+  if (failedLangs.has(lang) || PLAIN_TEXT_LANGUAGES.has(lang)) return false;
 
-  const instance = await getHighlighter();
-  const mod = await loader();
-  await instance.loadLanguage(mod.default);
-  loadedLangs.add(lang);
-  return true;
+  const pendingLoad = languageLoadPromises.get(lang);
+  if (pendingLoad) return pendingLoad;
+
+  const loadPromise = (async () => {
+    try {
+      const registration = await activeLoader(lang);
+      if (!registration) {
+        failedLangs.add(lang);
+        return false;
+      }
+      const instance = await getHighlighter();
+      await instance.loadLanguage(registration);
+      loadedLangs.add(lang);
+      return true;
+    } catch (error) {
+      const loadError =
+        error instanceof Error ? error : new Error(String(error));
+      failedLangs.add(lang);
+      console.warn(
+        `[CodeHighlighter] Failed to load language: ${lang}`,
+        loadError,
+      );
+      return false;
+    } finally {
+      languageLoadPromises.delete(lang);
+    }
+  })();
+
+  languageLoadPromises.set(lang, loadPromise);
+  return loadPromise;
 }
 
 export async function codeToHtml(

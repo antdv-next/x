@@ -1,5 +1,7 @@
 import CodeHighlighter from "./CodeHighlighter";
 
+export { setupCodeHighlighter } from "./shiki";
+
 export type {
   CodeHighlighterHeaderSlotScope,
   CodeHighlighterProps,

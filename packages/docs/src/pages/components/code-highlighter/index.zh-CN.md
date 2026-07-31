@@ -10,9 +10,34 @@ description: 用于 AI 对话场景中展示代码块，提供语法高亮、行
 - 技术文档中的代码示例
 - 聊天消息中的代码片段
 
+## 语言支持
+
+组件默认内置 6 种常用语言并按需加载语法：`typescript`（含 `ts`）、`javascript`（含 `js`）、`python`（含 `py`）、`json`、`html`、`css`。其他语言会安全降级为纯文本显示。
+
+如需支持更多语言，可通过 `setupCodeHighlighter` 注入自定义语言加载器，按需 `import` 对应语言模块（避免引入全量语言包）：
+
+```ts
+import { setupCodeHighlighter } from "@antdv-next/x";
+
+// 按需加载额外语言，仅打包用到的语言
+setupCodeHighlighter({
+  loadLanguage: async lang => {
+    const loaders: Record<string, () => Promise<{ default: any }>> = {
+      go: () => import("shiki/dist/langs/go.mjs"),
+      rust: () => import("shiki/dist/langs/rust.mjs"),
+      java: () => import("shiki/dist/langs/java.mjs"),
+    };
+    const loader = loaders[lang];
+    return loader ? (await loader()).default : null;
+  },
+});
+```
+
 ## 代码演示
 
 <demo src="./demo/basic.vue">基本用法</demo>
+
+<demo src="./demo/lazy-language.vue">动态加载语言高亮</demo>
 
 <demo src="./demo/theme.vue">主题切换</demo>
 
@@ -26,18 +51,18 @@ description: 用于 AI 对话场景中展示代码块，提供语法高亮、行
 
 ### 属性
 
-| 属性            | 说明                 | 类型                                                                                         | 默认值    |
-| --------------- | -------------------- | -------------------------------------------------------------------------------------------- | --------- |
-| content         | 代码内容             | `string`                                                                                     | -         |
-| language        | 代码语言类型         | `string`                                                                                     | `'text'`  |
-| showLineNumbers | 是否显示行号         | `boolean`                                                                                    | `true`    |
-| showLanguage    | 是否显示语言标识     | `boolean`                                                                                    | `true`    |
-| showThemeToggle | 是否显示主题切换按钮 | `boolean`                                                                                    | `false`   |
-| showCopyButton  | 是否显示复制按钮     | `boolean`                                                                                    | `true`    |
-| theme           | 主题模式             | `'light' \| 'dark'`                                                                          | `'light'` |
-| startLineNumber | 起始行号             | `number`                                                                                     | `1`       |
-| classes         | 自定义类名           | `Partial<Record<'root' \| 'header' \| 'headerTitle' \| 'code' \| 'content', string>>`        | -         |
-| styles          | 自定义样式           | `Partial<Record<'root' \| 'header' \| 'headerTitle' \| 'code' \| 'content', CSSProperties>>` | -         |
+| 属性            | 说明                                          | 类型                                                                                         | 默认值    |
+| --------------- | --------------------------------------------- | -------------------------------------------------------------------------------------------- | --------- |
+| content         | 代码内容                                      | `string`                                                                                     | -         |
+| language        | 代码语言；按需加载 Shiki 内置语言及其官方别名 | `string`                                                                                     | `'text'`  |
+| showLineNumbers | 是否显示行号                                  | `boolean`                                                                                    | `true`    |
+| showLanguage    | 是否显示语言标识                              | `boolean`                                                                                    | `true`    |
+| showThemeToggle | 是否显示主题切换按钮                          | `boolean`                                                                                    | `false`   |
+| showCopyButton  | 是否显示复制按钮                              | `boolean`                                                                                    | `true`    |
+| theme           | 主题模式                                      | `'light' \| 'dark'`                                                                          | `'light'` |
+| startLineNumber | 起始行号                                      | `number`                                                                                     | `1`       |
+| classes         | 自定义类名                                    | `Partial<Record<'root' \| 'header' \| 'headerTitle' \| 'code' \| 'content', string>>`        | -         |
+| styles          | 自定义样式                                    | `Partial<Record<'root' \| 'header' \| 'headerTitle' \| 'code' \| 'content', CSSProperties>>` | -         |
 
 ### 事件
 
@@ -69,6 +94,14 @@ description: 用于 AI 对话场景中展示代码块，提供语法高亮、行
 | 属性          | 说明              | 类型             |
 | ------------- | ----------------- | ---------------- |
 | nativeElement | 获取原生 DOM 元素 | `HTMLDivElement` |
+
+### 扩展语言
+
+| 函数名               | 说明                                     | 参数                                                       |
+| -------------------- | ---------------------------------------- | ---------------------------------------------------------- |
+| setupCodeHighlighter | 注入自定义语言加载器，覆盖默认内置白名单 | `{ loadLanguage: (lang: string) => Promise<any \| null> }` |
+
+`loadLanguage` 接收语言名，返回 Shiki 语言注册信息或 `null`（降级为纯文本）。
 
 ## 语义化 DOM
 
