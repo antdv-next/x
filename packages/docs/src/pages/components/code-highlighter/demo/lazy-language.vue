@@ -1,66 +1,54 @@
 <script setup lang="ts">
+import { setupCodeHighlighter } from "@antdv-next/x";
 import { computed, ref } from "vue";
 
+// 默认仅内置 6 种常用语言（ts/js/python/json/html/css）。
+// Go / Rust / Java 不在内置白名单中，需通过 setupCodeHighlighter 注入加载器，
+// 切换时才会按需动态加载对应语法。
+setupCodeHighlighter({
+  loadLanguage: async lang => {
+    const loaders: Record<string, () => Promise<{ default: any }>> = {
+      go: () => import("shiki/dist/langs/go.mjs"),
+      rust: () => import("shiki/dist/langs/rust.mjs"),
+      java: () => import("shiki/dist/langs/java.mjs"),
+    };
+    const loader = loaders[lang];
+    return loader ? (await loader()).default : null;
+  },
+});
+
 const snippets = {
-  typescript: {
-    label: "TypeScript",
-    code: `function greet(name: string) {
-  console.log(\`Hello, \${name}!\`);
-  return { message: \`Welcome, \${name}\`, timestamp: Date.now() };
-}
+  go: {
+    label: "Go",
+    code: `package main
 
-const result = greet("World");
-console.log(result);`,
-  },
-  javascript: {
-    label: "JavaScript",
-    code: `function greet(name) {
-  console.log(\`Hello, \${name}!\`);
-  return { message: \`Welcome, \${name}\`, timestamp: Date.now() };
-}
+import "fmt"
 
-const result = greet("World");
-console.log(result);`,
-  },
-  python: {
-    label: "Python",
-    code: `def fibonacci(n):
-    if n <= 1:
-        return n
-    return fibonacci(n - 1) + fibonacci(n - 2)
-
-print([fibonacci(i) for i in range(10)])`,
-  },
-  json: {
-    label: "JSON",
-    code: `{
-  "name": "antdv-next",
-  "version": "1.1.3",
-  "dependencies": {
-    "vue": "^3.5.0",
-    "antdv-next": "catalog:latest"
-  }
+func main() {
+    names := []string{"Alice", "Bob"}
+    for i, name := range names {
+        fmt.Println(i, "Hello,", name)
+    }
 }`,
   },
-  html: {
-    label: "HTML",
-    code: `<!DOCTYPE html>
-<html lang="en">
-  <body>
-    <h1 id="title">Hello World</h1>
-    <button onclick="alert('hi')">Click</button>
-  </body>
-</html>`,
+  rust: {
+    label: "Rust",
+    code: `fn main() {
+    let names = vec!["Alice", "Bob"];
+    for (i, name) in names.iter().enumerate() {
+        println!("{}: Hello, {}!", i, name);
+    }
+}`,
   },
-  css: {
-    label: "CSS",
-    code: `.card {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 16px;
-  border-radius: 8px;
-  color: var(--text-color);
+  java: {
+    label: "Java",
+    code: `public class Main {
+    public static void main(String[] args) {
+        String[] names = {"Alice", "Bob"};
+        for (int i = 0; i < names.length; i++) {
+            System.out.println(i + ": Hello, " + names[i] + "!");
+        }
+    }
 }`,
   },
 } as const;
@@ -70,12 +58,12 @@ const options = [
   { value: "text", label: "Plain Text" },
 ];
 
-const language = ref<string>("typescript");
+const language = ref<string>("go");
 
 const current = computed(() => {
   if (language.value === "text") {
     return {
-      code: "This is plain text without a recognized grammar, so no syntax highlighting is applied.",
+      code: "This language has no registered loader, so it falls back to plain text without syntax highlighting.",
       language: "text",
     };
   }
@@ -92,9 +80,9 @@ const current = computed(() => {
 </template>
 
 <docs lang="zh-CN">
-组件内置 `typescript`、`javascript`、`python`、`json`、`html`、`css` 六种常用语言，切换时按需加载对应语法；其他语言可通过 `setupCodeHighlighter` 注入自定义加载器扩展。
+默认仅内置 6 种常用语言。本 demo 通过 `setupCodeHighlighter` 注入 Go / Rust / Java 的加载器，切换时按需动态加载对应语法；未注册语言（如 Plain Text）则降级为纯文本。
 </docs>
 
 <docs lang="en-US">
-The component ships with six built-in languages: `typescript`, `javascript`, `python`, `json`, `html`, and `css`, loading each grammar on demand. Additional languages can be added via `setupCodeHighlighter`.
+Only six common languages are built in. This demo injects Go / Rust / Java loaders via `setupCodeHighlighter`, loading each grammar on demand when switched to. Unregistered languages (e.g. Plain Text) fall back to plain text.
 </docs>
