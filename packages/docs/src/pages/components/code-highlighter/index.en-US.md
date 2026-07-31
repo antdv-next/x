@@ -10,6 +10,10 @@ description: Display code blocks in AI conversation scenarios with syntax highli
 - Code examples in technical documentation
 - Code snippets in chat messages
 
+## Language Support
+
+The component loads bundled Shiki languages and their official aliases on demand based on `language`, including `go`, `rust`, `rs`, and `c++`. Unknown languages safely fall back to plain text.
+
 ## Examples
 
 <demo src="./demo/basic.vue">Basic Usage</demo>
@@ -26,18 +30,18 @@ description: Display code blocks in AI conversation scenarios with syntax highli
 
 ### Props
 
-| Property        | Description                         | Type                                                                                         | Default   |
-| --------------- | ----------------------------------- | -------------------------------------------------------------------------------------------- | --------- |
-| content         | Code content                        | `string`                                                                                     | -         |
-| language        | Code language                       | `string`                                                                                     | `'text'`  |
-| showLineNumbers | Whether to show line numbers        | `boolean`                                                                                    | `true`    |
-| showLanguage    | Whether to show language label      | `boolean`                                                                                    | `true`    |
-| showThemeToggle | Whether to show theme toggle button | `boolean`                                                                                    | `false`   |
-| showCopyButton  | Whether to show copy button         | `boolean`                                                                                    | `true`    |
-| theme           | Theme mode                          | `'light' \| 'dark'`                                                                          | `'light'` |
-| startLineNumber | Starting line number                | `number`                                                                                     | `1`       |
-| classes         | Custom class names                  | `Partial<Record<'root' \| 'header' \| 'headerTitle' \| 'code' \| 'content', string>>`        | -         |
-| styles          | Custom styles                       | `Partial<Record<'root' \| 'header' \| 'headerTitle' \| 'code' \| 'content', CSSProperties>>` | -         |
+| Property        | Description                                                        | Type                                                                                         | Default   |
+| --------------- | ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------- | --------- |
+| content         | Code content                                                       | `string`                                                                                     | -         |
+| language        | Code language; loads bundled Shiki languages and aliases on demand | `string`                                                                                     | `'text'`  |
+| showLineNumbers | Whether to show line numbers                                       | `boolean`                                                                                    | `true`    |
+| showLanguage    | Whether to show language label                                     | `boolean`                                                                                    | `true`    |
+| showThemeToggle | Whether to show theme toggle button                                | `boolean`                                                                                    | `false`   |
+| showCopyButton  | Whether to show copy button                                        | `boolean`                                                                                    | `true`    |
+| theme           | Theme mode                                                         | `'light' \| 'dark'`                                                                          | `'light'` |
+| startLineNumber | Starting line number                                               | `number`                                                                                     | `1`       |
+| classes         | Custom class names                                                 | `Partial<Record<'root' \| 'header' \| 'headerTitle' \| 'code' \| 'content', string>>`        | -         |
+| styles          | Custom styles                                                      | `Partial<Record<'root' \| 'header' \| 'headerTitle' \| 'code' \| 'content', CSSProperties>>` | -         |
 
 ### Events
 

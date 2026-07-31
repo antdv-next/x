@@ -2,46 +2,20 @@ import { createHighlighterCore } from "shiki/core";
 import darkTheme from "shiki/dist/themes/vitesse-dark.mjs";
 import lightTheme from "shiki/dist/themes/vitesse-light.mjs";
 import { createJavaScriptRegexEngine } from "shiki/engine/javascript";
+import { bundledLanguages } from "shiki/langs";
 
 type Highlighter = Awaited<ReturnType<typeof createHighlighterCore>>;
 
-const SUPPORTED_LANG_ALIASES: Record<string, string> = {
-  ts: "typescript",
-  js: "javascript",
-  py: "python",
-  md: "markdown",
-  yml: "yaml",
-  shell: "bash",
-  zsh: "bash",
-  sh: "bash",
-  vue: "vue",
-};
-
-const LANG_LOADERS: Record<string, () => Promise<{ default: any }>> = {
-  javascript: () => import("shiki/dist/langs/javascript.mjs"),
-  typescript: () => import("shiki/dist/langs/typescript.mjs"),
-  jsx: () => import("shiki/dist/langs/jsx.mjs"),
-  tsx: () => import("shiki/dist/langs/tsx.mjs"),
-  json: () => import("shiki/dist/langs/json.mjs"),
-  bash: () => import("shiki/dist/langs/bash.mjs"),
-  markdown: () => import("shiki/dist/langs/markdown.mjs"),
-  html: () => import("shiki/dist/langs/html.mjs"),
-  css: () => import("shiki/dist/langs/css.mjs"),
-  vue: () => import("shiki/dist/langs/vue.mjs"),
-  "vue-html": () => import("shiki/dist/langs/vue-html.mjs"),
-  python: () => import("shiki/dist/langs/python.mjs"),
-  mermaid: () => import("shiki/dist/langs/mermaid.mjs"),
-  yaml: () => import("shiki/dist/langs/yaml.mjs"),
-  diff: () => import("shiki/dist/langs/diff.mjs"),
-};
+const PLAIN_TEXT_LANGUAGES = new Set(["text", "plaintext", "txt", "plain"]);
 
 let highlighter: Highlighter | null = null;
 let highlighterPromise: Promise<Highlighter> | null = null;
 const loadedLangs = new Set<string>();
+const failedLangs = new Set<string>();
+const languageLoadPromises = new Map<string, Promise<boolean>>();
 
 function normalizeLanguage(language: string | undefined): string {
-  const input = (language || "text").toLowerCase();
-  return SUPPORTED_LANG_ALIASES[input] || input;
+  return (language || "text").toLowerCase();
 }
 
 function escapeHtml(str: string): string {
@@ -67,15 +41,43 @@ async function getHighlighter() {
 }
 
 async function loadLang(lang: string) {
-  const loader = LANG_LOADERS[lang];
-  if (!loader) return false;
   if (loadedLangs.has(lang)) return true;
+  if (failedLangs.has(lang) || PLAIN_TEXT_LANGUAGES.has(lang)) return false;
 
-  const instance = await getHighlighter();
-  const mod = await loader();
-  await instance.loadLanguage(mod.default);
-  loadedLangs.add(lang);
-  return true;
+  const pendingLoad = languageLoadPromises.get(lang);
+  if (pendingLoad) return pendingLoad;
+
+  const loader = bundledLanguages[lang as keyof typeof bundledLanguages];
+  if (!loader) {
+    const error = new Error(`Unknown language: ${lang}`);
+    failedLangs.add(lang);
+    console.warn(`[CodeHighlighter] Failed to load language: ${lang}`, error);
+    return false;
+  }
+
+  const loadPromise = (async () => {
+    try {
+      const mod = await loader();
+      const instance = await getHighlighter();
+      await instance.loadLanguage(mod.default);
+      loadedLangs.add(lang);
+      return true;
+    } catch (error) {
+      const loadError =
+        error instanceof Error ? error : new Error(String(error));
+      failedLangs.add(lang);
+      console.warn(
+        `[CodeHighlighter] Failed to load language: ${lang}`,
+        loadError,
+      );
+      return false;
+    } finally {
+      languageLoadPromises.delete(lang);
+    }
+  })();
+
+  languageLoadPromises.set(lang, loadPromise);
+  return loadPromise;
 }
 
 export async function codeToHtml(

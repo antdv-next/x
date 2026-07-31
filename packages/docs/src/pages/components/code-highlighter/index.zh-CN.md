@@ -10,6 +10,10 @@ description: 用于 AI 对话场景中展示代码块，提供语法高亮、行
 - 技术文档中的代码示例
 - 聊天消息中的代码片段
 
+## 语言支持
+
+组件会根据 `language` 按需加载 Shiki 内置语言及其官方别名，例如 `go`、`rust`、`rs` 和 `c++`。无法识别的语言会安全降级为纯文本显示。
+
 ## 代码演示
 
 <demo src="./demo/basic.vue">基本用法</demo>
@@ -26,18 +30,18 @@ description: 用于 AI 对话场景中展示代码块，提供语法高亮、行
 
 ### 属性
 
-| 属性            | 说明                 | 类型                                                                                         | 默认值    |
-| --------------- | -------------------- | -------------------------------------------------------------------------------------------- | --------- |
-| content         | 代码内容             | `string`                                                                                     | -         |
-| language        | 代码语言类型         | `string`                                                                                     | `'text'`  |
-| showLineNumbers | 是否显示行号         | `boolean`                                                                                    | `true`    |
-| showLanguage    | 是否显示语言标识     | `boolean`                                                                                    | `true`    |
-| showThemeToggle | 是否显示主题切换按钮 | `boolean`                                                                                    | `false`   |
-| showCopyButton  | 是否显示复制按钮     | `boolean`                                                                                    | `true`    |
-| theme           | 主题模式             | `'light' \| 'dark'`                                                                          | `'light'` |
-| startLineNumber | 起始行号             | `number`                                                                                     | `1`       |
-| classes         | 自定义类名           | `Partial<Record<'root' \| 'header' \| 'headerTitle' \| 'code' \| 'content', string>>`        | -         |
-| styles          | 自定义样式           | `Partial<Record<'root' \| 'header' \| 'headerTitle' \| 'code' \| 'content', CSSProperties>>` | -         |
+| 属性            | 说明                                          | 类型                                                                                         | 默认值    |
+| --------------- | --------------------------------------------- | -------------------------------------------------------------------------------------------- | --------- |
+| content         | 代码内容                                      | `string`                                                                                     | -         |
+| language        | 代码语言；按需加载 Shiki 内置语言及其官方别名 | `string`                                                                                     | `'text'`  |
+| showLineNumbers | 是否显示行号                                  | `boolean`                                                                                    | `true`    |
+| showLanguage    | 是否显示语言标识                              | `boolean`                                                                                    | `true`    |
+| showThemeToggle | 是否显示主题切换按钮                          | `boolean`                                                                                    | `false`   |
+| showCopyButton  | 是否显示复制按钮                              | `boolean`                                                                                    | `true`    |
+| theme           | 主题模式                                      | `'light' \| 'dark'`                                                                          | `'light'` |
+| startLineNumber | 起始行号                                      | `number`                                                                                     | `1`       |
+| classes         | 自定义类名                                    | `Partial<Record<'root' \| 'header' \| 'headerTitle' \| 'code' \| 'content', string>>`        | -         |
+| styles          | 自定义样式                                    | `Partial<Record<'root' \| 'header' \| 'headerTitle' \| 'code' \| 'content', CSSProperties>>` | -         |
 
 ### 事件
 
