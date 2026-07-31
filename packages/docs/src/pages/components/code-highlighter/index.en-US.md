@@ -18,6 +18,8 @@ The component loads bundled Shiki languages and their official aliases on demand
 
 <demo src="./demo/basic.vue">Basic Usage</demo>
 
+<demo src="./demo/lazy-language.vue">Lazy Language Loading</demo>
+
 <demo src="./demo/theme.vue">Theme Switching</demo>
 
 <demo src="./demo/line-numbers.vue">Line Numbers</demo>

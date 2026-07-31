@@ -18,6 +18,8 @@ description: 用于 AI 对话场景中展示代码块，提供语法高亮、行
 
 <demo src="./demo/basic.vue">基本用法</demo>
 
+<demo src="./demo/lazy-language.vue">动态加载语言高亮</demo>
+
 <demo src="./demo/theme.vue">主题切换</demo>
 
 <demo src="./demo/line-numbers.vue">行号控制</demo>
