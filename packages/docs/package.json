@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vp run --filter @antdv-next/x build:token && node ./scripts/gen-search.mjs && vp dev .",
     "build": "vp run --filter @antdv-next/x build:token && node ./scripts/llm/generate-llms-semantic.mjs && node ./scripts/llm/generate-llms.mjs && node ./scripts/gen-search.mjs && vp build .",
+    "analyze": "node ./scripts/analyze-build.mjs",
     "preview": "vp preview .",
     "build:llm": "node ./scripts/llm/generate-llms-semantic.mjs && node ./scripts/llm/generate-llms.mjs",
     "build:llm:text": "node ./scripts/llm/generate-llms.mjs",
@@ -21,6 +22,7 @@
   },
   "devDependencies": {
     "@antdv-next/auto-import-resolver": "catalog:dev",
+    "@antdv-next/auto-import-resolver-x": "catalog:dev",
     "@mdit-vue/plugin-frontmatter": "catalog:docs",
     "@mdit-vue/plugin-headers": "catalog:docs",
     "@mdit-vue/plugin-title": "catalog:docs",

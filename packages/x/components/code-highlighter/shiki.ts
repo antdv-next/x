@@ -1,11 +1,6 @@
 import type { LanguageInput } from "shiki";
 
-import { createHighlighterCore } from "shiki/core";
-import darkTheme from "shiki/dist/themes/vitesse-dark.mjs";
-import lightTheme from "shiki/dist/themes/vitesse-light.mjs";
-import { createJavaScriptRegexEngine } from "shiki/engine/javascript";
-
-type Highlighter = Awaited<ReturnType<typeof createHighlighterCore>>;
+import type { CodeHighlighterInstance } from "./shiki-runtime";
 
 export type CodeHighlighterLanguageLoader = (
   lang: string,
@@ -75,8 +70,8 @@ export function setupCodeHighlighter(
   failedLangs.clear();
 }
 
-let highlighter: Highlighter | null = null;
-let highlighterPromise: Promise<Highlighter> | null = null;
+let highlighter: CodeHighlighterInstance | null = null;
+let highlighterPromise: Promise<CodeHighlighterInstance> | null = null;
 const loadedLangs = new Set<string>();
 const failedLangs = new Set<string>();
 const languageLoadPromises = new Map<string, Promise<boolean>>();
@@ -97,11 +92,9 @@ function escapeHtml(str: string): string {
 async function getHighlighter() {
   if (highlighter) return highlighter;
   if (!highlighterPromise) {
-    highlighterPromise = createHighlighterCore({
-      themes: [lightTheme, darkTheme],
-      langs: [],
-      engine: createJavaScriptRegexEngine(),
-    });
+    highlighterPromise = import("./shiki-runtime").then(
+      ({ createHighlighter }) => createHighlighter(),
+    );
   }
   highlighter = await highlighterPromise;
   return highlighter;

@@ -1,4 +1,3 @@
-import Antdx from "@antdv-next/x";
 import "@antdv-next/x-markdown/themes/index.css";
 import dayjs from "dayjs";
 import advancedFormat from "dayjs/plugin/advancedFormat";
@@ -32,7 +31,6 @@ const app = createApp(App);
 app.use(createPinia());
 app.use(router);
 app.use(i18n);
-app.use(Antdx);
 app.component("Demo", Demo);
 app.component("DemoGroup", DemoGroup);
 app.component("ComponentOverview", ComponentOverview);

@@ -275,8 +275,14 @@ export default demos
         const normalizedFile = normalizePath(filePath);
         this.addWatchFile(filePath);
 
-        const { locales, sourceCode, jsSourceCode, sourceHtml, jsSourceHtml, extraFiles } =
-          await getParsedDemo(filePath);
+        const {
+          locales,
+          sourceCode,
+          jsSourceCode,
+          sourceHtml,
+          jsSourceHtml,
+          extraFiles,
+        } = await getParsedDemo(filePath);
 
         // Watch extra files so HMR re-runs this loader when they change.
         for (const file of extraFiles) {
@@ -284,17 +290,19 @@ export default demos
         }
 
         const isDev = this.meta?.watchMode === true;
-        // Production: emit highlighted data as a JSON asset for on-demand fetch.
+        // Production: emit source data as a JSON asset for on-demand fetch.
         // getFileName() returns a path relative to outDir root (e.g. "assets/foo.json"),
         // so prefix with BASE_URL to form a root-relative URL that resolves correctly
-        // regardless of deploy base (root "/" or PR-preview "/pr/155/"). Without the
+        // regardless of deploy base (root "/" or a PR-preview subpath). Without the
         // prefix, new URL("assets/foo.json", import.meta.url) doubles the "assets/"
         // segment (chunk already lives under assets/) and 404s.
-        const highlightedUrl = this.getFileName(
+        const sourceUrl = this.getFileName(
           this.emitFile({
             type: "asset",
-            name: `demo-highlighted-${path.basename(filePath, ".vue")}.json`,
+            name: `demo-source-${path.basename(filePath, ".vue")}.json`,
             source: JSON.stringify({
+              source: sourceCode,
+              jsSource: jsSourceCode,
               html: sourceHtml,
               jsHtml: jsSourceHtml,
               extraFiles,
@@ -342,17 +350,15 @@ export default demoData
 import { ref } from 'vue'
 
 const localesRef = ref(${JSON.stringify(locales)})
-const sourceRef = ref(${JSON.stringify(sourceCode)})
-const jsSourceRef = ref(${JSON.stringify(jsSourceCode)})
 
 const demoData = {
   component: () => import(${JSON.stringify(filePath)}),
   get locales() { return localesRef.value },
-  get source() { return sourceRef.value },
-  get jsSource() { return jsSourceRef.value },
-  async loadHighlighted() {
-    const url = new URL(import.meta.env.BASE_URL + ${JSON.stringify(highlightedUrl)}, import.meta.url)
+  async loadSource() {
+    const url = new URL(import.meta.env.BASE_URL + ${JSON.stringify(sourceUrl)}, import.meta.url)
     const res = await fetch(url.href)
+    if (!res.ok)
+      throw new Error(\`Failed to load demo source: \${res.status} \${res.statusText}\`)
     return res.json()
   }
 }
@@ -361,8 +367,6 @@ if (import.meta.hot) {
   import.meta.hot.accept()
   import.meta.hot.on(${JSON.stringify(`demo-update:${normalizedFile}`)}, (data) => {
     if ('locales' in data) localesRef.value = data.locales
-    if ('source' in data) sourceRef.value = data.source
-    if ('jsSource' in data) jsSourceRef.value = data.jsSource
   })
 }
 

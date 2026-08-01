@@ -1,4 +1,5 @@
 import { AntdvNextResolver } from "@antdv-next/auto-import-resolver";
+import { AntdvNextXResolver } from "@antdv-next/auto-import-resolver-x";
 import vue from "@vitejs/plugin-vue";
 import vueJsx from "@vitejs/plugin-vue-jsx";
 import { fileURLToPath, URL } from "node:url";
@@ -34,10 +35,18 @@ export default defineConfig({
     components({
       dts: "types/components.d.ts",
       dirs: [],
-      resolvers: [AntdvNextResolver()],
+      resolvers: [
+        AntdvNextResolver(),
+        AntdvNextXResolver(),
+        name =>
+          name === "AxFolder"
+            ? { name: "Folder", from: "@antdv-next/x" }
+            : undefined,
+      ],
     }),
   ],
   build: {
+    manifest: true,
     modulePreload: false,
   },
   resolve: {
