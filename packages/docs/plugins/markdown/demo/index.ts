@@ -9,6 +9,15 @@ import { parse } from "vue/compiler-sfc";
 import { createMarkdown, loadBaseMd, loadShiki } from "../markdown";
 import { tsToJs } from "./tsToJs";
 
+interface ParsedDemoFile {
+  locales: Record<string, { html: string; title: string }>;
+  sourceCode: string;
+  jsSourceCode: string;
+  sourceHtml: string;
+  jsSourceHtml: string;
+  extraFiles: DemoExtraFile[];
+}
+
 interface DemoExtraFile {
   name: string;
   lang: string;
@@ -91,7 +100,7 @@ function toDemoKey(filePath: string, root: string) {
 async function parseDemoFile(
   filePath: string,
   md: ReturnType<ReturnType<typeof createMarkdown>>,
-) {
+): Promise<ParsedDemoFile> {
   const code = await fs.readFile(filePath, "utf-8");
   const { descriptor } = parse(code, {
     filename: filePath,
@@ -150,6 +159,16 @@ export function demoPlugin(): PluginOption {
   const DEMO_GLOB = ["/src/pages/**/demo/*.vue"];
   const DEMO_REGISTRY_ADD_EVENT = "demo-registry:add";
   const DEMO_REGISTRY_REMOVE_EVENT = "demo-registry:remove";
+
+  // Cache parsed demo files so core + highlighted modules don't parse twice.
+  const demoParseCache = new Map<string, ParsedDemoFile>();
+
+  async function getParsedDemo(filePath: string) {
+    if (!demoParseCache.has(filePath)) {
+      demoParseCache.set(filePath, await parseDemoFile(filePath, md));
+    }
+    return demoParseCache.get(filePath)!;
+  }
 
   return {
     name: "vite:demo",
@@ -256,18 +275,32 @@ export default demos
         const normalizedFile = normalizePath(filePath);
         this.addWatchFile(filePath);
 
-        const {
-          locales,
-          sourceCode,
-          jsSourceCode,
-          sourceHtml,
-          jsSourceHtml,
-          extraFiles,
-        } = await parseDemoFile(filePath, md);
+        const { locales, sourceCode, jsSourceCode, sourceHtml, jsSourceHtml, extraFiles } =
+          await getParsedDemo(filePath);
 
         // Watch extra files so HMR re-runs this loader when they change.
         for (const file of extraFiles) {
           this.addWatchFile(path.resolve(path.dirname(filePath), file.name));
+        }
+
+        // Emit the highlighted data as a JSON asset so it can be fetched on demand.
+        const highlightedAssetName = `demo-highlighted-${path.basename(filePath, ".vue")}.json`;
+        const highlightedRef = this.emitFile({
+          type: "asset",
+          name: highlightedAssetName,
+          source: JSON.stringify({
+            html: sourceHtml,
+            jsHtml: jsSourceHtml,
+            extraFiles,
+          }),
+        });
+        let highlightedUrl = "";
+        try {
+          highlightedUrl = this.getFileName(highlightedRef);
+        } catch {
+          // getFileName may not be available during load; use a placeholder
+          // that will be resolved in generateBundle.
+          highlightedUrl = `__HIGHLIGHTED_ASSET__${highlightedRef}__`;
         }
 
         return {
@@ -277,18 +310,17 @@ import { ref } from 'vue'
 const localesRef = ref(${JSON.stringify(locales)})
 const sourceRef = ref(${JSON.stringify(sourceCode)})
 const jsSourceRef = ref(${JSON.stringify(jsSourceCode)})
-const htmlRef = ref(${JSON.stringify(sourceHtml)})
-const jsHtmlRef = ref(${JSON.stringify(jsSourceHtml)})
-const extraFilesRef = ref(${JSON.stringify(extraFiles)})
 
 const demoData = {
   component: () => import(${JSON.stringify(filePath)}),
   get locales() { return localesRef.value },
   get source() { return sourceRef.value },
   get jsSource() { return jsSourceRef.value },
-  get html() { return htmlRef.value },
-  get jsHtml() { return jsHtmlRef.value },
-  get extraFiles() { return extraFilesRef.value }
+  async loadHighlighted() {
+    const url = new URL(${JSON.stringify(highlightedUrl)}, import.meta.url)
+    const res = await fetch(url.href)
+    return res.json()
+  }
 }
 
 if (import.meta.hot) {
@@ -297,9 +329,6 @@ if (import.meta.hot) {
     if ('locales' in data) localesRef.value = data.locales
     if ('source' in data) sourceRef.value = data.source
     if ('jsSource' in data) jsSourceRef.value = data.jsSource
-    if ('html' in data) htmlRef.value = data.html
-    if ('jsHtml' in data) jsHtmlRef.value = data.jsHtml
-    if ('extraFiles' in data) extraFilesRef.value = data.extraFiles
   })
 }
 
@@ -309,10 +338,29 @@ export default demoData
         };
       }
     },
+    generateBundle(_options: Record<string, unknown>, bundle: Record<string, { type: string; code?: string }>) {
+      // Replace placeholder asset URLs with actual file names.
+      const placeholderRe = /__HIGHLIGHTED_ASSET__([a-zA-Z0-9_-]+)__/g;
+      for (const fileName of Object.keys(bundle)) {
+        const chunk = bundle[fileName];
+        if (chunk.type === "chunk" && chunk.code) {
+          chunk.code = chunk.code.replace(placeholderRe, (_, refId) => {
+            try {
+              return this.getFileName(refId);
+            } catch {
+              return refId;
+            }
+          });
+        }
+      }
+    },
     async handleHotUpdate(ctx) {
       if (!isDemoFile(ctx.file, ctx.server.config.root, DEMO_GLOB)) return;
 
       const normalizedFile = normalizePath(ctx.file);
+
+      // Bust cache and re-parse.
+      demoParseCache.delete(ctx.file);
       const {
         locales,
         sourceCode,
@@ -320,7 +368,8 @@ export default demoData
         sourceHtml,
         jsSourceHtml,
         extraFiles,
-      } = await parseDemoFile(ctx.file, md);
+      } = await getParsedDemo(ctx.file);
+
       ctx.server.ws.send({
         type: "custom",
         event: `demo-update:${normalizedFile}`,

@@ -168,8 +168,25 @@ const router = useRouter();
 const showCode = shallowRef(false);
 const codeType = shallowRef<string>("ts");
 const demo = shallowRef<any>(null);
+const highlighted = shallowRef<any>(null);
 const demoLoading = shallowRef(true);
 let demoLoadVersion = 0;
+
+// When user clicks "show code", load the highlighted source code on demand.
+watch(showCode, async (val) => {
+  if (val && demo.value?.loadHighlighted && !highlighted.value) {
+    try {
+      highlighted.value = await demo.value.loadHighlighted();
+    } catch {
+      // ignore load failures
+    }
+  }
+});
+
+// Reset highlighted when demo changes.
+watch(demo, () => {
+  highlighted.value = null;
+});
 
 watch(
   () => props.src,
@@ -218,7 +235,7 @@ const id = computed(() => getDemoId(props.src));
 const hasJsSource = computed(() => Boolean(demo.value?.jsSource?.trim()));
 const extraFiles = computed<
   { name: string; lang: string; code: string; html: string }[]
->(() => demo.value?.extraFiles ?? []);
+>(() => highlighted.value?.extraFiles ?? []);
 const hasExtraFiles = computed(() => extraFiles.value.length > 0);
 const hasCodeTabs = computed(() => hasJsSource.value || hasExtraFiles.value);
 const codeTabKeys = computed(() => {
@@ -248,8 +265,8 @@ const sourceCode = computed(() => {
 const sourceHtml = computed(() => {
   if (activeExtraFile.value) return activeExtraFile.value.html;
   if (activeCodeType.value === "js")
-    return demo.value?.jsHtml || demo.value?.html || "";
-  return demo.value?.html || "";
+    return highlighted.value?.jsHtml || highlighted.value?.html || "";
+  return highlighted.value?.html || "";
 });
 
 const { copied, copy } = useClipboard({
