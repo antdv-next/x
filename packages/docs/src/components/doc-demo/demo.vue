@@ -173,12 +173,19 @@ const demoLoading = shallowRef(true);
 let demoLoadVersion = 0;
 
 // When user clicks "show code", load the highlighted source code on demand.
+// In build mode, highlighted data is loaded via loadHighlighted().
+// In dev mode, highlighted data is already embedded in the demo object.
 watch(showCode, async (val) => {
-  if (val && demo.value?.loadHighlighted && !highlighted.value) {
-    try {
-      highlighted.value = await demo.value.loadHighlighted();
-    } catch {
-      // ignore load failures
+  if (val && !highlighted.value) {
+    if (demo.value?.loadHighlighted) {
+      try {
+        highlighted.value = await demo.value.loadHighlighted();
+      } catch {
+        // ignore load failures
+      }
+    } else {
+      // Dev mode: data is already embedded directly.
+      highlighted.value = demo.value;
     }
   }
 });

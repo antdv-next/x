@@ -283,28 +283,68 @@ export default demos
           this.addWatchFile(path.resolve(path.dirname(filePath), file.name));
         }
 
-        // Emit the highlighted data as a JSON asset so it can be fetched on demand.
-        const highlightedAssetName = `demo-highlighted-${path.basename(filePath, ".vue")}.json`;
-        const highlightedRef = this.emitFile({
-          type: "asset",
-          name: highlightedAssetName,
-          source: JSON.stringify({
-            html: sourceHtml,
-            jsHtml: jsSourceHtml,
-            extraFiles,
-          }),
+        // In dev mode, embed highlighted data directly since emitFile is unreliable.
+        // In production build, emit as a JSON asset for on-demand loading.
+        const isDev = this.meta?.watchMode === true;
+
+        const highlightedData = JSON.stringify({
+          html: sourceHtml,
+          jsHtml: jsSourceHtml,
+          extraFiles,
         });
+
         let highlightedUrl = "";
-        try {
-          highlightedUrl = this.getFileName(highlightedRef);
-        } catch {
-          // getFileName may not be available during load; use a placeholder
-          // that will be resolved in generateBundle.
-          highlightedUrl = `__HIGHLIGHTED_ASSET__${highlightedRef}__`;
+        if (!isDev) {
+          const highlightedAssetName = `demo-highlighted-${path.basename(filePath, ".vue")}.json`;
+          const highlightedRef = this.emitFile({
+            type: "asset",
+            name: highlightedAssetName,
+            source: highlightedData,
+          });
+          try {
+            highlightedUrl = this.getFileName(highlightedRef);
+          } catch {
+            highlightedUrl = `__HIGHLIGHTED_ASSET__${highlightedRef}__`;
+          }
         }
 
         return {
-          code: `
+          code: isDev
+            ? `
+import { ref } from 'vue'
+
+const localesRef = ref(${JSON.stringify(locales)})
+const sourceRef = ref(${JSON.stringify(sourceCode)})
+const jsSourceRef = ref(${JSON.stringify(jsSourceCode)})
+const htmlRef = ref(${JSON.stringify(sourceHtml)})
+const jsHtmlRef = ref(${JSON.stringify(jsSourceHtml)})
+const extraFilesRef = ref(${JSON.stringify(extraFiles)})
+
+const demoData = {
+  component: () => import(${JSON.stringify(filePath)}),
+  get locales() { return localesRef.value },
+  get source() { return sourceRef.value },
+  get jsSource() { return jsSourceRef.value },
+  get html() { return htmlRef.value },
+  get jsHtml() { return jsHtmlRef.value },
+  get extraFiles() { return extraFilesRef.value }
+}
+
+if (import.meta.hot) {
+  import.meta.hot.accept()
+  import.meta.hot.on(${JSON.stringify(`demo-update:${normalizedFile}`)}, (data) => {
+    if ('locales' in data) localesRef.value = data.locales
+    if ('source' in data) sourceRef.value = data.source
+    if ('jsSource' in data) jsSourceRef.value = data.jsSource
+    if ('html' in data) htmlRef.value = data.html
+    if ('jsHtml' in data) jsHtmlRef.value = data.jsHtml
+    if ('extraFiles' in data) extraFilesRef.value = data.extraFiles
+  })
+}
+
+export default demoData
+`
+            : `
 import { ref } from 'vue'
 
 const localesRef = ref(${JSON.stringify(locales)})
