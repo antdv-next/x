@@ -168,31 +168,57 @@ const router = useRouter();
 const showCode = shallowRef(false);
 const codeType = shallowRef<string>("ts");
 const demo = shallowRef<any>(null);
-const highlighted = shallowRef<any>(null);
+const sourceData = shallowRef<any>(null);
+const sourceLoading = shallowRef(false);
+const sourceLoadError = shallowRef<Error | null>(null);
 const demoLoading = shallowRef(true);
 let demoLoadVersion = 0;
+let sourceLoadPromise: Promise<void> | null = null;
 
-// When user clicks "show code", load the highlighted source code on demand.
-// In build mode, highlighted data is loaded via loadHighlighted().
-// In dev mode, highlighted data is already embedded in the demo object.
-watch(showCode, async (val) => {
-  if (val && !highlighted.value) {
-    if (demo.value?.loadHighlighted) {
-      try {
-        highlighted.value = await demo.value.loadHighlighted();
-      } catch {
-        // ignore load failures
+async function ensureSourceLoaded() {
+  if (sourceData.value || !demo.value) return;
+  if (sourceLoadPromise) return sourceLoadPromise;
+
+  const currentDemo = demo.value;
+  sourceLoading.value = true;
+  sourceLoadError.value = null;
+
+  const request = Promise.resolve(
+    currentDemo.loadSource ? currentDemo.loadSource() : currentDemo,
+  )
+    .then(data => {
+      if (demo.value === currentDemo) sourceData.value = data;
+    })
+    .catch(error => {
+      const loadError =
+        error instanceof Error ? error : new Error(String(error));
+      if (demo.value === currentDemo) sourceLoadError.value = loadError;
+      throw loadError;
+    })
+    .finally(() => {
+      if (sourceLoadPromise === request) {
+        sourceLoadPromise = null;
+        sourceLoading.value = false;
       }
-    } else {
-      // Dev mode: data is already embedded directly.
-      highlighted.value = demo.value;
-    }
-  }
-});
+    });
 
-// Reset highlighted when demo changes.
-watch(demo, () => {
-  highlighted.value = null;
+  sourceLoadPromise = request;
+  return request;
+}
+
+watch(
+  demo,
+  () => {
+    sourceData.value = null;
+    sourceLoadError.value = null;
+    sourceLoadPromise = null;
+    sourceLoading.value = false;
+  },
+  { flush: "sync" },
+);
+
+watch([showCode, demo], ([visible, currentDemo]) => {
+  if (visible && currentDemo) void ensureSourceLoaded().catch(() => {});
 });
 
 watch(
@@ -239,10 +265,10 @@ const component = computed<Component | undefined>(() => {
 });
 
 const id = computed(() => getDemoId(props.src));
-const hasJsSource = computed(() => Boolean(demo.value?.jsSource?.trim()));
+const hasJsSource = computed(() => Boolean(sourceData.value?.jsSource?.trim()));
 const extraFiles = computed<
   { name: string; lang: string; code: string; html: string }[]
->(() => highlighted.value?.extraFiles ?? []);
+>(() => sourceData.value?.extraFiles ?? []);
 const hasExtraFiles = computed(() => extraFiles.value.length > 0);
 const hasCodeTabs = computed(() => hasJsSource.value || hasExtraFiles.value);
 const codeTabKeys = computed(() => {
@@ -266,14 +292,14 @@ const activeExtraFile = computed(() =>
 const sourceCode = computed(() => {
   if (activeExtraFile.value) return activeExtraFile.value.code;
   if (activeCodeType.value === "js")
-    return demo.value?.jsSource || demo.value?.source || "";
-  return demo.value?.source || "";
+    return sourceData.value?.jsSource || sourceData.value?.source || "";
+  return sourceData.value?.source || "";
 });
 const sourceHtml = computed(() => {
   if (activeExtraFile.value) return activeExtraFile.value.html;
   if (activeCodeType.value === "js")
-    return highlighted.value?.jsHtml || highlighted.value?.html || "";
-  return highlighted.value?.html || "";
+    return sourceData.value?.jsHtml || sourceData.value?.html || "";
+  return sourceData.value?.html || "";
 });
 
 const { copied, copy } = useClipboard({
@@ -306,12 +332,28 @@ function navigateToAnchor(event: MouseEvent) {
   });
 }
 
-function openPlayground() {
-  window.open(
-    loadPlaygroundUrl(demo.value?.source || ""),
-    "_blank",
-    "noopener,noreferrer",
-  );
+async function copySource() {
+  try {
+    await ensureSourceLoaded();
+    await copy();
+  } catch {
+    showCode.value = true;
+  }
+}
+
+async function openPlayground() {
+  const playgroundWindow = window.open("about:blank", "_blank");
+  if (playgroundWindow) playgroundWindow.opener = null;
+
+  try {
+    await ensureSourceLoaded();
+    const url = loadPlaygroundUrl(sourceData.value?.source || "");
+    if (playgroundWindow) playgroundWindow.location.replace(url);
+    else window.open(url, "_blank", "noopener,noreferrer");
+  } catch {
+    playgroundWindow?.close();
+    showCode.value = true;
+  }
 }
 </script>
 
@@ -362,7 +404,7 @@ function openPlayground() {
             <button
               class="ant-doc-demo-box-code-action"
               type="button"
-              @click="copy()"
+              @click="copySource"
             >
               <CheckOutlined v-if="copied" />
               <CopyOutlined v-else />
@@ -401,13 +443,26 @@ function openPlayground() {
             />
           </a-tabs>
         </div>
-        <div class="ant-doc-demo-box-code">
+        <div v-if="sourceLoading" class="ant-doc-demo-box-code">
+          <a-spin />
+        </div>
+        <div v-else-if="sourceLoadError" class="ant-doc-demo-box-code">
+          <a-alert
+            type="error"
+            :message="
+              preferredLocale === 'en-US'
+                ? 'Failed to load source code'
+                : '源码加载失败'
+            "
+          />
+        </div>
+        <div v-else class="ant-doc-demo-box-code">
           <a-tooltip :title="copied ? '已复制' : '复制代码'">
             <button
               class="ant-doc-demo-box-code-copy"
               :class="{ 'ant-doc-demo-box-code-copied': copied }"
               type="button"
-              @click="copy()"
+              @click="copySource"
             >
               <CopyOutlined v-if="!copied" />
               <CheckOutlined v-else />

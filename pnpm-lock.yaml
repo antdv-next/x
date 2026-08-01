@@ -13,6 +13,9 @@ catalogs:
     '@antdv-next/auto-import-resolver':
       specifier: ^1.0.5
       version: 1.0.7
+    '@antdv-next/auto-import-resolver-x':
+      specifier: ^0.0.1
+      version: 0.0.1
     '@tsconfig/node24':
       specifier: ^24.0.4
       version: 24.0.4
@@ -385,6 +388,9 @@ importers:
       '@antdv-next/auto-import-resolver':
         specifier: catalog:dev
         version: 1.0.7(unplugin-vue-components@31.1.0(vue@3.5.31(typescript@5.9.3)))
+      '@antdv-next/auto-import-resolver-x':
+        specifier: catalog:dev
+        version: 0.0.1(unplugin-vue-components@31.1.0(vue@3.5.31(typescript@5.9.3)))
       '@mdit-vue/plugin-frontmatter':
         specifier: catalog:docs
         version: 2.1.4
@@ -609,6 +615,12 @@ packages:
 
   '@ant-design/icons-svg@4.4.2':
     resolution: {integrity: sha512-vHbT+zJEVzllwP+CM+ul7reTEfBR0vgxFe7+lREAsAA7YGsYpboiq2sQNeQeRvh09GfQgs/GyFEvZpJ9cLXpXA==}
+
+  '@antdv-next/auto-import-resolver-x@0.0.1':
+    resolution: {integrity: sha512-d+lkZVkmzkB8135jdDRal717eVqapamhUvxlsjx8VIBq3pcDsaIf8a+WbcCa1jO3m+EUnwgVrJvSP8Hvo2nzKg==}
+    engines: {node: '>=20.19.0'}
+    peerDependencies:
+      unplugin-vue-components: '>=28.0.0'
 
   '@antdv-next/auto-import-resolver@1.0.7':
     resolution: {integrity: sha512-ae//2gWonFNZiw94DdHvi+2LJCitPaTCn8jeyS9yHUzlS2PWKTTEPsjMZ8u65GzFehlE5YnAbgSn2vH+wd+usA==}
@@ -4470,6 +4482,10 @@ snapshots:
   '@ant-design/fast-color@3.0.1': {}
 
   '@ant-design/icons-svg@4.4.2': {}
+
+  '@antdv-next/auto-import-resolver-x@0.0.1(unplugin-vue-components@31.1.0(vue@3.5.31(typescript@5.9.3)))':
+    dependencies:
+      unplugin-vue-components: 31.1.0(vue@3.5.31(typescript@5.9.3))
 
   '@antdv-next/auto-import-resolver@1.0.7(unplugin-vue-components@31.1.0(vue@3.5.31(typescript@5.9.3)))':
     dependencies:
