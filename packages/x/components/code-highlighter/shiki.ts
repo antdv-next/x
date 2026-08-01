@@ -1,10 +1,19 @@
+import type { LanguageInput } from "shiki";
+
 import { createHighlighterCore } from "shiki/core";
 import darkTheme from "shiki/dist/themes/vitesse-dark.mjs";
 import lightTheme from "shiki/dist/themes/vitesse-light.mjs";
 import { createJavaScriptRegexEngine } from "shiki/engine/javascript";
 
 type Highlighter = Awaited<ReturnType<typeof createHighlighterCore>>;
-type LanguageLoader = (lang: string) => Promise<any>;
+
+export type CodeHighlighterLanguageLoader = (
+  lang: string,
+) => Promise<LanguageInput | null>;
+
+export interface SetupCodeHighlighterOptions {
+  loadLanguage?: CodeHighlighterLanguageLoader;
+}
 
 const PLAIN_TEXT_LANGUAGES = new Set(["text", "plaintext", "txt", "plain"]);
 
@@ -12,7 +21,10 @@ const PLAIN_TEXT_LANGUAGES = new Set(["text", "plaintext", "txt", "plain"]);
  * 内置热门语言白名单。
  * 使用静态 import 路径，打包时仅生成这几个语言对应的 chunk。
  */
-const BUILTIN_LANGUAGES: Record<string, () => Promise<{ default: any }>> = {
+const BUILTIN_LANGUAGES: Record<
+  string,
+  () => Promise<{ default: LanguageInput }>
+> = {
   typescript: () => import("shiki/dist/langs/typescript.mjs"),
   javascript: () => import("shiki/dist/langs/javascript.mjs"),
   python: () => import("shiki/dist/langs/python.mjs"),
@@ -28,24 +40,25 @@ const BUILTIN_ALIASES: Record<string, string> = {
   py: "python",
 };
 
-const defaultLoader: LanguageLoader = async lang => {
+const defaultLoader: CodeHighlighterLanguageLoader = async lang => {
   const loader = BUILTIN_LANGUAGES[BUILTIN_ALIASES[lang] ?? lang];
   return loader ? (await loader()).default : null;
 };
 
-let activeLoader: LanguageLoader = defaultLoader;
+let customLoader: CodeHighlighterLanguageLoader | null = null;
 
 /**
- * 注入自定义语言加载器，覆盖默认内置白名单。
+ * 注入自定义语言加载器。返回 `null` 时回退到默认内置白名单。
  * 建议按需 `import` 语言模块，避免引入全量语言包。
  *
  * @example 按需加载额外语言
  * ```ts
  * import { setupCodeHighlighter } from "@antdv-next/x";
+ * import type { LanguageInput } from "shiki";
  *
  * setupCodeHighlighter({
  *   loadLanguage: async (lang) => {
- *     const loaders: Record<string, () => Promise<{ default: any }>> = {
+ *     const loaders: Record<string, () => Promise<{ default: LanguageInput }>> = {
  *       go: () => import("shiki/dist/langs/go.mjs"),
  *       rust: () => import("shiki/dist/langs/rust.mjs"),
  *     };
@@ -55,10 +68,11 @@ let activeLoader: LanguageLoader = defaultLoader;
  * });
  * ```
  */
-export function setupCodeHighlighter(options: {
-  loadLanguage?: LanguageLoader;
-}) {
-  if (options?.loadLanguage) activeLoader = options.loadLanguage;
+export function setupCodeHighlighter(
+  options: SetupCodeHighlighterOptions = {},
+) {
+  customLoader = options.loadLanguage ?? null;
+  failedLangs.clear();
 }
 
 let highlighter: Highlighter | null = null;
@@ -102,7 +116,8 @@ async function loadLang(lang: string) {
 
   const loadPromise = (async () => {
     try {
-      const registration = await activeLoader(lang);
+      const registration =
+        (await customLoader?.(lang)) ?? (await defaultLoader(lang));
       if (!registration) {
         failedLangs.add(lang);
         return false;

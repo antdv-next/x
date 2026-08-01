@@ -14,15 +14,22 @@ description: 用于 AI 对话场景中展示代码块，提供语法高亮、行
 
 组件默认内置 6 种常用语言并按需加载语法：`typescript`（含 `ts`）、`javascript`（含 `js`）、`python`（含 `py`）、`json`、`html`、`css`。其他语言会安全降级为纯文本显示。
 
-如需支持更多语言，可通过 `setupCodeHighlighter` 注入自定义语言加载器，按需 `import` 对应语言模块（避免引入全量语言包）：
+如需支持更多语言，可通过 `setupCodeHighlighter` 注入自定义语言加载器，按需 `import` 对应语言模块（避免引入全量语言包）。自定义 loader 会优先解析语言；返回 `null` 时，组件会继续尝试默认白名单。
+
+自定义 loader 直接从应用代码导入 Shiki 语言模块，因此应用需要将 `shiki` 声明为直接依赖：
+
+<InstallDependencies npm='npm install shiki' yarn='yarn add shiki' pnpm='pnpm add shiki' bun='bun add shiki'></InstallDependencies>
+
+请在首次渲染 `CodeHighlighter` 前（通常是 `app.mount()` 前）完成配置：
 
 ```ts
 import { setupCodeHighlighter } from "@antdv-next/x";
+import type { LanguageInput } from "shiki";
 
 // 按需加载额外语言，仅打包用到的语言
 setupCodeHighlighter({
   loadLanguage: async lang => {
-    const loaders: Record<string, () => Promise<{ default: any }>> = {
+    const loaders: Record<string, () => Promise<{ default: LanguageInput }>> = {
       go: () => import("shiki/dist/langs/go.mjs"),
       rust: () => import("shiki/dist/langs/rust.mjs"),
       java: () => import("shiki/dist/langs/java.mjs"),
@@ -51,18 +58,18 @@ setupCodeHighlighter({
 
 ### 属性
 
-| 属性            | 说明                                          | 类型                                                                                         | 默认值    |
-| --------------- | --------------------------------------------- | -------------------------------------------------------------------------------------------- | --------- |
-| content         | 代码内容                                      | `string`                                                                                     | -         |
-| language        | 代码语言；按需加载 Shiki 内置语言及其官方别名 | `string`                                                                                     | `'text'`  |
-| showLineNumbers | 是否显示行号                                  | `boolean`                                                                                    | `true`    |
-| showLanguage    | 是否显示语言标识                              | `boolean`                                                                                    | `true`    |
-| showThemeToggle | 是否显示主题切换按钮                          | `boolean`                                                                                    | `false`   |
-| showCopyButton  | 是否显示复制按钮                              | `boolean`                                                                                    | `true`    |
-| theme           | 主题模式                                      | `'light' \| 'dark'`                                                                          | `'light'` |
-| startLineNumber | 起始行号                                      | `number`                                                                                     | `1`       |
-| classes         | 自定义类名                                    | `Partial<Record<'root' \| 'header' \| 'headerTitle' \| 'code' \| 'content', string>>`        | -         |
-| styles          | 自定义样式                                    | `Partial<Record<'root' \| 'header' \| 'headerTitle' \| 'code' \| 'content', CSSProperties>>` | -         |
+| 属性            | 说明                                                 | 类型                                                                                         | 默认值    |
+| --------------- | ---------------------------------------------------- | -------------------------------------------------------------------------------------------- | --------- |
+| content         | 代码内容                                             | `string`                                                                                     | -         |
+| language        | 代码语言；按需加载默认白名单或用户 loader 注册的语言 | `string`                                                                                     | `'text'`  |
+| showLineNumbers | 是否显示行号                                         | `boolean`                                                                                    | `true`    |
+| showLanguage    | 是否显示语言标识                                     | `boolean`                                                                                    | `true`    |
+| showThemeToggle | 是否显示主题切换按钮                                 | `boolean`                                                                                    | `false`   |
+| showCopyButton  | 是否显示复制按钮                                     | `boolean`                                                                                    | `true`    |
+| theme           | 主题模式                                             | `'light' \| 'dark'`                                                                          | `'light'` |
+| startLineNumber | 起始行号                                             | `number`                                                                                     | `1`       |
+| classes         | 自定义类名                                           | `Partial<Record<'root' \| 'header' \| 'headerTitle' \| 'code' \| 'content', string>>`        | -         |
+| styles          | 自定义样式                                           | `Partial<Record<'root' \| 'header' \| 'headerTitle' \| 'code' \| 'content', CSSProperties>>` | -         |
 
 ### 事件
 
@@ -97,11 +104,11 @@ setupCodeHighlighter({
 
 ### 扩展语言
 
-| 函数名               | 说明                                     | 参数                                                       |
-| -------------------- | ---------------------------------------- | ---------------------------------------------------------- |
-| setupCodeHighlighter | 注入自定义语言加载器，覆盖默认内置白名单 | `{ loadLanguage: (lang: string) => Promise<any \| null> }` |
+| 函数名               | 说明                                               | 参数                                                                 |
+| -------------------- | -------------------------------------------------- | -------------------------------------------------------------------- |
+| setupCodeHighlighter | 注入自定义语言加载器；返回 `null` 时回退默认白名单 | `{ loadLanguage: (lang: string) => Promise<LanguageInput \| null> }` |
 
-`loadLanguage` 接收语言名，返回 Shiki 语言注册信息或 `null`（降级为纯文本）。
+`loadLanguage` 接收语言名，返回 Shiki 语言注册信息或 `null`。用户 loader 和默认白名单都无法解析时，组件降级为纯文本。再次调用该函数会替换之前的用户 loader，并允许此前失败的语言重新加载。
 
 ## 语义化 DOM
 

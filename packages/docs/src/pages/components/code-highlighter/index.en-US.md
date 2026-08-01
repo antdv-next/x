@@ -14,15 +14,22 @@ description: Display code blocks in AI conversation scenarios with syntax highli
 
 The component ships with six built-in languages loaded on demand: `typescript` (`ts`), `javascript` (`js`), `python` (`py`), `json`, `html`, and `css`. Other languages safely fall back to plain text.
 
-To support more languages, inject a custom loader via `setupCodeHighlighter` and `import` only the language modules you need (avoids pulling in the full language bundle):
+To support more languages, inject a custom loader via `setupCodeHighlighter` and `import` only the language modules you need (avoids pulling in the full language bundle). The custom loader resolves languages first; when it returns `null`, the component falls back to the default whitelist.
+
+Because the custom loader imports Shiki language modules from application code, declare `shiki` as a direct application dependency:
+
+<InstallDependencies npm='npm install shiki' yarn='yarn add shiki' pnpm='pnpm add shiki' bun='bun add shiki'></InstallDependencies>
+
+Configure the loader before the first `CodeHighlighter` render, typically before `app.mount()`:
 
 ```ts
 import { setupCodeHighlighter } from "@antdv-next/x";
+import type { LanguageInput } from "shiki";
 
 // Load extra languages on demand - only the ones you ship are bundled
 setupCodeHighlighter({
   loadLanguage: async lang => {
-    const loaders: Record<string, () => Promise<{ default: any }>> = {
+    const loaders: Record<string, () => Promise<{ default: LanguageInput }>> = {
       go: () => import("shiki/dist/langs/go.mjs"),
       rust: () => import("shiki/dist/langs/rust.mjs"),
       java: () => import("shiki/dist/langs/java.mjs"),
@@ -51,18 +58,18 @@ setupCodeHighlighter({
 
 ### Props
 
-| Property        | Description                                                        | Type                                                                                         | Default   |
-| --------------- | ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------- | --------- |
-| content         | Code content                                                       | `string`                                                                                     | -         |
-| language        | Code language; loads bundled Shiki languages and aliases on demand | `string`                                                                                     | `'text'`  |
-| showLineNumbers | Whether to show line numbers                                       | `boolean`                                                                                    | `true`    |
-| showLanguage    | Whether to show language label                                     | `boolean`                                                                                    | `true`    |
-| showThemeToggle | Whether to show theme toggle button                                | `boolean`                                                                                    | `false`   |
-| showCopyButton  | Whether to show copy button                                        | `boolean`                                                                                    | `true`    |
-| theme           | Theme mode                                                         | `'light' \| 'dark'`                                                                          | `'light'` |
-| startLineNumber | Starting line number                                               | `number`                                                                                     | `1`       |
-| classes         | Custom class names                                                 | `Partial<Record<'root' \| 'header' \| 'headerTitle' \| 'code' \| 'content', string>>`        | -         |
-| styles          | Custom styles                                                      | `Partial<Record<'root' \| 'header' \| 'headerTitle' \| 'code' \| 'content', CSSProperties>>` | -         |
+| Property        | Description                                                                           | Type                                                                                         | Default   |
+| --------------- | ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | --------- |
+| content         | Code content                                                                          | `string`                                                                                     | -         |
+| language        | Code language; loads the default whitelist or languages registered by the user loader | `string`                                                                                     | `'text'`  |
+| showLineNumbers | Whether to show line numbers                                                          | `boolean`                                                                                    | `true`    |
+| showLanguage    | Whether to show language label                                                        | `boolean`                                                                                    | `true`    |
+| showThemeToggle | Whether to show theme toggle button                                                   | `boolean`                                                                                    | `false`   |
+| showCopyButton  | Whether to show copy button                                                           | `boolean`                                                                                    | `true`    |
+| theme           | Theme mode                                                                            | `'light' \| 'dark'`                                                                          | `'light'` |
+| startLineNumber | Starting line number                                                                  | `number`                                                                                     | `1`       |
+| classes         | Custom class names                                                                    | `Partial<Record<'root' \| 'header' \| 'headerTitle' \| 'code' \| 'content', string>>`        | -         |
+| styles          | Custom styles                                                                         | `Partial<Record<'root' \| 'header' \| 'headerTitle' \| 'code' \| 'content', CSSProperties>>` | -         |
 
 ### Events
 
@@ -97,11 +104,11 @@ When the `header` slot is provided, it fully replaces the default header (langua
 
 ### Extending Languages
 
-| Function             | Description                                                               | Params                                                     |
-| -------------------- | ------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| setupCodeHighlighter | Inject a custom language loader, overriding the default builtin whitelist | `{ loadLanguage: (lang: string) => Promise<any \| null> }` |
+| Function             | Description                                                                    | Params                                                               |
+| -------------------- | ------------------------------------------------------------------------------ | -------------------------------------------------------------------- |
+| setupCodeHighlighter | Inject a custom language loader; falls back to the default whitelist on `null` | `{ loadLanguage: (lang: string) => Promise<LanguageInput \| null> }` |
 
-`loadLanguage` receives the language name and returns a Shiki language registration or `null` (falls back to plain text).
+`loadLanguage` receives the language name and returns a Shiki language registration or `null`. The component falls back to plain text when neither the user loader nor the default whitelist can resolve the language. Calling this function again replaces the previous user loader and allows previously failed languages to retry.
 
 ## Semantic DOM
 
