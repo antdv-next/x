@@ -283,30 +283,24 @@ export default demos
           this.addWatchFile(path.resolve(path.dirname(filePath), file.name));
         }
 
-        // In dev mode, embed highlighted data directly since emitFile is unreliable.
-        // In production build, emit as a JSON asset for on-demand loading.
         const isDev = this.meta?.watchMode === true;
-
-        const highlightedData = JSON.stringify({
-          html: sourceHtml,
-          jsHtml: jsSourceHtml,
-          extraFiles,
-        });
-
-        let highlightedUrl = "";
-        if (!isDev) {
-          const highlightedAssetName = `demo-highlighted-${path.basename(filePath, ".vue")}.json`;
-          const highlightedRef = this.emitFile({
+        // Production: emit highlighted data as a JSON asset for on-demand fetch.
+        // getFileName() returns a path relative to outDir root (e.g. "assets/foo.json"),
+        // so prefix with BASE_URL to form a root-relative URL that resolves correctly
+        // regardless of deploy base (root "/" or PR-preview "/pr/155/"). Without the
+        // prefix, new URL("assets/foo.json", import.meta.url) doubles the "assets/"
+        // segment (chunk already lives under assets/) and 404s.
+        const highlightedUrl = this.getFileName(
+          this.emitFile({
             type: "asset",
-            name: highlightedAssetName,
-            source: highlightedData,
-          });
-          try {
-            highlightedUrl = this.getFileName(highlightedRef);
-          } catch {
-            highlightedUrl = `__HIGHLIGHTED_ASSET__${highlightedRef}__`;
-          }
-        }
+            name: `demo-highlighted-${path.basename(filePath, ".vue")}.json`,
+            source: JSON.stringify({
+              html: sourceHtml,
+              jsHtml: jsSourceHtml,
+              extraFiles,
+            }),
+          }),
+        );
 
         return {
           code: isDev
@@ -357,7 +351,7 @@ const demoData = {
   get source() { return sourceRef.value },
   get jsSource() { return jsSourceRef.value },
   async loadHighlighted() {
-    const url = new URL(${JSON.stringify(highlightedUrl)}, import.meta.url)
+    const url = new URL(import.meta.env.BASE_URL + ${JSON.stringify(highlightedUrl)}, import.meta.url)
     const res = await fetch(url.href)
     return res.json()
   }
@@ -376,22 +370,6 @@ export default demoData
 `,
           map: null,
         };
-      }
-    },
-    generateBundle(_options: Record<string, unknown>, bundle: Record<string, { type: string; code?: string }>) {
-      // Replace placeholder asset URLs with actual file names.
-      const placeholderRe = /__HIGHLIGHTED_ASSET__([a-zA-Z0-9_-]+)__/g;
-      for (const fileName of Object.keys(bundle)) {
-        const chunk = bundle[fileName];
-        if (chunk.type === "chunk" && chunk.code) {
-          chunk.code = chunk.code.replace(placeholderRe, (_, refId) => {
-            try {
-              return this.getFileName(refId);
-            } catch {
-              return refId;
-            }
-          });
-        }
       }
     },
     async handleHotUpdate(ctx) {
