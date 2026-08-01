@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { LanguageInput } from "shiki";
+
 import { setupCodeHighlighter } from "@antdv-next/x";
 import { computed, ref } from "vue";
 
@@ -7,7 +9,7 @@ import { computed, ref } from "vue";
 // 切换时才会按需动态加载对应语法。
 setupCodeHighlighter({
   loadLanguage: async lang => {
-    const loaders: Record<string, () => Promise<{ default: any }>> = {
+    const loaders: Record<string, () => Promise<{ default: LanguageInput }>> = {
       go: () => import("shiki/dist/langs/go.mjs"),
       rust: () => import("shiki/dist/langs/rust.mjs"),
       java: () => import("shiki/dist/langs/java.mjs"),
@@ -80,9 +82,9 @@ const current = computed(() => {
 </template>
 
 <docs lang="zh-CN">
-默认仅内置 6 种常用语言。本 demo 通过 `setupCodeHighlighter` 注入 Go / Rust / Java 的加载器，切换时按需动态加载对应语法；未注册语言（如 Plain Text）则降级为纯文本。
+默认仅内置 6 种常用语言。本 demo 通过 `setupCodeHighlighter` 注入 Go / Rust / Java 的加载器，切换时按需动态加载对应语法；用户 loader 返回 `null` 时仍会回退默认白名单，未注册语言（如 Plain Text）则降级为纯文本。
 </docs>
 
 <docs lang="en-US">
-Only six common languages are built in. This demo injects Go / Rust / Java loaders via `setupCodeHighlighter`, loading each grammar on demand when switched to. Unregistered languages (e.g. Plain Text) fall back to plain text.
+Only six common languages are built in. This demo injects Go / Rust / Java loaders via `setupCodeHighlighter`, loading each grammar on demand when switched to. A `null` result still falls back to the default whitelist, while unregistered languages (e.g. Plain Text) fall back to plain text.
 </docs>

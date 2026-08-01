@@ -169,9 +169,11 @@ export type {
 export type { SourcesProps } from "./sources";
 export type { WelcomeProps, WelcomeRef } from "./welcome";
 export type {
+  CodeHighlighterLanguageLoader,
   CodeHighlighterProps,
   CodeHighlighterRef,
   CodeHighlighterSemanticType,
+  SetupCodeHighlighterOptions,
 } from "./code-highlighter";
 
 export { setupCodeHighlighter } from "./code-highlighter";

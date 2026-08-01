@@ -3,6 +3,11 @@ import CodeHighlighter from "./CodeHighlighter";
 export { setupCodeHighlighter } from "./shiki";
 
 export type {
+  CodeHighlighterLanguageLoader,
+  SetupCodeHighlighterOptions,
+} from "./shiki";
+
+export type {
   CodeHighlighterHeaderSlotScope,
   CodeHighlighterProps,
   CodeHighlighterRef,
