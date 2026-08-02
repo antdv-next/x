@@ -12,11 +12,25 @@ export enum StreamCacheTokenType {
   InlineCode = "inline-code",
 }
 
+export interface FenceState {
+  /** Inside an open fence, considering completed lines only */
+  inFenced: boolean;
+  fenceChar: string;
+  fenceLen: number;
+  /** Leading `` ` ``/`~` run of the current (possibly incomplete) line */
+  lineFenceChar: string;
+  lineFenceLen: number;
+  lineFenceRunEnded: boolean;
+  /** Whether every char after the leading run is whitespace (closing fences allow only whitespace) */
+  lineTailBlank: boolean;
+}
+
 export interface StreamCache {
   pending: string;
   token: StreamCacheTokenType;
   processedLength: number;
   completeMarkdown: string;
+  fence: FenceState;
 }
 
 export interface StreamingOption {
