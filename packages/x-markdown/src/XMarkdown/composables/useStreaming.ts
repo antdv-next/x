@@ -3,6 +3,7 @@ import type { Component } from "vue";
 import { ref, watch, type Ref } from "vue";
 
 import type {
+  FenceState,
   StreamCache,
   StreamCacheTokenType,
   StreamingOption,
@@ -135,11 +136,22 @@ const recognizeHandlers = Object.values(tokenRecognizerMap).filter(
   (recognizer): recognizer is Recognizer => Boolean(recognizer),
 );
 
+const getInitialFenceState = (): FenceState => ({
+  inFenced: false,
+  fenceChar: "",
+  fenceLen: 0,
+  lineFenceChar: "",
+  lineFenceLen: 0,
+  lineFenceRunEnded: false,
+  lineTailBlank: true,
+});
+
 const getInitialCache = (): StreamCache => ({
   pending: "",
   token: TokenType.Text,
   processedLength: 0,
   completeMarkdown: "",
+  fence: getInitialFenceState(),
 });
 
 const commitCache = (cache: StreamCache): void => {
@@ -150,43 +162,58 @@ const commitCache = (cache: StreamCache): void => {
   cache.token = TokenType.Text;
 };
 
-const isInCodeBlock = (text: string, isFinalChunk = false): boolean => {
-  const lines = text.split("\n");
-  let inFenced = false;
-  let fenceChar = "";
-  let fenceLen = 0;
-
-  for (let i = 0; i < lines.length; i++) {
-    const rawLine = lines[i];
-    const line = rawLine.endsWith("\r") ? rawLine.slice(0, -1) : rawLine;
-
-    const match = line.match(/^(`{3,}|~{3,})(.*)$/);
-    if (!match) continue;
-
-    const fence = match[1];
-    const after = match[2];
-    const char = fence[0];
-    const len = fence.length;
-
-    if (!inFenced) {
-      inFenced = true;
-      fenceChar = char;
-      fenceLen = len;
-      continue;
+/**
+ * Incremental fenced-code-block state over the processed text, updated in O(1)
+ * per character. Recomputing over the full accumulated text on every character
+ * is O(N²) and freezes the page on long single-line content such as base64
+ * image data URIs.
+ */
+const feedFenceState = (fence: FenceState, char: string): void => {
+  if (char === "\n") {
+    // Line completed: apply it to the fence state, then reset per-line tracking.
+    if (fence.lineFenceLen >= 3) {
+      if (!fence.inFenced) {
+        fence.inFenced = true;
+        fence.fenceChar = fence.lineFenceChar;
+        fence.fenceLen = fence.lineFenceLen;
+      } else if (
+        fence.lineFenceChar === fence.fenceChar &&
+        fence.lineFenceLen >= fence.fenceLen &&
+        fence.lineTailBlank
+      ) {
+        // A closing fence only takes effect once its line is completed by a
+        // newline; while it is still the last partial line the fence stays
+        // open for potential streaming continuation.
+        fence.inFenced = false;
+        fence.fenceChar = "";
+        fence.fenceLen = 0;
+      }
     }
-
-    const isValidEnd =
-      char === fenceChar && len >= fenceLen && /^\s*$/.test(after);
-    if (isValidEnd && (isFinalChunk || i < lines.length - 1)) {
-      inFenced = false;
-      fenceChar = "";
-      fenceLen = 0;
-    }
+    fence.lineFenceChar = "";
+    fence.lineFenceLen = 0;
+    fence.lineFenceRunEnded = false;
+    fence.lineTailBlank = true;
+    return;
   }
 
-  return inFenced;
+  if (!fence.lineFenceRunEnded) {
+    if (fence.lineFenceLen === 0 && (char === "`" || char === "~")) {
+      fence.lineFenceChar = char;
+      fence.lineFenceLen = 1;
+    } else if (fence.lineFenceLen > 0 && char === fence.lineFenceChar) {
+      fence.lineFenceLen += 1;
+    } else {
+      fence.lineFenceRunEnded = true;
+      fence.lineTailBlank = fence.lineTailBlank && /\s/.test(char);
+    }
+  } else {
+    fence.lineTailBlank = fence.lineTailBlank && /\s/.test(char);
+  }
 };
 
+// An opening fence takes effect as soon as it appears, even on the partial last line.
+const isInCodeBlock = (fence: FenceState): boolean =>
+  fence.inFenced || fence.lineFenceLen >= 3;
 const sanitizeForURIComponent = (input: string): string => {
   let result = "";
   for (let i = 0; i < input.length; i++) {
@@ -282,7 +309,8 @@ export function useStreaming(
     for (const char of chunk) {
       cache.pending += char;
 
-      const inCodeBlock = isInCodeBlock(cache.completeMarkdown + cache.pending);
+      feedFenceState(cache.fence, char);
+      const inCodeBlock = isInCodeBlock(cache.fence);
       if (inCodeBlock) {
         commitCache(cache);
         continue;
@@ -336,6 +364,7 @@ export function useStreaming(
           token: TokenType.Text,
           processedLength: newContent.length,
           completeMarkdown: newContent,
+          fence: getInitialFenceState(),
         };
         return;
       }
