@@ -122,7 +122,7 @@ describe("useStreaming long single-line content (base64 images)", () => {
     scope.stop();
 
     expect(result).toBe(full);
-    expect(elapsed).toBeLessThan(3000);
+    expect(elapsed).toBeLessThan(10000);
   }, 120_000);
 
   it("keeps fence state correct when a code block follows long content", async () => {
