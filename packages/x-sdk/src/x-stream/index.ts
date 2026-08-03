@@ -213,16 +213,32 @@ function XStream<Output = SSEOutput>(options: XStreamOptions<Output>) {
   // @ts-ignore ReadableStream async iterator signature conflicts with AsyncGenerator in this cross-runtime typing.
   stream[Symbol.asyncIterator] = async function* () {
     const reader = this.getReader();
+    let completed = false;
 
-    while (true) {
-      const { done, value } = await reader.read();
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
 
-      if (done) break;
+        if (done) {
+          completed = true;
+          break;
+        }
 
-      if (!value) continue;
+        if (!value) continue;
 
-      // Transformed data through all transform pipes
-      yield value;
+        // Transformed data through all transform pipes
+        yield value;
+      }
+    } finally {
+      if (!completed) {
+        try {
+          await reader.cancel();
+        } catch {
+          // Cancellation must not replace the consumer's original error.
+        }
+      }
+
+      reader.releaseLock();
     }
   };
 
