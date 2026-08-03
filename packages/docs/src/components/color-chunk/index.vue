@@ -42,6 +42,7 @@ const styles = computed(() => ({
 <template>
   <Popover
     v-if="enablePopover"
+    destroyOnHidden
     placement="left"
     :styles="{
       container: {
@@ -52,8 +53,7 @@ const styles = computed(() => ({
         borderRadius: token.borderRadiusLG,
       },
       root: {
-        '--antd-arrow-background-color': dotColor,
-        backgroundColor: 'transparent',
+        '--ant-tooltip-arrow-background-color': dotColor,
       },
     }"
   >
