@@ -63,7 +63,7 @@ export const XThoughtChain = defineComponent({
       type: [Boolean, String] as PropType<
         boolean | "solid" | "dashed" | "dotted"
       >,
-      default: "solid",
+      default: true,
     },
   },
   emits: ["update:expandedKeys", "expand"],
@@ -186,7 +186,6 @@ export const XThoughtChain = defineComponent({
                 key={key}
                 item={item}
                 index={index}
-                isLast={index === items.length - 1}
                 prefixCls={prefixCls.value}
                 lineStyle={props.line}
                 expanded={mergedExpandedKeys.value.includes(key)}
