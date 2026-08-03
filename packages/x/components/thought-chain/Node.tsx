@@ -28,10 +28,6 @@ export default defineComponent({
       type: Number,
       required: true,
     },
-    isLast: {
-      type: Boolean,
-      default: false,
-    },
     prefixCls: {
       type: String,
       required: true,
@@ -40,7 +36,7 @@ export default defineComponent({
       type: [Boolean, String] as PropType<
         boolean | "solid" | "dashed" | "dotted"
       >,
-      default: "solid",
+      default: true,
     },
     expanded: {
       type: Boolean,
@@ -93,13 +89,6 @@ export default defineComponent({
 
     const nodePrefixCls = computed(() => `${props.prefixCls}-node`);
 
-    // Resolve line border style
-    const resolvedLineStyle = computed(() => {
-      if (props.lineStyle === false || props.isLast) return "none";
-      if (props.lineStyle === true) return "solid";
-      return props.lineStyle;
-    });
-
     const statusCls = computed(() => `${props.prefixCls}-status`);
 
     const createSharedSlotInfo = (collapsible: boolean) => ({
@@ -141,9 +130,9 @@ export default defineComponent({
             props.classes?.itemIcon,
             {
               [`${statusCls.value}-${item.status}`]: item.status,
-              [`${nodePrefixCls.value}-icon-${resolvedLineStyle.value}`]:
-                typeof props.lineStyle !== "boolean" &&
-                resolvedLineStyle.value !== "none",
+              [`${nodePrefixCls.value}-icon-${props.lineStyle}`]:
+                typeof props.lineStyle === "string",
+              [`${nodePrefixCls.value}-icon-none`]: props.lineStyle === false,
             },
           ]}
           style={props.styles?.itemIcon}

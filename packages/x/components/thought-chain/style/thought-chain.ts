@@ -105,6 +105,13 @@ const genThoughtChainStyle: GenerateStyle<ThoughtChainToken> = token => {
         },
       },
 
+      // Hidden line
+      [`${componentCls}-node-icon-none`]: {
+        "&:after": {
+          display: "none",
+        },
+      },
+
       // Dashed line
       [`${componentCls}-node-icon-dashed`]: {
         "&:after": {

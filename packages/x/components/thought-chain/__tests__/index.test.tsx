@@ -20,6 +20,40 @@ describe("ThoughtChain", () => {
     expect(wrapper.findAll(".antd-thought-chain-node").length).toBe(3);
   });
 
+  it.each([
+    ["solid", "antd-thought-chain-node-icon-solid"],
+    ["dashed", "antd-thought-chain-node-icon-dashed"],
+    ["dotted", "antd-thought-chain-node-icon-dotted"],
+  ] as const)("applies the %s line style", (line, expectedClass) => {
+    const wrapper = mount(ThoughtChain, {
+      props: { items: basicItems, line },
+    });
+
+    wrapper.findAll(".antd-thought-chain-node-icon").forEach(icon => {
+      expect(icon.classes()).toContain(expectedClass);
+    });
+  });
+
+  it("uses the base solid style when line is true", () => {
+    const wrapper = mount(ThoughtChain, {
+      props: { items: basicItems, line: true },
+    });
+
+    expect(wrapper.find(".antd-thought-chain-node-icon-solid").exists()).toBe(
+      false,
+    );
+  });
+
+  it("hides connector lines when line is false", () => {
+    const wrapper = mount(ThoughtChain, {
+      props: { items: basicItems, line: false },
+    });
+
+    wrapper.findAll(".antd-thought-chain-node-icon").forEach(icon => {
+      expect(icon.classes()).toContain("antd-thought-chain-node-icon-none");
+    });
+  });
+
   it("renders custom prefixCls, rootClassName, class", () => {
     const wrapper = mount(ThoughtChain, {
       props: {
