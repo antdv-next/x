@@ -8,7 +8,9 @@ import {
   defineComponent,
   ref,
   useAttrs,
+  vShow,
   watch,
+  withDirectives,
 } from "vue";
 
 import type { SemanticType, ThinkProps, ThinkRef } from "./interface";
@@ -68,6 +70,10 @@ export const XThink = defineComponent({
     blink: {
       type: Boolean,
       default: false,
+    },
+    destroyOnHidden: {
+      type: Boolean,
+      default: true,
     },
   },
   emits: ["update:expanded", "expand"],
@@ -163,6 +169,33 @@ export const XThink = defineComponent({
 
     const prefixCls = computed(() => props.prefixCls);
 
+    // Content is kept mounted and only toggled with `v-show` when
+    // `destroyOnHidden` is false, so streaming output and inner component
+    // state survive a collapse.
+    function renderContent() {
+      const node = (
+        <div ref={contentRef}>
+          <div
+            class={[
+              `${prefixCls.value}-content`,
+              contextConfig.value.classes?.content,
+              props.classes?.content,
+            ]}
+            style={[
+              contextConfig.value.styles?.content,
+              props.styles?.content,
+            ]}
+          >
+            {slots.default?.()}
+          </div>
+        </div>
+      );
+
+      return props.destroyOnHidden
+        ? node
+        : withDirectives(node, [[vShow, mergedExpanded.value]]);
+    }
+
     expose<ThinkRef>({
       get nativeElement() {
         return rootRef.value as HTMLDivElement;
@@ -237,23 +270,9 @@ export const XThink = defineComponent({
           onLeave={onLeave}
           onAfterLeave={onAfterLeave}
         >
-          {mergedExpanded.value ? (
-            <div ref={contentRef}>
-              <div
-                class={[
-                  `${prefixCls.value}-content`,
-                  contextConfig.value.classes?.content,
-                  props.classes?.content,
-                ]}
-                style={[
-                  contextConfig.value.styles?.content,
-                  props.styles?.content,
-                ]}
-              >
-                {slots.default?.()}
-              </div>
-            </div>
-          ) : null}
+          {props.destroyOnHidden && !mergedExpanded.value
+            ? null
+            : renderContent()}
         </Transition>
       </div>
     );

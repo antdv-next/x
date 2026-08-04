@@ -346,6 +346,88 @@ describe("ThoughtChain", () => {
     expect(wrapper.findAll(".antd-thought-chain-node").length).toBe(2);
   });
 
+  it("keeps the item content mounted when destroyOnHidden is false", () => {
+    const wrapper = mount(ThoughtChain, {
+      props: {
+        items: [
+          {
+            key: "1",
+            title: "Step 1",
+            content: h("span", "Hidden but mounted"),
+            collapsible: true,
+            destroyOnHidden: false,
+          },
+        ],
+        defaultExpandedKeys: [],
+      },
+    });
+
+    const content = wrapper.find(".antd-thought-chain-node-content");
+    expect(content.exists()).toBe(true);
+    expect(wrapper.text()).toContain("Hidden but mounted");
+    expect(content.element.parentElement?.getAttribute("style")).toContain(
+      "display: none",
+    );
+  });
+
+  it("preserves item content across collapse when destroyOnHidden is false", async () => {
+    const wrapper = mount(ThoughtChain, {
+      props: {
+        items: [
+          {
+            key: "1",
+            title: "Step 1",
+            content: h("input", { class: "inner-input" }),
+            collapsible: true,
+            destroyOnHidden: false,
+          },
+        ],
+        defaultExpandedKeys: ["1"],
+      },
+    });
+
+    const inputEl = wrapper.find<HTMLInputElement>(".inner-input").element;
+    inputEl.value = "streaming";
+
+    await wrapper.find(".antd-thought-chain-node-collapsible").trigger("click");
+    await nextTick();
+
+    const afterCollapse = wrapper.find<HTMLInputElement>(".inner-input");
+    expect(afterCollapse.exists()).toBe(true);
+    // Same DOM node, so the value typed before collapsing survives.
+    expect(afterCollapse.element).toBe(inputEl);
+    expect(afterCollapse.element.value).toBe("streaming");
+  });
+
+  it("keeps the item content mounted for controlled expandedKeys when destroyOnHidden is false", async () => {
+    const wrapper = mount(ThoughtChain, {
+      props: {
+        items: [
+          {
+            key: "1",
+            title: "Step 1",
+            content: h("span", "Controlled content"),
+            collapsible: true,
+            destroyOnHidden: false,
+          },
+        ],
+        expandedKeys: ["1"],
+      },
+    });
+
+    expect(wrapper.find(".antd-thought-chain-node-content").exists()).toBe(
+      true,
+    );
+
+    await wrapper.setProps({ expandedKeys: [] });
+    await nextTick();
+
+    expect(wrapper.find(".antd-thought-chain-node-content").exists()).toBe(
+      true,
+    );
+    expect(wrapper.text()).toContain("Controlled content");
+  });
+
   it("exposes nativeElement ref", () => {
     const wrapper = mount(ThoughtChain, {
       props: { items: basicItems },

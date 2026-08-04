@@ -20,6 +20,7 @@ description: 思维链组件用于可视化和追踪 Agent 对 Actions 和 Tools
 <demo src="./demo/slot.vue">插槽自定义</demo>
 <demo src="./demo/nested.vue">嵌套使用</demo>
 <demo src="./demo/single-row.vue">单行折叠</demo>
+<demo src="./demo/destroy-on-hidden.vue">折叠时销毁内容</demo>
 
 ## API
 
@@ -51,17 +52,18 @@ description: 思维链组件用于可视化和追踪 Agent 对 Actions 和 Tools
 
 ### ThoughtChainItemType
 
-| 属性        | 说明                              | 类型                                           | 默认值      | 版本 |
-| ----------- | --------------------------------- | ---------------------------------------------- | ----------- | ---- |
-| content     | 思维节点内容                      | `VNodeChild`                                   | -           | -    |
-| description | 思维节点描述                      | `VNodeChild`                                   | -           | -    |
-| footer      | 思维节点脚注                      | `VNodeChild`                                   | -           | -    |
-| icon        | 思维节点图标，为 `false` 时不展示 | `false \| VNodeChild`                          | DefaultIcon | -    |
-| key         | 思维节点唯一标识符                | `string`                                       | -           | -    |
-| status      | 思维节点状态                      | `'loading' \| 'success' \| 'error' \| 'abort'` | -           | -    |
-| title       | 思维节点标题                      | `VNodeChild`                                   | -           | -    |
-| collapsible | 思维节点是否可折叠                | `boolean`                                      | `false`     | -    |
-| blink       | 闪动效果                          | `boolean`                                      | -           | -    |
+| 属性            | 说明                              | 类型                                           | 默认值      | 版本 |
+| --------------- | --------------------------------- | ---------------------------------------------- | ----------- | ---- |
+| content         | 思维节点内容                      | `VNodeChild`                                   | -           | -    |
+| description     | 思维节点描述                      | `VNodeChild`                                   | -           | -    |
+| footer          | 思维节点脚注                      | `VNodeChild`                                   | -           | -    |
+| icon            | 思维节点图标，为 `false` 时不展示 | `false \| VNodeChild`                          | DefaultIcon | -    |
+| key             | 思维节点唯一标识符                | `string`                                       | -           | -    |
+| status          | 思维节点状态                      | `'loading' \| 'success' \| 'error' \| 'abort'` | -           | -    |
+| title           | 思维节点标题                      | `VNodeChild`                                   | -           | -    |
+| collapsible     | 思维节点是否可折叠                | `boolean`                                      | `false`     | -    |
+| blink           | 闪动效果                          | `boolean`                                      | -           | -    |
+| destroyOnHidden | 折叠时是否销毁内容节点            | `boolean`                                      | `true`      | -    |
 
 ### ThoughtChain.Item
 

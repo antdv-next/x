@@ -19,6 +19,7 @@ description: The ThoughtChain component is used to visualize and track the call 
 <demo src="./demo/slot.vue">Slots</demo>
 <demo src="./demo/nested.vue">Nested Usage</demo>
 <demo src="./demo/single-row.vue">Single Row</demo>
+<demo src="./demo/destroy-on-hidden.vue">Destroy On Hidden</demo>
 
 ## API
 
@@ -50,17 +51,18 @@ description: The ThoughtChain component is used to visualize and track the call 
 
 ### ThoughtChainItemType
 
-| Property    | Description                                          | Type                                           | Default     | Version |
-| ----------- | ---------------------------------------------------- | ---------------------------------------------- | ----------- | ------- |
-| content     | Content of the thought node                          | `VNodeChild`                                   | -           | -       |
-| description | Description of the thought node                      | `VNodeChild`                                   | -           | -       |
-| footer      | Footer of the thought node                           | `VNodeChild`                                   | -           | -       |
-| icon        | Icon of the thought node, not displayed when `false` | `false \| VNodeChild`                          | DefaultIcon | -       |
-| key         | Unique identifier for the thought node               | `string`                                       | -           | -       |
-| status      | Status of the thought node                           | `'loading' \| 'success' \| 'error' \| 'abort'` | -           | -       |
-| title       | Title of the thought node                            | `VNodeChild`                                   | -           | -       |
-| collapsible | Whether the thought node is collapsible              | `boolean`                                      | `false`     | -       |
-| blink       | Blink mode                                           | `boolean`                                      | -           | -       |
+| Property        | Description                                          | Type                                           | Default     | Version |
+| --------------- | ---------------------------------------------------- | ---------------------------------------------- | ----------- | ------- |
+| content         | Content of the thought node                          | `VNodeChild`                                   | -           | -       |
+| description     | Description of the thought node                      | `VNodeChild`                                   | -           | -       |
+| footer          | Footer of the thought node                           | `VNodeChild`                                   | -           | -       |
+| icon            | Icon of the thought node, not displayed when `false` | `false \| VNodeChild`                          | DefaultIcon | -       |
+| key             | Unique identifier for the thought node               | `string`                                       | -           | -       |
+| status          | Status of the thought node                           | `'loading' \| 'success' \| 'error' \| 'abort'` | -           | -       |
+| title           | Title of the thought node                            | `VNodeChild`                                   | -           | -       |
+| collapsible     | Whether the thought node is collapsible              | `boolean`                                      | `false`     | -       |
+| blink           | Blink mode                                           | `boolean`                                      | -           | -       |
+| destroyOnHidden | Whether to destroy the content node when collapsed   | `boolean`                                      | `true`      | -       |
 
 ### ThoughtChain.Item
 

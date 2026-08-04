@@ -13,23 +13,25 @@ Used to show deep thinking process.
 <demo src="./demo/status.vue">Status</demo>
 <demo src="./demo/expand.vue">Expand</demo>
 <demo src="./demo/slot.vue">Slots</demo>
+<demo src="./demo/destroy-on-hidden.vue">Destroy On Hidden</demo>
 
 ## API
 
 ### ThinkProps
 
-| Property           | Description                  | Type                                                  | Default | Version |
-| ------------------ | ---------------------------- | ----------------------------------------------------- | ------- | ------- |
-| classes            | Semantic DOM class           | [Record\<SemanticDOM, string\>](#semantic-dom)        | -       | -       |
-| styles             | Semantic DOM style           | [Record\<SemanticDOM, CSSProperties\>](#semantic-dom) | -       | -       |
-| default            | Content (default slot)       | `VNodeChild`                                          | -       | -       |
-| title              | Text of status               | `VNodeChild`                                          | -       | -       |
-| icon               | Show icon                    | `VNodeChild`                                          | -       | -       |
-| loading            | Loading                      | `boolean \| VNodeChild`                               | `false` | -       |
-| defaultExpanded    | Default Expand state         | `boolean`                                             | `true`  | -       |
-| expanded (v-model) | Expand state                 | `boolean`                                             | -       | -       |
-| onExpand           | Callback when expand changes | `(expand: boolean) => void`                           | -       | -       |
-| blink              | Blink mode                   | `boolean`                                             | -       | -       |
+| Property           | Description                                        | Type                                                  | Default | Version |
+| ------------------ | -------------------------------------------------- | ----------------------------------------------------- | ------- | ------- |
+| classes            | Semantic DOM class                                 | [Record\<SemanticDOM, string\>](#semantic-dom)        | -       | -       |
+| styles             | Semantic DOM style                                 | [Record\<SemanticDOM, CSSProperties\>](#semantic-dom) | -       | -       |
+| default            | Content (default slot)                             | `VNodeChild`                                          | -       | -       |
+| title              | Text of status                                     | `VNodeChild`                                          | -       | -       |
+| icon               | Show icon                                          | `VNodeChild`                                          | -       | -       |
+| loading            | Loading                                            | `boolean \| VNodeChild`                               | `false` | -       |
+| defaultExpanded    | Default Expand state                               | `boolean`                                             | `true`  | -       |
+| expanded (v-model) | Expand state                                       | `boolean`                                             | -       | -       |
+| onExpand           | Callback when expand changes                       | `(expand: boolean) => void`                           | -       | -       |
+| blink              | Blink mode                                         | `boolean`                                             | -       | -       |
+| destroyOnHidden    | Whether to destroy the content node when collapsed | `boolean`                                             | `true`  | -       |
 
 ### Think Slots
 
