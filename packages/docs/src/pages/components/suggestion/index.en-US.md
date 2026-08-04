@@ -19,6 +19,7 @@ description: A suggestion component that provides quick command choices in input
 <demo src="./demo/block.vue">Block</demo>
 <demo src="./demo/trigger.vue">Custom Trigger</demo>
 <demo src="./demo/render-slot.vue">Custom Item Render</demo>
+<demo src="./demo/long-list.vue">Long List Scroll</demo>
 
 ## API
 
