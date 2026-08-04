@@ -206,6 +206,115 @@ describe("Think", () => {
     expect(chevron.attributes("style")).toContain("rotate(0deg)");
   });
 
+  it("destroys the content node on collapse by default", async () => {
+    const wrapper = mount(Think, {
+      slots: { default: () => "Toggle me" },
+    });
+
+    expect(wrapper.find(".antd-think-content").exists()).toBe(true);
+
+    await wrapper.find(".antd-think-status-wrapper").trigger("click");
+    await nextTick();
+
+    expect(wrapper.find(".antd-think-content").exists()).toBe(false);
+  });
+
+  it("keeps the content node mounted and toggles its visibility when destroyOnHidden is false", async () => {
+    const wrapper = mount(Think, {
+      props: { destroyOnHidden: false, defaultExpanded: false },
+      slots: { default: () => "Hidden but mounted" },
+    });
+
+    const content = wrapper.find(".antd-think-content");
+    expect(content.exists()).toBe(true);
+    expect(wrapper.text()).toContain("Hidden but mounted");
+    expect(content.element.parentElement?.getAttribute("style")).toContain(
+      "display: none",
+    );
+
+    await wrapper.find(".antd-think-status-wrapper").trigger("click");
+    await nextTick();
+
+    expect(
+      content.element.parentElement?.getAttribute("style") ?? "",
+    ).not.toContain("display: none");
+
+    await wrapper.find(".antd-think-status-wrapper").trigger("click");
+    await nextTick();
+
+    expect(content.element.parentElement?.getAttribute("style")).toContain(
+      "display: none",
+    );
+  });
+
+  it("preserves inner state across collapse when destroyOnHidden is false", async () => {
+    const wrapper = mount(Think, {
+      props: { destroyOnHidden: false },
+      slots: { default: () => h("input", { class: "inner-input" }) },
+    });
+
+    const input = wrapper.find<HTMLInputElement>(".inner-input");
+    expect(input.exists()).toBe(true);
+    const inputEl = input.element;
+    inputEl.value = "streaming";
+
+    await wrapper.find(".antd-think-status-wrapper").trigger("click");
+    await nextTick();
+
+    const afterCollapse = wrapper.find<HTMLInputElement>(".inner-input");
+    expect(afterCollapse.exists()).toBe(true);
+    // Same DOM node, so the value typed before collapsing survives.
+    expect(afterCollapse.element).toBe(inputEl);
+    expect(afterCollapse.element.value).toBe("streaming");
+  });
+
+  it("keeps toggling after destroyOnHidden changes at runtime", async () => {
+    const wrapper = mount(Think, {
+      props: { destroyOnHidden: false },
+      slots: { default: () => "Dynamic content" },
+    });
+
+    await wrapper.setProps({ destroyOnHidden: true });
+    await wrapper.find(".antd-think-status-wrapper").trigger("click");
+    await nextTick();
+    expect(wrapper.find(".antd-think-content").exists()).toBe(false);
+
+    await wrapper.find(".antd-think-status-wrapper").trigger("click");
+    await nextTick();
+    expect(wrapper.find(".antd-think-content").exists()).toBe(true);
+
+    await wrapper.setProps({ destroyOnHidden: false });
+    const content = wrapper.find(".antd-think-content");
+
+    await wrapper.find(".antd-think-status-wrapper").trigger("click");
+    await nextTick();
+    expect(content.exists()).toBe(true);
+    expect(content.element.parentElement?.getAttribute("style")).toContain(
+      "display: none",
+    );
+
+    await wrapper.find(".antd-think-status-wrapper").trigger("click");
+    await nextTick();
+    expect(
+      content.element.parentElement?.getAttribute("style") ?? "",
+    ).not.toContain("display: none");
+  });
+
+  it("keeps the content node mounted for controlled expanded when destroyOnHidden is false", async () => {
+    const wrapper = mount(Think, {
+      props: { destroyOnHidden: false, expanded: true },
+      slots: { default: () => "Controlled content" },
+    });
+
+    expect(wrapper.find(".antd-think-content").exists()).toBe(true);
+
+    await wrapper.setProps({ expanded: false });
+    await nextTick();
+
+    expect(wrapper.find(".antd-think-content").exists()).toBe(true);
+    expect(wrapper.text()).toContain("Controlled content");
+  });
+
   it("exposes nativeElement ref", () => {
     const wrapper = mount(Think, {
       slots: { default: () => "Content" },

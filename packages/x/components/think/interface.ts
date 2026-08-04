@@ -79,6 +79,13 @@ export interface ThinkProps extends Omit<HTMLAttributes, "title"> {
    * @descZH 标题文字闪烁动画
    */
   blink?: boolean;
+
+  /**
+   * @desc Whether to destroy the content node when collapsed
+   * @descZH 折叠时是否销毁内容节点
+   * @default true
+   */
+  destroyOnHidden?: boolean;
 }
 
 export interface ThinkRef {

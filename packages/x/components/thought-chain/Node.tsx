@@ -2,7 +2,13 @@ import type { CSSProperties, PropType, VNodeChild } from "vue";
 
 import { LeftOutlined, RightOutlined } from "@antdv-next/icons";
 import { useConfig } from "antdv-next/config-provider/context";
-import { Transition, computed, defineComponent } from "vue";
+import {
+  Transition,
+  computed,
+  defineComponent,
+  vShow,
+  withDirectives,
+} from "vue";
 
 import type {
   SemanticType,
@@ -261,6 +267,26 @@ export default defineComponent({
           } as ThoughtChainFooterSlotInfo)
         : item.footer;
       const showContent = hasContent && (!collapsible || props.expanded);
+      const destroyOnHidden = item.destroyOnHidden ?? true;
+
+      // Keep the content mounted and only toggle it with `v-show` when
+      // `destroyOnHidden` is false, so streaming output and inner component
+      // state survive a collapse. Keep `vShow` attached in both modes so
+      // changing `destroyOnHidden` at runtime does not reset its lifecycle.
+      const renderContent = () => {
+        const node = (
+          <div>
+            <div
+              class={[`${cls}-content`, props.classes?.itemContent]}
+              style={props.styles?.itemContent}
+            >
+              <div class={`${cls}-content-box`}>{contentNode}</div>
+            </div>
+          </div>
+        );
+
+        return withDirectives(node, [[vShow, showContent]]);
+      };
 
       return (
         <div class={[`${cls}`, props.classes?.item]} style={props.styles?.item}>
@@ -271,6 +297,7 @@ export default defineComponent({
             {hasContent && (
               <Transition
                 name={`${props.prefixCls}-collapse`}
+                persisted={!destroyOnHidden}
                 onBeforeEnter={onBeforeEnter}
                 onEnter={onEnter}
                 onAfterEnter={onAfterEnter}
@@ -278,16 +305,7 @@ export default defineComponent({
                 onLeave={onLeave}
                 onAfterLeave={onAfterLeave}
               >
-                {showContent ? (
-                  <div>
-                    <div
-                      class={[`${cls}-content`, props.classes?.itemContent]}
-                      style={props.styles?.itemContent}
-                    >
-                      <div class={`${cls}-content-box`}>{contentNode}</div>
-                    </div>
-                  </div>
-                ) : null}
+                {destroyOnHidden && !showContent ? null : renderContent()}
               </Transition>
             )}
 

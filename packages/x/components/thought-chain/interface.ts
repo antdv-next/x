@@ -100,6 +100,13 @@ export interface ThoughtChainItemType {
    * @descZH 标题闪烁动画
    */
   blink?: boolean;
+
+  /**
+   * @desc Whether to destroy the content node when collapsed
+   * @descZH 折叠时是否销毁内容节点
+   * @default true
+   */
+  destroyOnHidden?: boolean;
 }
 
 export interface ThoughtChainProps extends Omit<HTMLAttributes, "title"> {
