@@ -43,11 +43,11 @@
           "description": "Ant Design X Skill -> Antdv X Skill"
         }
       ],
-      "last_synced_commit": "ea0ac7ba3024811117f602541ea2483908bce0f8",
-      "last_synced_commit_short": "ea0ac7b",
-      "last_synced_at": "2026-07-01T23:27:11Z",
-      "last_synced_tag": "",
-      "sync_count": 0
+      "last_synced_commit": "2c3146a5c9148cff86c49979f3293750ece051a9",
+      "last_synced_commit_short": "2c3146a",
+      "last_synced_at": "2026-08-04T17:02:01Z",
+      "last_synced_tag": "2.9.0",
+      "sync_count": 1
     }
   ]
 }
