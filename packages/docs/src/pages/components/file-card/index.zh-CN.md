@@ -100,7 +100,7 @@ type PresetIcons =
 
 > 推荐优先使用 `FileCardList` 导出。`FileCard.List` 旧写法仍兼容。
 
-## 语义化 DOM
+## Semantic DOM
 
 <demo src="./demo/semantic.vue" simplify>FileCard 语义结构</demo>
 
