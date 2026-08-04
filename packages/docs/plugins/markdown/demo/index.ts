@@ -102,6 +102,31 @@ async function parseDemoFile(
   md: ReturnType<ReturnType<typeof createMarkdown>>,
 ): Promise<ParsedDemoFile> {
   const code = await fs.readFile(filePath, "utf-8");
+  const locales = await parseDemoLocales(code, filePath, md);
+
+  const sourceCode = code.replace(/<docs[^>]*>[\s\S]*?<\/docs>/g, "").trim();
+  const jsSourceCode = await tsToJs(sourceCode);
+  const sourceHtml = await md.renderAsync(`\`\`\`vue\n${sourceCode}\n\`\`\``);
+  const jsSourceHtml = await md.renderAsync(
+    `\`\`\`vue\n${jsSourceCode}\n\`\`\``,
+  );
+  const extraFiles = await collectExtraFiles(filePath, sourceCode, md);
+
+  return {
+    locales,
+    sourceCode,
+    jsSourceCode,
+    sourceHtml,
+    jsSourceHtml,
+    extraFiles,
+  };
+}
+
+async function parseDemoLocales(
+  code: string,
+  filePath: string,
+  md: ReturnType<ReturnType<typeof createMarkdown>>,
+) {
   const { descriptor } = parse(code, {
     filename: filePath,
     sourceMap: false,
@@ -126,23 +151,7 @@ async function parseDemoFile(
       };
     }),
   );
-
-  const sourceCode = code.replace(/<docs[^>]*>[\s\S]*?<\/docs>/g, "").trim();
-  const jsSourceCode = await tsToJs(sourceCode);
-  const sourceHtml = await md.renderAsync(`\`\`\`vue\n${sourceCode}\n\`\`\``);
-  const jsSourceHtml = await md.renderAsync(
-    `\`\`\`vue\n${jsSourceCode}\n\`\`\``,
-  );
-  const extraFiles = await collectExtraFiles(filePath, sourceCode, md);
-
-  return {
-    locales,
-    sourceCode,
-    jsSourceCode,
-    sourceHtml,
-    jsSourceHtml,
-    extraFiles,
-  };
+  return locales;
 }
 
 export function demoPlugin(): PluginOption {
@@ -159,21 +168,85 @@ export function demoPlugin(): PluginOption {
   const DEMO_GLOB = ["/src/pages/**/demo/*.vue"];
   const DEMO_REGISTRY_ADD_EVENT = "demo-registry:add";
   const DEMO_REGISTRY_REMOVE_EVENT = "demo-registry:remove";
+  const DEV_SOURCE_PATH = "/__demo_source";
+  let isServe = false;
+  let root = process.cwd();
+  let base = "/";
 
-  // Cache parsed demo files so core + highlighted modules don't parse twice.
-  const demoParseCache = new Map<string, ParsedDemoFile>();
+  // Build parses each demo once. Dev only deduplicates concurrent source requests.
+  const buildDemoParseCache = new Map<string, ParsedDemoFile>();
+  const devDemoParseTasks = new Map<string, Promise<ParsedDemoFile>>();
 
-  async function getParsedDemo(filePath: string) {
-    if (!demoParseCache.has(filePath)) {
-      demoParseCache.set(filePath, await parseDemoFile(filePath, md));
+  async function getBuildParsedDemo(filePath: string) {
+    if (!buildDemoParseCache.has(filePath)) {
+      buildDemoParseCache.set(filePath, await parseDemoFile(filePath, md));
     }
-    return demoParseCache.get(filePath)!;
+    return buildDemoParseCache.get(filePath)!;
+  }
+
+  function getDevParsedDemo(filePath: string) {
+    const currentTask = devDemoParseTasks.get(filePath);
+    if (currentTask) return currentTask;
+
+    const task = parseDemoFile(filePath, md).finally(() => {
+      if (devDemoParseTasks.get(filePath) === task)
+        devDemoParseTasks.delete(filePath);
+    });
+    devDemoParseTasks.set(filePath, task);
+    return task;
   }
 
   return {
     name: "vite:demo",
     enforce: "pre",
+    configResolved(config) {
+      isServe = config.command === "serve";
+      root = config.root;
+      base = config.base;
+    },
     configureServer(server) {
+      const sourcePath = `${base === "/" ? "" : base.replace(/\/$/, "")}${DEV_SOURCE_PATH}`;
+      server.middlewares.use(async (request, response, next) => {
+        const url = new URL(request.url ?? "", "http://vite.local");
+        if (url.pathname !== sourcePath) return next();
+
+        const id = url.searchParams.get("id");
+        const filePath = id ? path.resolve(root, `.${id}`) : "";
+        const relativePath = filePath ? path.relative(root, filePath) : "..";
+        if (
+          !id?.startsWith("/") ||
+          relativePath.startsWith("..") ||
+          path.isAbsolute(relativePath) ||
+          !isDemoFile(filePath, root, DEMO_GLOB)
+        ) {
+          response.statusCode = 400;
+          response.end("Invalid demo source path");
+          return;
+        }
+
+        try {
+          const parsed = await getDevParsedDemo(filePath);
+          response.statusCode = 200;
+          response.setHeader("Content-Type", "application/json; charset=utf-8");
+          response.setHeader("Cache-Control", "no-store");
+          response.end(
+            JSON.stringify({
+              source: parsed.sourceCode,
+              jsSource: parsed.jsSourceCode,
+              html: parsed.sourceHtml,
+              jsHtml: parsed.jsSourceHtml,
+              extraFiles: parsed.extraFiles,
+            }),
+          );
+        } catch (error) {
+          server.config.logger.error(
+            `Failed to load demo source ${filePath}: ${error instanceof Error ? error.message : String(error)}`,
+          );
+          response.statusCode = 500;
+          response.end("Failed to load demo source");
+        }
+      });
+
       const handleDemoAdd = (filePath: string) => {
         if (!isDemoFile(filePath, server.config.root, DEMO_GLOB)) return;
 
@@ -275,72 +348,73 @@ export default demos
         const normalizedFile = normalizePath(filePath);
         this.addWatchFile(filePath);
 
-        const {
-          locales,
-          sourceCode,
-          jsSourceCode,
-          sourceHtml,
-          jsSourceHtml,
-          extraFiles,
-        } = await getParsedDemo(filePath);
+        const parsed = isServe ? undefined : await getBuildParsedDemo(filePath);
+        const locales = parsed
+          ? parsed.locales
+          : await parseDemoLocales(
+              await fs.readFile(filePath, "utf-8"),
+              filePath,
+              md,
+            );
 
         // Watch extra files so HMR re-runs this loader when they change.
-        for (const file of extraFiles) {
+        for (const file of parsed?.extraFiles ?? []) {
           this.addWatchFile(path.resolve(path.dirname(filePath), file.name));
         }
 
-        const isDev = this.meta?.watchMode === true;
         // Production: emit source data as a JSON asset for on-demand fetch.
         // getFileName() returns a path relative to outDir root (e.g. "assets/foo.json"),
         // so prefix with BASE_URL to form a root-relative URL that resolves correctly
         // regardless of deploy base (root "/" or a PR-preview subpath). Without the
         // prefix, new URL("assets/foo.json", import.meta.url) doubles the "assets/"
         // segment (chunk already lives under assets/) and 404s.
-        const sourceUrl = this.getFileName(
-          this.emitFile({
-            type: "asset",
-            name: `demo-source-${path.basename(filePath, ".vue")}.json`,
-            source: JSON.stringify({
-              source: sourceCode,
-              jsSource: jsSourceCode,
-              html: sourceHtml,
-              jsHtml: jsSourceHtml,
-              extraFiles,
-            }),
-          }),
-        );
+        const sourceUrl = isServe
+          ? undefined
+          : this.getFileName(
+              this.emitFile({
+                type: "asset",
+                name: `demo-source-${path.basename(filePath, ".vue")}.json`,
+                source: JSON.stringify({
+                  source: parsed!.sourceCode,
+                  jsSource: parsed!.jsSourceCode,
+                  html: parsed!.sourceHtml,
+                  jsHtml: parsed!.jsSourceHtml,
+                  extraFiles: parsed!.extraFiles,
+                }),
+              }),
+            );
 
         return {
-          code: isDev
+          code: isServe
             ? `
 import { ref } from 'vue'
 
 const localesRef = ref(${JSON.stringify(locales)})
-const sourceRef = ref(${JSON.stringify(sourceCode)})
-const jsSourceRef = ref(${JSON.stringify(jsSourceCode)})
-const htmlRef = ref(${JSON.stringify(sourceHtml)})
-const jsHtmlRef = ref(${JSON.stringify(jsSourceHtml)})
-const extraFilesRef = ref(${JSON.stringify(extraFiles)})
+const sourceVersionRef = ref(0)
 
 const demoData = {
   component: () => import(${JSON.stringify(filePath)}),
   get locales() { return localesRef.value },
-  get source() { return sourceRef.value },
-  get jsSource() { return jsSourceRef.value },
-  get html() { return htmlRef.value },
-  get jsHtml() { return jsHtmlRef.value },
-  get extraFiles() { return extraFilesRef.value }
+  get sourceVersion() { return sourceVersionRef.value },
+  async loadSource(signal) {
+    const url = new URL(import.meta.env.BASE_URL + ${JSON.stringify(DEV_SOURCE_PATH.slice(1))}, window.location.origin)
+    url.searchParams.set('id', ${JSON.stringify(toDemoKey(filePath, root))})
+    url.searchParams.set('t', String(sourceVersionRef.value))
+    const res = await fetch(url.href, { cache: 'no-store', signal })
+    if (!res.ok)
+      throw new Error(\`Failed to load demo source: \${res.status} \${res.statusText}\`)
+    return res.json()
+  }
 }
 
 if (import.meta.hot) {
   import.meta.hot.accept()
+  import.meta.hot.on('vite:beforeUpdate', () => {
+    sourceVersionRef.value = Date.now()
+  })
   import.meta.hot.on(${JSON.stringify(`demo-update:${normalizedFile}`)}, (data) => {
     if ('locales' in data) localesRef.value = data.locales
-    if ('source' in data) sourceRef.value = data.source
-    if ('jsSource' in data) jsSourceRef.value = data.jsSource
-    if ('html' in data) htmlRef.value = data.html
-    if ('jsHtml' in data) jsHtmlRef.value = data.jsHtml
-    if ('extraFiles' in data) extraFilesRef.value = data.extraFiles
+    if ('timestamp' in data) sourceVersionRef.value = data.timestamp
   })
 }
 
@@ -354,9 +428,10 @@ const localesRef = ref(${JSON.stringify(locales)})
 const demoData = {
   component: () => import(${JSON.stringify(filePath)}),
   get locales() { return localesRef.value },
-  async loadSource() {
+  sourceVersion: 0,
+  async loadSource(signal) {
     const url = new URL(import.meta.env.BASE_URL + ${JSON.stringify(sourceUrl)}, import.meta.url)
-    const res = await fetch(url.href)
+    const res = await fetch(url.href, { signal })
     if (!res.ok)
       throw new Error(\`Failed to load demo source: \${res.status} \${res.statusText}\`)
     return res.json()
@@ -382,26 +457,19 @@ export default demoData
       const normalizedFile = normalizePath(ctx.file);
 
       // Bust cache and re-parse.
-      demoParseCache.delete(ctx.file);
-      const {
-        locales,
-        sourceCode,
-        jsSourceCode,
-        sourceHtml,
-        jsSourceHtml,
-        extraFiles,
-      } = await getParsedDemo(ctx.file);
+      buildDemoParseCache.delete(ctx.file);
+      const locales = await parseDemoLocales(
+        await fs.readFile(ctx.file, "utf-8"),
+        ctx.file,
+        md,
+      );
 
       ctx.server.ws.send({
         type: "custom",
         event: `demo-update:${normalizedFile}`,
         data: {
           locales,
-          source: sourceCode,
-          jsSource: jsSourceCode,
-          html: sourceHtml,
-          jsHtml: jsSourceHtml,
-          extraFiles,
+          timestamp: Date.now(),
         },
       });
       return ctx.modules;

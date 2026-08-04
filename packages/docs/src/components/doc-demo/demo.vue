@@ -1,11 +1,18 @@
 <script setup lang="ts">
+import type { DemoExtraFile, DemoModule, DemoSourceData } from "virtual:demos";
 import type { Component, CSSProperties } from "vue";
 
 import { CheckOutlined, CodeOutlined, CopyOutlined } from "@antdv-next/icons";
 import { useClipboard } from "@vueuse/core";
 import { createStyles } from "antdv-style";
 import { loadDemo } from "virtual:demos";
-import { computed, defineAsyncComponent, shallowRef, watch } from "vue";
+import {
+  computed,
+  defineAsyncComponent,
+  onBeforeUnmount,
+  shallowRef,
+  watch,
+} from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { getDemoId } from "@/utils/get-demo-id";
@@ -167,29 +174,42 @@ const route = useRoute();
 const router = useRouter();
 const showCode = shallowRef(false);
 const codeType = shallowRef<string>("ts");
-const demo = shallowRef<any>(null);
-const sourceData = shallowRef<any>(null);
+const demo = shallowRef<DemoModule | null>(null);
+const sourceData = shallowRef<DemoSourceData | null>(null);
 const sourceLoading = shallowRef(false);
 const sourceLoadError = shallowRef<Error | null>(null);
 const demoLoading = shallowRef(true);
 let demoLoadVersion = 0;
 let sourceLoadPromise: Promise<void> | null = null;
+let sourceAbortController: AbortController | null = null;
+
+function releaseSource() {
+  sourceAbortController?.abort();
+  sourceAbortController = null;
+  sourceData.value = null;
+  sourceLoadError.value = null;
+  sourceLoadPromise = null;
+  sourceLoading.value = false;
+}
 
 async function ensureSourceLoaded() {
   if (sourceData.value || !demo.value) return;
   if (sourceLoadPromise) return sourceLoadPromise;
 
   const currentDemo = demo.value;
+  const abortController = new AbortController();
+  sourceAbortController = abortController;
   sourceLoading.value = true;
   sourceLoadError.value = null;
 
-  const request = Promise.resolve(
-    currentDemo.loadSource ? currentDemo.loadSource() : currentDemo,
-  )
+  const request = currentDemo
+    .loadSource(abortController.signal)
     .then(data => {
-      if (demo.value === currentDemo) sourceData.value = data;
+      if (demo.value === currentDemo && !abortController.signal.aborted)
+        sourceData.value = data;
     })
     .catch(error => {
+      if (abortController.signal.aborted) return;
       const loadError =
         error instanceof Error ? error : new Error(String(error));
       if (demo.value === currentDemo) sourceLoadError.value = loadError;
@@ -197,6 +217,7 @@ async function ensureSourceLoaded() {
     })
     .finally(() => {
       if (sourceLoadPromise === request) {
+        sourceAbortController = null;
         sourceLoadPromise = null;
         sourceLoading.value = false;
       }
@@ -206,20 +227,26 @@ async function ensureSourceLoaded() {
   return request;
 }
 
-watch(
-  demo,
-  () => {
-    sourceData.value = null;
-    sourceLoadError.value = null;
-    sourceLoadPromise = null;
-    sourceLoading.value = false;
-  },
-  { flush: "sync" },
-);
+watch(demo, releaseSource, { flush: "sync" });
 
 watch([showCode, demo], ([visible, currentDemo]) => {
-  if (visible && currentDemo) void ensureSourceLoaded().catch(() => {});
+  if (!visible) {
+    releaseSource();
+    return;
+  }
+  if (currentDemo) void ensureSourceLoaded().catch(() => {});
 });
+
+watch(
+  () => demo.value?.sourceVersion,
+  (version, previousVersion) => {
+    if (!showCode.value || version === previousVersion) return;
+    releaseSource();
+    void ensureSourceLoaded().catch(() => {});
+  },
+);
+
+onBeforeUnmount(releaseSource);
 
 watch(
   () => props.src,
@@ -266,9 +293,9 @@ const component = computed<Component | undefined>(() => {
 
 const id = computed(() => getDemoId(props.src));
 const hasJsSource = computed(() => Boolean(sourceData.value?.jsSource?.trim()));
-const extraFiles = computed<
-  { name: string; lang: string; code: string; html: string }[]
->(() => sourceData.value?.extraFiles ?? []);
+const extraFiles = computed<DemoExtraFile[]>(
+  () => sourceData.value?.extraFiles ?? [],
+);
 const hasExtraFiles = computed(() => extraFiles.value.length > 0);
 const hasCodeTabs = computed(() => hasJsSource.value || hasExtraFiles.value);
 const codeTabKeys = computed(() => {
