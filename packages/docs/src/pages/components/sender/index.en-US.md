@@ -14,6 +14,7 @@ description: A chat input component for sending messages.
 <demo src="./demo/basic.vue">Basic Usage</demo>
 <demo src="./demo/switch.vue">Feature Toggle</demo>
 <demo src="./demo/slot-filling.vue">Slot Mode</demo>
+<demo src="./demo/slot-format-result.vue">Slot Format Result</demo>
 <demo src="./demo/ref-action.vue">Instance Methods</demo>
 <demo src="./demo/submit-type.vue">Submit Methods</demo>
 <demo src="./demo/speech.vue">Voice Input</demo>
@@ -144,11 +145,11 @@ interface SenderFocusOptions extends FocusOptions {
 
 #### SlotConfigType
 
-| Property     | Description                                                  | Type                                                              |
-| ------------ | ------------------------------------------------------------ | ----------------------------------------------------------------- |
-| type         | Node type, determines the rendering component type, required | `'text' \| 'input' \| 'select' \| 'tag' \| 'content' \| 'custom'` |
-| key          | Unique identifier, can be omitted when type is `text`        | `string`                                                          |
-| formatResult | Format the final result                                      | `(value: any) => string`                                          |
+| Property     | Description                                                             | Type                                                              |
+| ------------ | ----------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| type         | Node type, determines the rendering component type, required            | `'text' \| 'input' \| 'select' \| 'tag' \| 'content' \| 'custom'` |
+| key          | Unique identifier, can be omitted when type is `text`                   | `string`                                                          |
+| formatResult | Format the final result; applies to all slot types, including `content` | `(value: any) => string`                                          |
 
 ##### text node properties
 

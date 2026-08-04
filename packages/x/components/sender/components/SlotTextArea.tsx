@@ -211,11 +211,14 @@ export default defineComponent({
         }
 
         const config = nodeInfo.slotConfig;
-        if (!config || config.type === "content") {
+        if (!config) {
           return element.innerText || "";
         }
 
-        const rawValue = slotValues.value[nodeInfo.slotKey];
+        const rawValue =
+          config.type === "content"
+            ? element.innerText || ""
+            : slotValues.value[nodeInfo.slotKey];
         const formatted = config.formatResult?.(rawValue);
         return formatted ?? stringifyValue(rawValue);
       }

@@ -14,6 +14,7 @@ description: 用于聊天的输入框组件。
 <demo src="./demo/basic.vue">基本用法</demo>
 <demo src="./demo/switch.vue">功能开关</demo>
 <demo src="./demo/slot-filling.vue">词槽模式</demo>
+<demo src="./demo/slot-format-result.vue">词槽格式化</demo>
 <demo src="./demo/ref-action.vue">实例方法</demo>
 <demo src="./demo/submit-type.vue">提交方式</demo>
 <demo src="./demo/speech.vue">语音输入</demo>
@@ -144,11 +145,11 @@ interface SenderFocusOptions extends FocusOptions {
 
 #### SlotConfigType
 
-| 属性         | 说明                              | 类型                                                              |
-| ------------ | --------------------------------- | ----------------------------------------------------------------- |
-| type         | 节点类型，决定渲染组件类型，必填  | `'text' \| 'input' \| 'select' \| 'tag' \| 'content' \| 'custom'` |
-| key          | 唯一标识，type 为 `text` 时可省略 | `string`                                                          |
-| formatResult | 格式化最终结果                    | `(value: any) => string`                                          |
+| 属性         | 说明                                               | 类型                                                              |
+| ------------ | -------------------------------------------------- | ----------------------------------------------------------------- |
+| type         | 节点类型，决定渲染组件类型，必填                   | `'text' \| 'input' \| 'select' \| 'tag' \| 'content' \| 'custom'` |
+| key          | 唯一标识，type 为 `text` 时可省略                  | `string`                                                          |
+| formatResult | 格式化最终结果，对所有词槽类型（含 `content`）生效 | `(value: any) => string`                                          |
 
 ##### text 节点属性
 

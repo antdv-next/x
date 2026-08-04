@@ -290,6 +290,101 @@ describe("Sender", () => {
     );
   });
 
+  it("should format content slots using the latest DOM text", async () => {
+    const formatResult = vi.fn((value: any) => `[formatted:${value}]`);
+    const wrapper = mount(Sender, {
+      props: {
+        slotConfig: [
+          {
+            type: "content",
+            key: "content",
+            props: { defaultValue: "Initial Value" },
+            formatResult,
+          },
+        ],
+      },
+    });
+    await wrapper.vm.$nextTick();
+
+    const contentSlot = wrapper.find<HTMLElement>(".antd-sender-slot-content");
+    contentSlot.element.innerText = "Edited Value";
+    await wrapper.find(".antd-sender-input-slot").trigger("input");
+
+    expect(formatResult).toHaveBeenLastCalledWith("Edited Value");
+    expect((wrapper.vm as any).getValue()).toEqual(
+      expect.objectContaining({
+        value: " [formatted:Edited Value] ",
+        slotConfig: [
+          expect.objectContaining({
+            key: "content",
+            type: "content",
+            value: "[formatted:Edited Value]",
+          }),
+        ],
+      }),
+    );
+  });
+
+  it("should return raw content slot text without formatResult", async () => {
+    const wrapper = mount(Sender, {
+      props: {
+        slotConfig: [
+          {
+            type: "content",
+            key: "content",
+            props: { defaultValue: "Content Value" },
+          },
+        ],
+      },
+    });
+    await wrapper.vm.$nextTick();
+
+    expect((wrapper.vm as any).getValue().value).toBe(" Content Value ");
+    expect((wrapper.vm as any).getValue().slotConfig).toEqual([
+      expect.objectContaining({
+        key: "content",
+        type: "content",
+        value: "Content Value",
+      }),
+    ]);
+  });
+
+  it("should format content and other slot types together", async () => {
+    const wrapper = mount(Sender, {
+      props: {
+        slotConfig: [
+          { type: "text", value: 'Translate "' },
+          {
+            type: "content",
+            key: "content",
+            props: { defaultValue: "Hello" },
+            formatResult: (value: any) => `[${value}]`,
+          },
+          { type: "text", value: '" from ' },
+          {
+            type: "select",
+            key: "language",
+            props: {
+              defaultValue: "English",
+              options: ["English", "Chinese"],
+            },
+            formatResult: (value: any) => `{${value}}`,
+          },
+        ],
+      },
+    });
+    await wrapper.vm.$nextTick();
+
+    const result = (wrapper.vm as any).getValue();
+    expect(result.value).toBe('Translate " [Hello] " from {English}');
+    expect(result.slotConfig).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ type: "content", value: "[Hello]" }),
+        expect.objectContaining({ type: "select", value: "{English}" }),
+      ]),
+    );
+  });
+
   it("should support slot insert and getValue on ref", async () => {
     const wrapper = mount(Sender, {
       props: {
