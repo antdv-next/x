@@ -15,13 +15,26 @@ declare module "virtual:demos" {
     title?: string;
   }
 
-  interface DemoModule {
+  export interface DemoExtraFile {
+    name: string;
+    lang: string;
+    code: string;
+    html: string;
+  }
+
+  export interface DemoSourceData {
+    source: string;
+    jsSource: string;
+    html: string;
+    jsHtml: string;
+    extraFiles: DemoExtraFile[];
+  }
+
+  export interface DemoModule {
     component?: () => Promise<unknown>;
     locales?: Record<string, DemoLocale>;
-    source?: string;
-    jsSource?: string;
-    html?: string;
-    jsHtml?: string;
+    sourceVersion: number;
+    loadSource: (signal?: AbortSignal) => Promise<DemoSourceData>;
   }
 
   export function loadDemo(id: string): Promise<DemoModule | null>;
