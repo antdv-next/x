@@ -19,6 +19,7 @@ description: 用于在输入场景中提供快捷指令建议的组件。
 <demo src="./demo/block.vue">整行宽度</demo>
 <demo src="./demo/trigger.vue">自定义触发</demo>
 <demo src="./demo/render-slot.vue">自定义建议项渲染</demo>
+<demo src="./demo/long-list.vue">长列表滚动</demo>
 
 ## API
 

@@ -359,4 +359,32 @@ describe("Suggestion", () => {
     expect(document.body.textContent).not.toContain("default-icon");
     expect(document.body.textContent).not.toContain("default-extra");
   });
+
+  it("keeps every option reachable inside the scrollable popup for long lists", async () => {
+    const longItems: SuggestionItem[] = Array.from(
+      { length: 30 },
+      (_, index) => ({
+        label: `Option ${index + 1}`,
+        value: `option-${index + 1}`,
+      }),
+    );
+
+    track(
+      mount(Suggestion, {
+        attachTo: document.body,
+        props: { open: true, items: longItems },
+        slots: createSlot(),
+      }),
+    );
+
+    await flush();
+
+    const menu = document.querySelector(".ant-cascader-menu");
+    expect(menu).not.toBeNull();
+
+    const options = document.querySelectorAll(".ant-cascader-menu-item");
+    expect(options.length).toBe(longItems.length);
+    expect(options[0].textContent).toContain("Option 1");
+    expect(options[options.length - 1].textContent).toContain("Option 30");
+  });
 });
