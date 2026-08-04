@@ -36,6 +36,9 @@ const useStyles = createStyles(({ token }) => ({
       width: "100%",
       fontSize: 18,
       paddingInline: 0,
+      "&:focus-visible, &:has(input:focus-visible)": {
+        outline: "none !important",
+      },
     },
     ".component-overview-search-input input": {
       fontSize: 18,
