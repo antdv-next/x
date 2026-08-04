@@ -346,7 +346,7 @@ describe("ThoughtChain", () => {
     expect(wrapper.findAll(".antd-thought-chain-node").length).toBe(2);
   });
 
-  it("keeps the item content mounted when destroyOnHidden is false", () => {
+  it("keeps the item content mounted and toggles its visibility when destroyOnHidden is false", async () => {
     const wrapper = mount(ThoughtChain, {
       props: {
         items: [
@@ -365,6 +365,20 @@ describe("ThoughtChain", () => {
     const content = wrapper.find(".antd-thought-chain-node-content");
     expect(content.exists()).toBe(true);
     expect(wrapper.text()).toContain("Hidden but mounted");
+    expect(content.element.parentElement?.getAttribute("style")).toContain(
+      "display: none",
+    );
+
+    await wrapper.find(".antd-thought-chain-node-collapsible").trigger("click");
+    await nextTick();
+
+    expect(
+      content.element.parentElement?.getAttribute("style") ?? "",
+    ).not.toContain("display: none");
+
+    await wrapper.find(".antd-thought-chain-node-collapsible").trigger("click");
+    await nextTick();
+
     expect(content.element.parentElement?.getAttribute("style")).toContain(
       "display: none",
     );
@@ -397,6 +411,53 @@ describe("ThoughtChain", () => {
     // Same DOM node, so the value typed before collapsing survives.
     expect(afterCollapse.element).toBe(inputEl);
     expect(afterCollapse.element.value).toBe("streaming");
+  });
+
+  it("keeps toggling after destroyOnHidden changes at runtime", async () => {
+    const createItems = (destroyOnHidden: boolean) => [
+      {
+        key: "1",
+        title: "Step 1",
+        content: h("span", "Dynamic content"),
+        collapsible: true,
+        destroyOnHidden,
+      },
+    ];
+    const wrapper = mount(ThoughtChain, {
+      props: {
+        items: createItems(false),
+        defaultExpandedKeys: ["1"],
+      },
+    });
+
+    await wrapper.setProps({ items: createItems(true) });
+    await wrapper.find(".antd-thought-chain-node-collapsible").trigger("click");
+    await nextTick();
+    expect(wrapper.find(".antd-thought-chain-node-content").exists()).toBe(
+      false,
+    );
+
+    await wrapper.find(".antd-thought-chain-node-collapsible").trigger("click");
+    await nextTick();
+    expect(wrapper.find(".antd-thought-chain-node-content").exists()).toBe(
+      true,
+    );
+
+    await wrapper.setProps({ items: createItems(false) });
+    const content = wrapper.find(".antd-thought-chain-node-content");
+
+    await wrapper.find(".antd-thought-chain-node-collapsible").trigger("click");
+    await nextTick();
+    expect(content.exists()).toBe(true);
+    expect(content.element.parentElement?.getAttribute("style")).toContain(
+      "display: none",
+    );
+
+    await wrapper.find(".antd-thought-chain-node-collapsible").trigger("click");
+    await nextTick();
+    expect(
+      content.element.parentElement?.getAttribute("style") ?? "",
+    ).not.toContain("display: none");
   });
 
   it("keeps the item content mounted for controlled expandedKeys when destroyOnHidden is false", async () => {

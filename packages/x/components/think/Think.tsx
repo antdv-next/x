@@ -171,7 +171,8 @@ export const XThink = defineComponent({
 
     // Content is kept mounted and only toggled with `v-show` when
     // `destroyOnHidden` is false, so streaming output and inner component
-    // state survive a collapse.
+    // state survive a collapse. Keep `vShow` attached in both modes so changing
+    // `destroyOnHidden` at runtime does not reset the directive lifecycle.
     function renderContent() {
       const node = (
         <div ref={contentRef}>
@@ -191,9 +192,7 @@ export const XThink = defineComponent({
         </div>
       );
 
-      return props.destroyOnHidden
-        ? node
-        : withDirectives(node, [[vShow, mergedExpanded.value]]);
+      return withDirectives(node, [[vShow, mergedExpanded.value]]);
     }
 
     expose<ThinkRef>({
@@ -263,6 +262,7 @@ export const XThink = defineComponent({
         {/* Collapsible content */}
         <Transition
           name={`${prefixCls.value}-collapse`}
+          persisted={!props.destroyOnHidden}
           onBeforeEnter={onBeforeEnter}
           onEnter={onEnter}
           onAfterEnter={onAfterEnter}

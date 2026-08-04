@@ -219,7 +219,7 @@ describe("Think", () => {
     expect(wrapper.find(".antd-think-content").exists()).toBe(false);
   });
 
-  it("keeps the content node mounted when destroyOnHidden is false", () => {
+  it("keeps the content node mounted and toggles its visibility when destroyOnHidden is false", async () => {
     const wrapper = mount(Think, {
       props: { destroyOnHidden: false, defaultExpanded: false },
       slots: { default: () => "Hidden but mounted" },
@@ -228,6 +228,20 @@ describe("Think", () => {
     const content = wrapper.find(".antd-think-content");
     expect(content.exists()).toBe(true);
     expect(wrapper.text()).toContain("Hidden but mounted");
+    expect(content.element.parentElement?.getAttribute("style")).toContain(
+      "display: none",
+    );
+
+    await wrapper.find(".antd-think-status-wrapper").trigger("click");
+    await nextTick();
+
+    expect(
+      content.element.parentElement?.getAttribute("style") ?? "",
+    ).not.toContain("display: none");
+
+    await wrapper.find(".antd-think-status-wrapper").trigger("click");
+    await nextTick();
+
     expect(content.element.parentElement?.getAttribute("style")).toContain(
       "display: none",
     );
@@ -252,6 +266,38 @@ describe("Think", () => {
     // Same DOM node, so the value typed before collapsing survives.
     expect(afterCollapse.element).toBe(inputEl);
     expect(afterCollapse.element.value).toBe("streaming");
+  });
+
+  it("keeps toggling after destroyOnHidden changes at runtime", async () => {
+    const wrapper = mount(Think, {
+      props: { destroyOnHidden: false },
+      slots: { default: () => "Dynamic content" },
+    });
+
+    await wrapper.setProps({ destroyOnHidden: true });
+    await wrapper.find(".antd-think-status-wrapper").trigger("click");
+    await nextTick();
+    expect(wrapper.find(".antd-think-content").exists()).toBe(false);
+
+    await wrapper.find(".antd-think-status-wrapper").trigger("click");
+    await nextTick();
+    expect(wrapper.find(".antd-think-content").exists()).toBe(true);
+
+    await wrapper.setProps({ destroyOnHidden: false });
+    const content = wrapper.find(".antd-think-content");
+
+    await wrapper.find(".antd-think-status-wrapper").trigger("click");
+    await nextTick();
+    expect(content.exists()).toBe(true);
+    expect(content.element.parentElement?.getAttribute("style")).toContain(
+      "display: none",
+    );
+
+    await wrapper.find(".antd-think-status-wrapper").trigger("click");
+    await nextTick();
+    expect(
+      content.element.parentElement?.getAttribute("style") ?? "",
+    ).not.toContain("display: none");
   });
 
   it("keeps the content node mounted for controlled expanded when destroyOnHidden is false", async () => {

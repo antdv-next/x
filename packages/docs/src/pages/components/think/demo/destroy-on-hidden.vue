@@ -1,36 +1,38 @@
 <script setup lang="ts">
-import { onBeforeUnmount, ref } from "vue";
+import { ref } from "vue";
 
-const destroyOnHidden = ref(false);
-const seconds = ref(0);
-
-const timer = setInterval(() => {
-  seconds.value += 1;
-}, 1000);
-
-onBeforeUnmount(() => clearInterval(timer));
+const expanded = ref(true);
+const destroyOnHidden = ref(true);
 </script>
 
 <template>
-  <div>
-    <a-switch
-      v-model:checked="destroyOnHidden"
-      checked-children="destroyOnHidden: true"
-      un-checked-children="destroyOnHidden: false"
-    />
-    <br />
-    <br />
-    <ax-think :destroy-on-hidden="destroyOnHidden" title="deep thinking">
-      <p>Streaming for {{ seconds }}s.</p>
-      <input placeholder="Type something, then collapse" />
+  <a-space direction="vertical" :size="16">
+    <a-space>
+      <a-button @click="expanded = !expanded">
+        {{ expanded ? "Collapse" : "Expand" }}
+      </a-button>
+      <a-switch
+        v-model:checked="destroyOnHidden"
+        checked-children="destroyOnHidden"
+        un-checked-children="keep"
+      />
+    </a-space>
+    <ax-think
+      title="Deep Thinking"
+      :expanded="expanded"
+      :destroy-on-hidden="destroyOnHidden"
+      @expand="expanded = $event"
+    >
+      This content will be removed from DOM when collapsed and
+      destroyOnHidden is true.
     </ax-think>
-  </div>
+  </a-space>
 </template>
 
 <docs lang="zh-CN">
-`destroyOnHidden` 默认为 `true`，折叠时销毁内容节点。设为 `false` 时内容节点保留在 DOM 中，仅隐藏，可以保留流式输出与内部组件状态（例如上面输入框中已输入的内容）。
+通过外部按钮控制展开状态，并切换 `destroyOnHidden` 对折叠内容的处理方式。
 </docs>
 
 <docs lang="en-US">
-`destroyOnHidden` defaults to `true`, which destroys the content node on collapse. Set it to `false` to keep the node mounted and merely hidden, preserving streaming output and inner component state (such as the text typed into the input above).
+Control the expanded state externally and switch how collapsed content is handled with `destroyOnHidden`.
 </docs>

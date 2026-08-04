@@ -271,7 +271,8 @@ export default defineComponent({
 
       // Keep the content mounted and only toggle it with `v-show` when
       // `destroyOnHidden` is false, so streaming output and inner component
-      // state survive a collapse.
+      // state survive a collapse. Keep `vShow` attached in both modes so
+      // changing `destroyOnHidden` at runtime does not reset its lifecycle.
       const renderContent = () => {
         const node = (
           <div>
@@ -284,9 +285,7 @@ export default defineComponent({
           </div>
         );
 
-        return destroyOnHidden
-          ? node
-          : withDirectives(node, [[vShow, showContent]]);
+        return withDirectives(node, [[vShow, showContent]]);
       };
 
       return (
@@ -298,6 +297,7 @@ export default defineComponent({
             {hasContent && (
               <Transition
                 name={`${props.prefixCls}-collapse`}
+                persisted={!destroyOnHidden}
                 onBeforeEnter={onBeforeEnter}
                 onEnter={onEnter}
                 onAfterEnter={onAfterEnter}
