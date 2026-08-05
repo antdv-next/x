@@ -188,8 +188,8 @@ export class XRequestClass<
 > extends AbstractXRequestClass<Input, Output, ChatMessage> {
   private _asyncHandler!: Promise<any>;
 
-  private timeoutHandler!: number;
-  private streamTimeoutHandler!: number;
+  private timeoutHandler!: ReturnType<typeof setTimeout>;
+  private streamTimeoutHandler!: ReturnType<typeof setTimeout>;
   private abortController!: AbortController;
   private _state = reactive<XRequestReactiveState>({
     isTimeout: false,
