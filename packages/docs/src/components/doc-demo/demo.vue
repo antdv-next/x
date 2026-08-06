@@ -131,6 +131,11 @@ const useStyles = createStyles(({ token }) => ({
       lineHeight: 2,
       padding: `${token.paddingSM}px ${token.padding}px`,
     },
+    "& .ant-doc-demo-box-code-loading": {
+      display: "flex",
+      justifyContent: "center",
+      paddingBlock: token.paddingLG,
+    },
     "& .ant-doc-demo-box-code-tabs": {
       borderTop: `1px dashed ${token.colorSplit}`,
     },
@@ -470,7 +475,10 @@ async function openPlayground() {
             />
           </a-tabs>
         </div>
-        <div v-if="sourceLoading" class="ant-doc-demo-box-code">
+        <div
+          v-if="sourceLoading"
+          class="ant-doc-demo-box-code ant-doc-demo-box-code-loading"
+        >
           <a-spin />
         </div>
         <div v-else-if="sourceLoadError" class="ant-doc-demo-box-code">
