@@ -18,6 +18,14 @@ export interface ComponentToken {
    * 代码字体大小
    */
   codeFontSize?: number;
+  /**
+   * 亮色主题下的代码文字颜色，用于语言未命中高亮时的降级文本
+   */
+  codeColor?: string;
+  /**
+   * 暗色主题下的代码文字颜色，用于语言未命中高亮时的降级文本
+   */
+  codeColorDark?: string;
 }
 
 export interface CodeHighlighterToken extends FullToken<"CodeHighlighter"> {}
@@ -99,6 +107,8 @@ const genCodeHighlighterStyle: GenerateStyle<CodeHighlighterToken> = token => {
       [`${componentCls}-code`]: {
         flex: 1,
         overflow: "auto",
+        // 语言未命中高亮时会回退成无内联样式的 pre/code，需要兜底文字色
+        color: token.codeColor,
 
         // Shiki generated pre/code
         "& > pre": {
@@ -153,6 +163,10 @@ const genCodeHighlighterStyle: GenerateStyle<CodeHighlighterToken> = token => {
         [`${componentCls}-line-number`]: {
           color: "#858585",
         },
+
+        [`${componentCls}-code`]: {
+          color: token.codeColorDark,
+        },
       },
     },
   };
@@ -164,6 +178,9 @@ export const prepareComponentToken: GetDefaultToken<
   codeFontFamily:
     "'Fira Code', 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Mono', 'Droid Sans Mono', 'Source Code Pro', monospace",
   codeFontSize: 14,
+  // 与 shiki vitesse-light / vitesse-dark 的前景色保持一致
+  codeColor: "#393a34",
+  codeColorDark: "#dbd7caee",
 });
 
 export default genStyleHooks<"CodeHighlighter">(

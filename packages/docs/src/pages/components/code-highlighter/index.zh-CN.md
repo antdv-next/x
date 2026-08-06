@@ -118,10 +118,12 @@ setupCodeHighlighter({
 
 ### Component Token
 
-| 名称           | 说明         | 类型     | 默认值                   |
-| -------------- | ------------ | -------- | ------------------------ |
-| codeFontFamily | 代码字体     | `string` | `'Fira Code', monospace` |
-| codeFontSize   | 代码字体大小 | `number` | `14`                     |
+| 名称           | 说明                                         | 类型     | 默认值                   |
+| -------------- | -------------------------------------------- | -------- | ------------------------ |
+| codeFontFamily | 代码字体                                     | `string` | `'Fira Code', monospace` |
+| codeFontSize   | 代码字体大小                                 | `number` | `14`                     |
+| codeColor      | 亮色主题下的代码文字颜色（未高亮时的降级色） | `string` | `#393a34`                |
+| codeColorDark  | 暗色主题下的代码文字颜色（未高亮时的降级色） | `string` | `#dbd7caee`              |
 
 ## 主题变量（Design Token）
 

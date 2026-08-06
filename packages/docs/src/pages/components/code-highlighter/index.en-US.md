@@ -118,10 +118,12 @@ When the `header` slot is provided, it fully replaces the default header (langua
 
 ### Component Token
 
-| Name           | Description      | Type     | Default                  |
-| -------------- | ---------------- | -------- | ------------------------ |
-| codeFontFamily | Code font family | `string` | `'Fira Code', monospace` |
-| codeFontSize   | Code font size   | `number` | `14`                     |
+| Name           | Description                                             | Type     | Default                  |
+| -------------- | ------------------------------------------------------- | -------- | ------------------------ |
+| codeFontFamily | Code font family                                        | `string` | `'Fira Code', monospace` |
+| codeFontSize   | Code font size                                          | `number` | `14`                     |
+| codeColor      | Code text color in light theme (unhighlighted fallback) | `string` | `#393a34`                |
+| codeColorDark  | Code text color in dark theme (unhighlighted fallback)  | `string` | `#dbd7caee`              |
 
 ## Design Token
 
