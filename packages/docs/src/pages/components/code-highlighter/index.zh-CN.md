@@ -118,10 +118,20 @@ setupCodeHighlighter({
 
 ### Component Token
 
-| 名称           | 说明         | 类型     | 默认值                   |
-| -------------- | ------------ | -------- | ------------------------ |
-| codeFontFamily | 代码字体     | `string` | `'Fira Code', monospace` |
-| codeFontSize   | 代码字体大小 | `number` | `14`                     |
+| 名称                    | 说明                                         | 类型     | 默认值                   |
+| ----------------------- | -------------------------------------------- | -------- | ------------------------ |
+| codeFontFamily          | 代码字体                                     | `string` | `'Fira Code', monospace` |
+| codeFontSize            | 代码字体大小                                 | `number` | `14`                     |
+| codeColor               | 亮色主题下的代码文字颜色（未高亮时的降级色） | `string` | `#393a34`                |
+| codeColorDark           | 暗色主题下的代码文字颜色（未高亮时的降级色） | `string` | `#dbd7caee`              |
+| codeBg                  | 亮色主题下代码区与行号栏的背景色             | `string` | `#fafafa`                |
+| codeBgDark              | 暗色主题下代码区与行号栏的背景色             | `string` | `#1e1e1e`                |
+| codeHeaderBgDark        | 暗色主题下头部区域的背景色                   | `string` | `#252526`                |
+| codeBorderColorDark     | 暗色主题下头部与行号栏的分隔线颜色           | `string` | `#3e3e42`                |
+| codeLangColorDark       | 暗色主题下语言标签的文字颜色                 | `string` | `#cccccc`                |
+| codeLineNumberColorDark | 暗色主题下行号的文字颜色                     | `string` | `#858585`                |
+| codeBtnColorDark        | 暗色主题下头部操作按钮的文字颜色             | `string` | `#ffffff`                |
+| codeBtnHoverBgDark      | 暗色主题下头部操作按钮悬浮态的背景色         | `string` | `#3e3e42`                |
 
 ## 主题变量（Design Token）
 

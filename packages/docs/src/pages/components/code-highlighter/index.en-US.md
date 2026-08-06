@@ -118,10 +118,20 @@ When the `header` slot is provided, it fully replaces the default header (langua
 
 ### Component Token
 
-| Name           | Description      | Type     | Default                  |
-| -------------- | ---------------- | -------- | ------------------------ |
-| codeFontFamily | Code font family | `string` | `'Fira Code', monospace` |
-| codeFontSize   | Code font size   | `number` | `14`                     |
+| Name                    | Description                                             | Type     | Default                  |
+| ----------------------- | ------------------------------------------------------- | -------- | ------------------------ |
+| codeFontFamily          | Code font family                                        | `string` | `'Fira Code', monospace` |
+| codeFontSize            | Code font size                                          | `number` | `14`                     |
+| codeColor               | Code text color in light theme (unhighlighted fallback) | `string` | `#393a34`                |
+| codeColorDark           | Code text color in dark theme (unhighlighted fallback)  | `string` | `#dbd7caee`              |
+| codeBg                  | Background of the code area and gutter in light theme   | `string` | `#fafafa`                |
+| codeBgDark              | Background of the code area and gutter in dark theme    | `string` | `#1e1e1e`                |
+| codeHeaderBgDark        | Header background in dark theme                         | `string` | `#252526`                |
+| codeBorderColorDark     | Header and gutter divider color in dark theme           | `string` | `#3e3e42`                |
+| codeLangColorDark       | Language label color in dark theme                      | `string` | `#cccccc`                |
+| codeLineNumberColorDark | Line number color in dark theme                         | `string` | `#858585`                |
+| codeBtnColorDark        | Header action button color in dark theme                | `string` | `#ffffff`                |
+| codeBtnHoverBgDark      | Header action button hover background in dark theme     | `string` | `#3e3e42`                |
 
 ## Design Token
 

@@ -18,6 +18,46 @@ export interface ComponentToken {
    * 代码字体大小
    */
   codeFontSize?: number;
+  /**
+   * 亮色主题下的代码文字颜色，用于语言未命中高亮时的降级文本
+   */
+  codeColor?: string;
+  /**
+   * 暗色主题下的代码文字颜色，用于语言未命中高亮时的降级文本
+   */
+  codeColorDark?: string;
+  /**
+   * 亮色主题下代码区与行号栏的背景色
+   */
+  codeBg?: string;
+  /**
+   * 暗色主题下代码区与行号栏的背景色
+   */
+  codeBgDark?: string;
+  /**
+   * 暗色主题下头部区域的背景色
+   */
+  codeHeaderBgDark?: string;
+  /**
+   * 暗色主题下头部与行号栏的分隔线颜色
+   */
+  codeBorderColorDark?: string;
+  /**
+   * 暗色主题下语言标签的文字颜色
+   */
+  codeLangColorDark?: string;
+  /**
+   * 暗色主题下行号的文字颜色
+   */
+  codeLineNumberColorDark?: string;
+  /**
+   * 暗色主题下头部操作按钮的文字颜色
+   */
+  codeBtnColorDark?: string;
+  /**
+   * 暗色主题下头部操作按钮悬浮态的背景色
+   */
+  codeBtnHoverBgDark?: string;
 }
 
 export interface CodeHighlighterToken extends FullToken<"CodeHighlighter"> {}
@@ -66,7 +106,7 @@ const genCodeHighlighterStyle: GenerateStyle<CodeHighlighterToken> = token => {
       [`${componentCls}-content`]: {
         display: "flex",
         overflow: "auto",
-        backgroundColor: "#fafafa",
+        backgroundColor: token.codeBg,
         alignItems: "stretch",
       },
 
@@ -75,7 +115,7 @@ const genCodeHighlighterStyle: GenerateStyle<CodeHighlighterToken> = token => {
         paddingBlock: unit(token.paddingSM),
         paddingInline: unit(token.paddingXS),
         textAlign: "right",
-        backgroundColor: "#fafafa",
+        backgroundColor: token.codeBg,
         borderRight: `${unit(token.lineWidth)} ${token.lineType} ${token.colorBorderSecondary}`,
         userSelect: "none",
         flexShrink: 0,
@@ -99,6 +139,8 @@ const genCodeHighlighterStyle: GenerateStyle<CodeHighlighterToken> = token => {
       [`${componentCls}-code`]: {
         flex: 1,
         overflow: "auto",
+        // 语言未命中高亮时会回退成无内联样式的 pre/code，需要兜底文字色
+        color: token.codeColor,
 
         // Shiki generated pre/code
         "& > pre": {
@@ -125,33 +167,37 @@ const genCodeHighlighterStyle: GenerateStyle<CodeHighlighterToken> = token => {
         borderColor: token.colorBorder,
 
         [`${componentCls}-header`]: {
-          backgroundColor: "#252526",
-          borderBottomColor: "#3e3e42",
+          backgroundColor: token.codeHeaderBgDark,
+          borderBottomColor: token.codeBorderColorDark,
         },
 
         [`${componentCls}-lang`]: {
-          color: "#cccccc",
+          color: token.codeLangColorDark,
         },
 
         [`${componentCls}-theme-btn, ${componentCls}-copy-btn`]: {
-          color: "#ffffff !important",
+          color: `${token.codeBtnColorDark} !important`,
           "&:hover, &:focus": {
-            color: "#ffffff !important",
-            backgroundColor: "#3e3e42 !important",
+            color: `${token.codeBtnColorDark} !important`,
+            backgroundColor: `${token.codeBtnHoverBgDark} !important`,
           },
         },
 
         [`${componentCls}-content`]: {
-          backgroundColor: "#1e1e1e",
+          backgroundColor: token.codeBgDark,
         },
 
         [`${componentCls}-line-numbers`]: {
-          backgroundColor: "#1e1e1e",
-          borderRightColor: "#3e3e42",
+          backgroundColor: token.codeBgDark,
+          borderRightColor: token.codeBorderColorDark,
         },
 
         [`${componentCls}-line-number`]: {
-          color: "#858585",
+          color: token.codeLineNumberColorDark,
+        },
+
+        [`${componentCls}-code`]: {
+          color: token.codeColorDark,
         },
       },
     },
@@ -164,6 +210,17 @@ export const prepareComponentToken: GetDefaultToken<
   codeFontFamily:
     "'Fira Code', 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Mono', 'Droid Sans Mono', 'Source Code Pro', monospace",
   codeFontSize: 14,
+  // 与 shiki vitesse-light / vitesse-dark 的前景色保持一致
+  codeColor: "#393a34",
+  codeColorDark: "#dbd7caee",
+  codeBg: "#fafafa",
+  codeBgDark: "#1e1e1e",
+  codeHeaderBgDark: "#252526",
+  codeBorderColorDark: "#3e3e42",
+  codeLangColorDark: "#cccccc",
+  codeLineNumberColorDark: "#858585",
+  codeBtnColorDark: "#ffffff",
+  codeBtnHoverBgDark: "#3e3e42",
 });
 
 export default genStyleHooks<"CodeHighlighter">(
