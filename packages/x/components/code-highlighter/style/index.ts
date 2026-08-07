@@ -47,6 +47,10 @@ export interface ComponentToken {
    */
   codeLangColorDark?: string;
   /**
+   * 亮色主题下行号的文字颜色
+   */
+  codeLineNumberColor?: string;
+  /**
    * 暗色主题下行号的文字颜色
    */
   codeLineNumberColorDark?: string;
@@ -128,7 +132,7 @@ const genCodeHighlighterStyle: GenerateStyle<CodeHighlighterToken> = token => {
         fontSize: unit(token.codeFontSize ?? 13),
         lineHeight: "1.5em",
         height: "1.5em",
-        color: token.colorTextQuaternary,
+        color: token.codeLineNumberColor,
         display: "flex",
         alignItems: "center",
         justifyContent: "flex-end",
@@ -218,6 +222,7 @@ export const prepareComponentToken: GetDefaultToken<
   codeHeaderBgDark: "#252526",
   codeBorderColorDark: "#3e3e42",
   codeLangColorDark: "#cccccc",
+  codeLineNumberColor: "rgba(0, 0, 0, 0.25)",
   codeLineNumberColorDark: "#858585",
   codeBtnColorDark: "#ffffff",
   codeBtnHoverBgDark: "#3e3e42",

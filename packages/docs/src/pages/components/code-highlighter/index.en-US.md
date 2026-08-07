@@ -129,6 +129,7 @@ When the `header` slot is provided, it fully replaces the default header (langua
 | codeHeaderBgDark        | Header background in dark theme                         | `string` | `#252526`                |
 | codeBorderColorDark     | Header and gutter divider color in dark theme           | `string` | `#3e3e42`                |
 | codeLangColorDark       | Language label color in dark theme                      | `string` | `#cccccc`                |
+| codeLineNumberColor     | Line number color in light theme                        | `string` | `rgba(0, 0, 0, 0.25)`    |
 | codeLineNumberColorDark | Line number color in dark theme                         | `string` | `#858585`                |
 | codeBtnColorDark        | Header action button color in dark theme                | `string` | `#ffffff`                |
 | codeBtnHoverBgDark      | Header action button hover background in dark theme     | `string` | `#3e3e42`                |

@@ -129,6 +129,7 @@ setupCodeHighlighter({
 | codeHeaderBgDark        | 暗色主题下头部区域的背景色                   | `string` | `#252526`                |
 | codeBorderColorDark     | 暗色主题下头部与行号栏的分隔线颜色           | `string` | `#3e3e42`                |
 | codeLangColorDark       | 暗色主题下语言标签的文字颜色                 | `string` | `#cccccc`                |
+| codeLineNumberColor     | 亮色主题下行号的文字颜色                     | `string` | `rgba(0, 0, 0, 0.25)`    |
 | codeLineNumberColorDark | 暗色主题下行号的文字颜色                     | `string` | `#858585`                |
 | codeBtnColorDark        | 暗色主题下头部操作按钮的文字颜色             | `string` | `#ffffff`                |
 | codeBtnHoverBgDark      | 暗色主题下头部操作按钮悬浮态的背景色         | `string` | `#3e3e42`                |
