@@ -126,11 +126,17 @@ When the `header` slot is provided, it fully replaces the default header (langua
 | codeColorDark           | Code text color in dark theme (unhighlighted fallback)  | `string` | `#dbd7caee`              |
 | codeBg                  | Background of the code area and gutter in light theme   | `string` | `#fafafa`                |
 | codeBgDark              | Background of the code area and gutter in dark theme    | `string` | `#1e1e1e`                |
+| codeHeaderBg            | Header background in light theme                        | `string` | `#f0f0f0`                |
 | codeHeaderBgDark        | Header background in dark theme                         | `string` | `#252526`                |
+| codeBorderColor         | Header and gutter divider color in light theme          | `string` | `#f0f0f0`                |
 | codeBorderColorDark     | Header and gutter divider color in dark theme           | `string` | `#3e3e42`                |
+| codeLangColor           | Language label color in light theme                     | `string` | `rgba(0, 0, 0, 0.65)`    |
 | codeLangColorDark       | Language label color in dark theme                      | `string` | `#cccccc`                |
+| codeLineNumberColor     | Line number color in light theme                        | `string` | `rgba(0, 0, 0, 0.25)`    |
 | codeLineNumberColorDark | Line number color in dark theme                         | `string` | `#858585`                |
+| codeBtnColor            | Header action button color in light theme               | `string` | `rgba(0, 0, 0, 0.65)`    |
 | codeBtnColorDark        | Header action button color in dark theme                | `string` | `#ffffff`                |
+| codeBtnHoverBg          | Header action button hover background in light theme    | `string` | `rgba(0, 0, 0, 0.06)`    |
 | codeBtnHoverBgDark      | Header action button hover background in dark theme     | `string` | `#3e3e42`                |
 
 ## Design Token

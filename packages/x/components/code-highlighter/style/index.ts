@@ -35,25 +35,49 @@ export interface ComponentToken {
    */
   codeBgDark?: string;
   /**
+   * 亮色主题下头部区域的背景色
+   */
+  codeHeaderBg?: string;
+  /**
    * 暗色主题下头部区域的背景色
    */
   codeHeaderBgDark?: string;
+  /**
+   * 亮色主题下头部与行号栏的分隔线颜色
+   */
+  codeBorderColor?: string;
   /**
    * 暗色主题下头部与行号栏的分隔线颜色
    */
   codeBorderColorDark?: string;
   /**
+   * 亮色主题下语言标签的文字颜色
+   */
+  codeLangColor?: string;
+  /**
    * 暗色主题下语言标签的文字颜色
    */
   codeLangColorDark?: string;
+  /**
+   * 亮色主题下行号的文字颜色
+   */
+  codeLineNumberColor?: string;
   /**
    * 暗色主题下行号的文字颜色
    */
   codeLineNumberColorDark?: string;
   /**
+   * 亮色主题下头部操作按钮的文字颜色
+   */
+  codeBtnColor?: string;
+  /**
    * 暗色主题下头部操作按钮的文字颜色
    */
   codeBtnColorDark?: string;
+  /**
+   * 亮色主题下头部操作按钮悬浮态的背景色
+   */
+  codeBtnHoverBg?: string;
   /**
    * 暗色主题下头部操作按钮悬浮态的背景色
    */
@@ -72,7 +96,7 @@ const genCodeHighlighterStyle: GenerateStyle<CodeHighlighterToken> = token => {
       overflow: "hidden",
       fontFamily: token.fontFamily,
       fontSize: token.fontSize,
-      border: `${unit(token.lineWidth)} ${token.lineType} ${token.colorBorderSecondary}`,
+      border: `${unit(token.lineWidth)} ${token.lineType} ${token.codeBorderColor}`,
 
       // Header
       [`${componentCls}-header`]: {
@@ -81,13 +105,13 @@ const genCodeHighlighterStyle: GenerateStyle<CodeHighlighterToken> = token => {
         justifyContent: "space-between",
         paddingInline: unit(token.paddingSM),
         paddingBlock: 4,
-        borderBottom: `${unit(token.lineWidth)} ${token.lineType} ${token.colorBorderSecondary}`,
-        backgroundColor: token.colorFillSecondary,
+        borderBottom: `${unit(token.lineWidth)} ${token.lineType} ${token.codeBorderColor}`,
+        backgroundColor: token.codeHeaderBg,
       },
 
       [`${componentCls}-lang`]: {
         fontSize: token.fontSizeSM,
-        color: token.colorTextSecondary,
+        color: token.codeLangColor,
         fontWeight: 500,
         textTransform: "capitalize",
       },
@@ -99,7 +123,11 @@ const genCodeHighlighterStyle: GenerateStyle<CodeHighlighterToken> = token => {
       },
 
       [`${componentCls}-theme-btn, ${componentCls}-copy-btn`]: {
-        color: token.colorTextSecondary,
+        color: `${token.codeBtnColor} !important`,
+        "&:hover, &:focus": {
+          color: `${token.codeBtnColor} !important`,
+          backgroundColor: `${token.codeBtnHoverBg} !important`,
+        },
       },
 
       // Content
@@ -116,7 +144,7 @@ const genCodeHighlighterStyle: GenerateStyle<CodeHighlighterToken> = token => {
         paddingInline: unit(token.paddingXS),
         textAlign: "right",
         backgroundColor: token.codeBg,
-        borderRight: `${unit(token.lineWidth)} ${token.lineType} ${token.colorBorderSecondary}`,
+        borderRight: `${unit(token.lineWidth)} ${token.lineType} ${token.codeBorderColor}`,
         userSelect: "none",
         flexShrink: 0,
         minWidth: "3em",
@@ -128,7 +156,7 @@ const genCodeHighlighterStyle: GenerateStyle<CodeHighlighterToken> = token => {
         fontSize: unit(token.codeFontSize ?? 13),
         lineHeight: "1.5em",
         height: "1.5em",
-        color: token.colorTextQuaternary,
+        color: token.codeLineNumberColor,
         display: "flex",
         alignItems: "center",
         justifyContent: "flex-end",
@@ -164,7 +192,7 @@ const genCodeHighlighterStyle: GenerateStyle<CodeHighlighterToken> = token => {
 
       // Theme: Dark
       [`&${componentCls}-dark`]: {
-        borderColor: token.colorBorder,
+        borderColor: token.codeBorderColorDark,
 
         [`${componentCls}-header`]: {
           backgroundColor: token.codeHeaderBgDark,
@@ -215,11 +243,17 @@ export const prepareComponentToken: GetDefaultToken<
   codeColorDark: "#dbd7caee",
   codeBg: "#fafafa",
   codeBgDark: "#1e1e1e",
+  codeHeaderBg: "#f0f0f0",
   codeHeaderBgDark: "#252526",
+  codeBorderColor: "#f0f0f0",
   codeBorderColorDark: "#3e3e42",
+  codeLangColor: "rgba(0, 0, 0, 0.65)",
   codeLangColorDark: "#cccccc",
+  codeLineNumberColor: "rgba(0, 0, 0, 0.25)",
   codeLineNumberColorDark: "#858585",
+  codeBtnColor: "rgba(0, 0, 0, 0.65)",
   codeBtnColorDark: "#ffffff",
+  codeBtnHoverBg: "rgba(0, 0, 0, 0.06)",
   codeBtnHoverBgDark: "#3e3e42",
 });
 
