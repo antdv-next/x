@@ -77,6 +77,7 @@ import {
 import "@antdv-next/x-markdown/themes/index.css";
 import "@antdv-next/x-markdown/themes/dark.css";
 import "@antdv-next/x-markdown/themes/light.css";
+
 import { useLocale } from "@/composables/use-locale";
 
 type AttachmentItem = {

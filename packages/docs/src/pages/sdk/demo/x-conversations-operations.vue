@@ -143,8 +143,7 @@ const currentData = computed(() =>
           borderRadius: `${token.borderRadius}px`,
           margin: 0,
         }"
-        >{{ currentData }}</pre
-      >
+        >{{ currentData }}</pre>
     </div>
   </Flex>
 </template>

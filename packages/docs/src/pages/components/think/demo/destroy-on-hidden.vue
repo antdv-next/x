@@ -23,8 +23,8 @@ const destroyOnHidden = ref(true);
       :destroy-on-hidden="destroyOnHidden"
       @expand="expanded = $event"
     >
-      This content will be removed from DOM when collapsed and
-      destroyOnHidden is true.
+      This content will be removed from DOM when collapsed and destroyOnHidden
+      is true.
     </ax-think>
   </a-space>
 </template>

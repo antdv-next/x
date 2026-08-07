@@ -27,4 +27,4 @@ jobs:
           cache: true
 
       - name: Run tests
-        run: vp test
+        run: vp run test:unit

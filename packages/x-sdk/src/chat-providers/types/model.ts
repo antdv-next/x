@@ -92,7 +92,12 @@ export interface XModelResponse {
       }[];
     };
     logprobs: AnyObject | null;
-    finish_reason: "stop" | "length" | "content_filter" | "tool_calls" | string;
+    finish_reason:
+      | "stop"
+      | "length"
+      | "content_filter"
+      | "tool_calls"
+      | (string & {});
   }[];
   created: number;
   id: string;

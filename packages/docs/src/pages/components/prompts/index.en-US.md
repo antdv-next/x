@@ -64,13 +64,7 @@ description: Display a predefined set of questions or suggestions relevant to th
 
 ```ts
 type SemanticType =
-  | "root"
-  | "list"
-  | "item"
-  | "itemContent"
-  | "title"
-  | "subList"
-  | "subItem";
+  "root" | "list" | "item" | "itemContent" | "title" | "subList" | "subItem";
 ```
 
 ### Slots

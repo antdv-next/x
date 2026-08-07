@@ -178,12 +178,7 @@ interface MessageInfo<Message> {
 
 // Message status enum
 type MessageStatus =
-  | "local"
-  | "loading"
-  | "updating"
-  | "success"
-  | "error"
-  | "abort";
+  "local" | "loading" | "updating" | "success" | "error" | "abort";
 ```
 
 # 🔧 Core Function Details

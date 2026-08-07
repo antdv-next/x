@@ -1,4 +1,4 @@
-@layer reset, preflights, default, markdown,antd, antdx, layout, common, components, utilities;
+@layer reset, preflights, default, markdown, antd, antdx, layout, common, components, utilities;
 
 @import "antdv-next/dist/reset.css" layer(reset);
 /* antdv-next styles must use the same layer name as the top-level @layer declaration. */

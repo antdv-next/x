@@ -177,12 +177,7 @@ interface MessageInfo<Message> {
 
 // 消息状态枚举
 type MessageStatus =
-  | "local"
-  | "loading"
-  | "updating"
-  | "success"
-  | "error"
-  | "abort";
+  "local" | "loading" | "updating" | "success" | "error" | "abort";
 ```
 
 # 🔧 核心功能详解
