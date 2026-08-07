@@ -75,6 +75,7 @@ import {
 import "@antdv-next/x-markdown/themes/index.css";
 import "@antdv-next/x-markdown/themes/dark.css";
 import "@antdv-next/x-markdown/themes/light.css";
+
 import { useLocale } from "@/composables/use-locale";
 
 const BASE_URL = "https://api.x.ant.design/api/big_model_glm-4.5-flash";

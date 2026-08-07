@@ -384,7 +384,7 @@ describe("Suggestion", () => {
 
     const options = document.querySelectorAll(".ant-cascader-menu-item");
     expect(options.length).toBe(longItems.length);
-    expect(options[0].textContent).toContain("Option 1");
-    expect(options[options.length - 1].textContent).toContain("Option 30");
+    expect(options[0]?.textContent).toContain("Option 1");
+    expect(options[options.length - 1]?.textContent).toContain("Option 30");
   });
 });

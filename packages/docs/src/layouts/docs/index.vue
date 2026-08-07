@@ -494,8 +494,8 @@ const handleSiderMenuClick: MenuEmits["click"] = info => {
 };
 
 const editGithubUrl = computed(() => {
-  const pageRoute = docsRoutes.filter(r => r.name === route.name)?.[0]!;
-  const path = ((pageRoute.meta?.source ?? "") as string).replace(
+  const pageRoute = docsRoutes.find(r => r.name === route.name);
+  const path = ((pageRoute?.meta?.source ?? "") as string).replace(
     "..",
     "packages/docs/src",
   );

@@ -175,17 +175,13 @@ import { XCardBox } from "@antdv-next/x-card";
 const commands = [
   // v0.8 消息
   {
-    surfaceUpdate: {
-      /* ... */
-    },
+    surfaceUpdate: {/* ... */},
   },
 
   // v0.9 消息
   {
     version: "v0.9",
-    createSurface: {
-      /* ... */
-    },
+    createSurface: {/* ... */},
   },
 ];
 ```

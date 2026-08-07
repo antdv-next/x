@@ -182,10 +182,7 @@ export const XThink = defineComponent({
               contextConfig.value.classes?.content,
               props.classes?.content,
             ]}
-            style={[
-              contextConfig.value.styles?.content,
-              props.styles?.content,
-            ]}
+            style={[contextConfig.value.styles?.content, props.styles?.content]}
           >
             {slots.default?.()}
           </div>

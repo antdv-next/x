@@ -64,13 +64,7 @@ description: 用于显示一组与当前上下文相关的预定义的问题或�
 
 ```ts
 type SemanticType =
-  | "root"
-  | "list"
-  | "item"
-  | "itemContent"
-  | "title"
-  | "subList"
-  | "subItem";
+  "root" | "list" | "item" | "itemContent" | "title" | "subList" | "subItem";
 ```
 
 ### 插槽

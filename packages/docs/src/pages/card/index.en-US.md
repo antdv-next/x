@@ -175,17 +175,13 @@ import { XCardBox } from "@antdv-next/x-card";
 const commands = [
   // v0.8 message
   {
-    surfaceUpdate: {
-      /* ... */
-    },
+    surfaceUpdate: {/* ... */},
   },
 
   // v0.9 message
   {
     version: "v0.9",
-    createSurface: {
-      /* ... */
-    },
+    createSurface: {/* ... */},
   },
 ];
 ```

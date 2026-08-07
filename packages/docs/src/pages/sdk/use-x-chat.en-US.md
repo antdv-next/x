@@ -94,10 +94,5 @@ interface MessageInfo<ChatMessage> {
 
 ```ts
 type MessageStatus =
-  | "local"
-  | "loading"
-  | "updating"
-  | "success"
-  | "error"
-  | "abort";
+  "local" | "loading" | "updating" | "success" | "error" | "abort";
 ```

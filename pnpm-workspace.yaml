@@ -2,9 +2,9 @@ packages:
   - packages/*
 
 catalog:
-  vite: npm:@voidzero-dev/vite-plus-core@latest
-  vite-plus: latest
-  vitest: npm:@voidzero-dev/vite-plus-test@latest
+  vite: npm:@voidzero-dev/vite-plus-core@0.2.7
+  vite-plus: 0.2.7
+  vitest: 4.1.10
 
 catalogs:
   dev:

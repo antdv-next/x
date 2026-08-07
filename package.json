@@ -16,7 +16,7 @@
     "docs:llm": "vp run --filter @antdv-next/docs build:llm",
     "docs:llm:text": "vp run --filter @antdv-next/docs build:llm:text",
     "docs:llm:semantic": "vp run --filter @antdv-next/docs build:llm:semantic",
-    "test:unit": "vp test",
+    "test:unit": "./node_modules/.bin/vp test",
     "type-check": "vp run --filter \"./packages/*\" --filter \"!./packages/docs\" type-check",
     "build": "vp run --filter \"./packages/*\" --filter \"!./packages/x-skill\" build",
     "build:packages": "vp run --filter \"./packages/*\" --filter \"!./packages/docs\" --filter \"!./packages/x-skill\" build",
