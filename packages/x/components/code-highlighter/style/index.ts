@@ -103,7 +103,6 @@ const genCodeHighlighterStyle: GenerateStyle<CodeHighlighterToken> = token => {
       position: "relative",
       borderRadius: token.borderRadiusLG,
       overflow: "hidden",
-      fontFamily: token.fontFamily,
       fontSize: token.fontSize,
       border: `${unit(token.lineWidth)} ${token.lineType} ${token.colorBorderCode}`,
 
