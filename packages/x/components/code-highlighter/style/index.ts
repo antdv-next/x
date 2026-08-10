@@ -42,53 +42,53 @@ export interface ComponentToken {
    */
   colorBorderCodeDark?: string;
   /**
-   * @desc 亮色主题下代码区与行号栏的背景色
-   * @descEN Background of the code area and gutter in light theme
+   * @desc 代码区与行号栏背景色
+   * @descEN Background of the code area and gutter
    */
   codeBg?: string;
   /**
-   * @desc 暗色主题下代码区与行号栏的背景色
+   * @desc 暗色主题下代码区与行号栏背景色
    * @descEN Background of the code area and gutter in dark theme
    */
   codeBgDark?: string;
   /**
-   * @desc 亮色主题下的代码文字颜色，用于语言未命中高亮时的降级文本
-   * @descEN Code text color in light theme (unhighlighted fallback)
+   * @desc 代码文字颜色（语言未命中高亮时降级）
+   * @descEN Code text color (fallback when language is not highlighted)
    */
   codeColor?: string;
   /**
-   * @desc 暗色主题下的代码文字颜色，用于语言未命中高亮时的降级文本
-   * @descEN Code text color in dark theme (unhighlighted fallback)
+   * @desc 暗色主题下代码文字颜色（语言未命中高亮时降级）
+   * @descEN Code text color in dark theme (fallback when language is not highlighted)
    */
   codeColorDark?: string;
   /**
-   * @desc 亮色主题下行号的文字颜色
-   * @descEN Line number color in light theme
+   * @desc 行号文字颜色
+   * @descEN Line number color
    */
   codeLineNumberColor?: string;
   /**
-   * @desc 暗色主题下行号的文字颜色
+   * @desc 暗色主题下行号文字颜色
    * @descEN Line number color in dark theme
    */
   codeLineNumberColorDark?: string;
   /**
-   * @desc 亮色主题下头部操作按钮的文字颜色
-   * @descEN Header action button color in light theme
+   * @desc 操作按钮文字颜色
+   * @descEN Action button color
    */
   codeBtnColor?: string;
   /**
-   * @desc 暗色主题下头部操作按钮的文字颜色
-   * @descEN Header action button color in dark theme
+   * @desc 暗色主题下操作按钮文字颜色
+   * @descEN Action button color in dark theme
    */
   codeBtnColorDark?: string;
   /**
-   * @desc 亮色主题下头部操作按钮悬浮态的背景色
-   * @descEN Header action button hover background in light theme
+   * @desc 操作按钮悬浮背景色
+   * @descEN Action button hover background
    */
   codeBtnHoverBg?: string;
   /**
-   * @desc 暗色主题下头部操作按钮悬浮态的背景色
-   * @descEN Header action button hover background in dark theme
+   * @desc 暗色主题下操作按钮悬浮背景色
+   * @descEN Action button hover background in dark theme
    */
   codeBtnHoverBgDark?: string;
 }
