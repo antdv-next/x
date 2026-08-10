@@ -1,3 +1,4 @@
+import { FastColor } from "@ant-design/fast-color";
 import { unit } from "@antdv-next/cssinjs";
 import { mergeToken } from "@antdv-next/cssinjs/cssinjs-utils";
 
@@ -11,75 +12,93 @@ import { genStyleHooks } from "../../theme/genStyleUtils";
 
 export interface ComponentToken {
   /**
-   * 代码字体
+   * @desc 代码字体
+   * @descEN Code font family
    */
   codeFontFamily?: string;
   /**
-   * 代码字体大小
+   * @desc 代码字体大小
+   * @descEN Code font size
    */
   codeFontSize?: number;
   /**
-   * 亮色主题下的代码文字颜色，用于语言未命中高亮时的降级文本
+   * @desc 亮色主题下的代码文字颜色，用于语言未命中高亮时的降级文本
+   * @descEN Code text color in light theme (unhighlighted fallback)
    */
   codeColor?: string;
   /**
-   * 暗色主题下的代码文字颜色，用于语言未命中高亮时的降级文本
+   * @desc 暗色主题下的代码文字颜色，用于语言未命中高亮时的降级文本
+   * @descEN Code text color in dark theme (unhighlighted fallback)
    */
   codeColorDark?: string;
   /**
-   * 亮色主题下代码区与行号栏的背景色
+   * @desc 亮色主题下代码区与行号栏的背景色
+   * @descEN Background of the code area and gutter in light theme
    */
   codeBg?: string;
   /**
-   * 暗色主题下代码区与行号栏的背景色
+   * @desc 暗色主题下代码区与行号栏的背景色
+   * @descEN Background of the code area and gutter in dark theme
    */
   codeBgDark?: string;
   /**
-   * 亮色主题下头部区域的背景色
+   * @desc 亮色主题下头部区域的背景色
+   * @descEN Header background in light theme
    */
   codeHeaderBg?: string;
   /**
-   * 暗色主题下头部区域的背景色
+   * @desc 暗色主题下头部区域的背景色
+   * @descEN Header background in dark theme
    */
   codeHeaderBgDark?: string;
   /**
-   * 亮色主题下头部与行号栏的分隔线颜色
+   * @desc 亮色主题下头部与行号栏的分隔线颜色
+   * @descEN Header and gutter divider color in light theme
    */
   codeBorderColor?: string;
   /**
-   * 暗色主题下头部与行号栏的分隔线颜色
+   * @desc 暗色主题下头部与行号栏的分隔线颜色
+   * @descEN Header and gutter divider color in dark theme
    */
   codeBorderColorDark?: string;
   /**
-   * 亮色主题下语言标签的文字颜色
+   * @desc 亮色主题下语言标签的文字颜色
+   * @descEN Language label color in light theme
    */
   codeLangColor?: string;
   /**
-   * 暗色主题下语言标签的文字颜色
+   * @desc 暗色主题下语言标签的文字颜色
+   * @descEN Language label color in dark theme
    */
   codeLangColorDark?: string;
   /**
-   * 亮色主题下行号的文字颜色
+   * @desc 亮色主题下行号的文字颜色
+   * @descEN Line number color in light theme
    */
   codeLineNumberColor?: string;
   /**
-   * 暗色主题下行号的文字颜色
+   * @desc 暗色主题下行号的文字颜色
+   * @descEN Line number color in dark theme
    */
   codeLineNumberColorDark?: string;
   /**
-   * 亮色主题下头部操作按钮的文字颜色
+   * @desc 亮色主题下头部操作按钮的文字颜色
+   * @descEN Header action button color in light theme
    */
   codeBtnColor?: string;
   /**
-   * 暗色主题下头部操作按钮的文字颜色
+   * @desc 暗色主题下头部操作按钮的文字颜色
+   * @descEN Header action button color in dark theme
    */
   codeBtnColorDark?: string;
   /**
-   * 亮色主题下头部操作按钮悬浮态的背景色
+   * @desc 亮色主题下头部操作按钮悬浮态的背景色
+   * @descEN Header action button hover background in light theme
    */
   codeBtnHoverBg?: string;
   /**
-   * 暗色主题下头部操作按钮悬浮态的背景色
+   * @desc 暗色主题下头部操作按钮悬浮态的背景色
+   * @descEN Header action button hover background in dark theme
    */
   codeBtnHoverBgDark?: string;
 }
@@ -234,28 +253,40 @@ const genCodeHighlighterStyle: GenerateStyle<CodeHighlighterToken> = token => {
 
 export const prepareComponentToken: GetDefaultToken<
   "CodeHighlighter"
-> = () => ({
-  codeFontFamily:
-    "'Fira Code', 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Mono', 'Droid Sans Mono', 'Source Code Pro', monospace",
-  codeFontSize: 14,
-  // 与 shiki vitesse-light / vitesse-dark 的前景色保持一致
-  codeColor: "#393a34",
-  codeColorDark: "#dbd7caee",
-  codeBg: "#fafafa",
-  codeBgDark: "#1e1e1e",
-  codeHeaderBg: "#f0f0f0",
-  codeHeaderBgDark: "#252526",
-  codeBorderColor: "#f0f0f0",
-  codeBorderColorDark: "#3e3e42",
-  codeLangColor: "rgba(0, 0, 0, 0.65)",
-  codeLangColorDark: "#cccccc",
-  codeLineNumberColor: "rgba(0, 0, 0, 0.25)",
-  codeLineNumberColorDark: "#858585",
-  codeBtnColor: "rgba(0, 0, 0, 0.65)",
-  codeBtnColorDark: "#ffffff",
-  codeBtnHoverBg: "rgba(0, 0, 0, 0.06)",
-  codeBtnHoverBgDark: "#3e3e42",
-});
+> = token => {
+  // 组件的 `theme` prop（light/dark 代码预览）与应用主题算法是正交的：
+  // 仅当应用主题与组件模式一致时，才能安全地从全局 token 派生；
+  // 反之（如暗色算法应用 + `theme="light"`）继续使用与 shiki vitesse 主题
+  // 配套的固定值，避免出现 #172/#174 中描述的颜色不可见问题。
+  const isDarkApp = new FastColor(token.colorBgContainer).isDark();
+
+  return {
+    codeFontFamily: token.fontFamilyCode,
+    codeFontSize: token.fontSize,
+    // 亮色预览（默认模式）：亮色应用下跟随 Design Token，暗色应用下保持固定值
+    codeColor: isDarkApp ? "#393a34" : token.colorText,
+    codeBg: isDarkApp ? "#fafafa" : token.colorBgLayout,
+    codeHeaderBg: isDarkApp ? "#f0f0f0" : token.colorFillSecondary,
+    codeBorderColor: isDarkApp ? "#f0f0f0" : token.colorBorderSecondary,
+    codeLangColor: isDarkApp ? "rgba(0, 0, 0, 0.65)" : token.colorTextSecondary,
+    codeLineNumberColor: isDarkApp
+      ? "rgba(0, 0, 0, 0.25)"
+      : token.colorTextQuaternary,
+    codeBtnColor: isDarkApp ? "rgba(0, 0, 0, 0.65)" : token.colorTextSecondary,
+    codeBtnHoverBg: isDarkApp
+      ? "rgba(0, 0, 0, 0.06)"
+      : token.colorFillSecondary,
+    // 暗色预览（`theme="dark"`）：暗色应用下跟随 Design Token，亮色应用下保持固定值
+    codeColorDark: isDarkApp ? token.colorText : "#dbd7caee",
+    codeBgDark: isDarkApp ? token.colorBgElevated : "#1e1e1e",
+    codeHeaderBgDark: isDarkApp ? token.colorFillSecondary : "#252526",
+    codeBorderColorDark: isDarkApp ? token.colorBorder : "#3e3e42",
+    codeLangColorDark: isDarkApp ? token.colorTextSecondary : "#cccccc",
+    codeLineNumberColorDark: isDarkApp ? token.colorTextQuaternary : "#858585",
+    codeBtnColorDark: isDarkApp ? token.colorText : "#ffffff",
+    codeBtnHoverBgDark: isDarkApp ? token.colorFillSecondary : "#3e3e42",
+  };
+};
 
 export default genStyleHooks<"CodeHighlighter">(
   "CodeHighlighter",

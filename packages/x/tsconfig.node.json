@@ -19,6 +19,7 @@
   "include": [
     "vite.build.config.ts",
     "vite.esm.config.ts",
-    "vite.umd.config.ts"
+    "vite.umd.config.ts",
+    "scripts/token/**/*.ts"
   ]
 }

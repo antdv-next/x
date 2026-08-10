@@ -114,31 +114,6 @@ setupCodeHighlighter({
 
 <demo src="./demo/semantic.vue" simplify>CodeHighlighter 语义结构</demo>
 
-## 设计令牌
-
-### Component Token
-
-| 名称                    | 说明                                         | 类型     | 默认值                   |
-| ----------------------- | -------------------------------------------- | -------- | ------------------------ |
-| codeFontFamily          | 代码字体                                     | `string` | `'Fira Code', monospace` |
-| codeFontSize            | 代码字体大小                                 | `number` | `14`                     |
-| codeColor               | 亮色主题下的代码文字颜色（未高亮时的降级色） | `string` | `#393a34`                |
-| codeColorDark           | 暗色主题下的代码文字颜色（未高亮时的降级色） | `string` | `#dbd7caee`              |
-| codeBg                  | 亮色主题下代码区与行号栏的背景色             | `string` | `#fafafa`                |
-| codeBgDark              | 暗色主题下代码区与行号栏的背景色             | `string` | `#1e1e1e`                |
-| codeHeaderBg            | 亮色主题下头部区域的背景色                   | `string` | `#f0f0f0`                |
-| codeHeaderBgDark        | 暗色主题下头部区域的背景色                   | `string` | `#252526`                |
-| codeBorderColor         | 亮色主题下头部与行号栏的分隔线颜色           | `string` | `#f0f0f0`                |
-| codeBorderColorDark     | 暗色主题下头部与行号栏的分隔线颜色           | `string` | `#3e3e42`                |
-| codeLangColor           | 亮色主题下语言标签的文字颜色                 | `string` | `rgba(0, 0, 0, 0.65)`    |
-| codeLangColorDark       | 暗色主题下语言标签的文字颜色                 | `string` | `#cccccc`                |
-| codeLineNumberColor     | 亮色主题下行号的文字颜色                     | `string` | `rgba(0, 0, 0, 0.25)`    |
-| codeLineNumberColorDark | 暗色主题下行号的文字颜色                     | `string` | `#858585`                |
-| codeBtnColor            | 亮色主题下头部操作按钮的文字颜色             | `string` | `rgba(0, 0, 0, 0.65)`    |
-| codeBtnColorDark        | 暗色主题下头部操作按钮的文字颜色             | `string` | `#ffffff`                |
-| codeBtnHoverBg          | 亮色主题下头部操作按钮悬浮态的背景色         | `string` | `rgba(0, 0, 0, 0.06)`    |
-| codeBtnHoverBgDark      | 暗色主题下头部操作按钮悬浮态的背景色         | `string` | `#3e3e42`                |
-
 ## 主题变量（Design Token）
 
 <ComponentTokenTable component="CodeHighlighter"></ComponentTokenTable>

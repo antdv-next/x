@@ -36,7 +36,6 @@ let ConfigProvider: any;
 // methods / sub-components whose styles are already covered by their parent).
 const blackList = [
   "Mermaid",
-  "CodeHighlighter",
   "XProvider",
   "Notification",
   "XNotification",
@@ -68,6 +67,8 @@ const ComponentCustomizeRender: Record<string, RenderFn> = {
   Folder: Folder => h(Folder, { treeData: [] }),
   Sources: Sources => h(Sources, { items: [] }),
   Actions: Actions => h(Actions, { items: [] }),
+  CodeHighlighter: CodeHighlighter =>
+    h(CodeHighlighter, { content: "const a = 1;" }),
 };
 
 function shouldRenderComponent(name: string) {
