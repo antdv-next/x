@@ -251,7 +251,13 @@ export function useStreaming(
   streaming: Ref<StreamingOption | undefined>,
   components?: Ref<Record<string, Component> | undefined>,
 ) {
-  const streamCache = ref<StreamCache>(getInitialCache());
+  // Deliberately a plain (non-reactive) object: processStreaming touches
+  // every field on every character, and going through a deep reactive proxy
+  // costs a get/set/trigger chain per field per char, which makes long
+  // single-line content such as base64 image data URIs (~300 KB) take tens
+  // of seconds on slower machines. The cache is internal only - callers see
+  // `processedContent` and `reset`.
+  let streamCache: StreamCache = getInitialCache();
   const processedContent = ref("");
 
   function handleIncompleteMarkdown(
@@ -283,18 +289,17 @@ export function useStreaming(
   function processStreaming(text: string, opts?: StreamingOption): void {
     if (!text) {
       processedContent.value = "";
-      streamCache.value = getInitialCache();
+      streamCache = getInitialCache();
       return;
     }
 
-    const expectedPrefix =
-      streamCache.value.completeMarkdown + streamCache.value.pending;
+    const expectedPrefix = streamCache.completeMarkdown + streamCache.pending;
 
     if (!text.startsWith(expectedPrefix)) {
-      streamCache.value = getInitialCache();
+      streamCache = getInitialCache();
     }
 
-    const cache = streamCache.value;
+    const cache = streamCache;
     const chunk = text.slice(cache.processedLength);
 
     if (!chunk) {
@@ -347,7 +352,7 @@ export function useStreaming(
   }
 
   function reset(): void {
-    streamCache.value = getInitialCache();
+    streamCache = getInitialCache();
     processedContent.value = "";
   }
 
@@ -359,7 +364,7 @@ export function useStreaming(
 
       if (!enableCache) {
         processedContent.value = newContent;
-        streamCache.value = {
+        streamCache = {
           pending: "",
           token: TokenType.Text,
           processedLength: newContent.length,
