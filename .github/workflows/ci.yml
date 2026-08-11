@@ -49,9 +49,21 @@ jobs:
       - name: Install dependencies
         run: vp install --frozen-lockfile
 
-      # `vp check` runs fmt + lint + type-aware lint (see `lint`/`fmt` in
-      # vite.config.ts). Locally this only runs on staged files via the
-      # pre-commit hook, which `--no-verify` and fork PRs bypass.
+      # `vp check` type-aware lint (lint.options.typeCheck in vite.config.ts)
+      # resolves three gitignored, generated inputs that a clean checkout lacks:
+      #   - packages/x/dist        — referenced by packages/x/global.d.ts and by
+      #                              scripts/token/collect-token-statistic.ts
+      #   - docs types/auto-imports.d.ts — unplugin-auto-import output backing
+      #                              the bare `computed` / `createGlobalState`
+      #                              calls in packages/docs/src/composables
+      # `docs:build` produces both (it runs @antdv-next/x `build:token`, which
+      # chains `build:comp`). Without it `vp check` reports 41 phantom errors.
+      - name: Generate build artifacts for type-aware lint
+        if: matrix.task == 'lint'
+        run: vp run docs:build
+
+      # Locally this only runs on staged files via the pre-commit hook, which
+      # `--no-verify` and fork PRs bypass.
       - name: Format & lint
         if: matrix.task == 'lint'
         run: vp check
