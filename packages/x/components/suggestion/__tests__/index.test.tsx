@@ -360,6 +360,75 @@ describe("Suggestion", () => {
     expect(document.body.textContent).not.toContain("default-extra");
   });
 
+  it("does not let Cascader swallow Space / Enter typed in the trigger", async () => {
+    const wrapper = track(
+      mount(Suggestion, {
+        attachTo: document.body,
+        props: { items },
+        slots: createSlot(),
+      }),
+    );
+
+    const input = wrapper.find(".trigger-input");
+
+    // Closed: neither key may be prevented nor may it open the popup.
+    for (const key of ["Space", "Enter"] as const) {
+      const event = new KeyboardEvent("keydown", {
+        key: key === "Space" ? " " : "Enter",
+        bubbles: true,
+        cancelable: true,
+      });
+      input.element.dispatchEvent(event);
+      await flush();
+
+      expect(event.defaultPrevented).toBe(false);
+      expect(wrapper.emitted("update:open")).toBeUndefined();
+    }
+
+    // Open: Space still types, Enter is reserved for selecting the active option.
+    await input.trigger("keydown", { key: "@" });
+    await flush();
+
+    const spaceEvent = new KeyboardEvent("keydown", {
+      key: " ",
+      bubbles: true,
+      cancelable: true,
+    });
+    input.element.dispatchEvent(spaceEvent);
+    await flush();
+
+    expect(spaceEvent.defaultPrevented).toBe(false);
+  });
+
+  it("selects the active option with Enter while the popup is open", async () => {
+    const onSelect = vi.fn();
+    const wrapper = track(
+      mount(Suggestion, {
+        attachTo: document.body,
+        props: { items, onSelect },
+        slots: createSlot(),
+      }),
+    );
+
+    await wrapper.find(".trigger-input").trigger("keydown", { key: "@" });
+    await flush();
+
+    const enterEvent = new KeyboardEvent("keydown", {
+      key: "Enter",
+      bubbles: true,
+      cancelable: true,
+    });
+    // Cascader's option list still reads the legacy `which`, which jsdom leaves at 0.
+    Object.defineProperty(enterEvent, "which", { value: 13 });
+    wrapper.find(".trigger-input").element.dispatchEvent(enterEvent);
+    await flush();
+
+    expect(onSelect).toHaveBeenCalledWith(
+      "report",
+      expect.arrayContaining([expect.objectContaining({ value: "report" })]),
+    );
+  });
+
   it("keeps every option reachable inside the scrollable popup for long lists", async () => {
     const longItems: SuggestionItem[] = Array.from(
       { length: 30 },
