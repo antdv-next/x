@@ -7,35 +7,37 @@ on:
 
 concurrency:
   group: deploy-x-main
-  cancel-in-progress: true
+  # Never cancel a deploy mid-flight: the switch step below empties the live
+  # `index` dir before moving the new build in, so a cancelled run can leave
+  # the server serving nothing.
+  cancel-in-progress: false
+
+permissions:
+  contents: read
 
 jobs:
   build:
     if: github.repository == 'antdv-next/x'
 
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      # Same toolchain as CI, so a green PR exercises the exact path used here.
+      - name: Setup Vite+
+        uses: voidzero-dev/setup-vp@v1
         with:
-          run_install: false
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: pnpm
+          cache: true
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: vp install --frozen-lockfile
 
       - name: Build site
         run: |
-          pnpm docs:build
+          vp run docs:build
           rm -rf dist
           cp -r packages/docs/dist dist
 
@@ -49,6 +51,11 @@ jobs:
     needs: build
 
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    permissions:
+      contents: read
+      actions: read
 
     steps:
       - name: Download site artifact
@@ -60,8 +67,10 @@ jobs:
       - name: Inspect downloaded site artifact
         run: ls -R dist
 
+      # Third-party actions that receive deploy credentials are pinned to a
+      # commit SHA — a mutable tag would let an upstream compromise read them.
       - name: Scp dir to server
-        uses: appleboy/scp-action@v1
+        uses: appleboy/scp-action@ff85246acaad7bdce478db94a363cd2bf7c90345 # v1
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USERNAME }}
@@ -71,7 +80,7 @@ jobs:
           target: ${{ secrets.DEPLOY_TARGET_PATH }}
 
       - name: Switch current site
-        uses: appleboy/ssh-action@v1
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USERNAME }}
@@ -103,6 +112,11 @@ jobs:
     needs: build
 
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    permissions:
+      contents: read
+      actions: read
 
     steps:
       - name: Download site artifact
@@ -115,7 +129,7 @@ jobs:
         run: ls -R dist
 
       - name: Scp dir to CN server
-        uses: appleboy/scp-action@v1
+        uses: appleboy/scp-action@ff85246acaad7bdce478db94a363cd2bf7c90345 # v1
         with:
           host: ${{ secrets.DEPLOY_HOST_CN }}
           username: ${{ secrets.DEPLOY_USERNAME_CN }}
@@ -125,7 +139,7 @@ jobs:
           target: ${{ secrets.DEPLOY_TARGET_PATH_CN }}
 
       - name: Switch current site on CN server
-        uses: appleboy/ssh-action@v1
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1
         with:
           host: ${{ secrets.DEPLOY_HOST_CN }}
           username: ${{ secrets.DEPLOY_USERNAME_CN }}

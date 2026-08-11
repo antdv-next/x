@@ -1,0 +1,20 @@
+version: 2
+
+updates:
+  # Keeps the SHA-pinned third-party actions in deploy.yml current — pinning
+  # without an updater just means running stale, unpatched actions forever.
+  #
+  # npm is deliberately not enabled here: every dependency in this workspace
+  # is declared via pnpm's `catalog:` protocol in pnpm-workspace.yaml, which
+  # Dependabot does not resolve. Use `vp outdated` / `vp update` instead.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: ci
+    groups:
+      github-actions:
+        patterns:
+          - "*"
