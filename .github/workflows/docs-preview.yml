@@ -1,0 +1,102 @@
+name: Docs Preview
+
+# Deliberately triggered by workflow_run rather than pull_request.
+#
+# A `pull_request` run from a fork gets a read-only token and no secrets, so it
+# could never reach Cloudflare. `pull_request_target` would hand secrets to a
+# job that checks out fork-authored code — the classic way repositories leak
+# credentials. workflow_run splits the two: CI builds untrusted code with no
+# credentials, and this workflow, always the copy on the default branch, only
+# ever unzips the resulting static files and uploads them. No fork code runs
+# here.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+
+concurrency:
+  # Keyed by fork + branch, not branch alone: two forks both pushing from
+  # "main" must not cancel each other.
+  group: >-
+    docs-preview-${{ github.event.workflow_run.head_repository.full_name }}-${{
+    github.event.workflow_run.head_branch }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    if: |
+      github.repository == 'antdv-next/x' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion == 'success'
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: write
+
+    steps:
+      - name: Download docs preview
+        uses: actions/download-artifact@v4
+        with:
+          name: docs-preview
+          path: dist
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      # The artifact was produced by a job that may have run fork-authored
+      # build code, so its contents are untrusted input. The PR number is the
+      # only value read back out, and it is used unquoted in URLs and gh
+      # commands — reject anything that is not a plain integer.
+      - name: Read and validate PR number
+        id: pr
+        run: |
+          set -eu
+          [ -f dist/.pr-number ] || { echo "No PR number in artifact."; exit 1; }
+
+          PR_NUMBER=$(tr -d '[:space:]' < dist/.pr-number)
+          case "$PR_NUMBER" in
+            "" | *[!0-9]*)
+              echo "Refusing to act on non-numeric PR reference." >&2
+              exit 1
+              ;;
+          esac
+
+          rm dist/.pr-number
+          echo "number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy to Cloudflare Pages
+        id: deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: >-
+            pages deploy dist
+            --project-name=${{ vars.CLOUDFLARE_PAGES_PROJECT || 'antdv-next-x-docs' }}
+            --branch=pr-${{ steps.pr.outputs.number }}
+
+      - name: Comment preview URL
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # No checkout in this job, so gh cannot infer the repository.
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+          PREVIEW_URL: ${{ steps.deploy.outputs.deployment-url }}
+          COMMIT: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -eu
+          BODY=$(printf '%s\n' \
+            "<!-- docs-preview -->" \
+            "📖 **文档预览** — ${PREVIEW_URL}" \
+            "" \
+            "commit \`${COMMIT}\`（每次推送后自动更新）")
+
+          # --edit-last keeps one rolling comment instead of one per push.
+          gh pr comment "$PR_NUMBER" --body "$BODY" --edit-last --create-if-none \
+            || gh pr comment "$PR_NUMBER" --body "$BODY"

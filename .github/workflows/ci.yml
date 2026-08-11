@@ -72,9 +72,42 @@ jobs:
         if: matrix.task == 'type-check'
         run: vp run type-check
 
-      - name: Unit tests
+      # Runs the same suite as `test:unit` plus v8 coverage, so there is no
+      # second pass over 463 tests just to collect it. Coverage floors live in
+      # vitest.config.ts and fail the job when breached.
+      - name: Unit tests & coverage
         if: matrix.task == 'test'
-        run: vp run test:unit
+        run: vp run test:coverage
+
+      - name: Publish coverage summary
+        if: matrix.task == 'test' && always()
+        run: |
+          set -eu
+          SUMMARY=coverage/coverage-summary.json
+          [ -f "$SUMMARY" ] || exit 0
+
+          {
+            echo "### Coverage"
+            echo ""
+            echo "| Metric | Covered | Total | % |"
+            echo "| --- | ---: | ---: | ---: |"
+            node -e '
+              const t = require("./coverage/coverage-summary.json").total;
+              for (const k of ["statements", "branches", "functions", "lines"]) {
+                const m = t[k];
+                console.log(`| ${k} | ${m.covered} | ${m.total} | ${m.pct}% |`);
+              }
+            '
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload coverage report
+        if: matrix.task == 'test' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-html
+          path: coverage
+          retention-days: 14
+          if-no-files-found: ignore
 
       - name: Build packages
         if: matrix.task == 'build'
@@ -85,3 +118,67 @@ jobs:
       - name: Build docs
         if: matrix.task == 'docs'
         run: vp run docs:build
+
+      # Handed to docs-preview.yml, which has the Cloudflare credentials this
+      # job deliberately does not. The PR number travels with the artifact
+      # because workflow_run does not carry it for forks.
+      - name: Stage docs preview
+        if: matrix.task == 'docs' && github.event_name == 'pull_request'
+        run: echo "${{ github.event.pull_request.number }}" > packages/docs/dist/.pr-number
+
+      - name: Upload docs preview
+        if: matrix.task == 'docs' && github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs-preview
+          path: packages/docs/dist
+          retention-days: 3
+
+  # Reports the gzip delta of the published payload against the base branch.
+  # Advisory: it never fails on growth, it just makes growth visible.
+  size:
+    if: github.event_name == 'pull_request' && github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@v4
+
+      - name: Checkout base branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: base
+
+      - name: Setup Vite+
+        uses: voidzero-dev/setup-vp@v1
+        with:
+          cache: true
+
+      - name: Build PR head
+        run: |
+          vp install --frozen-lockfile
+          vp run build:packages
+
+      # A broken base must not hide the head's numbers — size-report falls back
+      # to absolute sizes when the baseline file is missing.
+      - name: Build base branch
+        id: build-base
+        continue-on-error: true
+        working-directory: base
+        run: |
+          vp install --frozen-lockfile
+          vp run build:packages
+          node scripts/size-report.mjs --json "$RUNNER_TEMP/base.json"
+
+      - name: Report size delta
+        run: |
+          set -eu
+          {
+            echo "### Published size vs \`${{ github.event.pull_request.base.ref }}\`"
+            echo ""
+            node scripts/size-report.mjs --base "$RUNNER_TEMP/base.json"
+            echo ""
+            echo "_Gzip totals of every path listed in each package's \`files\` field. Advisory only._"
+          } >> "$GITHUB_STEP_SUMMARY"

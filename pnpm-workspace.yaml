@@ -2,6 +2,8 @@ packages:
   - packages/*
 
 catalog:
+  # Must track `vitest` exactly — the coverage provider is version-locked to it.
+  "@vitest/coverage-v8": 4.1.10
   vite: npm:@voidzero-dev/vite-plus-core@0.2.7
   vite-plus: 0.2.7
   vitest: 4.1.10
@@ -10,20 +12,20 @@ catalogs:
   dev:
     "@antdv-next/auto-import-resolver": ^1.0.5
     "@antdv-next/auto-import-resolver-x": ^0.0.1
-    typedoc: ^0.28.19
     "@tsconfig/node24": ^24.0.4
-    bumpp: ^11.1.0
     "@vitejs/plugin-vue": ^6.0.4
     "@vitejs/plugin-vue-jsx": ^5.1.4
     "@vue/language-core": ^3.2.5
     "@vue/test-utils": ^2.4.6
     "@vue/tsconfig": ^0.9.0
+    bumpp: ^11.1.0
     jiti: ^2.6.1
     jsdom: ^28.1.0
     npm-run-all2: ^8.0.4
     postcss-selector-parser: ^7.1.0
     tinyglobby: ^0.2.15
     tsx: ^4.19.1
+    typedoc: ^0.28.19
     typescript: ~5.9.3
     unplugin-auto-import: ^21.0.0
     unplugin-dts: 1.0.0-beta.6
@@ -67,13 +69,13 @@ catalogs:
     "@vueuse/core": ^14.2.1
     antdv-next: ^1.2.0
     dayjs: ^1.11.19
+    flexsearch: ^0.8.0
     lru-cache: ^11.2.2
     mermaid: ^11.12.1
     mlly: ^1.8.0
     nanoid: ^5.1.6
     pathe: ^2.0.3
     picomatch: ^4.0.3
-    flexsearch: ^0.8.0
     vue: ^3.5.29
     vue-i18n: ^11.2.8
     vue-router: ^5.0.3
