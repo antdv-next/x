@@ -7,15 +7,33 @@ on:
       - reopened
       - synchronize
       - ready_for_review
+  push:
+    branches:
+      - main
 
 concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
-  test:
-    if: github.event.pull_request.draft == false
+  check:
+    name: ${{ matrix.task }}
+    if: github.event_name == 'push' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    strategy:
+      fail-fast: false
+      matrix:
+        task:
+          - lint
+          - type-check
+          - test
+          - build
+          - docs
 
     steps:
       - name: Checkout code
@@ -26,5 +44,32 @@ jobs:
         with:
           cache: true
 
-      - name: Run tests
+      # Explicit install so a stale or hand-edited lockfile fails loudly here
+      # instead of silently resolving during the first `vp run`.
+      - name: Install dependencies
+        run: vp install --frozen-lockfile
+
+      # `vp check` runs fmt + lint + type-aware lint (see `lint`/`fmt` in
+      # vite.config.ts). Locally this only runs on staged files via the
+      # pre-commit hook, which `--no-verify` and fork PRs bypass.
+      - name: Format & lint
+        if: matrix.task == 'lint'
+        run: vp check
+
+      - name: Type check
+        if: matrix.task == 'type-check'
+        run: vp run type-check
+
+      - name: Unit tests
+        if: matrix.task == 'test'
         run: vp run test:unit
+
+      - name: Build packages
+        if: matrix.task == 'build'
+        run: vp run build:packages
+
+      # Guards the deploy workflow: a docs build break used to surface only
+      # after merge, on the job that publishes the site.
+      - name: Build docs
+        if: matrix.task == 'docs'
+        run: vp run docs:build

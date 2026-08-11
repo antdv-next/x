@@ -1,0 +1,49 @@
+name: PR Title
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - edited
+      - synchronize
+
+concurrency:
+  group: pr-title-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  conventional-title:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      # Squash merges use the PR title as the commit message, and there is no
+      # commit-msg hook in .vite-hooks — so this is the only place the
+      # conventional-commit convention is actually enforced.
+      - name: Validate conventional commit title
+        env:
+          # Passed through the environment, never interpolated into the script,
+          # so a crafted PR title cannot inject shell commands.
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          set -eu
+
+          TYPES='feat|fix|docs|dx|style|refactor|perf|test|workflow|build|ci|chore|types|wip|release'
+
+          if printf '%s' "$PR_TITLE" | grep -Eq "^($TYPES)(\([^)]+\))?!?: .+"; then
+            echo "OK: $PR_TITLE"
+            exit 0
+          fi
+
+          echo "::error::PR title does not follow the conventional commit format."
+          echo ""
+          echo "  Received: $PR_TITLE"
+          echo "  Expected: <type>(<optional scope>): <subject>"
+          echo "  Types:    $TYPES"
+          echo ""
+          echo "  Example:  feat(bubble): add streaming animation"
+          exit 1
