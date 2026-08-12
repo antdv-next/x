@@ -163,6 +163,22 @@ const XSuggestion = defineComponent({
       }
     };
 
+    /**
+     * Cascader renders our children as its raw input element, so every keydown from the
+     * children bubbles into BaseSelect's keyboard model. That model is built for a
+     * non-editable trigger: it calls `preventDefault()` on Space/Enter and opens the popup,
+     * which breaks typing inside an editable trigger such as Sender.
+     *
+     * Keep the events inside the content wrapper. Enter still needs to reach Cascader while
+     * the popup is open so the active option can be selected by keyboard.
+     */
+    const onContentKeyDown = (event: KeyboardEvent) => {
+      if (mergedOpen.value && event.key === "Enter") {
+        return;
+      }
+      event.stopPropagation();
+    };
+
     const domAttrs = computed(() => {
       const { class: _class, style: _style, ...rest } = attrs;
       return rest;
@@ -268,6 +284,7 @@ const XSuggestion = defineComponent({
                 contextConfig.value.styles?.content,
                 mergedStyles.value.content,
               ]}
+              onKeydown={onContentKeyDown}
             >
               {childNode}
             </div>
