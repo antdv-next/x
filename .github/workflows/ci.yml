@@ -102,7 +102,7 @@ jobs:
 
       - name: Upload coverage report
         if: matrix.task == 'test' && always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-html
           path: coverage
@@ -128,7 +128,7 @@ jobs:
 
       - name: Upload docs preview
         if: matrix.task == 'docs' && github.event_name == 'pull_request'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: docs-preview
           path: packages/docs/dist
@@ -143,10 +143,10 @@ jobs:
 
     steps:
       - name: Checkout PR head
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Checkout base branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.base.sha }}
           path: base
