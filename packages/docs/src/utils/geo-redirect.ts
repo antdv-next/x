@@ -7,10 +7,61 @@ interface IpAddrResponse {
   };
 }
 
+interface IpSbResponse {
+  country_code?: string;
+}
+
 const CN_SITE_ORIGIN = "https://x.antdv-next.cn";
-const GEO_IP_API_URL = "https://v4_dx.boce.com:44433/ipaddr";
-const GEO_IP_TIMEOUT = 1200;
+const GEO_IP_TIMEOUT = 1500;
 const GEO_REDIRECT_PREFERENCE_KEY = "cn-site-redirect-preference";
+
+interface GeoIpApi {
+  url: string;
+  /** 解析响应文本并判断是否为国内（中国大陆）访问。 */
+  parse: (text: string) => boolean;
+}
+
+/**
+ * IP 地理定位接口回退链，按顺序尝试，首个成功响应即采用。
+ * - myip.ipip.net：国内服务、响应快、CORS 放行，返回纯文本（如“当前 IP：… 来自于：中国 福建 福州 电信”）；
+ * - api.ip.sb/geoip：JSON 返回 country_code（HK/TW/MO 均不为 CN），国内一般可达；
+ * - v4_dx.boce.com：antdv-next 主站同款接口，可能不可用，仅作最后兜底。
+ */
+const GEO_IP_APIS: GeoIpApi[] = [
+  {
+    url: "https://myip.ipip.net",
+    parse: text => {
+      if (!text.includes("中国")) {
+        return false;
+      }
+      // ipip.net 对港澳台也以“中国香港/中国澳门/中国台湾”表述，需排除。
+      return !["香港", "澳门", "台湾"].some(region => text.includes(region));
+    },
+  },
+  {
+    url: "https://api.ip.sb/geoip",
+    parse: text => {
+      try {
+        const json = JSON.parse(text) as IpSbResponse;
+        return json.country_code === "CN";
+      } catch {
+        return false;
+      }
+    },
+  },
+  {
+    url: "https://v4_dx.boce.com:44433/ipaddr",
+    parse: text => {
+      try {
+        const json = JSON.parse(text) as IpAddrResponse;
+        const from = json.data?.from;
+        return !!from && (from === "中国" || from.startsWith("中国/"));
+      } catch {
+        return false;
+      }
+    },
+  },
+];
 
 export type GeoRedirectPreference = "accepted" | "rejected";
 export type GeoRedirectDecision = "redirect" | "prompt" | "skip";
@@ -22,14 +73,6 @@ function isComHost(hostname: string): boolean {
     normalizedHostname === "x.antdv-next.com" ||
     normalizedHostname === "www.x.antdv-next.com"
   );
-}
-
-function isChinaMainlandVisit(from: string | undefined): boolean {
-  if (!from) {
-    return false;
-  }
-
-  return from === "中国" || from.startsWith("中国/");
 }
 
 export function getGeoRedirectPreference(): GeoRedirectPreference | null {
@@ -107,25 +150,37 @@ export async function getChinaMainlandRedirectDecision(): Promise<GeoRedirectDec
     return "skip";
   }
 
-  const controller = new AbortController();
-  const timeoutId = window.setTimeout(() => controller.abort(), GEO_IP_TIMEOUT);
+  // 逐个尝试回退链，任一接口成功即返回判定结果；全部失败则静默跳过。
+  for (const api of GEO_IP_APIS) {
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(
+      () => controller.abort(),
+      GEO_IP_TIMEOUT,
+    );
 
-  try {
-    const response = await fetch(GEO_IP_API_URL, {
-      signal: controller.signal,
-    });
+    try {
+      const response = await fetch(api.url, {
+        signal: controller.signal,
+      });
 
-    if (!response.ok) {
+      if (!response.ok) {
+        continue;
+      }
+
+      const text = await response.text();
+
+      if (api.parse(text)) {
+        return "prompt";
+      }
+
+      // 接口成功但判定为非国内访问，直接结束探测，不再尝试后续接口。
       return "skip";
+    } catch {
+      // Ignore network and CORS failures; try the next API in the chain.
+    } finally {
+      window.clearTimeout(timeoutId);
     }
-
-    const result = (await response.json()) as IpAddrResponse;
-
-    return isChinaMainlandVisit(result.data?.from) ? "prompt" : "skip";
-  } catch {
-    // Ignore network and CORS failures to avoid blocking normal page usage.
-    return "skip";
-  } finally {
-    window.clearTimeout(timeoutId);
   }
+
+  return "skip";
 }
