@@ -96,17 +96,22 @@ const XSuggestion = defineComponent({
     const innerOpen = ref(false);
     const mergedOpen = computed(() => props.open ?? innerOpen.value);
     const itemList = ref<SuggestionItem[]>([]);
+    /**
+     * What the last `onTrigger` asked for. A function `items` is usually an inline arrow,
+     * so it gets a new identity on every parent render — without this the watcher below
+     * would re-evaluate it with no info and drop the triggered list.
+     */
+    const triggerInfo = ref<any>();
+
+    const resolveItems = (source: SuggestionProps["items"], info?: any) => {
+      if (typeof source === "function") return source(info);
+      return Array.isArray(source) ? source : [];
+    };
 
     watch(
       () => props.items,
       nextItems => {
-        if (Array.isArray(nextItems)) {
-          itemList.value = nextItems;
-        } else if (typeof nextItems === "function") {
-          itemList.value = nextItems();
-        } else {
-          itemList.value = [];
-        }
+        itemList.value = resolveItems(nextItems, triggerInfo.value);
       },
       { immediate: true },
     );
@@ -130,8 +135,10 @@ const XSuggestion = defineComponent({
         return;
       }
 
+      triggerInfo.value = nextInfo;
+
       if (typeof props.items === "function") {
-        itemList.value = props.items(nextInfo);
+        itemList.value = resolveItems(props.items, nextInfo);
       }
 
       triggerOpen(true);
@@ -150,7 +157,7 @@ const XSuggestion = defineComponent({
       triggerOpen(false);
     };
 
-    const [activePath, onKeyDown] = useActive(
+    const [activePath, onKeyDown, shouldSelectOnEnter] = useActive(
       itemList as any,
       mergedOpen as any,
       isRtl as any,
@@ -166,17 +173,30 @@ const XSuggestion = defineComponent({
     /**
      * Cascader renders our children as its raw input element, so every keydown from the
      * children bubbles into BaseSelect's keyboard model. That model is built for a
-     * non-editable trigger: it calls `preventDefault()` on Space/Enter and opens the popup,
-     * which breaks typing inside an editable trigger such as Sender.
+     * non-editable trigger and breaks typing inside an editable one such as Sender:
      *
-     * Keep the events inside the content wrapper. Enter still needs to reach Cascader while
-     * the popup is open so the active option can be selected by keyboard.
+     * - Space is always `preventDefault()`ed, so no space can be typed;
+     * - Enter is always `preventDefault()`ed, even when there is nothing to select;
+     * - Backspace makes the option list step back a level or close the popup.
+     *
+     * Keep exactly those inside the content wrapper. Every other key — Escape, arrows,
+     * application shortcuts — must keep bubbling, otherwise the app around us stops
+     * receiving keyboard events while the trigger has focus.
      */
     const onContentKeyDown = (event: KeyboardEvent) => {
-      if (mergedOpen.value && event.key === "Enter") {
+      const { key } = event;
+
+      if (key === "Enter") {
+        // Forward it only when the popup owns this Enter, so the option list can select.
+        if (!shouldSelectOnEnter(event)) {
+          event.stopPropagation();
+        }
         return;
       }
-      event.stopPropagation();
+
+      if (key === " " || (key === "Backspace" && mergedOpen.value)) {
+        event.stopPropagation();
+      }
     };
 
     const domAttrs = computed(() => {
