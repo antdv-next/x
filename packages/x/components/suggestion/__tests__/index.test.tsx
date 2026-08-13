@@ -1,10 +1,11 @@
 import { mount, VueWrapper } from "@vue/test-utils";
 import { ConfigProvider } from "antdv-next";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
-import { nextTick } from "vue";
+import { nextTick, ref } from "vue";
 
 import type { SuggestionItem } from "../interface";
 
+import Sender from "../../sender";
 import Suggestion from "../index";
 
 const wrappers: VueWrapper[] = [];
@@ -52,6 +53,27 @@ function createSlot() {
       />
     ),
   };
+}
+
+function dispatchKey(
+  element: Element,
+  key: string,
+  init: KeyboardEventInit = {},
+) {
+  const { isComposing, ...rest } = init;
+  const event = new KeyboardEvent("keydown", {
+    key,
+    bubbles: true,
+    cancelable: true,
+    ...rest,
+  });
+  // Cascader's option list still reads the legacy `which`, which jsdom leaves at 0.
+  Object.defineProperty(event, "which", { value: key === "Enter" ? 13 : 0 });
+  if (isComposing) {
+    Object.defineProperty(event, "isComposing", { value: true });
+  }
+  element.dispatchEvent(event);
+  return event;
 }
 
 describe("Suggestion", () => {
@@ -372,13 +394,8 @@ describe("Suggestion", () => {
     const input = wrapper.find(".trigger-input");
 
     // Closed: neither key may be prevented nor may it open the popup.
-    for (const key of ["Space", "Enter"] as const) {
-      const event = new KeyboardEvent("keydown", {
-        key: key === "Space" ? " " : "Enter",
-        bubbles: true,
-        cancelable: true,
-      });
-      input.element.dispatchEvent(event);
+    for (const key of [" ", "Enter"]) {
+      const event = dispatchKey(input.element, key);
       await flush();
 
       expect(event.defaultPrevented).toBe(false);
@@ -389,12 +406,7 @@ describe("Suggestion", () => {
     await input.trigger("keydown", { key: "@" });
     await flush();
 
-    const spaceEvent = new KeyboardEvent("keydown", {
-      key: " ",
-      bubbles: true,
-      cancelable: true,
-    });
-    input.element.dispatchEvent(spaceEvent);
+    const spaceEvent = dispatchKey(input.element, " ");
     await flush();
 
     expect(spaceEvent.defaultPrevented).toBe(false);
@@ -413,20 +425,266 @@ describe("Suggestion", () => {
     await wrapper.find(".trigger-input").trigger("keydown", { key: "@" });
     await flush();
 
-    const enterEvent = new KeyboardEvent("keydown", {
-      key: "Enter",
-      bubbles: true,
-      cancelable: true,
-    });
-    // Cascader's option list still reads the legacy `which`, which jsdom leaves at 0.
-    Object.defineProperty(enterEvent, "which", { value: 13 });
-    wrapper.find(".trigger-input").element.dispatchEvent(enterEvent);
+    dispatchKey(wrapper.find(".trigger-input").element, "Enter");
     await flush();
 
     expect(onSelect).toHaveBeenCalledWith(
       "report",
       expect.arrayContaining([expect.objectContaining({ value: "report" })]),
     );
+  });
+
+  it("keeps unrelated keys bubbling to the app around it", async () => {
+    const onWindowKeyDown = vi.fn();
+    window.addEventListener("keydown", onWindowKeyDown);
+
+    try {
+      const wrapper = track(
+        mount(Suggestion, {
+          attachTo: document.body,
+          props: { items },
+          slots: createSlot(),
+        }),
+      );
+
+      const input = wrapper.find(".trigger-input");
+
+      // Closed: Escape belongs to the app, e.g. a Modal wrapping the Sender.
+      dispatchKey(input.element, "Escape");
+      await flush();
+
+      expect(onWindowKeyDown).toHaveBeenCalled();
+
+      await input.trigger("keydown", { key: "@" });
+      await flush();
+      onWindowKeyDown.mockClear();
+
+      // Open: application shortcuts still get through...
+      dispatchKey(input.element, "k", { metaKey: true });
+      await flush();
+
+      expect(onWindowKeyDown).toHaveBeenCalledTimes(1);
+
+      // ...but Escape stops at the popup it just closed.
+      onWindowKeyDown.mockClear();
+      dispatchKey(input.element, "Escape");
+      await flush();
+
+      expect(onWindowKeyDown).not.toHaveBeenCalled();
+      expect(wrapper.emitted("update:open")).toEqual([[true], [false]]);
+    } finally {
+      window.removeEventListener("keydown", onWindowKeyDown);
+    }
+  });
+
+  it("expands a parent item with Enter instead of swallowing the key", async () => {
+    const onSelect = vi.fn();
+    const wrapper = track(
+      mount(Suggestion, {
+        attachTo: document.body,
+        props: { items, onSelect },
+        slots: createSlot(),
+      }),
+    );
+
+    const input = wrapper.find(".trigger-input");
+    await input.trigger("keydown", { key: "@" });
+    await input.trigger("keydown", { key: "ArrowDown" });
+    await flush();
+
+    // "Check some knowledge" has children, so it cannot be selected yet.
+    dispatchKey(input.element, "Enter");
+    await flush();
+
+    expect(onSelect).not.toHaveBeenCalled();
+    expect(
+      document.querySelector<HTMLElement>(
+        ".ant-cascader-menu-item-active:not(.ant-cascader-menu-item-expand)",
+      )?.textContent,
+    ).toContain("About Vue");
+
+    dispatchKey(input.element, "Enter");
+    await flush();
+
+    expect(onSelect).toHaveBeenCalledWith(
+      "vue",
+      expect.arrayContaining([expect.objectContaining({ value: "vue" })]),
+    );
+  });
+
+  it("leaves Enter to the trigger when there is nothing to select", async () => {
+    const onSelect = vi.fn();
+    const wrapper = track(
+      mount(Suggestion, {
+        attachTo: document.body,
+        props: { items: [], onSelect },
+        slots: createSlot(),
+      }),
+    );
+
+    const input = wrapper.find(".trigger-input");
+    await input.trigger("keydown", { key: "@" });
+    await flush();
+
+    const event = dispatchKey(input.element, "Enter");
+    await flush();
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it("does not hijack Enter from an IME composition or a modifier combo", async () => {
+    const onSelect = vi.fn();
+    const wrapper = track(
+      mount(Suggestion, {
+        attachTo: document.body,
+        props: { items, onSelect },
+        slots: createSlot(),
+      }),
+    );
+
+    const input = wrapper.find(".trigger-input");
+    await input.trigger("keydown", { key: "@" });
+    await flush();
+
+    const composingEnter = dispatchKey(input.element, "Enter", {
+      isComposing: true,
+    });
+    const shiftEnter = dispatchKey(input.element, "Enter", { shiftKey: true });
+    await flush();
+
+    expect(composingEnter.defaultPrevented).toBe(false);
+    expect(shiftEnter.defaultPrevented).toBe(false);
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it("keeps the popup open while backspacing in the trigger", async () => {
+    const wrapper = track(
+      mount(Suggestion, {
+        attachTo: document.body,
+        props: { items },
+        slots: createSlot(),
+      }),
+    );
+
+    const input = wrapper.find(".trigger-input");
+    await input.trigger("keydown", { key: "@" });
+    await flush();
+
+    dispatchKey(input.element, "Backspace");
+    await flush();
+
+    expect(wrapper.emitted("update:open")).toEqual([[true]]);
+    expect(document.body.textContent).toContain("Write a report");
+  });
+
+  it("keeps a Sender trigger usable while the popup is open", async () => {
+    const submits: string[] = [];
+    const value = ref("");
+    const wrapper = track(
+      mount(
+        {
+          render() {
+            return (
+              <Suggestion
+                items={items}
+                onSelect={(nextValue: string) => {
+                  value.value = `[${nextValue}]:`;
+                }}
+              >
+                {({ onTrigger, onKeyDown }: any) => (
+                  <Sender
+                    value={value.value}
+                    onChange={(next: string) => {
+                      if (next.endsWith("/")) {
+                        onTrigger("/");
+                      } else if (!next) {
+                        onTrigger(false);
+                      }
+                      value.value = next;
+                    }}
+                    onKeyDown={onKeyDown}
+                    onSubmit={(content: string) => {
+                      submits.push(content);
+                      value.value = "";
+                    }}
+                  />
+                )}
+              </Suggestion>
+            );
+          },
+        },
+        { attachTo: document.body },
+      ),
+    );
+
+    const textarea = wrapper.find("textarea");
+    await textarea.setValue("/");
+    await flush();
+
+    expect(document.body.textContent).toContain("Write a report");
+
+    // The popup must not steal the space bar from the textarea (#171).
+    expect(dispatchKey(textarea.element, " ").defaultPrevented).toBe(false);
+
+    // Enter picks the active suggestion instead of sending the message.
+    dispatchKey(textarea.element, "Enter");
+    await flush();
+
+    expect(submits).toEqual([]);
+    expect(value.value).toBe("[report]:");
+
+    // With the popup closed, Enter sends again.
+    await textarea.setValue("hello");
+    await flush();
+    dispatchKey(textarea.element, "Enter");
+    await flush();
+
+    expect(submits).toEqual(["hello"]);
+  });
+
+  it("keeps the trigger info when items is an inline function", async () => {
+    const version = ref(0);
+    const wrapper = track(
+      mount(
+        {
+          render() {
+            return (
+              <Suggestion
+                items={(info?: string) => [
+                  { label: `Trigger by '${info}'`, value: String(info) },
+                ]}
+              >
+                {({ onTrigger, onKeyDown }: any) => (
+                  <input
+                    class="trigger-input"
+                    data-version={version.value}
+                    onKeydown={(event: KeyboardEvent) => {
+                      if (event.key === "@") {
+                        onTrigger("@");
+                      }
+                      return onKeyDown(event);
+                    }}
+                  />
+                )}
+              </Suggestion>
+            );
+          },
+        },
+        { attachTo: document.body },
+      ),
+    );
+
+    await wrapper.find(".trigger-input").trigger("keydown", { key: "@" });
+    await flush();
+
+    expect(document.body.textContent).toContain("Trigger by '@'");
+
+    // The inline `items` gets a new identity on every render of the parent.
+    version.value += 1;
+    await flush();
+
+    expect(document.body.textContent).toContain("Trigger by '@'");
   });
 
   it("keeps every option reachable inside the scrollable popup for long lists", async () => {
