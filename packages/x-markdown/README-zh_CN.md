@@ -105,19 +105,50 @@ import "@antdv-next/x-markdown/themes/light.css";
 
 ### Props
 
-| 属性                     | 说明                                 | 类型                        | 默认值          |
-| ------------------------ | ------------------------------------ | --------------------------- | --------------- |
-| content                  | 需要渲染的 Markdown 内容             | `string`                    | -               |
-| components               | 将 HTML 节点映射为自定义 Vue 组件    | `Record<string, Component>` | -               |
-| streaming                | 流式渲染行为配置                     | `StreamingOption`           | -               |
-| config                   | Marked 解析配置                      | `MarkedConfig`              | `{ gfm: true }` |
-| className                | 根容器的额外 CSS 类名                | `string`                    | -               |
-| style                    | 根容器的内联样式                     | `Record<string, string>`    | -               |
-| paragraphTag             | 段落使用的 HTML 标签                 | `string`                    | `'p'`           |
-| openLinksInNewTab        | 是否为所有链接添加 `target="_blank"` | `boolean`                   | `true`          |
-| protectCustomTagNewlines | 是否保留自定义标签内部的换行         | `boolean`                   | `true`          |
-| escapeRawHtml            | 是否将原始 HTML 转义为纯文本         | `boolean`                   | `false`         |
-| debug                    | 是否开启调试模式                     | `boolean`                   | `false`         |
+| 属性                     | 说明                                 | 类型                                      | 默认值          |
+| ------------------------ | ------------------------------------ | ----------------------------------------- | --------------- |
+| content                  | 需要渲染的 Markdown 内容             | `string`                                  | -               |
+| components               | 将 HTML 节点映射为自定义 Vue 组件    | `Record<string, Component>`               | -               |
+| componentsProps          | 按标签名向自定义组件传递额外 props   | `Record<string, Record<string, unknown>>` | -               |
+| streaming                | 流式渲染行为配置                     | `StreamingOption`                         | -               |
+| config                   | Marked 解析配置                      | `MarkedConfig`                            | `{ gfm: true }` |
+| className                | 根容器的额外 CSS 类名                | `string`                                  | -               |
+| style                    | 根容器的内联样式                     | `Record<string, string>`                  | -               |
+| paragraphTag             | 段落使用的 HTML 标签                 | `string`                                  | `'p'`           |
+| openLinksInNewTab        | 是否为所有链接添加 `target="_blank"` | `boolean`                                 | `true`          |
+| protectCustomTagNewlines | 是否保留自定义标签内部的换行         | `boolean`                                 | `true`          |
+| escapeRawHtml            | 是否将原始 HTML 转义为纯文本         | `boolean`                                 | `false`         |
+| debug                    | 是否开启调试模式                     | `boolean`                                 | `false`         |
+
+### 向自定义组件传递额外的 props
+
+自定义组件常常需要接收业务数据（如主题、回调函数等）。如果通过内联函数传递，每次渲染都会产生新的组件引用，导致子树被反复重建，在流式场景下会丢失内部状态并造成明显的性能损耗。使用 `componentsProps` 可以在保持组件引用稳定的同时传入额外的 props：
+
+```vue
+<script setup>
+import { computed, ref } from "vue";
+import { XMarkdown } from "@antdv-next/x-markdown";
+
+const theme = ref("dark");
+const components = { "custom-chart": CustomChart };
+// 保持引用稳定——传内联对象字面量会让渲染缓存每次失效并触发整棵树重新解析。
+const componentsProps = computed(() => ({
+  "custom-chart": { theme: theme.value, onSelect },
+}));
+</script>
+
+<template>
+  <XMarkdown :components="components" :componentsProps="componentsProps" />
+</template>
+```
+
+`componentsProps` 以标签名为 key，对应的 props 会与解析出的 HTML 属性合并后传给组件。合并规则：
+
+- 同名属性以 `componentsProps` 为准，例如 `componentsProps` 里的 `title` 会覆盖 HTML 上的 `title="..."`。
+- `class` / `className` 是例外，两侧会拼接合并，`componentsProps` 的类名在前（合并结果写入 `class`）。
+- 内部计算的 `streamStatus`、`domNode`、`children`（以及 `code` 组件的 `lang`、`block`）不可覆盖，写进 `componentsProps` 会被忽略。
+
+`componentsProps` 变化时组件只会正常更新 props，不会被重新挂载。但它和 `components` 一样参与渲染缓存，传内联对象字面量会让缓存每次失效并触发整棵树重新解析，所以请像上面那样用 `computed` 保持引用稳定。
 
 ### StreamingOption
 
