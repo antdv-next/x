@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed } from "vue";
 
 interface Props {
   text: string;
@@ -12,29 +12,32 @@ const props = withDefaults(defineProps<Props>(), {
   easing: "ease-in-out",
 });
 
-const chunks = ref<string[]>([]);
-const previousText = ref("");
+// Render-phase computation: chunks are derived synchronously while the
+// component renders (no watch/state round-trip), so streaming text updates
+// never trigger an extra reactive update or repeated animation. Mirrors
+// ant-design/x#1998 ("use useRef render-phase computation to eliminate extra
+// re-render in AnimationText").
+let previousText = "";
+let cachedChunks: string[] = [];
 
-function updateChunks(nextText: string) {
-  if (nextText === previousText.value) return;
+const chunks = computed(() => {
+  const text = props.text;
 
-  const isAppend = Boolean(
-    previousText.value && nextText.startsWith(previousText.value),
-  );
-  if (!isAppend) {
-    chunks.value = [nextText];
-    previousText.value = nextText;
-    return;
+  if (text === previousText) return cachedChunks;
+
+  let next: string[];
+  if (!(previousText && text.startsWith(previousText))) {
+    // Not an append: replace everything.
+    next = [text];
+  } else {
+    const delta = text.slice(previousText.length);
+    next = delta ? [...cachedChunks, delta] : cachedChunks;
   }
 
-  const delta = nextText.slice(previousText.value.length);
-  if (!delta) return;
-
-  chunks.value = [...chunks.value, delta];
-  previousText.value = nextText;
-}
-
-watch(() => props.text, updateChunks, { immediate: true });
+  previousText = text;
+  cachedChunks = next;
+  return next;
+});
 
 const animationStyle = computed(() => ({
   animation: `x-markdown-fade-in ${props.fadeDuration}ms ${props.easing} forwards`,
