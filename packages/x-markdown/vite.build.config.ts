@@ -10,6 +10,10 @@ const PLUGINS_DIR = "plugins";
 
 const dtsBaseOptions = {
   tsconfigPath: "./tsconfig.build.json",
+  // unplugin-dts passes `include`/`exclude` to @rollup/pluginutils v5,
+  // where "!" prefixes inside `include` are treated as literal globs and
+  // never negate, so all exclusions must live in `exclude`.
+  exclude: ["**/__tests__/**"],
 };
 
 const buildBaseOptions = {
@@ -19,7 +23,7 @@ const buildBaseOptions = {
 };
 
 const entries = Object.fromEntries(
-  globSync(["./src/**/*.ts", "!./src/plugins/**"])
+  globSync(["./src/**/*.ts", "!./src/plugins/**", "!./src/**/__tests__/**"])
     .sort()
     .map(file => [
       `./${file}`.replace("./src/", "").replace(/\.ts$/, ""),
@@ -70,12 +74,9 @@ export default defineConfig(({ mode }) => {
       dts({
         ...dtsBaseOptions,
         entryRoot: "src",
-        include: [
-          "src/**/*.ts",
-          "!src/plugins/**",
-          "src/**/*.d.ts",
-          "src/**/*.vue",
-        ],
+        include: ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.vue"],
+        // Plugins are built separately (mode: "plugins") into `plugins/`.
+        exclude: ["src/plugins/**", ...dtsBaseOptions.exclude],
         outDirs: DIST_DIR,
         processor: "vue",
       }),
