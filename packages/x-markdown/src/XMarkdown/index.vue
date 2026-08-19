@@ -84,6 +84,7 @@ const parser = shallowRef(
 const renderer = shallowRef(
   new VueRenderer({
     components: mergedComponents.value,
+    componentsProps: props.componentsProps,
     enableAnimation: props.streaming?.enableAnimation ?? true,
     animationConfig: props.streaming?.animationConfig,
   }),
@@ -152,6 +153,17 @@ watch(
   newComponents => {
     renderer.value.setOptions({
       components: newComponents,
+    });
+    bumpOptionsVersion();
+  },
+  { deep: true },
+);
+
+watch(
+  () => props.componentsProps,
+  newComponentsProps => {
+    renderer.value.setOptions({
+      componentsProps: newComponentsProps,
     });
     bumpOptionsVersion();
   },
