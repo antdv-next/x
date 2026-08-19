@@ -1,7 +1,7 @@
 import { mount } from "@vue/test-utils";
 import { describe, expect, it } from "vitest";
 
-import XMarkdown from "../../../XMarkdown/index.vue";
+import { XMarkdown } from "../../../index";
 import latexPlugin from "../index";
 
 function renderHtml(content: string) {
