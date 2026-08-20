@@ -93,6 +93,270 @@ export default defineComponent({
     const isComposing = ref(false);
     const keyLock = ref(false);
 
+    // ==================== History: full snapshot stack + groups ====================
+    // 全量快照栈：每次操作后 push 一份完整快照（slotConfigs/values/skill/cursor），
+    // Ctrl+Z 只是 index-- 并 restore(stack[index])，不额外 push，避免“越撤销越多”
+    type SelectionSnapshot = {
+      startPath: number[];
+      startOffset: number;
+      endPath: number[];
+      endOffset: number;
+      collapsed: boolean;
+    } | null;
+    type HistorySnapshot = {
+      slotConfigs: any[];
+      slotValues: Record<string, any>;
+      skill: any;
+      cursor: SelectionSnapshot;
+      t: number;
+      inputType: string;
+    };
+    let historyStack: HistorySnapshot[] = []; // 栈：0..index 为有效历史，存全量快照
+    let historyIndex = -1; // 指针：当前快照在栈中的位置
+    let isRestoringHistory = false;
+    let lastHistorySaveAt = 0;
+    let lastInputType: string | null = null;
+    let pendingHistoryType: string | null = null; // beforeinput 标记，input 后推入
+    const MAX_HISTORY = 50;
+    const GROUP_MS = 500;
+
+    const getCleanedText = (ori: string) =>
+      ori
+        .replace(/\u200B/g, "")
+        .replace(/\n/g, "")
+        .replace(/^\n+|\n+$/g, "");
+
+    const getNodePath = (node: Node, root: HTMLElement): number[] => {
+      const path: number[] = [];
+      let cur: Node | null = node;
+      while (cur && cur !== root) {
+        const parent = cur.parentNode;
+        if (!parent) break;
+        const idx = Array.prototype.indexOf.call(parent.childNodes, cur);
+        path.unshift(idx);
+        cur = parent as Node;
+      }
+      return path;
+    };
+
+    const getNodeByPath = (root: HTMLElement, path: number[]): Node | null => {
+      let cur: Node = root;
+      for (const idx of path) {
+        if (!cur.childNodes[idx]) return null;
+        cur = cur.childNodes[idx] as Node;
+      }
+      return cur;
+    };
+
+    const captureSelectionSnapshot = (): SelectionSnapshot => {
+      const sel = getSelection();
+      const editable = editableRef.value;
+      if (!sel || sel.rangeCount === 0 || !editable) return null;
+      try {
+        const range = sel.getRangeAt(0);
+        if (
+          !editable.contains(range.startContainer) ||
+          !editable.contains(range.endContainer)
+        )
+          return null;
+        return {
+          startPath: getNodePath(range.startContainer, editable),
+          startOffset: range.startOffset,
+          endPath: getNodePath(range.endContainer, editable),
+          endOffset: range.endOffset,
+          collapsed: range.collapsed,
+        };
+      } catch {
+        return null;
+      }
+    };
+
+    const restoreSelectionSnapshot = (cursor: SelectionSnapshot) => {
+      const editable = editableRef.value;
+      if (!editable) return;
+      const sel = getSelection();
+      if (!sel) return;
+      if (!cursor) {
+        setEndCursor();
+        return;
+      }
+      const startNode = getNodeByPath(editable, cursor.startPath);
+      const endNode = getNodeByPath(editable, cursor.endPath);
+      if (!startNode || !endNode) {
+        setEndCursor();
+        return;
+      }
+      try {
+        const range = document.createRange();
+        const clamp = (node: Node, offset: number) => {
+          if (node.nodeType === Node.TEXT_NODE) {
+            const len = node.textContent?.length ?? 0;
+            return Math.min(offset, len);
+          }
+          return Math.min(offset, node.childNodes.length);
+        };
+        range.setStart(startNode, clamp(startNode, cursor.startOffset));
+        range.setEnd(endNode, clamp(endNode, cursor.endOffset));
+        sel.removeAllRanges();
+        sel.addRange(range);
+        editable.focus();
+      } catch {
+        setEndCursor();
+      }
+    };
+
+    const captureSnapshot = (
+      inputType: string = "unknown",
+    ): HistorySnapshot => {
+      const val = getEditorValue();
+      // Shallow clone slotConfigs to avoid DataCloneError on functions/VNodes and keep reference for customRender/formatResult
+      const rawConfigs: any[] = (val as any).slotConfig as any[];
+      const clonedConfigs = rawConfigs.map((c: any) => {
+        if (!c || typeof c !== "object") return c;
+        const copy: any = { ...c };
+        if (c.props && typeof c.props === "object") copy.props = { ...c.props };
+        return copy;
+      });
+      const rawSkill: any = currentSkillRef.value as any;
+      let clonedSkill: any = undefined;
+      if (rawSkill) {
+        try {
+          clonedSkill =
+            typeof structuredClone === "function"
+              ? (structuredClone as any)(rawSkill)
+              : JSON.parse(JSON.stringify(rawSkill));
+        } catch {
+          clonedSkill = { ...rawSkill };
+          if (rawSkill.props) clonedSkill.props = { ...rawSkill.props };
+        }
+      }
+      return {
+        slotConfigs: clonedConfigs,
+        slotValues: { ...slotValues.value },
+        skill: clonedSkill,
+        cursor: captureSelectionSnapshot(),
+        t: Date.now(),
+        inputType,
+      };
+    };
+
+    // 推入全量快照（操作后调用），栈里全是完整状态，undo 只是指针--
+    const pushHistory = (
+      inputType: string = "unknown",
+      forceNewGroup: boolean = false,
+    ) => {
+      if (isRestoringHistory) return;
+      const now = Date.now();
+      const snap = captureSnapshot(inputType);
+      // 分组：500ms 内连续 insertText 覆盖栈顶，不产生新条目
+      const last = historyStack[historyIndex];
+      const canGroup =
+        !forceNewGroup &&
+        last &&
+        last.inputType === "insertText" &&
+        inputType === "insertText" &&
+        now - last.t < GROUP_MS;
+      if (canGroup) {
+        historyStack[historyIndex] = snap;
+      } else {
+        // 丢弃 redo 分支，追加新快照
+        historyStack = historyStack.slice(0, historyIndex + 1);
+        historyStack.push(snap);
+        historyIndex = historyStack.length - 1;
+        if (historyStack.length > MAX_HISTORY) {
+          historyStack.shift();
+          historyIndex--;
+        }
+      }
+      lastHistorySaveAt = now;
+      lastInputType = inputType;
+      pendingHistoryType = null;
+    };
+
+    // 兼容旧调用：saveHistory 仍可用，实际走 pushHistory
+    const saveHistory = pushHistory;
+
+    const restoreSnapshot = (snap: HistorySnapshot) => {
+      isRestoringHistory = true;
+      const editable = editableRef.value;
+      if (!editable) {
+        isRestoringHistory = false;
+        return;
+      }
+      // Clear current editor state
+      unmountAllPortals();
+      slotDomMap.value.clear();
+      slotConfigMap.value.clear();
+      // keep skillDom cleanup
+      if (skillDomRef.value) {
+        unmountDom(skillDomRef.value);
+        skillDomRef.value.remove();
+        skillDomRef.value = null;
+      }
+      currentSkillRef.value = undefined;
+      editable.innerHTML = "";
+      // Restore slotValues and slotConfigMap from snapshot
+      slotValues.value = { ...snap.slotValues };
+      snap.slotConfigs.forEach(cfg => {
+        if ((cfg as any).key) {
+          slotConfigMap.value.set((cfg as any).key, cfg);
+        }
+      });
+      // Restore skill if present
+      if (snap.skill) {
+        currentSkillRef.value = snap.skill as SkillType;
+      }
+      // Rebuild DOM from slotConfigs
+      const nodes = buildSlotNodes(snap.slotConfigs);
+      nodes.forEach(node => {
+        editable.appendChild(node);
+      });
+      // Re-render skill
+      renderSkill();
+      // Need to sync slotValues for content slots that may have been updated via nodes
+      // buildSlotNodes already set defaults, but ensure restored values are kept
+      slotValues.value = { ...snap.slotValues };
+      // Re-apply content slot innerText from slotValues (buildSlotNodes for content uses slotValues)
+      snap.slotConfigs.forEach(cfg => {
+        if (cfg.type === "content" && (cfg as any).key) {
+          const dom = slotDomMap.value.get((cfg as any).key);
+          if (dom) {
+            dom.innerText = stringifyValue(slotValues.value[(cfg as any).key]);
+          }
+        }
+      });
+      isRestoringHistory = false;
+      triggerValueChange();
+      // Restore cursor after DOM rebuild - defer to nextTick to ensure DOM is ready
+      void nextTick(() => {
+        restoreSelectionSnapshot(snap.cursor);
+      });
+    };
+
+    // 全量快照：undo 直接指针--，不额外 push，避免“越撤销越多”
+    const handleUndo = () => {
+      if (historyIndex <= 0) return false;
+      historyIndex--;
+      restoreSnapshot(historyStack[historyIndex]!);
+      return true;
+    };
+
+    const handleRedo = () => {
+      if (historyIndex >= historyStack.length - 1) return false;
+      historyIndex++;
+      restoreSnapshot(historyStack[historyIndex]!);
+      return true;
+    };
+
+    const initHistory = () => {
+      historyStack = [];
+      historyIndex = -1;
+      lastHistorySaveAt = 0;
+      lastInputType = null;
+      // 推入初始全量快照作为基线，撤销可直接回到此状态
+      pushHistory("init", true);
+    };
+
     const prefixCls = computed(
       () => senderCtx.value.prefixCls || "antd-sender",
     );
@@ -607,7 +871,6 @@ export default defineComponent({
     const removeSlot = (key: string, event?: Event) => {
       const editable = editableRef.value;
       if (!editable) return;
-
       editable.querySelectorAll(`[data-slot-key="${key}"]`).forEach(element => {
         unmountDom(element as HTMLElement);
         element.remove();
@@ -623,12 +886,12 @@ export default defineComponent({
       slotDomMap.value.delete(`${key}_after`);
 
       triggerValueChange(event);
+      pushHistory("delete", true);
     };
 
     const removeSkill = (triggerChange = true) => {
       const skillDom = skillDomRef.value;
       if (!skillDom) return;
-
       unmountDom(skillDom);
       skillDom.remove();
       skillDomRef.value = null;
@@ -636,6 +899,7 @@ export default defineComponent({
 
       if (triggerChange) {
         triggerValueChange();
+        pushHistory("delete", true);
       }
     };
 
@@ -753,6 +1017,168 @@ export default defineComponent({
       return null;
     };
 
+    const rangeIntersectsSlot = (range: Range): boolean => {
+      const editable = editableRef.value;
+      if (!editable) return false;
+      if (slotDomMap.value.size === 0 && !skillDomRef.value) return false;
+      // Try native intersectsNode per node with individual try
+      for (const dom of slotDomMap.value.values()) {
+        try {
+          if ((range as any).intersectsNode?.(dom)) return true;
+        } catch {}
+        // Fallback: check if dom is inside range via compareBoundaryPoints
+        try {
+          const domRange = document.createRange();
+          domRange.selectNode(dom);
+          const r: any = range as any;
+          if (r.compareBoundaryPoints) {
+            const beforeEnd =
+              r.compareBoundaryPoints(Range.START_TO_END, domRange) < 0;
+            const afterStart =
+              r.compareBoundaryPoints(Range.END_TO_START, domRange) > 0;
+            if (beforeEnd && afterStart) return true;
+          }
+        } catch {}
+      }
+      if (skillDomRef.value) {
+        try {
+          if ((range as any).intersectsNode?.(skillDomRef.value)) return true;
+        } catch {}
+        try {
+          const domRange = document.createRange();
+          domRange.selectNode(skillDomRef.value);
+          const r: any = range as any;
+          if (r.compareBoundaryPoints) {
+            const beforeEnd =
+              r.compareBoundaryPoints(Range.START_TO_END, domRange) < 0;
+            const afterStart =
+              r.compareBoundaryPoints(Range.END_TO_START, domRange) > 0;
+            if (beforeEnd && afterStart) return true;
+          }
+        } catch {}
+      }
+      // Fallback for JSDOM select-all: commonAncestor is editable and range not collapsed
+      try {
+        if (!range.collapsed && range.commonAncestorContainer === editable)
+          return true;
+        const container = range.commonAncestorContainer as HTMLElement;
+        if (
+          container instanceof HTMLElement &&
+          container.querySelector?.("[data-slot-key],[data-skill-key]")
+        )
+          return true;
+        if (editable.contains(container) && !range.collapsed) {
+          // If range start/end are inside editable and not collapsed, assume intersects if slots exist
+          // More precise check already done, this is last resort for JSDOM
+          return true;
+        }
+      } catch {}
+      return false;
+    };
+
+    const selectionContainsSlot = (): boolean => {
+      const sel = getSelection();
+      if (!sel || sel.rangeCount === 0) return false;
+      const range = sel.getRangeAt(0);
+      if (range.collapsed) return false;
+      return rangeIntersectsSlot(range);
+    };
+
+    const handleSelectionDelete = (
+      event: KeyboardEvent | InputEvent,
+    ): boolean => {
+      const selection = getSelection();
+      const editable = editableRef.value;
+      if (!editable || !selection || selection.rangeCount === 0) return false;
+      const range = selection.getRangeAt(0);
+      if (range.collapsed || !rangeIntersectsSlot(range)) return false;
+      // Selection contains slot(s) – ensure undo can restore via history
+      if (event instanceof KeyboardEvent) event.preventDefault();
+      else (event as InputEvent).preventDefault?.();
+      range.deleteContents();
+      const remainingKeys = new Set<string>();
+      editable.querySelectorAll("[data-slot-key]").forEach(el => {
+        const k = (el as HTMLElement).dataset.slotKey!;
+        const base = k.replace(/_before$|_after$/, "");
+        remainingKeys.add(base);
+        remainingKeys.add(k);
+      });
+      const toDelete: string[] = [];
+      slotDomMap.value.forEach((_, k) => {
+        if (!remainingKeys.has(k)) toDelete.push(k);
+      });
+      toDelete.forEach(k => {
+        const dom = slotDomMap.value.get(k);
+        if (dom) unmountDom(dom as HTMLElement);
+        slotDomMap.value.delete(k);
+      });
+      const remainingBase = new Set<string>();
+      slotDomMap.value.forEach((_, k) => {
+        if (!k.endsWith("_before") && !k.endsWith("_after"))
+          remainingBase.add(k);
+      });
+      slotConfigMap.value.forEach((_, k) => {
+        if (
+          !remainingBase.has(k) &&
+          !editable.querySelector(`[data-slot-key="${k}"]`)
+        ) {
+          slotConfigMap.value.delete(k);
+          const nv = { ...slotValues.value };
+          delete nv[k];
+          slotValues.value = nv;
+        }
+      });
+      if (skillDomRef.value && !editable.contains(skillDomRef.value)) {
+        unmountDom(skillDomRef.value);
+        skillDomRef.value = null;
+        currentSkillRef.value = undefined;
+      }
+      triggerValueChange(event as unknown as Event);
+      pushHistory("delete", true);
+      return true;
+    };
+
+    const handleDeleteNextSlot = (event: KeyboardEvent): boolean => {
+      const selection = getSelection();
+      const editable = editableRef.value;
+      if (!editable || !selection || selection.rangeCount === 0) return false;
+      const range = selection.getRangeAt(0);
+      if (!range.collapsed) return false;
+      const anchorNode = selection.anchorNode;
+      const focusOffset = selection.focusOffset;
+      if (!anchorNode || !editable.contains(anchorNode)) return false;
+      let nextSibling: Node | null = null;
+      if (anchorNode === editable) {
+        nextSibling = editable.childNodes[focusOffset] || null;
+      } else if (focusOffset === (anchorNode.textContent?.length ?? 0)) {
+        const outer = findOuterContainer(anchorNode);
+        const boundary =
+          outer && editable.contains(outer)
+            ? outer
+            : (anchorNode as HTMLElement);
+        nextSibling = boundary.nextSibling;
+      } else {
+        return false;
+      }
+      let cur: Node | null = nextSibling;
+      while (cur) {
+        if (cur instanceof HTMLElement) {
+          const info = getNodeInfo(cur);
+          if (info?.slotKey || info?.skillKey) {
+            event.preventDefault();
+            if (info.slotKey) removeSlot(info.slotKey, event);
+            else removeSkill(true);
+            return true;
+          }
+          if (cur.textContent) return false;
+        } else if (cur.nodeType === Node.TEXT_NODE) {
+          if (cur.textContent) return false;
+        }
+        cur = cur.nextSibling;
+      }
+      return false;
+    };
+
     const handleDeleteOperation = (
       event: KeyboardEvent | ClipboardEvent,
       operationType: "backspace" | "cut" | "delete",
@@ -785,6 +1211,15 @@ export default defineComponent({
           event.preventDefault();
           parentElement.innerHTML = "";
           parentElement.innerText = "";
+          // sync slotValues for content clearing
+          if (nodeInfo.slotKey) {
+            slotValues.value = {
+              ...slotValues.value,
+              [nodeInfo.slotKey]: "",
+            };
+          }
+          triggerValueChange(event as unknown as Event);
+          pushHistory("deleteContent", true);
           return true;
         }
       }
@@ -871,7 +1306,76 @@ export default defineComponent({
       return false;
     };
 
+    const onBeforeInput = (event: InputEvent) => {
+      if (isRestoringHistory || isComposing.value) return;
+      const inputType = (event as InputEvent).inputType || "";
+      const sel = getSelection();
+      if (!sel || sel.rangeCount === 0) return;
+      const range = sel.getRangeAt(0);
+      const editable = editableRef.value;
+      if (!editable || !editable.contains(range.commonAncestorContainer))
+        return;
+      const isDeleteType =
+        inputType.startsWith("delete") || inputType.includes("Cut");
+      const isInsertType = inputType.startsWith("insert") && !range.collapsed;
+      if (isDeleteType && rangeIntersectsSlot(range)) {
+        pendingHistoryType = inputType;
+      } else if (isInsertType && rangeIntersectsSlot(range)) {
+        // typing / pasting over a selected slot
+        pendingHistoryType = inputType;
+      } else if (
+        inputType === "insertText" &&
+        range.collapsed &&
+        slotDomMap.value.size > 0
+      ) {
+        const anchor = sel.anchorNode as HTMLElement | null;
+        const outer = anchor ? findOuterContainer(anchor) : null;
+        const info = outer ? getNodeInfo(outer as HTMLElement) : null;
+        if (info?.slotConfig?.type === "content") {
+          pendingHistoryType = "insertText";
+        }
+      }
+    };
+
+    const onInternalCut = (event: ClipboardEvent) => {
+      // Cut with slot selection is handled as delete with history (push after)
+      if (handleSelectionDelete(event as unknown as InputEvent)) return;
+      handleDeleteOperation(event, "cut");
+    };
+
     const onInternalKeyDown = (event: KeyboardEvent) => {
+      // 浏览器原生对 contenteditable + 原子 span 的撤销不可靠（会重建文本节点导致叠加），
+      // 只要焦点在 slot 编辑区就完全接管 Ctrl+Z/Y，历史耗尽时也 prevent 避免原生继续叠加
+      const isMod = event.ctrlKey || event.metaKey;
+      const keyLower = event.key.toLowerCase();
+      const sel = getSelection();
+      const inEditable =
+        !!editableRef.value &&
+        !!sel &&
+        sel.rangeCount > 0 &&
+        editableRef.value.contains(sel.anchorNode as Node | null);
+      const editableFocused =
+        inEditable || document.activeElement === editableRef.value;
+      if (editableFocused && isMod && keyLower === "z") {
+        event.preventDefault();
+        if (event.shiftKey) handleRedo();
+        else handleUndo();
+        return;
+      }
+      if (editableFocused && isMod && keyLower === "y") {
+        event.preventDefault();
+        handleRedo();
+        return;
+      }
+
+      // Selection containing slot: any Backspace/Delete should use history-aware delete
+      if (
+        (event.key === "Backspace" || event.key === "Delete") &&
+        handleSelectionDelete(event)
+      ) {
+        return;
+      }
+
       const eventRes = senderCtx.value.onKeyDown?.(event);
       if (eventRes === false || keyLock.value || isComposing.value) {
         return;
@@ -881,6 +1385,10 @@ export default defineComponent({
         event.key === "Backspace" &&
         handleDeleteOperation(event, "backspace")
       ) {
+        return;
+      }
+
+      if (event.key === "Delete" && handleDeleteNextSlot(event)) {
         return;
       }
 
@@ -953,6 +1461,14 @@ export default defineComponent({
       removeSpecificBRs();
       normalizeSkillTextInput();
       triggerValueChange(event);
+      // 全量快照：若 beforeinput 标记了需记录的 slot 相关输入，在此处推入（操作后）
+      if (pendingHistoryType) {
+        const t = pendingHistoryType;
+        pendingHistoryType = null;
+        // typing over slot 是 insertText 且可分组，其余强制新组
+        const forceNew = t !== "insertText";
+        pushHistory(t, forceNew);
+      }
     };
 
     const onInternalPaste = (event: ClipboardEvent) => {
@@ -966,20 +1482,33 @@ export default defineComponent({
       }
 
       if (text) {
-        const selection = getSelection();
-        if (selection && selection.rangeCount > 0) {
-          const range = selection.getRangeAt(0);
-          range.deleteContents();
-          const textNode = document.createTextNode(text.replace(/\u200B/g, ""));
-          range.insertNode(textNode);
-          range.setStartAfter(textNode);
-          range.collapse(true);
-          selection.removeAllRanges();
-          selection.addRange(range);
+        const cleanedText = getCleanedText(text);
+        let success = false;
+        try {
+          success = document.execCommand("insertText", false, cleanedText);
+        } catch (err) {
+          warning(false, "Sender", `insertText command failed: ${err}`);
+        }
+        if (!success) {
+          const selection = getSelection();
+          if (selection && selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            range.deleteContents();
+            const textNode = document.createTextNode(cleanedText);
+            range.insertNode(textNode);
+            range.setStartAfter(textNode);
+            range.collapse(true);
+            selection.removeAllRanges();
+            selection.addRange(range);
+          }
         }
       }
 
       onInternalInput(event);
+      // 全量快照：粘贴后推入，Ctrl+Z 直接 pop 恢复
+      pushHistory("insertFromPaste", true);
+      // 清除 beforeinput 的 pending，避免双推
+      pendingHistoryType = null;
       senderCtx.value.onPaste?.(event);
     };
 
@@ -1051,7 +1580,6 @@ export default defineComponent({
     ) => {
       const editable = editableRef.value;
       if (!editable || !slotConfig.length) return;
-
       mergeSlotConfig(slotConfig);
       const nodes = buildSlotNodes(slotConfig);
       if (!nodes.length) return;
@@ -1089,6 +1617,7 @@ export default defineComponent({
       }
 
       onInternalInput();
+      pushHistory("insert", true);
     };
 
     const focus: SlotTextAreaRef["focus"] = options => {
@@ -1113,6 +1642,7 @@ export default defineComponent({
       clearEditor();
       renderSkill();
       onInternalInput();
+      pushHistory("delete", true);
     };
 
     expose<SlotTextAreaRef>({
@@ -1139,11 +1669,24 @@ export default defineComponent({
       initFromSlotConfig(configs);
     };
 
+    const initHistoryStack = () => {
+      historyStack = [];
+      historyIndex = -1;
+      lastHistorySaveAt = 0;
+      lastInputType = null;
+      pendingHistoryType = null;
+      void nextTick(() => {
+        // 推入初始全量快照作为基线
+        pushHistory("init", true);
+      });
+    };
+
     watch(
       () => editableRef.value,
       editable => {
         if (!editable) return;
         applySlotConfig(senderCtx.value.slotConfig, true);
+        if (!isRestoringHistory) initHistoryStack();
       },
       { immediate: true },
     );
@@ -1151,7 +1694,10 @@ export default defineComponent({
     watch(
       () => senderCtx.value.slotConfig,
       configs => {
+        // Reset is a new baseline - clear history unless it's from undo/redo restore
+        const shouldInit = !isRestoringHistory;
         applySlotConfig(configs);
+        if (shouldInit) initHistoryStack();
       },
       { immediate: true },
     );
@@ -1204,11 +1750,12 @@ export default defineComponent({
           data-placeholder={senderCtx.value.placeholder}
           contenteditable={!senderCtx.value.readOnly}
           spellcheck={false}
+          onBeforeinput={onBeforeInput as any}
           onInput={onInternalInput}
           onKeydown={onInternalKeyDown}
           onKeyup={onInternalKeyUp}
           onPaste={onInternalPaste}
-          onCut={onInternalInput}
+          onCut={onInternalCut}
           onSelect={onInternalSelect}
           onFocus={(e: FocusEvent) => {
             senderCtx.value.onFocus?.(e);
