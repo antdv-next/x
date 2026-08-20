@@ -117,6 +117,7 @@ export default defineComponent({
     let lastHistorySaveAt = 0;
     let lastInputType: string | null = null;
     let pendingHistoryType: string | null = null; // beforeinput 标记，input 后推入
+    let pendingBeforeCursor: SelectionSnapshot | null = null; // 操作前的光标，撤销应回到此处而非操作后
     const MAX_HISTORY = 50;
     const GROUP_MS = 500;
 
@@ -241,6 +242,7 @@ export default defineComponent({
     };
 
     // 推入全量快照（操作后调用），栈里全是完整状态，undo 只是指针--
+    // 为让撤销后光标回到操作前而非操作后，快照的 cursor 取 pendingBeforeCursor（操作前捕获）
     const pushHistory = (
       inputType: string = "unknown",
       forceNewGroup: boolean = false,
@@ -248,7 +250,11 @@ export default defineComponent({
       if (isRestoringHistory) return;
       const now = Date.now();
       const snap = captureSnapshot(inputType);
-      // 分组：500ms 内连续 insertText 覆盖栈顶，不产生新条目
+      if (pendingBeforeCursor) {
+        snap.cursor = pendingBeforeCursor;
+        pendingBeforeCursor = null;
+      }
+      // 分组：500ms 内连续 insertText 覆盖栈顶，不产生新条目，且保留组首的光标（操作前）
       const last = historyStack[historyIndex];
       const canGroup =
         !forceNewGroup &&
@@ -257,6 +263,9 @@ export default defineComponent({
         inputType === "insertText" &&
         now - last.t < GROUP_MS;
       if (canGroup) {
+        // 保留原组首的 cursor（首次输入前的光标），仅更新内容
+        const keepCursor = last.cursor;
+        snap.cursor = keepCursor;
         historyStack[historyIndex] = snap;
       } else {
         // 丢弃 redo 分支，追加新快照
@@ -871,6 +880,7 @@ export default defineComponent({
     const removeSlot = (key: string, event?: Event) => {
       const editable = editableRef.value;
       if (!editable) return;
+      pendingBeforeCursor = captureSelectionSnapshot();
       editable.querySelectorAll(`[data-slot-key="${key}"]`).forEach(element => {
         unmountDom(element as HTMLElement);
         element.remove();
@@ -892,6 +902,7 @@ export default defineComponent({
     const removeSkill = (triggerChange = true) => {
       const skillDom = skillDomRef.value;
       if (!skillDom) return;
+      if (triggerChange) pendingBeforeCursor = captureSelectionSnapshot();
       unmountDom(skillDom);
       skillDom.remove();
       skillDomRef.value = null;
@@ -1095,6 +1106,7 @@ export default defineComponent({
       // Selection contains slot(s) – ensure undo can restore via history
       if (event instanceof KeyboardEvent) event.preventDefault();
       else (event as InputEvent).preventDefault?.();
+      pendingBeforeCursor = captureSelectionSnapshot();
       range.deleteContents();
       const remainingKeys = new Set<string>();
       editable.querySelectorAll("[data-slot-key]").forEach(el => {
@@ -1209,6 +1221,7 @@ export default defineComponent({
           (isFullTextSelected || isSingleCharAtEnd)
         ) {
           event.preventDefault();
+          pendingBeforeCursor = captureSelectionSnapshot();
           parentElement.innerHTML = "";
           parentElement.innerText = "";
           // sync slotValues for content clearing
@@ -1320,9 +1333,11 @@ export default defineComponent({
       const isInsertType = inputType.startsWith("insert") && !range.collapsed;
       if (isDeleteType && rangeIntersectsSlot(range)) {
         pendingHistoryType = inputType;
+        pendingBeforeCursor = captureSelectionSnapshot();
       } else if (isInsertType && rangeIntersectsSlot(range)) {
         // typing / pasting over a selected slot
         pendingHistoryType = inputType;
+        pendingBeforeCursor = captureSelectionSnapshot();
       } else if (
         inputType === "insertText" &&
         range.collapsed &&
@@ -1333,6 +1348,7 @@ export default defineComponent({
         const info = outer ? getNodeInfo(outer as HTMLElement) : null;
         if (info?.slotConfig?.type === "content") {
           pendingHistoryType = "insertText";
+          pendingBeforeCursor = captureSelectionSnapshot();
         }
       }
     };
@@ -1482,6 +1498,7 @@ export default defineComponent({
       }
 
       if (text) {
+        pendingBeforeCursor = captureSelectionSnapshot();
         const cleanedText = getCleanedText(text);
         let success = false;
         try {
@@ -1580,6 +1597,7 @@ export default defineComponent({
     ) => {
       const editable = editableRef.value;
       if (!editable || !slotConfig.length) return;
+      pendingBeforeCursor = captureSelectionSnapshot();
       mergeSlotConfig(slotConfig);
       const nodes = buildSlotNodes(slotConfig);
       if (!nodes.length) return;
@@ -1639,6 +1657,7 @@ export default defineComponent({
     };
 
     const clear: SlotTextAreaRef["clear"] = () => {
+      pendingBeforeCursor = captureSelectionSnapshot();
       clearEditor();
       renderSkill();
       onInternalInput();
