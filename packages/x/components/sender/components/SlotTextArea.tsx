@@ -107,7 +107,8 @@ export default defineComponent({
       slotConfigs: any[];
       slotValues: Record<string, any>;
       skill: any;
-      cursor: SelectionSnapshot;
+      cursor: SelectionSnapshot; // after cursor (光标在操作后)
+      beforeCursor: SelectionSnapshot | null; // before cursor (撤销应回到此处)
       t: number;
       inputType: string;
     };
@@ -149,6 +150,33 @@ export default defineComponent({
       return cur;
     };
 
+    const getClampedNodeByPath = (
+      root: HTMLElement,
+      path: number[],
+    ): { node: Node; offsetInNode: boolean } | null => {
+      let cur: Node = root;
+      for (let i = 0; i < path.length; i++) {
+        const idx = path[i]!;
+        if (!cur.childNodes[idx]) {
+          // clamp to nearest valid child or stay at cur
+          if (cur.childNodes.length === 0)
+            return { node: cur, offsetInNode: true };
+          const clampedIdx = Math.min(idx, cur.childNodes.length - 1);
+          const clamped = cur.childNodes[clampedIdx] as Node;
+          // if remaining depth, try to drill into clamped's last descendant
+          let deep: Node = clamped;
+          // descend to deepest last child for remaining depth
+          for (let j = i + 1; j < path.length; j++) {
+            if (deep.childNodes.length === 0) break;
+            deep = deep.childNodes[deep.childNodes.length - 1] as Node;
+          }
+          return { node: deep, offsetInNode: false };
+        }
+        cur = cur.childNodes[idx] as Node;
+      }
+      return { node: cur, offsetInNode: false };
+    };
+
     const captureSelectionSnapshot = (): SelectionSnapshot => {
       const sel = getSelection();
       const editable = editableRef.value;
@@ -181,31 +209,90 @@ export default defineComponent({
         setEndCursor();
         return;
       }
-      const startNode = getNodeByPath(editable, cursor.startPath);
-      const endNode = getNodeByPath(editable, cursor.endPath);
-      if (!startNode || !endNode) {
-        setEndCursor();
-        return;
-      }
-      try {
-        const range = document.createRange();
-        const clamp = (node: Node, offset: number) => {
-          if (node.nodeType === Node.TEXT_NODE) {
-            const len = node.textContent?.length ?? 0;
-            return Math.min(offset, len);
+      const tryDirect = (): boolean => {
+        const startNode = getNodeByPath(editable, cursor.startPath);
+        const endNode = getNodeByPath(editable, cursor.endPath);
+        if (!startNode || !endNode) return false;
+        try {
+          const range = document.createRange();
+          const clamp = (node: Node, offset: number) => {
+            if (node.nodeType === Node.TEXT_NODE) {
+              const len = node.textContent?.length ?? 0;
+              return Math.min(offset, len);
+            }
+            return Math.min(offset, node.childNodes.length);
+          };
+          range.setStart(startNode, clamp(startNode, cursor.startOffset));
+          range.setEnd(endNode, clamp(endNode, cursor.endOffset));
+          sel.removeAllRanges();
+          sel.addRange(range);
+          editable.focus();
+          return true;
+        } catch {
+          return false;
+        }
+      };
+      if (tryDirect()) return;
+      // Fallback: clamp path to nearest valid node (survives rebuild where slot count changed)
+      const startClamped = getClampedNodeByPath(editable, cursor.startPath);
+      const endClamped = getClampedNodeByPath(editable, cursor.endPath);
+      if (startClamped && endClamped) {
+        try {
+          const range = document.createRange();
+          const clamp = (node: Node, offset: number) => {
+            if (node.nodeType === Node.TEXT_NODE) {
+              const len = node.textContent?.length ?? 0;
+              return Math.min(offset, len);
+            }
+            return Math.min(offset, node.childNodes.length);
+          };
+          const sNode = startClamped.node;
+          const eNode = endClamped.node ?? sNode;
+          // if clamping went to element, prefer element offset
+          const sOff =
+            sNode.nodeType === Node.TEXT_NODE
+              ? clamp(sNode, cursor.startOffset)
+              : Math.min(cursor.startOffset, sNode.childNodes.length);
+          const eOff =
+            eNode.nodeType === Node.TEXT_NODE
+              ? clamp(eNode, cursor.endOffset)
+              : Math.min(cursor.endOffset, eNode.childNodes.length);
+          // for element-level cursor (startPath []), clamped node is deepest last child, but offset should be applied at editable level
+          // detect editable-level cursor: empty path means editable offset
+          if (cursor.startPath.length === 0 && sNode !== editable) {
+            const off = Math.min(
+              cursor.startOffset,
+              editable.childNodes.length,
+            );
+            range.setStart(editable, off);
+            range.collapse(true);
+          } else {
+            range.setStart(sNode, sOff);
+            if (!cursor.collapsed) range.setEnd(eNode, eOff);
+            else range.collapse(true);
           }
-          return Math.min(offset, node.childNodes.length);
-        };
-        range.setStart(startNode, clamp(startNode, cursor.startOffset));
-        range.setEnd(endNode, clamp(endNode, cursor.endOffset));
-        sel.removeAllRanges();
-        sel.addRange(range);
-        editable.focus();
-      } catch {
-        setEndCursor();
+          sel.removeAllRanges();
+          sel.addRange(range);
+          editable.focus();
+          return;
+        } catch {}
       }
+      // Last resort: try to place at editable child index derived from original offset
+      try {
+        const editableLen = editable.childNodes.length;
+        const off = Math.min(cursor.startOffset, editableLen);
+        const range = document.createRange();
+        if (cursor.startPath.length === 0) {
+          range.setStart(editable, off);
+          range.collapse(true);
+          sel.removeAllRanges();
+          sel.addRange(range);
+          editable.focus();
+          return;
+        }
+      } catch {}
+      setEndCursor();
     };
-
     const captureSnapshot = (
       inputType: string = "unknown",
     ): HistorySnapshot => {
@@ -236,13 +323,14 @@ export default defineComponent({
         slotValues: { ...slotValues.value },
         skill: clonedSkill,
         cursor: captureSelectionSnapshot(),
+        beforeCursor: null as SelectionSnapshot,
         t: Date.now(),
         inputType,
       };
     };
 
     // 推入全量快照（操作后调用），栈里全是完整状态，undo 只是指针--
-    // 为让撤销后光标回到操作前而非操作后，快照的 cursor 取 pendingBeforeCursor（操作前捕获）
+    // beforeCursor 存操作前的光标，撤销时应回到 before 而非 after
     const pushHistory = (
       inputType: string = "unknown",
       forceNewGroup: boolean = false,
@@ -250,11 +338,9 @@ export default defineComponent({
       if (isRestoringHistory) return;
       const now = Date.now();
       const snap = captureSnapshot(inputType);
-      if (pendingBeforeCursor) {
-        snap.cursor = pendingBeforeCursor;
-        pendingBeforeCursor = null;
-      }
-      // 分组：500ms 内连续 insertText 覆盖栈顶，不产生新条目，且保留组首的光标（操作前）
+      snap.beforeCursor = pendingBeforeCursor;
+      pendingBeforeCursor = null;
+      // 分组：500ms 内连续 insertText 覆盖栈顶，不产生新条目，且保留组首的 beforeCursor
       const last = historyStack[historyIndex];
       const canGroup =
         !forceNewGroup &&
@@ -263,9 +349,8 @@ export default defineComponent({
         inputType === "insertText" &&
         now - last.t < GROUP_MS;
       if (canGroup) {
-        // 保留原组首的 cursor（首次输入前的光标），仅更新内容
-        const keepCursor = last.cursor;
-        snap.cursor = keepCursor;
+        // 保留组首的 beforeCursor（首次输入前），cursor 保持为当前 after
+        snap.beforeCursor = last.beforeCursor;
         historyStack[historyIndex] = snap;
       } else {
         // 丢弃 redo 分支，追加新快照
@@ -285,7 +370,10 @@ export default defineComponent({
     // 兼容旧调用：saveHistory 仍可用，实际走 pushHistory
     const saveHistory = pushHistory;
 
-    const restoreSnapshot = (snap: HistorySnapshot) => {
+    const restoreSnapshot = (
+      snap: HistorySnapshot,
+      overrideCursor?: SelectionSnapshot | null,
+    ) => {
       isRestoringHistory = true;
       const editable = editableRef.value;
       if (!editable) {
@@ -337,23 +425,31 @@ export default defineComponent({
       isRestoringHistory = false;
       triggerValueChange();
       // Restore cursor after DOM rebuild - defer to nextTick to ensure DOM is ready
+      const cursorToRestore =
+        overrideCursor !== undefined ? overrideCursor : snap.cursor;
       void nextTick(() => {
-        restoreSelectionSnapshot(snap.cursor);
+        restoreSelectionSnapshot(cursorToRestore ?? snap.cursor);
       });
     };
 
-    // 全量快照：undo 直接指针--，不额外 push，避免“越撤销越多”
+    // 全量快照：undo 直接指针--，撤销应回到操作前的光标（cur.beforeCursor），而非 prev 的 after
     const handleUndo = () => {
       if (historyIndex <= 0) return false;
+      const cur = historyStack[historyIndex]!;
       historyIndex--;
-      restoreSnapshot(historyStack[historyIndex]!);
+      const prev = historyStack[historyIndex]!;
+      // 用 prev 的内容 + cur 的 beforeCursor（操作前）
+      const cursorBefore = (cur as any).beforeCursor ?? cur.cursor;
+      restoreSnapshot(prev, cursorBefore);
       return true;
     };
 
     const handleRedo = () => {
       if (historyIndex >= historyStack.length - 1) return false;
       historyIndex++;
-      restoreSnapshot(historyStack[historyIndex]!);
+      const next = historyStack[historyIndex]!;
+      // redo 回到操作后的状态，光标为 after
+      restoreSnapshot(next, next.cursor);
       return true;
     };
 
@@ -1328,17 +1424,25 @@ export default defineComponent({
       const editable = editableRef.value;
       if (!editable || !editable.contains(range.commonAncestorContainer))
         return;
+      const captureIfNeeded = () => {
+        if (!pendingBeforeCursor)
+          pendingBeforeCursor = captureSelectionSnapshot();
+      };
       const isDeleteType =
         inputType.startsWith("delete") || inputType.includes("Cut");
       const isInsertType = inputType.startsWith("insert") && !range.collapsed;
+      // delete/insert 覆盖 slot 时需要历史
       if (isDeleteType && rangeIntersectsSlot(range)) {
         pendingHistoryType = inputType;
-        pendingBeforeCursor = captureSelectionSnapshot();
-      } else if (isInsertType && rangeIntersectsSlot(range)) {
-        // typing / pasting over a selected slot
+        captureIfNeeded();
+        return;
+      }
+      if (isInsertType && rangeIntersectsSlot(range)) {
         pendingHistoryType = inputType;
-        pendingBeforeCursor = captureSelectionSnapshot();
-      } else if (
+        captureIfNeeded();
+        return;
+      }
+      if (
         inputType === "insertText" &&
         range.collapsed &&
         slotDomMap.value.size > 0
@@ -1348,11 +1452,23 @@ export default defineComponent({
         const info = outer ? getNodeInfo(outer as HTMLElement) : null;
         if (info?.slotConfig?.type === "content") {
           pendingHistoryType = "insertText";
-          pendingBeforeCursor = captureSelectionSnapshot();
+          captureIfNeeded();
+          return;
         }
       }
+      // Plain text ops in slot-mode: capture history so undo returns to correct offset
+      // include insertText, insertFromPaste, delete*, insert* even when no slot intersect
+      if (
+        slotDomMap.value.size > 0 &&
+        (inputType === "insertText" ||
+          inputType === "insertFromPaste" ||
+          inputType.startsWith("delete") ||
+          inputType.startsWith("insert"))
+      ) {
+        pendingHistoryType = inputType;
+        captureIfNeeded();
+      }
     };
-
     const onInternalCut = (event: ClipboardEvent) => {
       // Cut with slot selection is handled as delete with history (push after)
       if (handleSelectionDelete(event as unknown as InputEvent)) return;
@@ -1477,11 +1593,9 @@ export default defineComponent({
       removeSpecificBRs();
       normalizeSkillTextInput();
       triggerValueChange(event);
-      // 全量快照：若 beforeinput 标记了需记录的 slot 相关输入，在此处推入（操作后）
       if (pendingHistoryType) {
         const t = pendingHistoryType;
         pendingHistoryType = null;
-        // typing over slot 是 insertText 且可分组，其余强制新组
         const forceNew = t !== "insertText";
         pushHistory(t, forceNew);
       }
@@ -1498,7 +1612,8 @@ export default defineComponent({
       }
 
       if (text) {
-        pendingBeforeCursor = captureSelectionSnapshot();
+        if (!pendingBeforeCursor)
+          pendingBeforeCursor = captureSelectionSnapshot();
         const cleanedText = getCleanedText(text);
         let success = false;
         try {
@@ -1517,18 +1632,19 @@ export default defineComponent({
             range.collapse(true);
             selection.removeAllRanges();
             selection.addRange(range);
+            triggerValueChange(event as unknown as Event);
+            pushHistory("insertFromPaste", true);
+            pendingBeforeCursor = null;
+            pendingHistoryType = null;
           }
+        } else {
+          // execCommand succeeded -> will fire input -> onInternalInput will push
+          // mark pending so input knows it's paste (avoids grouping as insertText)
+          pendingHistoryType = "insertFromPaste";
         }
       }
-
-      onInternalInput(event);
-      // 全量快照：粘贴后推入，Ctrl+Z 直接 pop 恢复
-      pushHistory("insertFromPaste", true);
-      // 清除 beforeinput 的 pending，避免双推
-      pendingHistoryType = null;
       senderCtx.value.onPaste?.(event);
     };
-
     const onInternalSelect = () => {
       const selection = getSelection();
       const editable = editableRef.value;
