@@ -23,7 +23,15 @@ export default defineConfig({
     minify: true,
     sourcemap: false,
     rolldownOptions: {
-      external: ["vue"],
+      // The browser entry is consumed through an import map. Keep the large
+      // peer UI packages external so they are shared with the host app.
+      external: [
+        "vue",
+        "antdv-next",
+        /^antdv-next\//,
+        "@antdv-next/icons",
+        /^@antdv-next\/icons\//,
+      ],
     },
     emptyOutDir: true,
     lib: {
