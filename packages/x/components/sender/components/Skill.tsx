@@ -55,8 +55,25 @@ export default defineComponent({
             if (event.key === "Enter" || event.key === " ") {
               event.preventDefault();
               event.stopPropagation();
-              props.removeSkill();
-              config.onClose?.(event as unknown as MouseEvent);
+              const closeElement = event.currentTarget;
+              if (closeElement instanceof HTMLElement) {
+                closeElement.dispatchEvent(
+                  new MouseEvent("click", {
+                    bubbles: true,
+                    cancelable: true,
+                    view: event.view,
+                    detail: 1,
+                    button: 0,
+                    buttons: 0,
+                    clientX: 0,
+                    clientY: 0,
+                    ctrlKey: event.ctrlKey,
+                    altKey: event.altKey,
+                    shiftKey: event.shiftKey,
+                    metaKey: event.metaKey,
+                  }),
+                );
+              }
             }
           }}
         >

@@ -249,12 +249,8 @@ export default defineComponent({
     let isManagedHistoryActive = false;
     let pendingHistoryType: string | null = null; // beforeinput 标记，input 后推入
     let pendingBeforeCursor: SelectionSnapshot | null = null; // 操作前的光标，撤销应回到此处而非操作后
-    let pendingEmittedSlotConfig: readonly SlotConfigType[] | null = null;
-    let pendingEmittedSkill: SkillType | undefined;
-    let hasPendingSlotConfigEcho = false;
-    let hasPendingSkillEcho = false;
-    let emittedChangeVersion = 0;
-    let pendingEchoTimeout: number | null = null;
+    const pendingEmittedSlotConfigs: SlotConfigType[][] = [];
+    const pendingEmittedSkills: (SkillType | undefined)[] = [];
     let historyInitVersion = 0;
     const MAX_HISTORY = 50;
     const GROUP_MS = 500;
@@ -788,29 +784,20 @@ export default defineComponent({
 
     const triggerValueChange = (event?: Event) => {
       const value = getEditorValue();
-      const changeVersion = ++emittedChangeVersion;
-      pendingEmittedSlotConfig = value.slotConfig;
-      pendingEmittedSkill = value.skill;
-      hasPendingSlotConfigEcho = true;
-      hasPendingSkillEcho = true;
+      pendingEmittedSlotConfigs.push(value.slotConfig);
+      pendingEmittedSkills.push(value.skill);
+      if (pendingEmittedSlotConfigs.length > 20) {
+        pendingEmittedSlotConfigs.shift();
+      }
+      if (pendingEmittedSkills.length > 20) {
+        pendingEmittedSkills.shift();
+      }
       senderCtx.value.onChange?.(
         value.value,
         event,
         value.slotConfig,
         value.skill,
       );
-      if (pendingEchoTimeout !== null) {
-        globalThis.clearTimeout(pendingEchoTimeout);
-        pendingEchoTimeout = null;
-      }
-      pendingEchoTimeout = globalThis.setTimeout(() => {
-        pendingEchoTimeout = null;
-        if (changeVersion !== emittedChangeVersion) return;
-        hasPendingSlotConfigEcho = false;
-        hasPendingSkillEcho = false;
-        pendingEmittedSlotConfig = null;
-        pendingEmittedSkill = undefined;
-      }, 0) as unknown as number;
       updateSkillEmptyStatus(value);
       updateSubmitDisabled();
     };
@@ -1906,17 +1893,13 @@ export default defineComponent({
             range.collapse(true);
             selection.removeAllRanges();
             selection.addRange(range);
-            triggerValueChange(event as unknown as Event);
-            pushHistory("insertFromPaste", true);
-            pendingBeforeCursor = null;
-            pendingHistoryType = null;
+            onInternalInput(event);
           }
         } else {
           // Some browsers do not dispatch input for execCommand. Save immediately
           // when the synchronous input handler did not consume the marker.
           if (pendingHistoryType === "insertFromPaste") {
-            triggerValueChange(event as unknown as Event);
-            pushHistory("insertFromPaste", true);
+            onInternalInput(event);
           }
         }
       }
@@ -2092,10 +2075,23 @@ export default defineComponent({
 
     const isEmittedSlotConfig = (
       configs: readonly SlotConfigType[] | undefined,
-    ) =>
-      hasPendingSlotConfigEcho &&
-      !!pendingEmittedSlotConfig &&
-      isEquivalentValue(configs, pendingEmittedSlotConfig);
+    ) => {
+      const index = pendingEmittedSlotConfigs.findIndex(config =>
+        isEquivalentValue(configs, config),
+      );
+      if (index < 0) return false;
+      pendingEmittedSlotConfigs.splice(index, 1);
+      return true;
+    };
+
+    const isEmittedSkill = (skill: SkillType | undefined) => {
+      const index = pendingEmittedSkills.findIndex(pendingSkill =>
+        isEquivalentValue(skill, pendingSkill),
+      );
+      if (index < 0) return false;
+      pendingEmittedSkills.splice(index, 1);
+      return true;
+    };
 
     const initHistoryStack = () => {
       const initVersion = ++historyInitVersion;
@@ -2127,8 +2123,6 @@ export default defineComponent({
       configs => {
         if (isEmittedSlotConfig(configs)) {
           lastSlotConfigRef.value = configs;
-          hasPendingSlotConfigEcho = false;
-          pendingEmittedSlotConfig = null;
           return;
         }
         if (isRestoringHistory) {
@@ -2136,6 +2130,7 @@ export default defineComponent({
           return;
         }
         // Reset is a new baseline - clear history unless it's from undo/redo restore
+        pendingEmittedSlotConfigs.length = 0;
         applySlotConfig(configs);
         initHistoryStack();
       },
@@ -2145,13 +2140,8 @@ export default defineComponent({
     watch(
       () => senderCtx.value.skill,
       skill => {
-        if (
-          hasPendingSkillEcho &&
-          isEquivalentValue(skill, pendingEmittedSkill)
-        ) {
+        if (isEmittedSkill(skill)) {
           lastSkillRef.value = skill;
-          hasPendingSkillEcho = false;
-          pendingEmittedSkill = undefined;
           return;
         }
         if (isRestoringHistory) {
@@ -2161,6 +2151,7 @@ export default defineComponent({
         if (skill === lastSkillRef.value && skillDomRef.value) {
           return;
         }
+        pendingEmittedSkills.length = 0;
         lastSkillRef.value = skill;
         renderSkill();
         initHistoryStack();
@@ -2196,10 +2187,6 @@ export default defineComponent({
     );
 
     onBeforeUnmount(() => {
-      if (pendingEchoTimeout !== null) {
-        globalThis.clearTimeout(pendingEchoTimeout);
-        pendingEchoTimeout = null;
-      }
       pendingHistoryType = null;
       pendingBeforeCursor = null;
       unmountAllPortals();

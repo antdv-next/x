@@ -1540,6 +1540,79 @@ describe("Sender", () => {
     host.remove();
   });
 
+  it("should preserve history for delayed controlled slotConfig echoes", async () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    let wrapper: ReturnType<typeof mount>;
+    let syncControlledValue = false;
+    const onChange = vi.fn(
+      (
+        _value: string,
+        _event: Event | undefined,
+        nextSlotConfig: SlotConfigType[] | undefined,
+      ) => {
+        if (wrapper && syncControlledValue) {
+          globalThis.setTimeout(() => {
+            void wrapper.setProps({
+              slotConfig: nextSlotConfig?.map(config => ({
+                ...config,
+                ...(config.type !== "text" && config.props
+                  ? { props: { ...config.props } }
+                  : {}),
+              })),
+            });
+          }, 10);
+        }
+      },
+    );
+    wrapper = mount(Sender, {
+      attachTo: host,
+      props: {
+        slotConfig: [
+          {
+            type: "tag",
+            key: "tag",
+            props: { label: "Slot", value: "slot" },
+          },
+        ],
+        onChange,
+      },
+    });
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+    syncControlledValue = true;
+
+    const editable = wrapper.find(".antd-sender-input-slot");
+    const selection = window.getSelection();
+    const range = document.createRange();
+    range.selectNodeContents(editable.element);
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+    await editable.trigger("keydown", { key: "Backspace" });
+    await new Promise(resolve => globalThis.setTimeout(resolve, 20));
+    await wrapper.vm.$nextTick();
+    expect((wrapper.vm as any).getValue().slotConfig).toEqual([]);
+
+    await editable.trigger("keydown", { ctrlKey: true, key: "z" });
+    await wrapper.vm.$nextTick();
+    expect((wrapper.vm as any).getValue().slotConfig).toEqual([
+      expect.objectContaining({ key: "tag" }),
+    ]);
+    await new Promise(resolve => globalThis.setTimeout(resolve, 20));
+    await wrapper.vm.$nextTick();
+
+    await editable.trigger("keydown", {
+      ctrlKey: true,
+      key: "z",
+      shiftKey: true,
+    });
+    await wrapper.vm.$nextTick();
+    expect((wrapper.vm as any).getValue().slotConfig).toEqual([]);
+
+    wrapper.unmount();
+    host.remove();
+  });
+
   it("should record composition input in managed history", async () => {
     const host = document.createElement("div");
     document.body.appendChild(host);
@@ -1715,9 +1788,11 @@ describe("Sender", () => {
         nextSkill: SkillType | undefined,
       ) => {
         if (wrapper && syncControlledValue) {
-          void wrapper.setProps({
-            skill: nextSkill ? { ...nextSkill } : undefined,
-          });
+          globalThis.setTimeout(() => {
+            void wrapper.setProps({
+              skill: nextSkill ? { ...nextSkill } : undefined,
+            });
+          }, 10);
         }
       },
     );
@@ -1742,6 +1817,7 @@ describe("Sender", () => {
     const editable = wrapper.find(".antd-sender-input-slot");
     await editable.trigger("keydown", { ctrlKey: true, key: "z" });
     await wrapper.vm.$nextTick();
+    await new Promise(resolve => globalThis.setTimeout(resolve, 20));
     await wrapper.vm.$nextTick();
 
     expect((wrapper.vm as any).getValue().skill).toEqual(
@@ -1753,6 +1829,8 @@ describe("Sender", () => {
       key: "z",
       shiftKey: true,
     });
+    await wrapper.vm.$nextTick();
+    await new Promise(resolve => globalThis.setTimeout(resolve, 20));
     await wrapper.vm.$nextTick();
     expect((wrapper.vm as any).getValue().skill).toBeUndefined();
 
@@ -1862,6 +1940,76 @@ describe("Sender", () => {
     await wrapper.vm.$nextTick();
     expect((wrapper.vm as any).getValue().value).toContain("a");
     expect((wrapper.vm as any).getValue().value).not.toContain("paste");
+
+    if (originalExecCommandDescriptor) {
+      Object.defineProperty(
+        document,
+        "execCommand",
+        originalExecCommandDescriptor,
+      );
+    } else {
+      Reflect.deleteProperty(document, "execCommand");
+    }
+    wrapper.unmount();
+    host.remove();
+  });
+
+  it("should normalize fallback paste text typed in the skill placeholder", async () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const wrapper = mount(Sender, {
+      attachTo: host,
+      props: {
+        skill: {
+          value: "translate",
+          title: "Translate",
+          closable: true,
+        },
+        slotConfig: [],
+      },
+    });
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+
+    const editable = wrapper.find(".antd-sender-input-slot");
+    const skillNode = wrapper.find(".antd-sender-skill");
+    const skillText = document.createTextNode("");
+    skillNode.element.appendChild(skillText);
+    const selection = window.getSelection();
+    const range = document.createRange();
+    range.setStart(skillText, 0);
+    range.collapse(true);
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+
+    const originalExecCommandDescriptor = Object.getOwnPropertyDescriptor(
+      document,
+      "execCommand",
+    );
+    Object.defineProperty(document, "execCommand", {
+      configurable: true,
+      value: vi.fn(() => false),
+    });
+    const pasteEvent = new Event("paste", {
+      bubbles: true,
+      cancelable: true,
+    });
+    Object.defineProperty(pasteEvent, "clipboardData", {
+      value: {
+        files: [],
+        getData: (type: string) => (type === "text/plain" ? "pasted" : ""),
+      },
+    });
+
+    editable.element.dispatchEvent(pasteEvent);
+    expect((wrapper.vm as any).getValue().value).toBe("pasted");
+
+    await editable.trigger("keydown", { ctrlKey: true, key: "z" });
+    await wrapper.vm.$nextTick();
+    expect((wrapper.vm as any).getValue().value).toBe("");
+    expect((wrapper.vm as any).getValue().skill).toEqual(
+      expect.objectContaining({ value: "translate" }),
+    );
 
     if (originalExecCommandDescriptor) {
       Object.defineProperty(
@@ -2112,6 +2260,39 @@ describe("Sender", () => {
     );
     await wrapper.vm.$nextTick();
     expect(onClose).not.toHaveBeenCalled();
+    wrapper.unmount();
+    host.remove();
+  });
+
+  it("should pass a MouseEvent to onClose for keyboard activation", async () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const onClose = vi.fn();
+    const wrapper = mount(Sender, {
+      attachTo: host,
+      props: {
+        skill: {
+          value: "s",
+          title: "S",
+          closable: { closeIcon: "x", onClose },
+        } as SkillType,
+      },
+    });
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+
+    const close = wrapper.find(".antd-sender-skill-close");
+    await close.trigger("keydown", { key: "Enter" });
+    await wrapper.vm.$nextTick();
+
+    expect(onClose).toHaveBeenCalledOnce();
+    const closeEvent = onClose.mock.calls[0]![0] as MouseEvent;
+    expect(closeEvent).toBeInstanceOf(MouseEvent);
+    expect(closeEvent.button).toBe(0);
+    expect(closeEvent.clientX).toBe(0);
+    expect(closeEvent.target).toBe(close.element);
+    expect((wrapper.vm as any).getValue().skill).toBeUndefined();
+
     wrapper.unmount();
     host.remove();
   });
