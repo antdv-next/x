@@ -249,8 +249,20 @@ export default defineComponent({
     let isManagedHistoryActive = false;
     let pendingHistoryType: string | null = null; // beforeinput 标记，input 后推入
     let pendingBeforeCursor: SelectionSnapshot | null = null; // 操作前的光标，撤销应回到此处而非操作后
-    const pendingEmittedSlotConfigs: SlotConfigType[][] = [];
-    const pendingEmittedSkills: (SkillType | undefined)[] = [];
+    type PendingEcho<T> = {
+      value: T;
+      emittedAt: number;
+      origin: "local" | "sync";
+    };
+    // Controlled parents normally echo onChange values in emission order.
+    // Match only the next pending operation and expire abandoned echoes so a
+    // later external value cannot accidentally match old emitted content.
+    const PENDING_ECHO_TTL = 5000;
+    const MAX_PENDING_ECHOES = 20;
+    const pendingEmittedSlotConfigs: PendingEcho<
+      readonly SlotConfigType[] | undefined
+    >[] = [];
+    const pendingEmittedSkills: PendingEcho<SkillType | undefined>[] = [];
     let historyInitVersion = 0;
     const MAX_HISTORY = 50;
     const GROUP_MS = 500;
@@ -782,16 +794,42 @@ export default defineComponent({
       );
     };
 
-    const triggerValueChange = (event?: Event) => {
+    const recordPendingEcho = <T,>(
+      queue: PendingEcho<T>[],
+      value: T,
+      emittedAt: number,
+      origin: "local" | "sync",
+    ) => {
+      if (origin === "sync") {
+        queue.splice(0, queue.length, { value, emittedAt, origin });
+        return;
+      }
+      // A real edit supersedes an unacknowledged prop-synchronization echo.
+      for (let index = queue.length - 1; index >= 0; index--) {
+        if (queue[index]?.origin === "sync") queue.splice(index, 1);
+      }
+      queue.push({ value, emittedAt, origin });
+      if (queue.length > MAX_PENDING_ECHOES) queue.shift();
+    };
+
+    const triggerValueChange = (
+      event?: Event,
+      echoOrigin: "local" | "sync" = "local",
+    ) => {
       const value = getEditorValue();
-      pendingEmittedSlotConfigs.push(value.slotConfig);
-      pendingEmittedSkills.push(value.skill);
-      if (pendingEmittedSlotConfigs.length > 20) {
-        pendingEmittedSlotConfigs.shift();
-      }
-      if (pendingEmittedSkills.length > 20) {
-        pendingEmittedSkills.shift();
-      }
+      const emittedAt = Date.now();
+      recordPendingEcho(
+        pendingEmittedSlotConfigs,
+        value.slotConfig,
+        emittedAt,
+        echoOrigin,
+      );
+      recordPendingEcho(
+        pendingEmittedSkills,
+        value.skill,
+        emittedAt,
+        echoOrigin,
+      );
       senderCtx.value.onChange?.(
         value.value,
         event,
@@ -1224,7 +1262,7 @@ export default defineComponent({
 
       renderSkill();
       void nextTick(() => {
-        triggerValueChange();
+        triggerValueChange(undefined, "sync");
       });
     };
 
@@ -2076,20 +2114,30 @@ export default defineComponent({
     const isEmittedSlotConfig = (
       configs: readonly SlotConfigType[] | undefined,
     ) => {
-      const index = pendingEmittedSlotConfigs.findIndex(config =>
-        isEquivalentValue(configs, config),
-      );
-      if (index < 0) return false;
-      pendingEmittedSlotConfigs.splice(index, 1);
+      while (
+        pendingEmittedSlotConfigs[0] &&
+        Date.now() - pendingEmittedSlotConfigs[0].emittedAt > PENDING_ECHO_TTL
+      ) {
+        pendingEmittedSlotConfigs.shift();
+      }
+      const pending = pendingEmittedSlotConfigs[0];
+      if (!pending) return false;
+      if (!isEquivalentValue(configs, pending.value)) return false;
+      pendingEmittedSlotConfigs.shift();
       return true;
     };
 
     const isEmittedSkill = (skill: SkillType | undefined) => {
-      const index = pendingEmittedSkills.findIndex(pendingSkill =>
-        isEquivalentValue(skill, pendingSkill),
-      );
-      if (index < 0) return false;
-      pendingEmittedSkills.splice(index, 1);
+      while (
+        pendingEmittedSkills[0] &&
+        Date.now() - pendingEmittedSkills[0].emittedAt > PENDING_ECHO_TTL
+      ) {
+        pendingEmittedSkills.shift();
+      }
+      const pending = pendingEmittedSkills[0];
+      if (!pending) return false;
+      if (!isEquivalentValue(skill, pending.value)) return false;
+      pendingEmittedSkills.shift();
       return true;
     };
 
@@ -2156,7 +2204,7 @@ export default defineComponent({
         renderSkill();
         initHistoryStack();
         void nextTick(() => {
-          triggerValueChange();
+          triggerValueChange(undefined, "sync");
         });
       },
       { immediate: true },

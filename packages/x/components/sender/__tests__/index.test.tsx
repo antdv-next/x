@@ -1613,6 +1613,57 @@ describe("Sender", () => {
     host.remove();
   });
 
+  it("should apply an out-of-order controlled slotConfig update", async () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const initialSlot: SlotConfigType = {
+      type: "tag",
+      key: "tag",
+      props: { label: "Slot", value: "slot" },
+    };
+    const wrapper = mount(Sender, {
+      attachTo: host,
+      props: { slotConfig: [initialSlot] },
+    });
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+
+    const editable = wrapper.find(".antd-sender-input-slot");
+    const selection = window.getSelection();
+    const range = document.createRange();
+    range.selectNodeContents(editable.element);
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+
+    await editable.trigger("keydown", { key: "Backspace" });
+    await editable.trigger("keydown", { ctrlKey: true, key: "z" });
+    await wrapper.vm.$nextTick();
+    await editable.trigger("keydown", {
+      ctrlKey: true,
+      key: "z",
+      shiftKey: true,
+    });
+    await wrapper.vm.$nextTick();
+
+    // This is an older controlled value arriving after a newer local change.
+    await wrapper.setProps({
+      slotConfig: [
+        {
+          ...initialSlot,
+          props: { label: "Slot", value: "slot" },
+        },
+      ],
+    });
+    await wrapper.vm.$nextTick();
+
+    expect((wrapper.vm as any).getValue().slotConfig).toEqual([
+      expect.objectContaining({ key: "tag", type: "tag" }),
+    ]);
+
+    wrapper.unmount();
+    host.remove();
+  });
+
   it("should record composition input in managed history", async () => {
     const host = document.createElement("div");
     document.body.appendChild(host);
