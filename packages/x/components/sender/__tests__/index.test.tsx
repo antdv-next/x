@@ -1613,6 +1613,78 @@ describe("Sender", () => {
     host.remove();
   });
 
+  it("should preserve history when controlled slotConfig echoes are coalesced", async () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    let wrapper: ReturnType<typeof mount>;
+    let syncControlledValue = false;
+    let pendingTimer: ReturnType<typeof globalThis.setTimeout> | undefined;
+    const onChange = vi.fn(
+      (
+        _value: string,
+        _event: Event | undefined,
+        nextSlotConfig: SlotConfigType[] | undefined,
+      ) => {
+        if (!wrapper || !syncControlledValue) return;
+        if (pendingTimer) globalThis.clearTimeout(pendingTimer);
+        pendingTimer = globalThis.setTimeout(() => {
+          void wrapper.setProps({
+            slotConfig: nextSlotConfig?.map(config => ({
+              ...config,
+              ...(config.type !== "text" && config.props
+                ? { props: { ...config.props } }
+                : {}),
+            })),
+          });
+        }, 10);
+      },
+    );
+    wrapper = mount(Sender, {
+      attachTo: host,
+      props: {
+        slotConfig: [
+          {
+            type: "tag",
+            key: "tag",
+            props: { label: "Slot", value: "slot" },
+          },
+        ],
+        onChange,
+      },
+    });
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+    syncControlledValue = true;
+
+    const editable = wrapper.find(".antd-sender-input-slot");
+    const selection = window.getSelection();
+    const range = document.createRange();
+    range.selectNodeContents(editable.element);
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+
+    await editable.trigger("keydown", { key: "Backspace" });
+    await editable.trigger("keydown", { ctrlKey: true, key: "z" });
+    await new Promise(resolve => globalThis.setTimeout(resolve, 20));
+    await wrapper.vm.$nextTick();
+
+    expect((wrapper.vm as any).getValue().slotConfig).toEqual([
+      expect.objectContaining({ key: "tag" }),
+    ]);
+
+    await editable.trigger("keydown", {
+      ctrlKey: true,
+      key: "z",
+      shiftKey: true,
+    });
+    await wrapper.vm.$nextTick();
+    expect((wrapper.vm as any).getValue().slotConfig).toEqual([]);
+
+    if (pendingTimer) globalThis.clearTimeout(pendingTimer);
+    wrapper.unmount();
+    host.remove();
+  });
+
   it("should apply an out-of-order controlled slotConfig update", async () => {
     const host = document.createElement("div");
     document.body.appendChild(host);

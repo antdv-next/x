@@ -2111,35 +2111,34 @@ export default defineComponent({
       initFromSlotConfig(configs);
     };
 
-    const isEmittedSlotConfig = (
-      configs: readonly SlotConfigType[] | undefined,
-    ) => {
-      while (
-        pendingEmittedSlotConfigs[0] &&
-        Date.now() - pendingEmittedSlotConfigs[0].emittedAt > PENDING_ECHO_TTL
-      ) {
-        pendingEmittedSlotConfigs.shift();
+    const consumePendingEcho = <T,>(queue: PendingEcho<T>[], value: T) => {
+      while (queue[0] && Date.now() - queue[0].emittedAt > PENDING_ECHO_TTL) {
+        queue.shift();
       }
-      const pending = pendingEmittedSlotConfigs[0];
-      if (!pending) return false;
-      if (!isEquivalentValue(configs, pending.value)) return false;
-      pendingEmittedSlotConfigs.shift();
+
+      if (queue.length === 0) return false;
+      const lastIndex = queue.length - 1;
+      let matchIndex = -1;
+      // Preserve ordinary delayed echoes in FIFO order.
+      if (isEquivalentValue(value, queue[0]!.value)) {
+        matchIndex = 0;
+      } else if (isEquivalentValue(value, queue[lastIndex]!.value)) {
+        // A debounced parent may echo only the newest operation. Consume the
+        // skipped intermediate echoes together, but never match an older
+        // value while newer local operations are still pending.
+        matchIndex = lastIndex;
+      }
+      if (matchIndex < 0) return false;
+      queue.splice(0, matchIndex + 1);
       return true;
     };
 
-    const isEmittedSkill = (skill: SkillType | undefined) => {
-      while (
-        pendingEmittedSkills[0] &&
-        Date.now() - pendingEmittedSkills[0].emittedAt > PENDING_ECHO_TTL
-      ) {
-        pendingEmittedSkills.shift();
-      }
-      const pending = pendingEmittedSkills[0];
-      if (!pending) return false;
-      if (!isEquivalentValue(skill, pending.value)) return false;
-      pendingEmittedSkills.shift();
-      return true;
-    };
+    const isEmittedSlotConfig = (
+      configs: readonly SlotConfigType[] | undefined,
+    ) => consumePendingEcho(pendingEmittedSlotConfigs, configs);
+
+    const isEmittedSkill = (skill: SkillType | undefined) =>
+      consumePendingEcho(pendingEmittedSkills, skill);
 
     const initHistoryStack = () => {
       const initVersion = ++historyInitVersion;
