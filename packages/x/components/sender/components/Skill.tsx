@@ -29,7 +29,7 @@ export default defineComponent({
       if (!closable) return null;
 
       const config = typeof closable === "boolean" ? {} : closable;
-      const disabled = props.disabled || config.disabled;
+      const disabled = !!(props.disabled || config.disabled);
       const closeIcon = config.closeIcon ?? (
         <CloseOutlined class={`${componentCls.value}-close-icon`} />
       );
@@ -45,10 +45,19 @@ export default defineComponent({
           aria-disabled={disabled}
           tabindex={disabled ? -1 : 0}
           onClick={(event: MouseEvent) => {
-            if (disabled) return;
             event.stopPropagation();
+            if (disabled) return;
             props.removeSkill();
             config.onClose?.(event);
+          }}
+          onKeydown={(event: KeyboardEvent) => {
+            if (disabled) return;
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              event.stopPropagation();
+              props.removeSkill();
+              config.onClose?.(event as unknown as MouseEvent);
+            }
           }}
         >
           {closeIcon}

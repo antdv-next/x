@@ -93,8 +93,11 @@ function isEquivalentValue(
   ) {
     return false;
   }
-  if (seen.get(rawLeft) === rawRight) return true;
-  seen.set(rawLeft, rawRight);
+  // bidirectional cycle check
+  if (seen.get(rawLeft as object) === rawRight) return true;
+  if (seen.get(rawRight as object) === rawLeft) return true;
+  seen.set(rawLeft as object, rawRight as object);
+  seen.set(rawRight as object, rawLeft as object);
 
   if (Array.isArray(rawLeft) || Array.isArray(rawRight)) {
     return (
@@ -107,6 +110,72 @@ function isEquivalentValue(
     );
   }
 
+  // Date
+  if (rawLeft instanceof Date || rawRight instanceof Date) {
+    return (
+      rawLeft instanceof Date &&
+      rawRight instanceof Date &&
+      rawLeft.getTime() === rawRight.getTime()
+    );
+  }
+  // RegExp
+  if (rawLeft instanceof RegExp || rawRight instanceof RegExp) {
+    return (
+      rawLeft instanceof RegExp &&
+      rawRight instanceof RegExp &&
+      rawLeft.source === rawRight.source &&
+      rawLeft.flags === rawRight.flags
+    );
+  }
+  // Map
+  if (rawLeft instanceof Map || rawRight instanceof Map) {
+    if (!(rawLeft instanceof Map && rawRight instanceof Map)) return false;
+    if (rawLeft.size !== rawRight.size) return false;
+    for (const [k, v] of rawLeft as Map<unknown, unknown>) {
+      // try direct key, fallback to deep key search
+      if ((rawRight as Map<unknown, unknown>).has(k)) {
+        if (
+          !isEquivalentValue(
+            v,
+            (rawRight as Map<unknown, unknown>).get(k),
+            seen,
+          )
+        )
+          return false;
+      } else {
+        let found = false;
+        for (const [rk, rv] of rawRight as Map<unknown, unknown>) {
+          if (
+            isEquivalentValue(k, rk, seen) &&
+            isEquivalentValue(v, rv, seen)
+          ) {
+            found = true;
+            break;
+          }
+        }
+        if (!found) return false;
+      }
+    }
+    return true;
+  }
+  // Set
+  if (rawLeft instanceof Set || rawRight instanceof Set) {
+    if (!(rawLeft instanceof Set && rawRight instanceof Set)) return false;
+    if ((rawLeft as Set<unknown>).size !== (rawRight as Set<unknown>).size)
+      return false;
+    for (const v of rawLeft as Set<unknown>) {
+      let has = false;
+      for (const rv of rawRight as Set<unknown>) {
+        if (isEquivalentValue(v, rv, seen)) {
+          has = true;
+          break;
+        }
+      }
+      if (!has) return false;
+    }
+    return true;
+  }
+
   const leftPrototype = Object.getPrototypeOf(rawLeft);
   const rightPrototype = Object.getPrototypeOf(rawRight);
   if (
@@ -116,19 +185,23 @@ function isEquivalentValue(
     return false;
   }
 
-  const leftKeys = Object.keys(rawLeft);
-  const rightKeys = Object.keys(rawRight);
-  return (
-    leftKeys.length === rightKeys.length &&
-    leftKeys.every(
-      key =>
-        Object.prototype.hasOwnProperty.call(rawRight, key) &&
-        isEquivalentValue(
-          (rawLeft as Record<string, unknown>)[key],
-          (rawRight as Record<string, unknown>)[key],
-          seen,
-        ),
-    )
+  const leftKeys: (string | symbol)[] = [
+    ...Object.keys(rawLeft as object),
+    ...Object.getOwnPropertySymbols(rawLeft as object),
+  ];
+  const rightKeys: (string | symbol)[] = [
+    ...Object.keys(rawRight as object),
+    ...Object.getOwnPropertySymbols(rawRight as object),
+  ];
+  if (leftKeys.length !== rightKeys.length) return false;
+  return leftKeys.every(
+    key =>
+      Object.prototype.hasOwnProperty.call(rawRight as object, key) &&
+      isEquivalentValue(
+        (rawLeft as Record<string | symbol, unknown>)[key as string],
+        (rawRight as Record<string | symbol, unknown>)[key as string],
+        seen,
+      ),
   );
 }
 
@@ -181,10 +254,10 @@ export default defineComponent({
     let hasPendingSlotConfigEcho = false;
     let hasPendingSkillEcho = false;
     let emittedChangeVersion = 0;
+    let pendingEchoTimeout: number | null = null;
     let historyInitVersion = 0;
     const MAX_HISTORY = 50;
     const GROUP_MS = 500;
-
     const getCleanedText = (ori: string) => ori.replace(/\u200B/g, "");
 
     const getNodePath = (node: Node, root: HTMLElement): number[] => {
@@ -216,18 +289,18 @@ export default defineComponent({
       let cur: Node = root;
       for (let i = 0; i < path.length; i++) {
         const idx = path[i]!;
+        if (cur.childNodes.length === 0)
+          return { node: cur, offsetInNode: true };
         if (!cur.childNodes[idx]) {
-          // clamp to nearest valid child or stay at cur
-          if (cur.childNodes.length === 0)
-            return { node: cur, offsetInNode: true };
           const clampedIdx = Math.min(idx, cur.childNodes.length - 1);
           const clamped = cur.childNodes[clampedIdx] as Node;
-          // if remaining depth, try to drill into clamped's last descendant
+          // clamp remaining depth step-by-step instead of drilling to deepest last child
           let deep: Node = clamped;
-          // descend to deepest last child for remaining depth
           for (let j = i + 1; j < path.length; j++) {
             if (deep.childNodes.length === 0) break;
-            deep = deep.childNodes[deep.childNodes.length - 1] as Node;
+            const jIdx = path[j]!;
+            const clampedJ = Math.min(jIdx, deep.childNodes.length - 1);
+            deep = deep.childNodes[clampedJ] as Node;
           }
           return { node: deep, offsetInNode: false };
         }
@@ -292,6 +365,19 @@ export default defineComponent({
         }
       };
       if (tryDirect()) return;
+      // editable-level cursor must be restored at editable regardless of clamped node
+      if (cursor.startPath.length === 0) {
+        try {
+          const off = Math.min(cursor.startOffset, editable.childNodes.length);
+          const range = document.createRange();
+          range.setStart(editable, off);
+          range.collapse(true);
+          sel.removeAllRanges();
+          sel.addRange(range);
+          editable.focus();
+          return;
+        } catch {}
+      }
       // Fallback: clamp path to nearest valid node (survives rebuild where slot count changed)
       const startClamped = getClampedNodeByPath(editable, cursor.startPath);
       const endClamped = getClampedNodeByPath(editable, cursor.endPath);
@@ -307,7 +393,6 @@ export default defineComponent({
           };
           const sNode = startClamped.node;
           const eNode = endClamped.node ?? sNode;
-          // if clamping went to element, prefer element offset
           const sOff =
             sNode.nodeType === Node.TEXT_NODE
               ? clamp(sNode, cursor.startOffset)
@@ -316,40 +401,15 @@ export default defineComponent({
             eNode.nodeType === Node.TEXT_NODE
               ? clamp(eNode, cursor.endOffset)
               : Math.min(cursor.endOffset, eNode.childNodes.length);
-          // for element-level cursor (startPath []), clamped node is deepest last child, but offset should be applied at editable level
-          // detect editable-level cursor: empty path means editable offset
-          if (cursor.startPath.length === 0 && sNode !== editable) {
-            const off = Math.min(
-              cursor.startOffset,
-              editable.childNodes.length,
-            );
-            range.setStart(editable, off);
-            range.collapse(true);
-          } else {
-            range.setStart(sNode, sOff);
-            if (!cursor.collapsed) range.setEnd(eNode, eOff);
-            else range.collapse(true);
-          }
+          range.setStart(sNode, sOff);
+          if (!cursor.collapsed) range.setEnd(eNode, eOff);
+          else range.collapse(true);
           sel.removeAllRanges();
           sel.addRange(range);
           editable.focus();
           return;
         } catch {}
       }
-      // Last resort: try to place at editable child index derived from original offset
-      try {
-        const editableLen = editable.childNodes.length;
-        const off = Math.min(cursor.startOffset, editableLen);
-        const range = document.createRange();
-        if (cursor.startPath.length === 0) {
-          range.setStart(editable, off);
-          range.collapse(true);
-          sel.removeAllRanges();
-          sel.addRange(range);
-          editable.focus();
-          return;
-        }
-      } catch {}
       setEndCursor();
     };
     const captureSnapshot = (
@@ -407,8 +467,15 @@ export default defineComponent({
       const snap = captureSnapshot(inputType);
       snap.beforeCursor = pendingBeforeCursor;
       pendingBeforeCursor = null;
-      // 分组：500ms 内连续 insertText 覆盖栈顶，不产生新条目，且保留组首的 beforeCursor
       const last = historyStack[historyIndex];
+      // dedup: skip identical snapshots (e.g. IME recomposition no-op) — but never skip composition which must be recorded
+      const isSameContent =
+        inputType !== "insertCompositionText" &&
+        !!last &&
+        isEquivalentValue(snap.slotConfigs, last.slotConfigs) &&
+        isEquivalentValue(snap.slotValues, last.slotValues) &&
+        isEquivalentValue(snap.skill, last.skill);
+      // 分组：500ms 内连续 insertText 覆盖栈顶，不产生新条目，且保留组首的 beforeCursor
       const canGroup =
         !forceNewGroup &&
         last &&
@@ -416,10 +483,20 @@ export default defineComponent({
         inputType === "insertText" &&
         now - last.t < GROUP_MS;
       if (canGroup) {
+        if (isSameContent) {
+          last.cursor = snap.cursor;
+          last.t = snap.t;
+          pendingHistoryType = null;
+          return;
+        }
         // 保留组首的 beforeCursor（首次输入前），cursor 保持为当前 after
         snap.beforeCursor = last.beforeCursor;
         historyStack[historyIndex] = snap;
       } else {
+        if (isSameContent) {
+          pendingHistoryType = null;
+          return;
+        }
         // 丢弃 redo 分支，追加新快照
         historyStack = historyStack.slice(0, historyIndex + 1);
         historyStack.push(snap);
@@ -722,17 +799,21 @@ export default defineComponent({
         value.slotConfig,
         value.skill,
       );
-      globalThis.setTimeout(() => {
+      if (pendingEchoTimeout !== null) {
+        globalThis.clearTimeout(pendingEchoTimeout);
+        pendingEchoTimeout = null;
+      }
+      pendingEchoTimeout = globalThis.setTimeout(() => {
+        pendingEchoTimeout = null;
         if (changeVersion !== emittedChangeVersion) return;
         hasPendingSlotConfigEcho = false;
         hasPendingSkillEcho = false;
         pendingEmittedSlotConfig = null;
         pendingEmittedSkill = undefined;
-      }, 0);
+      }, 0) as unknown as number;
       updateSkillEmptyStatus(value);
       updateSubmitDisabled();
     };
-
     const updateSlot = (key: string, value: any, event?: Event) => {
       if (senderCtx.value.readOnly || senderCtx.value.disabled) return;
       pendingBeforeCursor = captureSelectionSnapshot();
@@ -1526,15 +1607,17 @@ export default defineComponent({
       return false;
     };
 
-    const hasManagedHistory = () =>
-      isManagedHistoryActive ||
-      slotDomMap.value.size > 0 ||
-      !!skillDomRef.value ||
-      historyStack.some(
+    const hasManagedHistory = () => {
+      if (isManagedHistoryActive) return true;
+      if (slotDomMap.value.size > 0 || !!skillDomRef.value) return true;
+      const activeStack =
+        historyIndex >= 0 ? historyStack.slice(0, historyIndex + 1) : [];
+      return activeStack.some(
         snapshot =>
           !!snapshot.skill ||
           snapshot.slotConfigs.some(config => config?.type !== "text"),
       );
+    };
 
     const ensureManagedHistoryBaseline = () => {
       if (!hasManagedHistory()) {
@@ -1546,7 +1629,6 @@ export default defineComponent({
       }
       isManagedHistoryActive = true;
     };
-
     const onBeforeInput = (event: InputEvent) => {
       if (
         isRestoringHistory ||
@@ -1780,7 +1862,6 @@ export default defineComponent({
       pendingBeforeCursor = captureSelectionSnapshot();
       pendingHistoryType = "insertCompositionText";
     };
-
     const onInternalCompositionEnd = () => {
       isComposing.value = false;
       keyLock.value = false;
@@ -2104,10 +2185,23 @@ export default defineComponent({
           renderSkill(currentSkillRef.value as any, true);
           updateSkillEmptyStatus();
         }
+        // switching to readOnly/disabled should not leave stale pending history
+        if (readOnly || disabled) {
+          pendingHistoryType = null;
+          pendingBeforeCursor = null;
+          isComposing.value = false;
+          keyLock.value = false;
+        }
       },
     );
 
     onBeforeUnmount(() => {
+      if (pendingEchoTimeout !== null) {
+        globalThis.clearTimeout(pendingEchoTimeout);
+        pendingEchoTimeout = null;
+      }
+      pendingHistoryType = null;
+      pendingBeforeCursor = null;
       unmountAllPortals();
     });
 
@@ -2142,6 +2236,12 @@ export default defineComponent({
           }}
           onBlur={(e: FocusEvent) => {
             keyLock.value = false;
+            // blur mid-composition without compositionend (e.g. IME cancelled) should not leave stale pending
+            if (isComposing.value) {
+              isComposing.value = false;
+              pendingHistoryType = null;
+              pendingBeforeCursor = null;
+            }
             senderCtx.value.onBlur?.(e);
           }}
           onCompositionstart={onInternalCompositionStart}
