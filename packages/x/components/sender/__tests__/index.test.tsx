@@ -1,7 +1,7 @@
 import { mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { SlotConfigType } from "../interface";
+import type { SkillType, SlotConfigType } from "../interface";
 
 import Sender from "..";
 
@@ -770,6 +770,89 @@ describe("Sender", () => {
     host.remove();
   });
 
+  it("should preserve existing text when undoing the first managed insert", async () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const wrapper = mount(Sender, {
+      attachTo: host,
+      props: { slotConfig: [] },
+    });
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+
+    const editable = wrapper.find(".antd-sender-input-slot");
+    const textNode = document.createTextNode("typed first");
+    editable.element.appendChild(textNode);
+    await editable.trigger("input", { inputType: "insertText" });
+    const range = document.createRange();
+    range.setStartAfter(textNode);
+    range.collapse(true);
+    window.getSelection()?.removeAllRanges();
+    window.getSelection()?.addRange(range);
+
+    (wrapper.vm as any).insert(
+      [
+        {
+          type: "tag",
+          key: "tag",
+          props: { label: "Slot", value: "slot" },
+        },
+      ],
+      "cursor",
+    );
+    await wrapper.vm.$nextTick();
+    expect((wrapper.vm as any).getValue().slotConfig).toEqual(
+      expect.arrayContaining([expect.objectContaining({ key: "tag" })]),
+    );
+
+    await editable.trigger("keydown", { ctrlKey: true, key: "z" });
+    await wrapper.vm.$nextTick();
+
+    expect((wrapper.vm as any).getValue().value).toBe("typed first");
+    expect((wrapper.vm as any).getValue().slotConfig).toEqual([
+      expect.objectContaining({ type: "text", value: "typed first" }),
+    ]);
+
+    // Second undo must not fall through to the empty mount snapshot.
+    await editable.trigger("keydown", { ctrlKey: true, key: "z" });
+    await wrapper.vm.$nextTick();
+    expect((wrapper.vm as any).getValue().value).toBe("typed first");
+    expect((wrapper.vm as any).getValue().slotConfig).toEqual([
+      expect.objectContaining({ type: "text", value: "typed first" }),
+    ]);
+
+    wrapper.unmount();
+    host.remove();
+  });
+
+  it("should restore existing text when undoing clear in slot mode", async () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const wrapper = mount(Sender, {
+      attachTo: host,
+      props: { slotConfig: [] },
+    });
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+
+    const editable = wrapper.find(".antd-sender-input-slot");
+    editable.element.appendChild(document.createTextNode("keep me"));
+    await editable.trigger("input", { inputType: "insertText" });
+
+    (wrapper.vm as any).clear();
+    await wrapper.vm.$nextTick();
+    expect((wrapper.vm as any).getValue().value).toBe("");
+
+    (editable.element as HTMLElement).focus();
+    await editable.trigger("keydown", { ctrlKey: true, key: "z" });
+    await wrapper.vm.$nextTick();
+
+    expect((wrapper.vm as any).getValue().value).toBe("keep me");
+
+    wrapper.unmount();
+    host.remove();
+  });
+
   it("should restore the last deleted slot with undo and remove it with redo", async () => {
     const host = document.createElement("div");
     document.body.appendChild(host);
@@ -918,6 +1001,398 @@ describe("Sender", () => {
     host.remove();
   });
 
+  it("should preserve edited content-slot text after undo and redo", async () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const wrapper = mount(Sender, {
+      attachTo: host,
+      props: {
+        slotConfig: [
+          {
+            type: "content",
+            key: "content",
+            props: { defaultValue: "Initial" },
+          },
+        ],
+      },
+    });
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+
+    const editable = wrapper.find(".antd-sender-input-slot");
+    const contentSlot = wrapper.find<HTMLElement>(".antd-sender-slot-content");
+    const selection = window.getSelection();
+    const beforeRange = document.createRange();
+    beforeRange.selectNodeContents(contentSlot.element);
+    beforeRange.collapse(false);
+    selection?.removeAllRanges();
+    selection?.addRange(beforeRange);
+    editable.element.dispatchEvent(
+      new InputEvent("beforeinput", {
+        bubbles: true,
+        cancelable: true,
+        data: " edited",
+        inputType: "insertText",
+      }),
+    );
+
+    contentSlot.element.innerText = "Initial edited";
+    editable.element.dispatchEvent(
+      new InputEvent("input", {
+        bubbles: true,
+        data: " edited",
+        inputType: "insertText",
+      }),
+    );
+
+    await editable.trigger("keydown", { ctrlKey: true, key: "z" });
+    await wrapper.vm.$nextTick();
+    expect((wrapper.vm as any).getValue().slotConfig[0].value).toBe("Initial");
+
+    await editable.trigger("keydown", {
+      ctrlKey: true,
+      key: "z",
+      shiftKey: true,
+    });
+    await wrapper.vm.$nextTick();
+    expect((wrapper.vm as any).getValue().slotConfig[0].value).toBe(
+      "Initial edited",
+    );
+
+    wrapper.unmount();
+    host.remove();
+  });
+
+  it("should let onKeyDown veto selection deletion", async () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const onKeyDown = vi.fn(() => false as const);
+    const wrapper = mount(Sender, {
+      attachTo: host,
+      props: {
+        slotConfig: [
+          {
+            type: "tag",
+            key: "tag",
+            props: { label: "Slot", value: "slot" },
+          },
+        ],
+        onKeyDown,
+      },
+    });
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+
+    const editable = wrapper.find(".antd-sender-input-slot");
+    const range = document.createRange();
+    range.selectNodeContents(editable.element);
+    window.getSelection()?.removeAllRanges();
+    window.getSelection()?.addRange(range);
+
+    await editable.trigger("keydown", { key: "Backspace" });
+
+    expect(onKeyDown).toHaveBeenCalledOnce();
+    expect((wrapper.vm as any).getValue().slotConfig).toEqual([
+      expect.objectContaining({ key: "tag", type: "tag" }),
+    ]);
+
+    wrapper.unmount();
+    host.remove();
+  });
+
+  it("should not apply managed undo while readOnly", async () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const wrapper = mount(Sender, {
+      attachTo: host,
+      props: {
+        slotConfig: [
+          {
+            type: "tag",
+            key: "tag",
+            props: { label: "Slot", value: "slot" },
+          },
+        ],
+      },
+    });
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+
+    const editable = wrapper.find(".antd-sender-input-slot");
+    const range = document.createRange();
+    range.selectNodeContents(editable.element);
+    window.getSelection()?.removeAllRanges();
+    window.getSelection()?.addRange(range);
+    await editable.trigger("keydown", { key: "Backspace" });
+    expect((wrapper.vm as any).getValue().slotConfig).toEqual([]);
+
+    await wrapper.setProps({ readOnly: true });
+    (editable.element as HTMLElement).focus();
+    const undoEvent = new KeyboardEvent("keydown", {
+      bubbles: true,
+      cancelable: true,
+      ctrlKey: true,
+      key: "z",
+    });
+    editable.element.dispatchEvent(undoEvent);
+    await wrapper.vm.$nextTick();
+
+    expect(undoEvent.defaultPrevented).toBe(false);
+    expect((wrapper.vm as any).getValue().slotConfig).toEqual([]);
+
+    wrapper.unmount();
+    host.remove();
+  });
+
+  it("should not close a skill while readOnly", async () => {
+    const wrapper = mount(Sender, {
+      props: {
+        slotConfig: [],
+        skill: {
+          value: "translate",
+          title: "Translate",
+          closable: true,
+        },
+      },
+    });
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+    await wrapper.setProps({ readOnly: true });
+    await wrapper.vm.$nextTick();
+
+    const close = wrapper.find(".antd-sender-skill-close");
+    expect(close.attributes("aria-disabled")).toBe("true");
+    expect(close.attributes("tabindex")).toBe("-1");
+    await close.trigger("click");
+
+    expect((wrapper.vm as any).getValue().skill).toEqual(
+      expect.objectContaining({ value: "translate" }),
+    );
+  });
+
+  it("should not apply managed undo while disabled", async () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const wrapper = mount(Sender, {
+      attachTo: host,
+      props: {
+        slotConfig: [
+          {
+            type: "tag",
+            key: "tag",
+            props: { label: "Slot", value: "slot" },
+          },
+        ],
+      },
+    });
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+
+    const editable = wrapper.find(".antd-sender-input-slot");
+    const range = document.createRange();
+    range.selectNodeContents(editable.element);
+    window.getSelection()?.removeAllRanges();
+    window.getSelection()?.addRange(range);
+    await editable.trigger("keydown", { key: "Backspace" });
+    expect((wrapper.vm as any).getValue().slotConfig).toEqual([]);
+
+    await wrapper.setProps({ disabled: true });
+    (editable.element as HTMLElement).focus();
+    const undoEvent = new KeyboardEvent("keydown", {
+      bubbles: true,
+      cancelable: true,
+      ctrlKey: true,
+      key: "z",
+    });
+    editable.element.dispatchEvent(undoEvent);
+    await wrapper.vm.$nextTick();
+
+    expect(undoEvent.defaultPrevented).toBe(false);
+    expect((wrapper.vm as any).getValue().slotConfig).toEqual([]);
+    expect(editable.attributes("contenteditable")).toBe("false");
+
+    wrapper.unmount();
+    host.remove();
+  });
+
+  it("should not close a skill while disabled", async () => {
+    const wrapper = mount(Sender, {
+      props: {
+        slotConfig: [],
+        skill: {
+          value: "translate",
+          title: "Translate",
+          closable: true,
+        },
+      },
+    });
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+    await wrapper.setProps({ disabled: true });
+    await wrapper.vm.$nextTick();
+
+    const close = wrapper.find(".antd-sender-skill-close");
+    expect(close.attributes("aria-disabled")).toBe("true");
+    expect(close.attributes("tabindex")).toBe("-1");
+    await close.trigger("click");
+
+    expect((wrapper.vm as any).getValue().skill).toEqual(
+      expect.objectContaining({ value: "translate" }),
+    );
+
+    wrapper.unmount();
+  });
+
+  it("should block public mutations while readOnly or disabled", async () => {
+    const wrapper = mount(Sender, {
+      props: {
+        readOnly: true,
+        slotConfig: [],
+      },
+    });
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+
+    const vm = wrapper.vm as any;
+    vm.insert([
+      {
+        type: "tag",
+        key: "tag",
+        props: { label: "Slot", value: "slot" },
+      },
+    ]);
+    vm.clear();
+    await wrapper.vm.$nextTick();
+    expect(vm.getValue().slotConfig).toEqual([]);
+
+    await wrapper.setProps({ readOnly: false, disabled: true });
+    vm.insert([
+      {
+        type: "tag",
+        key: "tag",
+        props: { label: "Slot", value: "slot" },
+      },
+    ]);
+    vm.clear();
+    await wrapper.vm.$nextTick();
+    expect(vm.getValue().slotConfig).toEqual([]);
+
+    wrapper.unmount();
+  });
+
+  it("should delete an entire atomic slot selected through its label", async () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const wrapper = mount(Sender, {
+      attachTo: host,
+      props: {
+        slotConfig: [
+          {
+            type: "tag",
+            key: "tag",
+            props: { label: "Atomic Slot", value: "slot" },
+          },
+        ],
+      },
+    });
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+
+    const label = wrapper.find(".antd-sender-slot-tag").element.firstChild!;
+    const range = document.createRange();
+    range.setStart(label, 0);
+    range.setEnd(label, 2);
+    window.getSelection()?.removeAllRanges();
+    window.getSelection()?.addRange(range);
+
+    const editable = wrapper.find(".antd-sender-input-slot");
+    await editable.trigger("keydown", { key: "Delete" });
+
+    expect(wrapper.find(".antd-sender-slot-tag").exists()).toBe(false);
+    expect((wrapper.vm as any).getValue().slotConfig).toEqual([]);
+
+    wrapper.unmount();
+    host.remove();
+  });
+
+  it("should record custom slot value changes in managed history", async () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const wrapper = mount(Sender, {
+      attachTo: host,
+      props: {
+        slotConfig: [
+          {
+            type: "custom",
+            key: "custom",
+            props: { defaultValue: "Initial" },
+            customRender: (_value, onChange) => (
+              <button class="custom-slot" onClick={() => onChange("Updated")}>
+                Update
+              </button>
+            ),
+          },
+        ],
+      },
+    });
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+
+    await wrapper.find("button.custom-slot").trigger("click");
+    expect((wrapper.vm as any).getValue().slotConfig[0].value).toBe("Updated");
+
+    const editable = wrapper.find(".antd-sender-input-slot");
+    (editable.element as HTMLElement).focus();
+    await editable.trigger("keydown", { ctrlKey: true, key: "z" });
+    await wrapper.vm.$nextTick();
+    expect((wrapper.vm as any).getValue().slotConfig[0].value).toBe("Initial");
+
+    await editable.trigger("keydown", {
+      ctrlKey: true,
+      key: "z",
+      shiftKey: true,
+    });
+    await wrapper.vm.$nextTick();
+    expect((wrapper.vm as any).getValue().slotConfig[0].value).toBe("Updated");
+
+    wrapper.unmount();
+    host.remove();
+  });
+
+  it("should handle a bubbled input-slot undo only once", async () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const onKeyDown = vi.fn();
+    const wrapper = mount(Sender, {
+      attachTo: host,
+      props: {
+        slotConfig: [
+          {
+            type: "input",
+            key: "input",
+            props: { defaultValue: "Initial" },
+          },
+        ],
+        onKeyDown,
+      },
+    });
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+
+    await wrapper.find("input.antd-sender-slot-input").setValue("First");
+    await wrapper.find("input.antd-sender-slot-input").setValue("Second");
+    await wrapper
+      .find("input.antd-sender-slot-input")
+      .trigger("keydown", { ctrlKey: true, key: "z" });
+    await wrapper.vm.$nextTick();
+
+    expect(onKeyDown).toHaveBeenCalledOnce();
+    expect((wrapper.vm as any).getValue().slotConfig[0].value).toBe("First");
+
+    wrapper.unmount();
+    host.remove();
+  });
+
   it("should preserve line breaks when pasting in slot mode", async () => {
     const host = document.createElement("div");
     document.body.appendChild(host);
@@ -990,7 +1465,7 @@ describe("Sender", () => {
     host.remove();
   });
 
-  it("should preserve redo when controlled slotConfig follows an undo", async () => {
+  it("should preserve redo when a cloned controlled slotConfig follows an undo", async () => {
     const host = document.createElement("div");
     document.body.appendChild(host);
     let wrapper: ReturnType<typeof mount>;
@@ -1007,7 +1482,14 @@ describe("Sender", () => {
           JSON.stringify((wrapper as any).props("slotConfig")) !==
             JSON.stringify(nextSlotConfig)
         ) {
-          void wrapper.setProps({ slotConfig: nextSlotConfig });
+          void wrapper.setProps({
+            slotConfig: nextSlotConfig?.map(config => ({
+              ...config,
+              ...(config.type !== "text" && config.props
+                ? { props: { ...config.props } }
+                : {}),
+            })),
+          });
         }
       },
     );
@@ -1174,6 +1656,104 @@ describe("Sender", () => {
     });
     await wrapper.vm.$nextTick();
     expect((wrapper as any).props("skill")).toBeUndefined();
+    expect((wrapper.vm as any).getValue().skill).toBeUndefined();
+
+    wrapper.unmount();
+    host.remove();
+  });
+
+  it("should reset managed history after an external skill change", async () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const wrapper = mount(Sender, {
+      attachTo: host,
+      props: {
+        skill: {
+          value: "skill-a",
+          title: "Skill A",
+          closable: true,
+        },
+        slotConfig: [],
+      },
+    });
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+
+    await wrapper.setProps({
+      skill: {
+        value: "skill-b",
+        title: "Skill B",
+        closable: true,
+      },
+    });
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+
+    await wrapper.find(".antd-sender-skill-close").trigger("click");
+    const editable = wrapper.find(".antd-sender-input-slot");
+    await editable.trigger("keydown", { ctrlKey: true, key: "z" });
+    await wrapper.vm.$nextTick();
+
+    expect((wrapper.vm as any).getValue().skill).toEqual(
+      expect.objectContaining({ value: "skill-b" }),
+    );
+
+    wrapper.unmount();
+    host.remove();
+  });
+
+  it("should preserve history when a controlled skill echo is cloned", async () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    let wrapper: ReturnType<typeof mount>;
+    let syncControlledValue = false;
+    const onChange = vi.fn(
+      (
+        _value: string,
+        _event: Event | undefined,
+        _slotConfig: SlotConfigType[] | undefined,
+        nextSkill: SkillType | undefined,
+      ) => {
+        if (wrapper && syncControlledValue) {
+          void wrapper.setProps({
+            skill: nextSkill ? { ...nextSkill } : undefined,
+          });
+        }
+      },
+    );
+    wrapper = mount(Sender, {
+      attachTo: host,
+      props: {
+        skill: {
+          value: "translate",
+          title: "Translate",
+          closable: true,
+        },
+        slotConfig: [],
+        onChange,
+      },
+    });
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+    syncControlledValue = true;
+
+    await wrapper.find(".antd-sender-skill-close").trigger("click");
+    await wrapper.vm.$nextTick();
+    const editable = wrapper.find(".antd-sender-input-slot");
+    await editable.trigger("keydown", { ctrlKey: true, key: "z" });
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+
+    expect((wrapper.vm as any).getValue().skill).toEqual(
+      expect.objectContaining({ value: "translate" }),
+    );
+
+    await editable.trigger("keydown", {
+      ctrlKey: true,
+      key: "z",
+      shiftKey: true,
+    });
+    await wrapper.vm.$nextTick();
     expect((wrapper.vm as any).getValue().skill).toBeUndefined();
 
     wrapper.unmount();

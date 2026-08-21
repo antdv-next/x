@@ -75,6 +75,63 @@ function getDefaultSlotValue(config: SlotConfigType) {
   return props.value ?? props.label ?? "";
 }
 
+function isEquivalentValue(
+  left: unknown,
+  right: unknown,
+  seen = new WeakMap<object, object>(),
+): boolean {
+  const rawLeft =
+    left && typeof left === "object" ? toRaw(left as object) : left;
+  const rawRight =
+    right && typeof right === "object" ? toRaw(right as object) : right;
+  if (Object.is(rawLeft, rawRight)) return true;
+  if (
+    !rawLeft ||
+    !rawRight ||
+    typeof rawLeft !== "object" ||
+    typeof rawRight !== "object"
+  ) {
+    return false;
+  }
+  if (seen.get(rawLeft) === rawRight) return true;
+  seen.set(rawLeft, rawRight);
+
+  if (Array.isArray(rawLeft) || Array.isArray(rawRight)) {
+    return (
+      Array.isArray(rawLeft) &&
+      Array.isArray(rawRight) &&
+      rawLeft.length === rawRight.length &&
+      rawLeft.every((value, index) =>
+        isEquivalentValue(value, rawRight[index], seen),
+      )
+    );
+  }
+
+  const leftPrototype = Object.getPrototypeOf(rawLeft);
+  const rightPrototype = Object.getPrototypeOf(rawRight);
+  if (
+    leftPrototype !== rightPrototype ||
+    (leftPrototype !== Object.prototype && leftPrototype !== null)
+  ) {
+    return false;
+  }
+
+  const leftKeys = Object.keys(rawLeft);
+  const rightKeys = Object.keys(rawRight);
+  return (
+    leftKeys.length === rightKeys.length &&
+    leftKeys.every(
+      key =>
+        Object.prototype.hasOwnProperty.call(rawRight, key) &&
+        isEquivalentValue(
+          (rawLeft as Record<string, unknown>)[key],
+          (rawRight as Record<string, unknown>)[key],
+          seen,
+        ),
+    )
+  );
+}
+
 export default defineComponent({
   name: "SlotTextArea",
   setup(_, { expose }) {
@@ -116,8 +173,7 @@ export default defineComponent({
     let historyStack: HistorySnapshot[] = []; // 栈：0..index 为有效历史，存全量快照
     let historyIndex = -1; // 指针：当前快照在栈中的位置
     let isRestoringHistory = false;
-    let lastHistorySaveAt = 0;
-    let lastInputType: string | null = null;
+    let isManagedHistoryActive = false;
     let pendingHistoryType: string | null = null; // beforeinput 标记，input 后推入
     let pendingBeforeCursor: SelectionSnapshot | null = null; // 操作前的光标，撤销应回到此处而非操作后
     let pendingEmittedSlotConfig: readonly SlotConfigType[] | null = null;
@@ -299,6 +355,14 @@ export default defineComponent({
     const captureSnapshot = (
       inputType: string = "unknown",
     ): HistorySnapshot => {
+      const nextSlotValues = { ...slotValues.value };
+      slotConfigMap.value.forEach((config, key) => {
+        if (config.type === "content") {
+          const dom = slotDomMap.value.get(key);
+          if (dom) nextSlotValues[key] = dom.innerText || "";
+        }
+      });
+      slotValues.value = nextSlotValues;
       const val = getEditorValue();
       // Shallow clone slotConfigs to avoid DataCloneError on functions/VNodes and keep reference for customRender/formatResult
       const rawConfigs: any[] = (val as any).slotConfig as any[];
@@ -365,13 +429,8 @@ export default defineComponent({
           historyIndex--;
         }
       }
-      lastHistorySaveAt = now;
-      lastInputType = inputType;
       pendingHistoryType = null;
     };
-
-    // 兼容旧调用：saveHistory 仍可用，实际走 pushHistory
-    const saveHistory = pushHistory;
 
     const restoreSnapshot = (
       snap: HistorySnapshot,
@@ -456,15 +515,6 @@ export default defineComponent({
       return true;
     };
 
-    const initHistory = () => {
-      historyStack = [];
-      historyIndex = -1;
-      lastHistorySaveAt = 0;
-      lastInputType = null;
-      // 推入初始全量快照作为基线，撤销可直接回到此状态
-      pushHistory("init", true);
-    };
-
     const prefixCls = computed(
       () => senderCtx.value.prefixCls || "antd-sender",
     );
@@ -540,7 +590,7 @@ export default defineComponent({
       const span = document.createElement("span");
       span.setAttribute(
         "contenteditable",
-        senderCtx.value.readOnly ? "false" : "true",
+        senderCtx.value.readOnly || senderCtx.value.disabled ? "false" : "true",
       );
       span.dataset.slotKey = (config as any).key;
       span.className = `${prefixCls.value}-slot ${prefixCls.value}-slot-content`;
@@ -684,6 +734,8 @@ export default defineComponent({
     };
 
     const updateSlot = (key: string, value: any, event?: Event) => {
+      if (senderCtx.value.readOnly || senderCtx.value.disabled) return;
+      pendingBeforeCursor = captureSelectionSnapshot();
       slotValues.value = {
         ...slotValues.value,
         [key]: value,
@@ -696,6 +748,7 @@ export default defineComponent({
       }
 
       triggerValueChange(event);
+      pushHistory("slotValue", true);
     };
 
     const buildSelectMenuItems = (options: string[] | undefined) => {
@@ -719,7 +772,6 @@ export default defineComponent({
               variant="borderless"
               readonly={senderCtx.value.readOnly}
               disabled={senderCtx.value.disabled}
-              onKeydown={onInternalKeyDown}
               onChange={(e: any) => {
                 updateSlot(config.key as string, e?.target?.value ?? "", e);
               }}
@@ -1052,6 +1104,7 @@ export default defineComponent({
         <Skill
           prefixCls={prefixCls.value}
           skill={skill}
+          disabled={senderCtx.value.readOnly || senderCtx.value.disabled}
           removeSkill={() => removeSkill(true)}
         />,
         skillDom,
@@ -1068,7 +1121,7 @@ export default defineComponent({
         !!senderCtx.value.placeholder &&
         !skillDom.hasChildNodes();
 
-      if (isEmpty) {
+      if (isEmpty && !senderCtx.value.readOnly && !senderCtx.value.disabled) {
         skillDom.setAttribute("contenteditable", "true");
         skillDom.classList.add(`${prefixCls.value}-skill-empty`);
       } else {
@@ -1140,6 +1193,21 @@ export default defineComponent({
         current = current.parentNode;
       }
 
+      return null;
+    };
+
+    const findManagedContainer = (node: Node | null) => {
+      const editable = editableRef.value;
+      let current = node;
+      while (current && current !== editable) {
+        if (current instanceof HTMLElement) {
+          const info = getNodeInfo(current);
+          if (info?.skillKey || (info?.slotKey && info.nodeType !== "nbsp")) {
+            return current;
+          }
+        }
+        current = current.parentNode;
+      }
       return null;
     };
 
@@ -1222,6 +1290,20 @@ export default defineComponent({
       if (event instanceof KeyboardEvent) event.preventDefault();
       else (event as InputEvent).preventDefault?.();
       pendingBeforeCursor = captureSelectionSnapshot();
+      const startContainer = findManagedContainer(range.startContainer);
+      const endContainer = findManagedContainer(range.endContainer);
+      if (
+        startContainer &&
+        getNodeInfo(startContainer)?.slotConfig?.type !== "content"
+      ) {
+        range.setStartBefore(startContainer);
+      }
+      if (
+        endContainer &&
+        getNodeInfo(endContainer)?.slotConfig?.type !== "content"
+      ) {
+        range.setEndAfter(endContainer);
+      }
       range.deleteContents();
       const remainingKeys = new Set<string>();
       editable.querySelectorAll("[data-slot-key]").forEach(el => {
@@ -1445,6 +1527,7 @@ export default defineComponent({
     };
 
     const hasManagedHistory = () =>
+      isManagedHistoryActive ||
       slotDomMap.value.size > 0 ||
       !!skillDomRef.value ||
       historyStack.some(
@@ -1453,8 +1536,25 @@ export default defineComponent({
           snapshot.slotConfigs.some(config => config?.type !== "text"),
       );
 
+    const ensureManagedHistoryBaseline = () => {
+      if (!hasManagedHistory()) {
+        // Replace stale native/init entries so the first managed undo
+        // returns to the current editor text instead of an empty mount snapshot.
+        historyStack = [];
+        historyIndex = -1;
+        pushHistory("managedBaseline", true);
+      }
+      isManagedHistoryActive = true;
+    };
+
     const onBeforeInput = (event: InputEvent) => {
-      if (isRestoringHistory || isComposing.value) return;
+      if (
+        isRestoringHistory ||
+        isComposing.value ||
+        senderCtx.value.readOnly ||
+        senderCtx.value.disabled
+      )
+        return;
       const inputType = (event as InputEvent).inputType || "";
       const sel = getSelection();
       if (!sel || sel.rangeCount === 0) return;
@@ -1508,6 +1608,7 @@ export default defineComponent({
       }
     };
     const onInternalCut = (event: ClipboardEvent) => {
+      if (senderCtx.value.readOnly || senderCtx.value.disabled) return;
       // Cut with slot selection is handled as delete with history (push after)
       if (selectionContainsSlot()) {
         const selection = getSelection();
@@ -1518,6 +1619,11 @@ export default defineComponent({
     };
 
     const onInternalKeyDown = (event: KeyboardEvent) => {
+      const eventRes = senderCtx.value.onKeyDown?.(event);
+      if (eventRes === false || keyLock.value || isComposing.value) {
+        return;
+      }
+
       // 浏览器原生对 contenteditable + 原子 span 的撤销不可靠（会重建文本节点导致叠加），
       // 当前或历史快照存在 slot/skill 时接管 Ctrl+Z/Y；纯文本交给浏览器原生历史。
       const isMod = event.ctrlKey || event.metaKey;
@@ -1528,10 +1634,18 @@ export default defineComponent({
         !!sel &&
         sel.rangeCount > 0 &&
         editableRef.value.contains(sel.anchorNode as Node | null);
+      const eventFromEditable =
+        !!editableRef.value &&
+        event.target instanceof Node &&
+        editableRef.value.contains(event.target);
       const editableFocused =
-        inEditable || document.activeElement === editableRef.value;
+        inEditable ||
+        eventFromEditable ||
+        document.activeElement === editableRef.value;
       const shouldUseManagedHistory = hasManagedHistory();
       if (
+        !senderCtx.value.readOnly &&
+        !senderCtx.value.disabled &&
         editableFocused &&
         shouldUseManagedHistory &&
         isMod &&
@@ -1543,6 +1657,8 @@ export default defineComponent({
         return;
       }
       if (
+        !senderCtx.value.readOnly &&
+        !senderCtx.value.disabled &&
         editableFocused &&
         shouldUseManagedHistory &&
         isMod &&
@@ -1553,16 +1669,18 @@ export default defineComponent({
         return;
       }
 
+      if (
+        (senderCtx.value.readOnly || senderCtx.value.disabled) &&
+        (event.key === "Backspace" || event.key === "Delete")
+      ) {
+        return;
+      }
+
       // Selection containing slot: any Backspace/Delete should use history-aware delete
       if (
         (event.key === "Backspace" || event.key === "Delete") &&
         handleSelectionDelete(event)
       ) {
-        return;
-      }
-
-      const eventRes = senderCtx.value.onKeyDown?.(event);
-      if (eventRes === false || keyLock.value || isComposing.value) {
         return;
       }
 
@@ -1643,6 +1761,7 @@ export default defineComponent({
     };
 
     const onInternalInput = (event?: Event) => {
+      if (senderCtx.value.readOnly || senderCtx.value.disabled) return;
       removeSpecificBRs();
       normalizeSkillTextInput();
       triggerValueChange(event);
@@ -1655,6 +1774,7 @@ export default defineComponent({
     };
 
     const onInternalCompositionStart = () => {
+      if (senderCtx.value.readOnly || senderCtx.value.disabled) return;
       isComposing.value = true;
       if (!hasManagedHistory()) return;
       pendingBeforeCursor = captureSelectionSnapshot();
@@ -1664,6 +1784,7 @@ export default defineComponent({
     const onInternalCompositionEnd = () => {
       isComposing.value = false;
       keyLock.value = false;
+      if (senderCtx.value.readOnly || senderCtx.value.disabled) return;
       void nextTick(() => {
         if (pendingHistoryType === "insertCompositionText") {
           pushHistory("insertCompositionText", true);
@@ -1672,6 +1793,7 @@ export default defineComponent({
     };
 
     const onInternalPaste = (event: ClipboardEvent) => {
+      if (senderCtx.value.readOnly || senderCtx.value.disabled) return;
       event.preventDefault();
       const files = event.clipboardData?.files;
       const text = event.clipboardData?.getData("text/plain") ?? "";
@@ -1690,7 +1812,7 @@ export default defineComponent({
         try {
           success = document.execCommand("insertText", false, cleanedText);
         } catch (err) {
-          warning(false, "Sender", `insertText command failed: ${err}`);
+          warning(false, "Sender", `insertText command failed: ${String(err)}`);
         }
         if (!success) {
           const selection = getSelection();
@@ -1786,7 +1908,14 @@ export default defineComponent({
       preventScroll,
     ) => {
       const editable = editableRef.value;
-      if (!editable || !slotConfig.length) return;
+      if (
+        !editable ||
+        !slotConfig.length ||
+        senderCtx.value.readOnly ||
+        senderCtx.value.disabled
+      )
+        return;
+      ensureManagedHistoryBaseline();
       pendingBeforeCursor = captureSelectionSnapshot();
       mergeSlotConfig(slotConfig);
       const nodes = buildSlotNodes(slotConfig);
@@ -1847,6 +1976,8 @@ export default defineComponent({
     };
 
     const clear: SlotTextAreaRef["clear"] = () => {
+      if (senderCtx.value.readOnly || senderCtx.value.disabled) return;
+      ensureManagedHistoryBaseline();
       pendingBeforeCursor = captureSelectionSnapshot();
       clearEditor();
       renderSkill();
@@ -1883,17 +2014,18 @@ export default defineComponent({
     ) =>
       hasPendingSlotConfigEcho &&
       !!pendingEmittedSlotConfig &&
-      toRaw(configs) === pendingEmittedSlotConfig;
+      isEquivalentValue(configs, pendingEmittedSlotConfig);
 
     const initHistoryStack = () => {
       const initVersion = ++historyInitVersion;
       historyStack = [];
       historyIndex = -1;
-      lastHistorySaveAt = 0;
-      lastInputType = null;
+      isManagedHistoryActive = slotDomMap.value.size > 0 || !!skillDomRef.value;
       pendingHistoryType = null;
       void nextTick(() => {
         if (initVersion !== historyInitVersion) return;
+        // Skip if insert/clear already seeded managed history in this tick.
+        if (historyStack.length > 0) return;
         // 推入初始全量快照作为基线
         pushHistory("init", true);
       });
@@ -1934,7 +2066,7 @@ export default defineComponent({
       skill => {
         if (
           hasPendingSkillEcho &&
-          toRaw(skill) === toRaw(pendingEmittedSkill)
+          isEquivalentValue(skill, pendingEmittedSkill)
         ) {
           lastSkillRef.value = skill;
           hasPendingSkillEcho = false;
@@ -1950,6 +2082,7 @@ export default defineComponent({
         }
         lastSkillRef.value = skill;
         renderSkill();
+        initHistoryStack();
         void nextTick(() => {
           triggerValueChange();
         });
@@ -1958,14 +2091,19 @@ export default defineComponent({
     );
 
     watch(
-      () => senderCtx.value.readOnly,
-      readOnly => {
+      () => [senderCtx.value.readOnly, senderCtx.value.disabled] as const,
+      ([readOnly, disabled]) => {
+        const editable = !(readOnly || disabled);
         slotConfigMap.value.forEach((config, key) => {
           if (config.type === "content") {
             const dom = slotDomMap.value.get(key);
-            dom?.setAttribute("contenteditable", readOnly ? "false" : "true");
+            dom?.setAttribute("contenteditable", editable ? "true" : "false");
           }
         });
+        if (currentSkillRef.value) {
+          renderSkill(currentSkillRef.value as any, true);
+          updateSkillEmptyStatus();
+        }
       },
     );
 
@@ -1988,7 +2126,9 @@ export default defineComponent({
           ])}
           style={mergeInputStyle.value}
           data-placeholder={senderCtx.value.placeholder}
-          contenteditable={!senderCtx.value.readOnly}
+          contenteditable={
+            !senderCtx.value.readOnly && !senderCtx.value.disabled
+          }
           spellcheck={false}
           onBeforeinput={onBeforeInput as any}
           onInput={onInternalInput}
