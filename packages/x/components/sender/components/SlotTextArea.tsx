@@ -7,6 +7,7 @@ import {
   onBeforeUnmount,
   ref,
   render,
+  toRaw,
   watch,
 } from "vue";
 
@@ -119,11 +120,16 @@ export default defineComponent({
     let lastInputType: string | null = null;
     let pendingHistoryType: string | null = null; // beforeinput 标记，input 后推入
     let pendingBeforeCursor: SelectionSnapshot | null = null; // 操作前的光标，撤销应回到此处而非操作后
+    let pendingEmittedSlotConfig: readonly SlotConfigType[] | null = null;
+    let pendingEmittedSkill: SkillType | undefined;
+    let hasPendingSlotConfigEcho = false;
+    let hasPendingSkillEcho = false;
+    let emittedChangeVersion = 0;
+    let historyInitVersion = 0;
     const MAX_HISTORY = 50;
     const GROUP_MS = 500;
 
-    const getCleanedText = (ori: string) =>
-      ori.replace(/\u200B/g, "").replace(/^[\r\n]+|[\r\n]+$/g, "");
+    const getCleanedText = (ori: string) => ori.replace(/\u200B/g, "");
 
     const getNodePath = (node: Node, root: HTMLElement): number[] => {
       const path: number[] = [];
@@ -405,8 +411,8 @@ export default defineComponent({
       nodes.forEach(node => {
         editable.appendChild(node);
       });
-      // Re-render skill
-      renderSkill();
+      // Re-render skill from the snapshot rather than the current prop.
+      renderSkill(snap.skill as SkillType | undefined, true);
       // Need to sync slotValues for content slots that may have been updated via nodes
       // buildSlotNodes already set defaults, but ensure restored values are kept
       slotValues.value = { ...snap.slotValues };
@@ -419,13 +425,13 @@ export default defineComponent({
           }
         }
       });
-      isRestoringHistory = false;
       triggerValueChange();
       // Restore cursor after DOM rebuild - defer to nextTick to ensure DOM is ready
       const cursorToRestore =
         overrideCursor !== undefined ? overrideCursor : snap.cursor;
       void nextTick(() => {
         restoreSelectionSnapshot(cursorToRestore ?? snap.cursor);
+        isRestoringHistory = false;
       });
     };
 
@@ -655,12 +661,24 @@ export default defineComponent({
 
     const triggerValueChange = (event?: Event) => {
       const value = getEditorValue();
+      const changeVersion = ++emittedChangeVersion;
+      pendingEmittedSlotConfig = value.slotConfig;
+      pendingEmittedSkill = value.skill;
+      hasPendingSlotConfigEcho = true;
+      hasPendingSkillEcho = true;
       senderCtx.value.onChange?.(
         value.value,
         event,
         value.slotConfig,
         value.skill,
       );
+      globalThis.setTimeout(() => {
+        if (changeVersion !== emittedChangeVersion) return;
+        hasPendingSlotConfigEcho = false;
+        hasPendingSkillEcho = false;
+        pendingEmittedSlotConfig = null;
+        pendingEmittedSkill = undefined;
+      }, 0);
       updateSkillEmptyStatus(value);
       updateSubmitDisabled();
     };
@@ -1002,14 +1020,18 @@ export default defineComponent({
       currentSkillRef.value = undefined;
 
       if (triggerChange) {
+        editableRef.value?.focus();
         triggerValueChange();
         pushHistory("delete", true);
       }
     };
 
-    const renderSkill = () => {
+    const renderSkill = (
+      skillOverride?: SkillType,
+      useOverride: boolean = false,
+    ) => {
       const editable = editableRef.value;
-      const skill = senderCtx.value.skill;
+      const skill = useOverride ? skillOverride : senderCtx.value.skill;
       if (!editable) return;
 
       if (!skill) {
@@ -1440,6 +1462,7 @@ export default defineComponent({
       const editable = editableRef.value;
       if (!editable || !editable.contains(range.commonAncestorContainer))
         return;
+      if (pendingHistoryType === "insertFromPaste") return;
       const captureIfNeeded = () => {
         if (!pendingBeforeCursor)
           pendingBeforeCursor = captureSelectionSnapshot();
@@ -1623,12 +1646,29 @@ export default defineComponent({
       removeSpecificBRs();
       normalizeSkillTextInput();
       triggerValueChange(event);
-      if (pendingHistoryType) {
+      if (!isComposing.value && pendingHistoryType) {
         const t = pendingHistoryType;
         pendingHistoryType = null;
         const forceNew = t !== "insertText";
         pushHistory(t, forceNew);
       }
+    };
+
+    const onInternalCompositionStart = () => {
+      isComposing.value = true;
+      if (!hasManagedHistory()) return;
+      pendingBeforeCursor = captureSelectionSnapshot();
+      pendingHistoryType = "insertCompositionText";
+    };
+
+    const onInternalCompositionEnd = () => {
+      isComposing.value = false;
+      keyLock.value = false;
+      void nextTick(() => {
+        if (pendingHistoryType === "insertCompositionText") {
+          pushHistory("insertCompositionText", true);
+        }
+      });
     };
 
     const onInternalPaste = (event: ClipboardEvent) => {
@@ -1645,6 +1685,7 @@ export default defineComponent({
         if (!pendingBeforeCursor)
           pendingBeforeCursor = captureSelectionSnapshot();
         const cleanedText = getCleanedText(text);
+        pendingHistoryType = "insertFromPaste";
         let success = false;
         try {
           success = document.execCommand("insertText", false, cleanedText);
@@ -1668,9 +1709,12 @@ export default defineComponent({
             pendingHistoryType = null;
           }
         } else {
-          // execCommand succeeded -> will fire input -> onInternalInput will push
-          // mark pending so input knows it's paste (avoids grouping as insertText)
-          pendingHistoryType = "insertFromPaste";
+          // Some browsers do not dispatch input for execCommand. Save immediately
+          // when the synchronous input handler did not consume the marker.
+          if (pendingHistoryType === "insertFromPaste") {
+            triggerValueChange(event as unknown as Event);
+            pushHistory("insertFromPaste", true);
+          }
         }
       }
       senderCtx.value.onPaste?.(event);
@@ -1834,13 +1878,22 @@ export default defineComponent({
       initFromSlotConfig(configs);
     };
 
+    const isEmittedSlotConfig = (
+      configs: readonly SlotConfigType[] | undefined,
+    ) =>
+      hasPendingSlotConfigEcho &&
+      !!pendingEmittedSlotConfig &&
+      toRaw(configs) === pendingEmittedSlotConfig;
+
     const initHistoryStack = () => {
+      const initVersion = ++historyInitVersion;
       historyStack = [];
       historyIndex = -1;
       lastHistorySaveAt = 0;
       lastInputType = null;
       pendingHistoryType = null;
       void nextTick(() => {
+        if (initVersion !== historyInitVersion) return;
         // 推入初始全量快照作为基线
         pushHistory("init", true);
       });
@@ -1859,10 +1912,19 @@ export default defineComponent({
     watch(
       () => senderCtx.value.slotConfig,
       configs => {
+        if (isEmittedSlotConfig(configs)) {
+          lastSlotConfigRef.value = configs;
+          hasPendingSlotConfigEcho = false;
+          pendingEmittedSlotConfig = null;
+          return;
+        }
+        if (isRestoringHistory) {
+          lastSlotConfigRef.value = configs;
+          return;
+        }
         // Reset is a new baseline - clear history unless it's from undo/redo restore
-        const shouldInit = !isRestoringHistory;
         applySlotConfig(configs);
-        if (shouldInit) initHistoryStack();
+        initHistoryStack();
       },
       { immediate: true },
     );
@@ -1870,6 +1932,19 @@ export default defineComponent({
     watch(
       () => senderCtx.value.skill,
       skill => {
+        if (
+          hasPendingSkillEcho &&
+          toRaw(skill) === toRaw(pendingEmittedSkill)
+        ) {
+          lastSkillRef.value = skill;
+          hasPendingSkillEcho = false;
+          pendingEmittedSkill = undefined;
+          return;
+        }
+        if (isRestoringHistory) {
+          lastSkillRef.value = skill;
+          return;
+        }
         if (skill === lastSkillRef.value && skillDomRef.value) {
           return;
         }
@@ -1929,13 +2004,8 @@ export default defineComponent({
             keyLock.value = false;
             senderCtx.value.onBlur?.(e);
           }}
-          onCompositionstart={() => {
-            isComposing.value = true;
-          }}
-          onCompositionend={() => {
-            isComposing.value = false;
-            keyLock.value = false;
-          }}
+          onCompositionstart={onInternalCompositionStart}
+          onCompositionend={onInternalCompositionEnd}
         />
       );
     };
