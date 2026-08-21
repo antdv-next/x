@@ -123,10 +123,7 @@ export default defineComponent({
     const GROUP_MS = 500;
 
     const getCleanedText = (ori: string) =>
-      ori
-        .replace(/\u200B/g, "")
-        .replace(/\n/g, "")
-        .replace(/^\n+|\n+$/g, "");
+      ori.replace(/\u200B/g, "").replace(/^[\r\n]+|[\r\n]+$/g, "");
 
     const getNodePath = (node: Node, root: HTMLElement): number[] => {
       const path: number[] = [];
@@ -1220,6 +1217,16 @@ export default defineComponent({
         if (dom) unmountDom(dom as HTMLElement);
         slotDomMap.value.delete(k);
       });
+      const nextSlotValues = { ...slotValues.value };
+      slotConfigMap.value.forEach((config, key) => {
+        if (config.type === "content") {
+          const dom = slotDomMap.value.get(key);
+          if (dom && editable.contains(dom)) {
+            nextSlotValues[key] = dom.innerText || "";
+          }
+        }
+      });
+      slotValues.value = nextSlotValues;
       const remainingBase = new Set<string>();
       slotDomMap.value.forEach((_, k) => {
         if (!k.endsWith("_before") && !k.endsWith("_after"))
@@ -1415,6 +1422,15 @@ export default defineComponent({
       return false;
     };
 
+    const hasManagedHistory = () =>
+      slotDomMap.value.size > 0 ||
+      !!skillDomRef.value ||
+      historyStack.some(
+        snapshot =>
+          !!snapshot.skill ||
+          snapshot.slotConfigs.some(config => config?.type !== "text"),
+      );
+
     const onBeforeInput = (event: InputEvent) => {
       if (isRestoringHistory || isComposing.value) return;
       const inputType = (event as InputEvent).inputType || "";
@@ -1456,10 +1472,9 @@ export default defineComponent({
           return;
         }
       }
-      // Plain text ops in slot-mode: capture history so undo returns to correct offset
-      // include insertText, insertFromPaste, delete*, insert* even when no slot intersect
+      // Keep plain text operations in the same stack after the final slot is removed.
       if (
-        slotDomMap.value.size > 0 &&
+        hasManagedHistory() &&
         (inputType === "insertText" ||
           inputType === "insertFromPaste" ||
           inputType.startsWith("delete") ||
@@ -1471,13 +1486,17 @@ export default defineComponent({
     };
     const onInternalCut = (event: ClipboardEvent) => {
       // Cut with slot selection is handled as delete with history (push after)
-      if (handleSelectionDelete(event as unknown as InputEvent)) return;
+      if (selectionContainsSlot()) {
+        const selection = getSelection();
+        event.clipboardData?.setData("text/plain", selection?.toString() ?? "");
+        if (handleSelectionDelete(event as unknown as InputEvent)) return;
+      }
       handleDeleteOperation(event, "cut");
     };
 
     const onInternalKeyDown = (event: KeyboardEvent) => {
       // 浏览器原生对 contenteditable + 原子 span 的撤销不可靠（会重建文本节点导致叠加），
-      // 只要焦点在 slot 编辑区就完全接管 Ctrl+Z/Y，历史耗尽时也 prevent 避免原生继续叠加
+      // 当前或历史快照存在 slot/skill 时接管 Ctrl+Z/Y；纯文本交给浏览器原生历史。
       const isMod = event.ctrlKey || event.metaKey;
       const keyLower = event.key.toLowerCase();
       const sel = getSelection();
@@ -1488,13 +1507,24 @@ export default defineComponent({
         editableRef.value.contains(sel.anchorNode as Node | null);
       const editableFocused =
         inEditable || document.activeElement === editableRef.value;
-      if (editableFocused && isMod && keyLower === "z") {
+      const shouldUseManagedHistory = hasManagedHistory();
+      if (
+        editableFocused &&
+        shouldUseManagedHistory &&
+        isMod &&
+        keyLower === "z"
+      ) {
         event.preventDefault();
         if (event.shiftKey) handleRedo();
         else handleUndo();
         return;
       }
-      if (editableFocused && isMod && keyLower === "y") {
+      if (
+        editableFocused &&
+        shouldUseManagedHistory &&
+        isMod &&
+        keyLower === "y"
+      ) {
         event.preventDefault();
         handleRedo();
         return;
