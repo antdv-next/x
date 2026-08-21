@@ -1215,6 +1215,54 @@ describe("Sender", () => {
     host.remove();
   });
 
+  it("should update manually rendered slot controls when disabled changes", async () => {
+    const wrapper = mount(Sender, {
+      props: {
+        slotConfig: [
+          {
+            type: "input",
+            key: "input",
+            props: { defaultValue: "value" },
+          },
+          {
+            type: "custom",
+            key: "custom",
+            customRender: (_value, _onChange, control) => (
+              <button class="custom-slot-control" disabled={control.disabled}>
+                Custom
+              </button>
+            ),
+          },
+        ],
+      },
+    });
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+
+    expect(
+      (wrapper.find("input.antd-sender-slot-input").element as HTMLInputElement)
+        .disabled,
+    ).toBe(false);
+    expect(
+      (wrapper.find("button.custom-slot-control").element as HTMLButtonElement)
+        .disabled,
+    ).toBe(false);
+
+    await wrapper.setProps({ disabled: true });
+    await wrapper.vm.$nextTick();
+
+    expect(
+      (wrapper.find("input.antd-sender-slot-input").element as HTMLInputElement)
+        .disabled,
+    ).toBe(true);
+    expect(
+      (wrapper.find("button.custom-slot-control").element as HTMLButtonElement)
+        .disabled,
+    ).toBe(true);
+
+    wrapper.unmount();
+  });
+
   it("should not close a skill while disabled", async () => {
     const wrapper = mount(Sender, {
       props: {
@@ -1898,7 +1946,7 @@ describe("Sender", () => {
     host.remove();
   });
 
-  it("should preserve history when a controlled skill echo is cloned", async () => {
+  it("should reset history for a delayed controlled skill update", async () => {
     const host = document.createElement("div");
     document.body.appendChild(host);
     let wrapper: ReturnType<typeof mount>;
@@ -1955,7 +2003,11 @@ describe("Sender", () => {
     await wrapper.vm.$nextTick();
     await new Promise(resolve => globalThis.setTimeout(resolve, 20));
     await wrapper.vm.$nextTick();
-    expect((wrapper.vm as any).getValue().skill).toBeUndefined();
+    // The delayed controlled prop is authoritative and starts a new history
+    // baseline, so undo cannot restore the older local state.
+    expect((wrapper.vm as any).getValue().skill).toEqual(
+      expect.objectContaining({ value: "translate" }),
+    );
 
     wrapper.unmount();
     host.remove();

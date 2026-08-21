@@ -249,20 +249,6 @@ export default defineComponent({
     let isManagedHistoryActive = false;
     let pendingHistoryType: string | null = null; // beforeinput 标记，input 后推入
     let pendingBeforeCursor: SelectionSnapshot | null = null; // 操作前的光标，撤销应回到此处而非操作后
-    type PendingEcho<T> = {
-      value: T;
-      emittedAt: number;
-      origin: "local" | "sync";
-    };
-    // Controlled parents normally echo onChange values in emission order.
-    // Match only the next pending operation and expire abandoned echoes so a
-    // later external value cannot accidentally match old emitted content.
-    const PENDING_ECHO_TTL = 5000;
-    const MAX_PENDING_ECHOES = 20;
-    const pendingEmittedSlotConfigs: PendingEcho<
-      readonly SlotConfigType[] | undefined
-    >[] = [];
-    const pendingEmittedSkills: PendingEcho<SkillType | undefined>[] = [];
     let historyInitVersion = 0;
     const MAX_HISTORY = 50;
     const GROUP_MS = 500;
@@ -794,42 +780,8 @@ export default defineComponent({
       );
     };
 
-    const recordPendingEcho = <T,>(
-      queue: PendingEcho<T>[],
-      value: T,
-      emittedAt: number,
-      origin: "local" | "sync",
-    ) => {
-      if (origin === "sync") {
-        queue.splice(0, queue.length, { value, emittedAt, origin });
-        return;
-      }
-      // A real edit supersedes an unacknowledged prop-synchronization echo.
-      for (let index = queue.length - 1; index >= 0; index--) {
-        if (queue[index]?.origin === "sync") queue.splice(index, 1);
-      }
-      queue.push({ value, emittedAt, origin });
-      if (queue.length > MAX_PENDING_ECHOES) queue.shift();
-    };
-
-    const triggerValueChange = (
-      event?: Event,
-      echoOrigin: "local" | "sync" = "local",
-    ) => {
+    const triggerValueChange = (event?: Event) => {
       const value = getEditorValue();
-      const emittedAt = Date.now();
-      recordPendingEcho(
-        pendingEmittedSlotConfigs,
-        value.slotConfig,
-        emittedAt,
-        echoOrigin,
-      );
-      recordPendingEcho(
-        pendingEmittedSkills,
-        value.skill,
-        emittedAt,
-        echoOrigin,
-      );
       senderCtx.value.onChange?.(
         value.value,
         event,
@@ -1262,7 +1214,9 @@ export default defineComponent({
 
       renderSkill();
       void nextTick(() => {
-        triggerValueChange(undefined, "sync");
+        const value = getEditorValue();
+        updateSkillEmptyStatus(value);
+        updateSubmitDisabled();
       });
     };
 
@@ -2111,35 +2065,6 @@ export default defineComponent({
       initFromSlotConfig(configs);
     };
 
-    const consumePendingEcho = <T,>(queue: PendingEcho<T>[], value: T) => {
-      while (queue[0] && Date.now() - queue[0].emittedAt > PENDING_ECHO_TTL) {
-        queue.shift();
-      }
-
-      if (queue.length === 0) return false;
-      const lastIndex = queue.length - 1;
-      let matchIndex = -1;
-      // Preserve ordinary delayed echoes in FIFO order.
-      if (isEquivalentValue(value, queue[0]!.value)) {
-        matchIndex = 0;
-      } else if (isEquivalentValue(value, queue[lastIndex]!.value)) {
-        // A debounced parent may echo only the newest operation. Consume the
-        // skipped intermediate echoes together, but never match an older
-        // value while newer local operations are still pending.
-        matchIndex = lastIndex;
-      }
-      if (matchIndex < 0) return false;
-      queue.splice(0, matchIndex + 1);
-      return true;
-    };
-
-    const isEmittedSlotConfig = (
-      configs: readonly SlotConfigType[] | undefined,
-    ) => consumePendingEcho(pendingEmittedSlotConfigs, configs);
-
-    const isEmittedSkill = (skill: SkillType | undefined) =>
-      consumePendingEcho(pendingEmittedSkills, skill);
-
     const initHistoryStack = () => {
       const initVersion = ++historyInitVersion;
       historyStack = [];
@@ -2168,16 +2093,16 @@ export default defineComponent({
     watch(
       () => senderCtx.value.slotConfig,
       configs => {
-        if (isEmittedSlotConfig(configs)) {
-          lastSlotConfigRef.value = configs;
-          return;
-        }
         if (isRestoringHistory) {
           lastSlotConfigRef.value = configs;
           return;
         }
-        // Reset is a new baseline - clear history unless it's from undo/redo restore
-        pendingEmittedSlotConfigs.length = 0;
+        if (isEquivalentValue(configs, getEditorValue().slotConfig)) {
+          lastSlotConfigRef.value = configs;
+          return;
+        }
+        // Controlled props are authoritative. Any actual external value
+        // establishes a new history baseline.
         applySlotConfig(configs);
         initHistoryStack();
       },
@@ -2187,23 +2112,21 @@ export default defineComponent({
     watch(
       () => senderCtx.value.skill,
       skill => {
-        if (isEmittedSkill(skill)) {
-          lastSkillRef.value = skill;
-          return;
-        }
         if (isRestoringHistory) {
           lastSkillRef.value = skill;
           return;
         }
-        if (skill === lastSkillRef.value && skillDomRef.value) {
+        if (isEquivalentValue(skill, currentSkillRef.value)) {
+          lastSkillRef.value = skill;
           return;
         }
-        pendingEmittedSkills.length = 0;
         lastSkillRef.value = skill;
         renderSkill();
         initHistoryStack();
         void nextTick(() => {
-          triggerValueChange(undefined, "sync");
+          const value = getEditorValue();
+          updateSkillEmptyStatus(value);
+          updateSubmitDisabled();
         });
       },
       { immediate: true },
@@ -2214,9 +2137,12 @@ export default defineComponent({
       ([readOnly, disabled]) => {
         const editable = !(readOnly || disabled);
         slotConfigMap.value.forEach((config, key) => {
+          const dom = slotDomMap.value.get(key);
+          if (!dom) return;
           if (config.type === "content") {
-            const dom = slotDomMap.value.get(key);
-            dom?.setAttribute("contenteditable", editable ? "true" : "false");
+            dom.setAttribute("contenteditable", editable ? "true" : "false");
+          } else {
+            renderSlot(config, dom);
           }
         });
         if (currentSkillRef.value) {
