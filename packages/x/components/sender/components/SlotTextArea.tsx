@@ -1699,6 +1699,43 @@ export default defineComponent({
         !!editableRef.value &&
         event.target instanceof Node &&
         editableRef.value.contains(event.target);
+      const eventFromNestedFormControl =
+        event.target instanceof HTMLInputElement ||
+        event.target instanceof HTMLTextAreaElement ||
+        event.target instanceof HTMLSelectElement;
+      const nestedControlKey = eventFromNestedFormControl
+        ? (event.target as HTMLElement).closest<HTMLElement>("[data-slot-key]")
+            ?.dataset.slotKey
+        : undefined;
+      const nestedControlSelection =
+        event.target instanceof HTMLInputElement ||
+        event.target instanceof HTMLTextAreaElement
+          ? {
+              start: event.target.selectionStart,
+              end: event.target.selectionEnd,
+              direction: event.target.selectionDirection,
+            }
+          : null;
+      const restoreNestedControlFocus = () => {
+        if (!nestedControlKey) return;
+        void nextTick(() => {
+          const slotDom = slotDomMap.value.get(nestedControlKey);
+          const control = slotDom?.querySelector<
+            HTMLInputElement | HTMLTextAreaElement
+          >("input, textarea");
+          if (!control) return;
+          control.focus();
+          if (nestedControlSelection) {
+            const start = nestedControlSelection.start ?? control.value.length;
+            const end = nestedControlSelection.end ?? start;
+            control.setSelectionRange(
+              Math.min(start, control.value.length),
+              Math.min(end, control.value.length),
+              nestedControlSelection.direction ?? undefined,
+            );
+          }
+        });
+      };
       const editableFocused =
         inEditable ||
         eventFromEditable ||
@@ -1715,6 +1752,7 @@ export default defineComponent({
         event.preventDefault();
         if (event.shiftKey) handleRedo();
         else handleUndo();
+        restoreNestedControlFocus();
         return;
       }
       if (
@@ -1727,6 +1765,7 @@ export default defineComponent({
       ) {
         event.preventDefault();
         handleRedo();
+        restoreNestedControlFocus();
         return;
       }
 

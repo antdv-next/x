@@ -1441,6 +1441,49 @@ describe("Sender", () => {
     host.remove();
   });
 
+  it("should keep managed undo focus inside a slot input", async () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const wrapper = mount(Sender, {
+      attachTo: host,
+      props: {
+        slotConfig: [
+          {
+            type: "input",
+            key: "input",
+            props: { defaultValue: "Initial" },
+          },
+        ],
+      },
+    });
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+
+    const input = wrapper.find("input.antd-sender-slot-input");
+    await input.setValue("Edited");
+    (input.element as HTMLInputElement).focus();
+    const undoEvent = new KeyboardEvent("keydown", {
+      bubbles: true,
+      cancelable: true,
+      ctrlKey: true,
+      key: "z",
+    });
+    input.element.dispatchEvent(undoEvent);
+    await wrapper.vm.$nextTick();
+
+    expect(undoEvent.defaultPrevented).toBe(true);
+    const restoredInput = wrapper.find("input.antd-sender-slot-input");
+    expect(document.activeElement).toBe(restoredInput.element);
+
+    await restoredInput.setValue("Continued");
+    expect((wrapper.vm as any).getValue().slotConfig[0].value).toBe(
+      "Continued",
+    );
+
+    wrapper.unmount();
+    host.remove();
+  });
+
   it("should preserve line breaks when pasting in slot mode", async () => {
     const host = document.createElement("div");
     document.body.appendChild(host);
