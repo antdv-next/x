@@ -49,6 +49,16 @@ type NodeInfo = {
 };
 
 const SUPPORTED_INPUT_TYPES = new Set(["input", "select", "custom", "content"]);
+const UNSUPPORTED_RICH_TEXT_INPUT_TYPES = new Set([
+  "insertHorizontalRule",
+  "insertLink",
+  "insertOrderedList",
+  "insertUnorderedList",
+]);
+
+const isUnsupportedRichTextInputType = (inputType: string) =>
+  inputType.startsWith("format") ||
+  UNSUPPORTED_RICH_TEXT_INPUT_TYPES.has(inputType);
 
 function stringifyValue(value: any) {
   if (value === undefined || value === null) return "";
@@ -2144,6 +2154,17 @@ export default defineComponent({
         };
         return;
       }
+      // Native controls that do not belong to Sender's built-in input slot
+      // own their ordinary editing lifecycle. In particular, a stale outer
+      // selection must not turn their beforeinput into an outer history edit.
+      if (isNativeFormControl(event.target)) return;
+      // Sender exposes a plain-text value model, so browser commands whose
+      // only result is rich-text structure cannot be represented faithfully.
+      // Block them before they mutate either outer text or a content slot.
+      if (isUnsupportedRichTextInputType(inputType)) {
+        event.preventDefault();
+        return;
+      }
       const sel = getSelection();
       if (!sel || sel.rangeCount === 0) return;
       const range = sel.getRangeAt(0);
@@ -2151,49 +2172,15 @@ export default defineComponent({
       if (!editable || !editable.contains(range.commonAncestorContainer))
         return;
       if (pendingHistoryType === "insertFromPaste") return;
-      const captureIfNeeded = () => {
-        if (pendingBeforeSelection === undefined) {
-          pendingBeforeSelection = captureEditorSelection(event.target);
-        }
-      };
-      const isDeleteType =
-        inputType.startsWith("delete") || inputType.includes("Cut");
-      const isInsertType = inputType.startsWith("insert") && !range.collapsed;
-      // delete/insert 覆盖 slot 时需要历史
-      if (isDeleteType && rangeIntersectsSlot(range)) {
-        pendingHistoryType = inputType;
-        captureIfNeeded();
-        return;
-      }
-      if (isInsertType && rangeIntersectsSlot(range)) {
-        pendingHistoryType = inputType;
-        captureIfNeeded();
-        return;
-      }
-      if (
-        inputType === "insertText" &&
-        range.collapsed &&
-        slotDomMap.value.size > 0
-      ) {
-        const anchor = sel.anchorNode as HTMLElement | null;
-        const outer = anchor ? findOuterContainer(anchor) : null;
-        const info = outer ? getNodeInfo(outer as HTMLElement) : null;
-        if (info?.slotConfig?.type === "content") {
-          pendingHistoryType = "insertText";
-          captureIfNeeded();
-          return;
-        }
-      }
-      // Keep plain text operations in the same stack after the final slot is removed.
-      if (
-        hasManagedHistory() &&
-        (inputType === "insertText" ||
-          inputType === "insertFromPaste" ||
-          inputType.startsWith("delete") ||
-          inputType.startsWith("insert"))
-      ) {
-        pendingHistoryType = inputType;
-        captureIfNeeded();
+      if (!hasManagedHistory()) return;
+
+      // Once history is managed, every browser edit of the outer document
+      // must advance the same stack. Input Events defines insert*, delete*,
+      // format*, history*, and other editing commands; history is handled
+      // above and composition is handled by its own grouped lifecycle.
+      pendingHistoryType = inputType || "unknown";
+      if (pendingBeforeSelection === undefined) {
+        pendingBeforeSelection = captureEditorSelection(event.target);
       }
     };
     const onInternalCut = (event: ClipboardEvent) => {
@@ -2636,7 +2623,13 @@ export default defineComponent({
       const initVersion = ++historyInitVersion;
       historyStack = [];
       historyIndex = -1;
-      isManagedHistoryActive = slotDomMap.value.size > 0 || !!skillDomRef.value;
+      // Managed ownership is sticky for the component lifetime. Returning to
+      // native history after a controlled pure-text baseline would let the
+      // browser mutate the document behind the newly reset managed stack.
+      isManagedHistoryActive =
+        isManagedHistoryActive ||
+        slotDomMap.value.size > 0 ||
+        !!skillDomRef.value;
       pendingHistoryType = null;
       pendingBeforeSelection = undefined;
       void nextTick(() => {

@@ -787,6 +787,40 @@ describe("Sender", () => {
     host.remove();
   });
 
+  it("should preserve native history for an initially controlled text document", async () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const wrapper = mount(Sender, {
+      attachTo: host,
+      props: {
+        slotConfig: [{ type: "text", value: "plain" }],
+      },
+    });
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+
+    const editable = wrapper.find(".antd-sender-input-slot");
+    const undoEvent = new KeyboardEvent("keydown", {
+      bubbles: true,
+      cancelable: true,
+      ctrlKey: true,
+      key: "z",
+    });
+    editable.element.dispatchEvent(undoEvent);
+    expect(undoEvent.defaultPrevented).toBe(false);
+
+    const beforeInputUndo = new InputEvent("beforeinput", {
+      bubbles: true,
+      cancelable: true,
+      inputType: "historyUndo",
+    });
+    editable.element.dispatchEvent(beforeInputUndo);
+    expect(beforeInputUndo.defaultPrevented).toBe(false);
+
+    wrapper.unmount();
+    host.remove();
+  });
+
   it("should route beforeinput history commands through managed history", async () => {
     const host = document.createElement("div");
     document.body.appendChild(host);
@@ -834,6 +868,69 @@ describe("Sender", () => {
     await wrapper.vm.$nextTick();
     expect(redoEvent.defaultPrevented).toBe(true);
     expect((wrapper.vm as any).getValue().slotConfig).toEqual([]);
+
+    wrapper.unmount();
+    host.remove();
+  });
+
+  it("should block unsupported rich-text mutations before they reach history", async () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const wrapper = mount(Sender, {
+      attachTo: host,
+      props: {
+        slotConfig: [
+          { type: "text", value: "abc" },
+          {
+            type: "content",
+            key: "content",
+            props: { defaultValue: "X" },
+          },
+          {
+            type: "tag",
+            key: "tag",
+            props: { label: "Slot", value: "slot" },
+          },
+        ],
+      },
+    });
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+
+    const editable = wrapper.find<HTMLElement>(".antd-sender-input-slot");
+    const textNode = editable.element.firstChild!;
+    const selection = window.getSelection()!;
+    (editable.element as HTMLElement).focus();
+    const beforeRange = document.createRange();
+    beforeRange.setStart(textNode, 0);
+    beforeRange.setEnd(textNode, 3);
+    selection.removeAllRanges();
+    selection.addRange(beforeRange);
+    for (const inputType of ["formatBold", "insertOrderedList"]) {
+      const event = new InputEvent("beforeinput", {
+        bubbles: true,
+        cancelable: true,
+        inputType,
+      });
+      editable.element.dispatchEvent(event);
+      expect(event.defaultPrevented).toBe(true);
+    }
+    expect(editable.find("b").exists()).toBe(false);
+    expect(window.getSelection()?.toString()).toBe("abc");
+
+    const contentSlot = wrapper.find<HTMLElement>(".antd-sender-slot-content");
+    const contentRange = document.createRange();
+    contentRange.selectNodeContents(contentSlot.element);
+    selection.removeAllRanges();
+    selection.addRange(contentRange);
+    const contentFormatEvent = new InputEvent("beforeinput", {
+      bubbles: true,
+      cancelable: true,
+      inputType: "formatItalic",
+    });
+    contentSlot.element.dispatchEvent(contentFormatEvent);
+    expect(contentFormatEvent.defaultPrevented).toBe(true);
+    expect(contentSlot.find("i").exists()).toBe(false);
 
     wrapper.unmount();
     host.remove();
@@ -2635,6 +2732,97 @@ describe("Sender", () => {
     expect((wrapper.vm as any).getValue().slotConfig).toEqual([]);
 
     if (pendingTimer) globalThis.clearTimeout(pendingTimer);
+    wrapper.unmount();
+    host.remove();
+  });
+
+  it("should keep managed ownership after a controlled pure-text baseline", async () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const wrapper = mount(Sender, {
+      attachTo: host,
+      props: {
+        slotConfig: [
+          {
+            type: "tag",
+            key: "tag",
+            props: { label: "Slot", value: "slot" },
+          },
+        ],
+      },
+    });
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+
+    const editable = wrapper.find<HTMLElement>(".antd-sender-input-slot");
+    const selection = window.getSelection()!;
+    const deleteRange = document.createRange();
+    deleteRange.selectNodeContents(editable.element);
+    selection.removeAllRanges();
+    selection.addRange(deleteRange);
+    await editable.trigger("keydown", { key: "Backspace" });
+    expect((wrapper.vm as any).getValue().slotConfig).toEqual([]);
+
+    await wrapper.setProps({
+      slotConfig: [{ type: "text", value: "server" }],
+    });
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+    expect((wrapper.vm as any).getValue().value).toBe("server");
+
+    const undoAtBaseline = new KeyboardEvent("keydown", {
+      bubbles: true,
+      cancelable: true,
+      ctrlKey: true,
+      key: "z",
+    });
+    editable.element.dispatchEvent(undoAtBaseline);
+    expect(undoAtBaseline.defaultPrevented).toBe(true);
+    expect((wrapper.vm as any).getValue().value).toBe("server");
+
+    const beforeInputUndo = new InputEvent("beforeinput", {
+      bubbles: true,
+      cancelable: true,
+      inputType: "historyUndo",
+    });
+    editable.element.dispatchEvent(beforeInputUndo);
+    expect(beforeInputUndo.defaultPrevented).toBe(true);
+    expect((wrapper.vm as any).getValue().value).toBe("server");
+
+    const serverText = editable.element.firstChild!;
+    (editable.element as HTMLElement).focus();
+    const typingRange = document.createRange();
+    typingRange.setStart(serverText, 6);
+    typingRange.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(typingRange);
+    editable.element.dispatchEvent(
+      new InputEvent("beforeinput", {
+        bubbles: true,
+        cancelable: true,
+        data: "!",
+        inputType: "insertText",
+      }),
+    );
+    serverText.textContent = "server!";
+    typingRange.setStart(serverText, 7);
+    typingRange.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(typingRange);
+    editable.element.dispatchEvent(
+      new InputEvent("input", {
+        bubbles: true,
+        data: "!",
+        inputType: "insertText",
+      }),
+    );
+    expect((wrapper.vm as any).getValue().value).toBe("server!");
+
+    await editable.trigger("keydown", { ctrlKey: true, key: "z" });
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+    expect((wrapper.vm as any).getValue().value).toBe("server");
+
     wrapper.unmount();
     host.remove();
   });
