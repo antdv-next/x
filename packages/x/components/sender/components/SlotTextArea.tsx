@@ -127,6 +127,56 @@ function isEquivalentValue(
       rawLeft.flags === rawRight.flags
     );
   }
+  // ArrayBuffer and typed array views
+  if (rawLeft instanceof ArrayBuffer || rawRight instanceof ArrayBuffer) {
+    if (!(rawLeft instanceof ArrayBuffer && rawRight instanceof ArrayBuffer)) {
+      return false;
+    }
+    if (rawLeft.byteLength !== rawRight.byteLength) return false;
+    const leftBytes = new Uint8Array(rawLeft);
+    const rightBytes = new Uint8Array(rawRight);
+    return leftBytes.every((value, index) => value === rightBytes[index]);
+  }
+  if (
+    typeof SharedArrayBuffer !== "undefined" &&
+    (rawLeft instanceof SharedArrayBuffer ||
+      rawRight instanceof SharedArrayBuffer)
+  ) {
+    if (
+      !(
+        rawLeft instanceof SharedArrayBuffer &&
+        rawRight instanceof SharedArrayBuffer
+      ) ||
+      rawLeft.byteLength !== rawRight.byteLength
+    ) {
+      return false;
+    }
+    const leftBytes = new Uint8Array(rawLeft);
+    const rightBytes = new Uint8Array(rawRight);
+    return leftBytes.every((value, index) => value === rightBytes[index]);
+  }
+  if (ArrayBuffer.isView(rawLeft) || ArrayBuffer.isView(rawRight)) {
+    if (!(ArrayBuffer.isView(rawLeft) && ArrayBuffer.isView(rawRight))) {
+      return false;
+    }
+    if (
+      rawLeft.constructor !== rawRight.constructor ||
+      rawLeft.byteLength !== rawRight.byteLength
+    ) {
+      return false;
+    }
+    const leftBytes = new Uint8Array(
+      rawLeft.buffer,
+      rawLeft.byteOffset,
+      rawLeft.byteLength,
+    );
+    const rightBytes = new Uint8Array(
+      rawRight.buffer,
+      rawRight.byteOffset,
+      rawRight.byteLength,
+    );
+    return leftBytes.every((value, index) => value === rightBytes[index]);
+  }
   // Map
   if (rawLeft instanceof Map || rawRight instanceof Map) {
     if (!(rawLeft instanceof Map && rawRight instanceof Map)) return false;
@@ -205,6 +255,127 @@ function isEquivalentValue(
   );
 }
 
+function cloneHistoryValue<T>(
+  value: T,
+  seen = new WeakMap<object, unknown>(),
+): T {
+  if (!value || (typeof value !== "object" && typeof value !== "function")) {
+    return value;
+  }
+  if (typeof value === "function" || (value as any).__v_isVNode) return value;
+
+  const rawValue = toRaw(value as object) as any;
+  const cached = seen.get(rawValue);
+  if (cached) return cached as T;
+
+  if (rawValue instanceof Date) {
+    const result = new Date(rawValue.getTime());
+    seen.set(rawValue, result);
+    return result as T;
+  }
+  if (rawValue instanceof RegExp) {
+    const result = new RegExp(rawValue.source, rawValue.flags);
+    result.lastIndex = rawValue.lastIndex;
+    seen.set(rawValue, result);
+    return result as T;
+  }
+  if (typeof Node !== "undefined" && rawValue instanceof Node) {
+    const result = rawValue.cloneNode(true);
+    seen.set(rawValue, result);
+    return result as T;
+  }
+  if (rawValue instanceof ArrayBuffer) {
+    const result = rawValue.slice(0);
+    seen.set(rawValue, result);
+    return result as T;
+  }
+  if (
+    typeof SharedArrayBuffer !== "undefined" &&
+    rawValue instanceof SharedArrayBuffer
+  ) {
+    const result = rawValue.slice(0);
+    seen.set(rawValue, result);
+    return result as T;
+  }
+  if (ArrayBuffer.isView(rawValue)) {
+    const buffer = cloneHistoryValue(rawValue.buffer, seen);
+    const ViewConstructor = rawValue.constructor as new (
+      buffer: ArrayBufferLike,
+      byteOffset: number,
+      length?: number,
+    ) => ArrayBufferView;
+    const result =
+      rawValue instanceof DataView
+        ? new DataView(buffer, rawValue.byteOffset, rawValue.byteLength)
+        : new ViewConstructor(
+            buffer,
+            rawValue.byteOffset,
+            (rawValue as any).length,
+          );
+    seen.set(rawValue, result);
+    return result as T;
+  }
+  if (
+    rawValue instanceof WeakMap ||
+    rawValue instanceof WeakSet ||
+    rawValue instanceof Promise
+  ) {
+    // These objects expose no cloneable state. Retaining identity is safer
+    // than manufacturing an instance without the required internal slots.
+    return rawValue as T;
+  }
+
+  if (rawValue instanceof Map) {
+    const result = new Map();
+    seen.set(rawValue, result);
+    rawValue.forEach((entryValue: unknown, key: unknown) => {
+      result.set(
+        cloneHistoryValue(key, seen),
+        cloneHistoryValue(entryValue, seen),
+      );
+    });
+    return result as T;
+  }
+  if (rawValue instanceof Set) {
+    const result = new Set();
+    seen.set(rawValue, result);
+    rawValue.forEach((entryValue: unknown) => {
+      result.add(cloneHistoryValue(entryValue, seen));
+    });
+    return result as T;
+  }
+
+  const prototype = Object.getPrototypeOf(rawValue);
+  const constructor = prototype?.constructor;
+  if (
+    !Array.isArray(rawValue) &&
+    prototype !== Object.prototype &&
+    prototype !== null &&
+    typeof constructor === "function" &&
+    Function.prototype.toString.call(constructor).includes("[native code]")
+  ) {
+    // Preserve unrecognized native objects (URL, Blob, Intl instances, etc.)
+    // instead of producing an object that lacks their private internal slots.
+    return rawValue as T;
+  }
+
+  const result: any = Array.isArray(rawValue) ? [] : Object.create(prototype);
+  seen.set(rawValue, result);
+  Reflect.ownKeys(rawValue).forEach(key => {
+    const descriptor = Object.getOwnPropertyDescriptor(rawValue, key);
+    if (!descriptor) return;
+    if ("value" in descriptor) {
+      descriptor.value = cloneHistoryValue(descriptor.value, seen);
+    }
+    try {
+      Object.defineProperty(result, key, descriptor);
+    } catch {
+      result[key] = cloneHistoryValue(rawValue[key], seen);
+    }
+  });
+  return result as T;
+}
+
 export default defineComponent({
   name: "SlotTextArea",
   setup(_, { expose }) {
@@ -225,7 +396,7 @@ export default defineComponent({
     const keyLock = ref(false);
 
     // ==================== History: full snapshot stack + groups ====================
-    // 全量快照栈：每次操作后 push 一份完整快照（slotConfigs/values/skill/cursor），
+    // 全量快照栈：每次操作后提交统一 EditorDocument + cursor 快照，
     // Ctrl+Z 只是 index-- 并 restore(stack[index])，不额外 push，避免“越撤销越多”
     type SelectionSnapshot = {
       startPath: number[];
@@ -234,10 +405,28 @@ export default defineComponent({
       endOffset: number;
       collapsed: boolean;
     } | null;
-    type HistorySnapshot = {
+    type EditorNodeSnapshot =
+      | { kind: "text"; value: string }
+      | {
+          kind: "element";
+          tagName: string;
+          attributes: [string, string][];
+          children: EditorNodeSnapshot[];
+        }
+      | {
+          kind: "slot";
+          key: string;
+          variant: "main" | "before" | "after";
+        }
+      | { kind: "skill" };
+    type EditorDocumentSnapshot = {
+      nodes: EditorNodeSnapshot[];
       slotConfigs: any[];
       slotValues: Record<string, any>;
       skill: any;
+    };
+    type HistorySnapshot = {
+      document: EditorDocumentSnapshot;
       cursor: SelectionSnapshot; // after cursor (光标在操作后)
       beforeCursor: SelectionSnapshot | null; // before cursor (撤销应回到此处)
       t: number;
@@ -249,6 +438,11 @@ export default defineComponent({
     let isManagedHistoryActive = false;
     let pendingHistoryType: string | null = null; // beforeinput 标记，input 后推入
     let pendingBeforeCursor: SelectionSnapshot | null = null; // 操作前的光标，撤销应回到此处而非操作后
+    let hasPendingControlledSlotConfig = false;
+    let pendingControlledSlotConfig: readonly SlotConfigType[] | undefined =
+      undefined;
+    let hasPendingControlledSkill = false;
+    let pendingControlledSkill: SkillType | undefined = undefined;
     let historyInitVersion = 0;
     const MAX_HISTORY = 50;
     const GROUP_MS = 500;
@@ -326,6 +520,21 @@ export default defineComponent({
       }
     };
 
+    const isSameCollapsedSelection = (
+      left: SelectionSnapshot,
+      right: SelectionSnapshot,
+    ) => {
+      if (!left?.collapsed || !right?.collapsed) return false;
+      const isSamePath = (a: number[], b: number[]) =>
+        a.length === b.length && a.every((value, index) => value === b[index]);
+      return (
+        left.startOffset === right.startOffset &&
+        left.endOffset === right.endOffset &&
+        isSamePath(left.startPath, right.startPath) &&
+        isSamePath(left.endPath, right.endPath)
+      );
+    };
+
     const restoreSelectionSnapshot = (cursor: SelectionSnapshot) => {
       const editable = editableRef.value;
       if (!editable) return;
@@ -335,6 +544,9 @@ export default defineComponent({
         setEndCursor();
         return;
       }
+      // Focusing after addRange can reset the freshly restored selection in
+      // browsers (and does so in JSDOM). Focus first, then apply the snapshot.
+      editable.focus();
       const tryDirect = (): boolean => {
         const startNode = getNodeByPath(editable, cursor.startPath);
         const endNode = getNodeByPath(editable, cursor.endPath);
@@ -352,7 +564,6 @@ export default defineComponent({
           range.setEnd(endNode, clamp(endNode, cursor.endOffset));
           sel.removeAllRanges();
           sel.addRange(range);
-          editable.focus();
           return true;
         } catch {
           return false;
@@ -368,7 +579,6 @@ export default defineComponent({
           range.collapse(true);
           sel.removeAllRanges();
           sel.addRange(range);
-          editable.focus();
           return;
         } catch {}
       }
@@ -400,12 +610,51 @@ export default defineComponent({
           else range.collapse(true);
           sel.removeAllRanges();
           sel.addRange(range);
-          editable.focus();
           return;
         } catch {}
       }
       setEndCursor();
     };
+
+    const captureEditorNode = (node: Node): EditorNodeSnapshot | null => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        return { kind: "text", value: node.textContent ?? "" };
+      }
+      if (!(node instanceof HTMLElement)) return null;
+
+      const info = getNodeInfo(node);
+      if (info?.skillKey) return { kind: "skill" };
+      if (info?.slotKey) {
+        let variant: "main" | "before" | "after" = "main";
+        if (info.nodeType === "nbsp") {
+          if (slotDomMap.value.get(`${info.slotKey}_before`) === node) {
+            variant = "before";
+          } else if (slotDomMap.value.get(`${info.slotKey}_after`) === node) {
+            variant = "after";
+          } else if (
+            node.classList.contains(`${prefixCls.value}-slot-before`)
+          ) {
+            variant = "before";
+          } else {
+            variant = "after";
+          }
+        }
+        return { kind: "slot", key: info.slotKey, variant };
+      }
+
+      return {
+        kind: "element",
+        tagName: node.tagName.toLowerCase(),
+        attributes: Array.from(node.attributes).map(attribute => [
+          attribute.name,
+          attribute.value,
+        ]),
+        children: Array.from(node.childNodes)
+          .map(captureEditorNode)
+          .filter((child): child is EditorNodeSnapshot => !!child),
+      };
+    };
+
     const captureSnapshot = (
       inputType: string = "unknown",
     ): HistorySnapshot => {
@@ -417,32 +666,47 @@ export default defineComponent({
         }
       });
       slotValues.value = nextSlotValues;
-      const val = getEditorValue();
-      // Shallow clone slotConfigs to avoid DataCloneError on functions/VNodes and keep reference for customRender/formatResult
-      const rawConfigs: any[] = (val as any).slotConfig as any[];
-      const clonedConfigs = rawConfigs.map((c: any) => {
-        if (!c || typeof c !== "object") return c;
-        const copy: any = { ...c };
-        if (c.props && typeof c.props === "object") copy.props = { ...c.props };
-        return copy;
-      });
-      const rawSkill: any = currentSkillRef.value as any;
-      let clonedSkill: any = undefined;
-      if (rawSkill) {
-        try {
-          clonedSkill =
-            typeof structuredClone === "function"
-              ? (structuredClone as any)(rawSkill)
-              : JSON.parse(JSON.stringify(rawSkill));
-        } catch {
-          clonedSkill = { ...rawSkill };
-          if (rawSkill.props) clonedSkill.props = { ...rawSkill.props };
+      const editable = editableRef.value;
+      const nodes = editable
+        ? Array.from(editable.childNodes)
+            .map(captureEditorNode)
+            .filter((node): node is EditorNodeSnapshot => !!node)
+        : [];
+      const activeSlotKeys = new Set<string>();
+      let hasSkillNode = false;
+      const collectManagedNodes = (node: EditorNodeSnapshot) => {
+        if (node.kind === "slot" && node.variant === "main") {
+          activeSlotKeys.add(node.key);
+        } else if (node.kind === "skill") {
+          hasSkillNode = true;
+        } else if (node.kind === "element") {
+          node.children.forEach(collectManagedNodes);
         }
-      }
+      };
+      nodes.forEach(collectManagedNodes);
+      // Clone mutable config/value data while retaining function and VNode
+      // identities required by customRender and formatResult.
+      const rawConfigs = Array.from(slotConfigMap.value.entries())
+        .filter(([key]) => activeSlotKeys.has(key))
+        .map(([, config]) => config);
+      const clonedConfigs = cloneHistoryValue(rawConfigs);
+      const rawSkill: any = hasSkillNode
+        ? (currentSkillRef.value as any)
+        : undefined;
+      const clonedSkill = rawSkill ? cloneHistoryValue(rawSkill) : undefined;
       return {
-        slotConfigs: clonedConfigs,
-        slotValues: { ...slotValues.value },
-        skill: clonedSkill,
+        document: {
+          nodes,
+          slotConfigs: clonedConfigs,
+          slotValues: cloneHistoryValue(
+            Object.fromEntries(
+              Object.entries(slotValues.value).filter(([key]) =>
+                activeSlotKeys.has(key),
+              ),
+            ),
+          ),
+          skill: clonedSkill,
+        },
         cursor: captureSelectionSnapshot(),
         beforeCursor: null as SelectionSnapshot,
         t: Date.now(),
@@ -462,19 +726,18 @@ export default defineComponent({
       snap.beforeCursor = pendingBeforeCursor;
       pendingBeforeCursor = null;
       const last = historyStack[historyIndex];
-      // dedup: skip identical snapshots (e.g. IME recomposition no-op) — but never skip composition which must be recorded
+      // Deduplicate no-op input, including a cancelled IME composition.
       const isSameContent =
-        inputType !== "insertCompositionText" &&
-        !!last &&
-        isEquivalentValue(snap.slotConfigs, last.slotConfigs) &&
-        isEquivalentValue(snap.slotValues, last.slotValues) &&
-        isEquivalentValue(snap.skill, last.skill);
+        !!last && isEquivalentValue(snap.document, last.document);
+      const hasRedoBranch = historyIndex < historyStack.length - 1;
       // 分组：500ms 内连续 insertText 覆盖栈顶，不产生新条目，且保留组首的 beforeCursor
       const canGroup =
         !forceNewGroup &&
+        !hasRedoBranch &&
         last &&
         last.inputType === "insertText" &&
         inputType === "insertText" &&
+        isSameCollapsedSelection(last.cursor, snap.beforeCursor) &&
         now - last.t < GROUP_MS;
       if (canGroup) {
         if (isSameContent) {
@@ -525,29 +788,67 @@ export default defineComponent({
       }
       currentSkillRef.value = undefined;
       editable.innerHTML = "";
+      // Restored editor state must not share mutable objects with the retained
+      // history entry, otherwise editing after undo would corrupt redo.
+      const documentSnapshot = cloneHistoryValue(snap.document);
       // Restore slotValues and slotConfigMap from snapshot
-      slotValues.value = { ...snap.slotValues };
-      snap.slotConfigs.forEach(cfg => {
+      slotValues.value = { ...documentSnapshot.slotValues };
+      documentSnapshot.slotConfigs.forEach(cfg => {
         if ((cfg as any).key) {
           slotConfigMap.value.set((cfg as any).key, cfg);
         }
       });
       // Restore skill if present
-      if (snap.skill) {
-        currentSkillRef.value = snap.skill as SkillType;
+      if (documentSnapshot.skill) {
+        currentSkillRef.value = documentSnapshot.skill as SkillType;
       }
-      // Rebuild DOM from slotConfigs
-      const nodes = buildSlotNodes(snap.slotConfigs);
-      nodes.forEach(node => {
-        editable.appendChild(node);
+      // Build managed nodes once, then place them according to the unified
+      // document tree. This also supports slots nested in native paragraphs.
+      const managedNodes = new Map<string, Node>();
+      documentSnapshot.slotConfigs.forEach(config => {
+        if (!config?.key) return;
+        buildSlotNodes([config]);
+        if (config.type === "content") {
+          const before = slotDomMap.value.get(`${config.key}_before`);
+          const main = slotDomMap.value.get(config.key);
+          const after = slotDomMap.value.get(`${config.key}_after`);
+          if (before) managedNodes.set(`${config.key}:before`, before);
+          if (main) managedNodes.set(`${config.key}:main`, main);
+          if (after) managedNodes.set(`${config.key}:after`, after);
+        } else {
+          const main = slotDomMap.value.get(config.key);
+          if (main) managedNodes.set(`${config.key}:main`, main);
+        }
       });
-      // Re-render skill from the snapshot rather than the current prop.
-      renderSkill(snap.skill as SkillType | undefined, true);
+      const restoreEditorNode = (node: EditorNodeSnapshot): Node | null => {
+        if (node.kind === "text") return document.createTextNode(node.value);
+        if (node.kind === "skill") return null;
+        if (node.kind === "slot") {
+          return managedNodes.get(`${node.key}:${node.variant}`) ?? null;
+        }
+        const element = document.createElement(node.tagName);
+        node.attributes.forEach(([name, value]) => {
+          try {
+            element.setAttribute(name, value);
+          } catch {}
+        });
+        node.children.forEach(child => {
+          const childNode = restoreEditorNode(child);
+          if (childNode) element.appendChild(childNode);
+        });
+        return element;
+      };
+      documentSnapshot.nodes.forEach(node => {
+        const restoredNode = restoreEditorNode(node);
+        if (restoredNode) editable.appendChild(restoredNode);
+      });
+      // Skill is always rendered at the editor's leading boundary.
+      renderSkill(documentSnapshot.skill as SkillType | undefined, true);
       // Need to sync slotValues for content slots that may have been updated via nodes
       // buildSlotNodes already set defaults, but ensure restored values are kept
-      slotValues.value = { ...snap.slotValues };
+      slotValues.value = { ...documentSnapshot.slotValues };
       // Re-apply content slot innerText from slotValues (buildSlotNodes for content uses slotValues)
-      snap.slotConfigs.forEach(cfg => {
+      documentSnapshot.slotConfigs.forEach(cfg => {
         if (cfg.type === "content" && (cfg as any).key) {
           const dom = slotDomMap.value.get((cfg as any).key);
           if (dom) {
@@ -562,6 +863,7 @@ export default defineComponent({
       void nextTick(() => {
         restoreSelectionSnapshot(cursorToRestore ?? snap.cursor);
         isRestoringHistory = false;
+        reconcilePendingControlledValues();
       });
     };
 
@@ -691,7 +993,7 @@ export default defineComponent({
       const nodeInfo = getNodeInfo(element);
 
       if (!nodeInfo) {
-        return element.innerText || "";
+        return element.innerText || element.textContent || "";
       }
 
       if (nodeInfo.skillKey) {
@@ -716,7 +1018,7 @@ export default defineComponent({
         return formatted ?? stringifyValue(rawValue);
       }
 
-      return element.innerText || "";
+      return element.innerText || element.textContent || "";
     };
 
     const getEditorValue: SlotTextAreaRef["getValue"] = () => {
@@ -735,36 +1037,45 @@ export default defineComponent({
       const currentSlotConfig: SlotConfigType[] = [];
       let currentSkill: any;
 
-      childNodes.forEach(node => {
-        const textValue = getNodeTextValue(node);
-        textList.push(textValue);
-
+      const appendText = (value: string) => {
+        textList.push(value);
+        if (value) currentSlotConfig.push({ type: "text", value });
+      };
+      const collectNodeValue = (node: Node) => {
         if (node.nodeType === Node.TEXT_NODE) {
-          if (textValue) {
-            currentSlotConfig.push({ type: "text", value: textValue });
-          }
+          appendText(node.textContent ?? "");
           return;
         }
+        if (!(node instanceof HTMLElement)) return;
 
-        if (node.nodeType === Node.ELEMENT_NODE) {
-          const info = getNodeInfo(node as HTMLElement);
-          if (!info) return;
-
-          if (info.skillKey && currentSkillRef.value) {
-            currentSkill = currentSkillRef.value;
-          }
-
-          if (info.slotKey && info.nodeType !== "nbsp") {
-            const cfg = slotConfigMap.value.get(info.slotKey);
-            if (cfg) {
+        const info = getNodeInfo(node);
+        if (info?.skillKey) {
+          if (currentSkillRef.value) currentSkill = currentSkillRef.value;
+          return;
+        }
+        if (info?.slotKey) {
+          const textValue = getNodeTextValue(node);
+          textList.push(textValue);
+          if (info.nodeType !== "nbsp") {
+            const config = slotConfigMap.value.get(info.slotKey);
+            if (config) {
               currentSlotConfig.push({
-                ...cfg,
+                ...config,
                 value: textValue,
               } as SlotConfigType);
             }
           }
+          return;
         }
-      });
+
+        if (!node.querySelector("[data-slot-key],[data-skill-key]")) {
+          appendText(getNodeTextValue(node));
+          return;
+        }
+        node.childNodes.forEach(collectNodeValue);
+      };
+
+      childNodes.forEach(collectNodeValue);
 
       return {
         value: textList.join(""),
@@ -793,7 +1104,12 @@ export default defineComponent({
     };
     const updateSlot = (key: string, value: any, event?: Event) => {
       if (senderCtx.value.readOnly || senderCtx.value.disabled) return;
-      pendingBeforeCursor = captureSelectionSnapshot();
+      // Composition owns a single history entry from compositionstart to
+      // compositionend. Recording each custom-slot update here would clear
+      // that marker and make one IME commit require multiple undos.
+      if (!isComposing.value) {
+        pendingBeforeCursor = captureSelectionSnapshot();
+      }
       slotValues.value = {
         ...slotValues.value,
         [key]: value,
@@ -806,7 +1122,9 @@ export default defineComponent({
       }
 
       triggerValueChange(event);
-      pushHistory("slotValue", true);
+      if (!isComposing.value) {
+        pushHistory("slotValue", true);
+      }
     };
 
     const buildSelectMenuItems = (options: string[] | undefined) => {
@@ -1593,8 +1911,8 @@ export default defineComponent({
         historyIndex >= 0 ? historyStack.slice(0, historyIndex + 1) : [];
       return activeStack.some(
         snapshot =>
-          !!snapshot.skill ||
-          snapshot.slotConfigs.some(config => config?.type !== "text"),
+          !!snapshot.document.skill ||
+          snapshot.document.slotConfigs.some(config => config?.type !== "text"),
       );
     };
 
@@ -1617,6 +1935,13 @@ export default defineComponent({
       )
         return;
       const inputType = (event as InputEvent).inputType || "";
+      if (inputType === "historyUndo" || inputType === "historyRedo") {
+        if (!hasManagedHistory()) return;
+        event.preventDefault();
+        if (inputType === "historyUndo") handleUndo();
+        else handleRedo();
+        return;
+      }
       const sel = getSelection();
       if (!sel || sel.rangeCount === 0) return;
       const range = sel.getRangeAt(0);
@@ -1776,6 +2101,16 @@ export default defineComponent({
         return;
       }
 
+      // A nested form control owns its ordinary editing keys. The document
+      // selection may still point at an older outer-editor selection, so it
+      // must not be used to infer a structural slot deletion here.
+      if (
+        eventFromNestedFormControl &&
+        (event.key === "Backspace" || event.key === "Delete")
+      ) {
+        return;
+      }
+
       // Selection containing slot: any Backspace/Delete should use history-aware delete
       if (
         (event.key === "Backspace" || event.key === "Delete") &&
@@ -1870,6 +2205,9 @@ export default defineComponent({
         pendingHistoryType = null;
         const forceNew = t !== "insertText";
         pushHistory(t, forceNew);
+        // pushHistory normally consumes this cursor. Keep the input boundary
+        // explicit as well so a restore-time input cannot leak it forward.
+        pendingBeforeCursor = null;
       }
     };
 
@@ -1916,6 +2254,12 @@ export default defineComponent({
         if (!success) {
           const selection = getSelection();
           if (selection && selection.rangeCount > 0) {
+            // Range insertion bypasses the browser's native undo stack. From
+            // this point the editor must use managed history even without a
+            // slot or skill, seeded with the current plain-text baseline.
+            ensureManagedHistoryBaseline();
+            pendingBeforeCursor = captureSelectionSnapshot();
+            pendingHistoryType = "insertFromPaste";
             const range = selection.getRangeAt(0);
             range.deleteContents();
             const textNode = document.createTextNode(cleanedText);
@@ -2119,6 +2463,44 @@ export default defineComponent({
       });
     };
 
+    const reconcilePendingControlledValues = () => {
+      let shouldResetHistory = false;
+
+      if (hasPendingControlledSlotConfig) {
+        const configs = pendingControlledSlotConfig;
+        hasPendingControlledSlotConfig = false;
+        pendingControlledSlotConfig = undefined;
+        if (isEquivalentValue(configs, getEditorValue().slotConfig)) {
+          lastSlotConfigRef.value = configs;
+        } else {
+          applySlotConfig(configs, true);
+          shouldResetHistory = true;
+        }
+      }
+
+      if (hasPendingControlledSkill) {
+        const skill = pendingControlledSkill;
+        hasPendingControlledSkill = false;
+        pendingControlledSkill = undefined;
+        if (isEquivalentValue(skill, currentSkillRef.value)) {
+          lastSkillRef.value = skill;
+        } else {
+          lastSkillRef.value = skill;
+          renderSkill(skill, true);
+          shouldResetHistory = true;
+        }
+      }
+
+      if (shouldResetHistory) {
+        initHistoryStack();
+        void nextTick(() => {
+          const value = getEditorValue();
+          updateSkillEmptyStatus(value);
+          updateSubmitDisabled();
+        });
+      }
+    };
+
     watch(
       () => editableRef.value,
       editable => {
@@ -2133,7 +2515,8 @@ export default defineComponent({
       () => senderCtx.value.slotConfig,
       configs => {
         if (isRestoringHistory) {
-          lastSlotConfigRef.value = configs;
+          pendingControlledSlotConfig = configs;
+          hasPendingControlledSlotConfig = true;
           return;
         }
         if (isEquivalentValue(configs, getEditorValue().slotConfig)) {
@@ -2152,7 +2535,8 @@ export default defineComponent({
       () => senderCtx.value.skill,
       skill => {
         if (isRestoringHistory) {
-          lastSkillRef.value = skill;
+          pendingControlledSkill = skill;
+          hasPendingControlledSkill = true;
           return;
         }
         if (isEquivalentValue(skill, currentSkillRef.value)) {
