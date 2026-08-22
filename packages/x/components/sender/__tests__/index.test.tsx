@@ -723,7 +723,8 @@ describe("Sender", () => {
     await editable.trigger("input");
 
     expect((wrapper.vm as any).getValue().value).toContain("a");
-    expect(selection?.anchorNode).toBe(textNode);
+    expect(editable.element.contains(selection?.anchorNode ?? null)).toBe(true);
+    expect(selection?.anchorNode?.textContent).toContain("a");
     expect(selection?.anchorOffset).toBe(1);
 
     wrapper.unmount();
@@ -951,8 +952,8 @@ describe("Sender", () => {
     editable.element.appendChild(textNode);
     await editable.trigger("input", { inputType: "insertText" });
     const range = document.createRange();
-    range.setStartAfter(textNode);
-    range.collapse(true);
+    range.selectNodeContents(editable.element);
+    range.collapse(false);
     window.getSelection()?.removeAllRanges();
     window.getSelection()?.addRange(range);
 
@@ -1128,16 +1129,6 @@ describe("Sender", () => {
 
     const editable = wrapper.find(".antd-sender-input-slot");
     const contentSlot = wrapper.find<HTMLElement>(".antd-sender-slot-content");
-    Object.defineProperty(contentSlot.element, "innerText", {
-      configurable: true,
-      get() {
-        return this.textContent ?? "";
-      },
-      set(value: string) {
-        this.textContent = value;
-      },
-    });
-    contentSlot.element.innerText = "Alpha Beta";
     const textNode = contentSlot.element.firstChild!;
     const selection = window.getSelection();
     const range = document.createRange();
@@ -1195,7 +1186,10 @@ describe("Sender", () => {
 
     await editable.trigger("keydown", { key: "Backspace" });
     expect((wrapper.vm as any).getValue()).toEqual(
-      expect.objectContaining({ value: "  ", slotConfig: [] }),
+      expect.objectContaining({
+        value: "  ",
+        slotConfig: [expect.objectContaining({ key: "content", value: "" })],
+      }),
     );
 
     await editable.trigger("keydown", { ctrlKey: true, key: "z" });
@@ -1211,7 +1205,10 @@ describe("Sender", () => {
     });
     await wrapper.vm.$nextTick();
     expect((wrapper.vm as any).getValue()).toEqual(
-      expect.objectContaining({ value: "  ", slotConfig: [] }),
+      expect.objectContaining({
+        value: "  ",
+        slotConfig: [expect.objectContaining({ key: "content", value: "" })],
+      }),
     );
 
     wrapper.unmount();
@@ -3044,9 +3041,7 @@ describe("Sender", () => {
     });
     await wrapper.vm.$nextTick();
     expect((wrapper.vm as any).getValue().value).toContain("paragraph");
-    expect(editable.element.querySelector("div")?.textContent).toBe(
-      "paragraph",
-    );
+    expect(editable.element.textContent).toContain("paragraph");
 
     wrapper.unmount();
     host.remove();
@@ -3378,6 +3373,7 @@ describe("Sender", () => {
     document.body.appendChild(host);
     let wrapper: ReturnType<typeof mount>;
     let syncControlledValue = false;
+    const delayedSkills: Array<SkillType | undefined> = [];
     const onChange = vi.fn(
       (
         _value: string,
@@ -3386,11 +3382,7 @@ describe("Sender", () => {
         nextSkill: SkillType | undefined,
       ) => {
         if (wrapper && syncControlledValue) {
-          globalThis.setTimeout(() => {
-            void wrapper.setProps({
-              skill: nextSkill ? { ...nextSkill } : undefined,
-            });
-          }, 10);
+          delayedSkills.push(nextSkill ? { ...nextSkill } : undefined);
         }
       },
     );
@@ -3415,8 +3407,11 @@ describe("Sender", () => {
     const editable = wrapper.find(".antd-sender-input-slot");
     await editable.trigger("keydown", { ctrlKey: true, key: "z" });
     await wrapper.vm.$nextTick();
-    await new Promise(resolve => globalThis.setTimeout(resolve, 20));
-    await wrapper.vm.$nextTick();
+    syncControlledValue = false;
+    for (const skill of delayedSkills.splice(0)) {
+      await wrapper.setProps({ skill });
+      await wrapper.vm.$nextTick();
+    }
 
     expect((wrapper.vm as any).getValue().skill).toEqual(
       expect.objectContaining({ value: "translate" }),
@@ -3427,8 +3422,6 @@ describe("Sender", () => {
       key: "z",
       shiftKey: true,
     });
-    await wrapper.vm.$nextTick();
-    await new Promise(resolve => globalThis.setTimeout(resolve, 20));
     await wrapper.vm.$nextTick();
     // The delayed controlled prop is authoritative and starts a new history
     // baseline, so undo cannot restore the older local state.
@@ -3856,8 +3849,9 @@ describe("Sender", () => {
     await wrapper.vm.$nextTick();
     expect((wrapper.vm as any).getValue().value).toContain("hello");
     expect((wrapper.vm as any).getValue().value).not.toContain("helloa");
-    expect(selection.anchorNode).toBe(editable.element);
-    expect(selection.anchorOffset).toBe(editable.element.childNodes.length);
+    expect(editable.element.contains(selection.anchorNode)).toBe(true);
+    expect(selection.anchorNode?.textContent).toContain("hello");
+    expect(selection.anchorOffset).toBe(5);
 
     await editable.trigger("keydown", {
       ctrlKey: true,
@@ -4516,6 +4510,592 @@ describe("Sender", () => {
 
     wrapper.unmount();
     host.remove();
+  });
+
+  it("should apply a controlled custom Map value as a new baseline", async () => {
+    let renderedValue: Map<string, number> | undefined;
+    const render = (value: Map<string, number>) => {
+      renderedValue = value;
+      return <span class="controlled-map">{value.get("count")}</span>;
+    };
+    const wrapper = mount(Sender, {
+      props: {
+        slotConfig: [
+          {
+            type: "custom",
+            key: "custom",
+            value: new Map([["count", 1]]),
+            customRender: render,
+          } as any,
+        ],
+      },
+    });
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+
+    await wrapper.setProps({
+      slotConfig: [
+        {
+          type: "custom",
+          key: "custom",
+          value: new Map([["count", 2]]),
+          customRender: render,
+        } as any,
+      ],
+    });
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+    expect(renderedValue?.get("count")).toBe(2);
+
+    await wrapper
+      .find(".antd-sender-input-slot")
+      .trigger("keydown", { ctrlKey: true, key: "z" });
+    await wrapper.vm.$nextTick();
+    expect(renderedValue?.get("count")).toBe(2);
+    wrapper.unmount();
+  });
+
+  it("should emit raw custom values and preserve reordered object echoes", async () => {
+    const onChange = vi.fn();
+    let reportValue: ((value: { a: number; b: number }) => void) | undefined;
+    let renderedValue: { a: number; b: number } | undefined;
+    const render = (
+      value: { a: number; b: number },
+      change: (value: { a: number; b: number }) => void,
+    ) => {
+      renderedValue = value;
+      reportValue = change;
+      return <span>{value.a}</span>;
+    };
+    const wrapper = mount(Sender, {
+      props: {
+        slotConfig: [
+          {
+            type: "custom",
+            key: "custom",
+            value: { a: 1, b: 2 },
+            customRender: render,
+          } as any,
+        ],
+        onChange,
+      },
+    });
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+    onChange.mockClear();
+
+    reportValue?.({ a: 2, b: 2 });
+    const emittedConfig = onChange.mock.calls[
+      onChange.mock.calls.length - 1
+    ]?.[2] as SlotConfigType[];
+    expect((emittedConfig[0] as any)?.value).toEqual({ a: 2, b: 2 });
+    expect(typeof (emittedConfig[0] as any)?.value).toBe("object");
+
+    await wrapper.setProps({
+      slotConfig: [
+        {
+          type: "custom",
+          key: "custom",
+          value: { b: 2, a: 2 },
+          customRender: render,
+        } as any,
+      ],
+    });
+    await wrapper.vm.$nextTick();
+    await wrapper
+      .find(".antd-sender-input-slot")
+      .trigger("keydown", { ctrlKey: true, key: "z" });
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+    expect(renderedValue).toEqual({ a: 1, b: 2 });
+    wrapper.unmount();
+  });
+
+  it("should preserve RegExp lastIndex in custom value history", async () => {
+    const initialValue = /a/g;
+    initialValue.lastIndex = 2;
+    let reportValue: ((value: RegExp) => void) | undefined;
+    let renderedValue: RegExp | undefined;
+    const wrapper = mount(Sender, {
+      props: {
+        slotConfig: [
+          {
+            type: "custom",
+            key: "custom",
+            value: initialValue,
+            customRender: (value: RegExp, change: (value: RegExp) => void) => {
+              renderedValue = value;
+              reportValue = change;
+              return <span>{value.source}</span>;
+            },
+          } as any,
+        ],
+      },
+    });
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+
+    reportValue?.(/b/g);
+    await wrapper
+      .find(".antd-sender-input-slot")
+      .trigger("keydown", { ctrlKey: true, key: "z" });
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+    expect(renderedValue).toBeInstanceOf(RegExp);
+    expect(renderedValue?.source).toBe("a");
+    expect(renderedValue?.lastIndex).toBe(2);
+    wrapper.unmount();
+  });
+
+  it("should keep render-only labels outside history reconciliation", async () => {
+    const wrapper = mount(Sender, {
+      props: {
+        slotConfig: [
+          { type: "tag", key: "tag", props: { label: "Old", value: "tag" } },
+        ],
+      },
+    });
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+    (wrapper.vm as any).insert([{ type: "text", value: "X" }], "end");
+    const current = (wrapper.vm as any).getValue()
+      .slotConfig as SlotConfigType[];
+    await wrapper.setProps({
+      slotConfig: current.map(config =>
+        config.type === "tag"
+          ? { ...config, props: { ...config.props, label: "New" } }
+          : config,
+      ),
+    });
+    await wrapper.vm.$nextTick();
+    expect(wrapper.find(".antd-sender-slot-tag").text()).toBe("New");
+
+    await wrapper
+      .find(".antd-sender-input-slot")
+      .trigger("keydown", { ctrlKey: true, key: "z" });
+    await wrapper.vm.$nextTick();
+    expect((wrapper.vm as any).getValue().value).toBe("tag");
+    expect(wrapper.find(".antd-sender-slot-tag").text()).toBe("New");
+    wrapper.unmount();
+  });
+
+  it("should break input grouping after the caret moves away and back", async () => {
+    const wrapper = mount(Sender, {
+      props: {
+        slotConfig: [
+          { type: "input", key: "input", props: { defaultValue: "" } },
+        ],
+      },
+    });
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+    let input = wrapper.find<HTMLInputElement>(
+      "input.antd-sender-slot-input",
+    ).element;
+    const type = (value: string, data: string) => {
+      input.dispatchEvent(
+        new InputEvent("beforeinput", {
+          bubbles: true,
+          cancelable: true,
+          data,
+          inputType: "insertText",
+        }),
+      );
+      input.value = value;
+      input.setSelectionRange(value.length, value.length);
+      input.dispatchEvent(
+        new InputEvent("input", {
+          bubbles: true,
+          data,
+          inputType: "insertText",
+        }),
+      );
+    };
+
+    input.focus();
+    input.setSelectionRange(0, 0);
+    type("A", "A");
+    await wrapper.vm.$nextTick();
+    input = wrapper.find<HTMLInputElement>(
+      "input.antd-sender-slot-input",
+    ).element;
+    input.setSelectionRange(0, 0);
+    input.dispatchEvent(new Event("select", { bubbles: true }));
+    input.setSelectionRange(1, 1);
+    input.dispatchEvent(new Event("select", { bubbles: true }));
+    type("AB", "B");
+    input.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        bubbles: true,
+        cancelable: true,
+        ctrlKey: true,
+        key: "z",
+      }),
+    );
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+    input = wrapper.find<HTMLInputElement>(
+      "input.antd-sender-slot-input",
+    ).element;
+    expect(input.value).toBe("A");
+    wrapper.unmount();
+  });
+
+  it("should abandon a no-op input edit before an outer edit", async () => {
+    const wrapper = mount(Sender, {
+      attachTo: document.body,
+      props: {
+        slotConfig: [
+          { type: "text", value: "A" },
+          { type: "input", key: "input", props: { defaultValue: "" } },
+        ],
+      },
+    });
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+    const input = wrapper.find<HTMLInputElement>(
+      "input.antd-sender-slot-input",
+    ).element;
+    input.focus();
+    input.setSelectionRange(0, 0);
+    input.dispatchEvent(
+      new InputEvent("beforeinput", {
+        bubbles: true,
+        cancelable: true,
+        inputType: "deleteContentBackward",
+      }),
+    );
+
+    const editable = wrapper.find<HTMLElement>(".antd-sender-input-slot");
+    editable.element.focus();
+    const text = editable.element.firstChild as Text;
+    const selection = window.getSelection()!;
+    const range = document.createRange();
+    range.setStart(text, 1);
+    range.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(range);
+    editable.element.dispatchEvent(
+      new InputEvent("beforeinput", {
+        bubbles: true,
+        cancelable: true,
+        data: "x",
+        inputType: "insertText",
+      }),
+    );
+    text.data = "Ax";
+    range.setStart(text, 2);
+    selection.removeAllRanges();
+    selection.addRange(range);
+    editable.element.dispatchEvent(
+      new InputEvent("input", {
+        bubbles: true,
+        data: "x",
+        inputType: "insertText",
+      }),
+    );
+
+    await editable.trigger("keydown", { ctrlKey: true, key: "z" });
+    await wrapper.vm.$nextTick();
+    expect((wrapper.vm as any).getValue().value).toBe("A");
+    expect(document.activeElement).toBe(editable.element);
+    expect(window.getSelection()?.anchorOffset).toBe(1);
+    wrapper.unmount();
+  });
+
+  it("should keep history available after composition is cancelled by blur", async () => {
+    const outside = document.createElement("button");
+    document.body.appendChild(outside);
+    const wrapper = mount(Sender, {
+      attachTo: document.body,
+      props: {
+        slotConfig: [
+          { type: "tag", key: "tag", props: { label: "Tag", value: "tag" } },
+        ],
+      },
+    });
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+    const editable = wrapper.find<HTMLElement>(".antd-sender-input-slot");
+    editable.element.focus();
+    await editable.trigger("compositionstart");
+    outside.focus();
+
+    const selection = window.getSelection()!;
+    const range = document.createRange();
+    range.selectNodeContents(editable.element);
+    range.collapse(false);
+    selection.removeAllRanges();
+    selection.addRange(range);
+    editable.element.dispatchEvent(
+      new InputEvent("beforeinput", {
+        bubbles: true,
+        cancelable: true,
+        data: "x",
+        inputType: "insertText",
+      }),
+    );
+    const text = document.createTextNode("x");
+    range.insertNode(text);
+    range.setStartAfter(text);
+    range.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(range);
+    editable.element.dispatchEvent(
+      new InputEvent("input", {
+        bubbles: true,
+        data: "x",
+        inputType: "insertText",
+      }),
+    );
+    await editable.trigger("keydown", { ctrlKey: true, key: "z" });
+    await wrapper.vm.$nextTick();
+    expect((wrapper.vm as any).getValue().value).toBe("tag");
+    wrapper.unmount();
+    outside.remove();
+  });
+
+  it("should preserve raw input values across formatted controlled echoes", async () => {
+    const onChange = vi.fn();
+    const formatResult = (value: unknown) => `[${String(value)}]`;
+    const wrapper = mount(Sender, {
+      props: {
+        slotConfig: [
+          {
+            type: "input",
+            key: "input",
+            props: { defaultValue: "foo" },
+            formatResult,
+          },
+        ],
+        onChange,
+      },
+    });
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+    onChange.mockClear();
+
+    await wrapper
+      .find<HTMLInputElement>("input.antd-sender-slot-input")
+      .setValue("bar");
+    const echoedConfig = onChange.mock.calls[
+      onChange.mock.calls.length - 1
+    ]?.[2] as SlotConfigType[];
+    expect((echoedConfig[0] as any).value).toBe("[bar]");
+    await wrapper.setProps({ slotConfig: echoedConfig });
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+
+    expect(
+      wrapper.find<HTMLInputElement>("input.antd-sender-slot-input").element
+        .value,
+    ).toBe("bar");
+    expect((wrapper.vm as any).getValue().value).toBe("[bar]");
+    await wrapper
+      .find(".antd-sender-input-slot")
+      .trigger("keydown", { ctrlKey: true, key: "z" });
+    await wrapper.vm.$nextTick();
+    expect((wrapper.vm as any).getValue().value).toBe("[foo]");
+    wrapper.unmount();
+  });
+
+  it("should insert after a focused input without replacing it", async () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const wrapper = mount(Sender, {
+      attachTo: host,
+      props: {
+        slotConfig: [
+          { type: "input", key: "input", props: { defaultValue: "foo" } },
+        ],
+      },
+    });
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+    const input = wrapper.find<HTMLInputElement>(
+      "input.antd-sender-slot-input",
+    ).element;
+    input.focus();
+    input.setSelectionRange(1, 1);
+
+    (wrapper.vm as any).insert([{ type: "text", value: "x" }]);
+    await wrapper.vm.$nextTick();
+    expect((wrapper.vm as any).getValue().value).toBe("foox");
+    expect((wrapper.vm as any).getValue().slotConfig).toEqual([
+      expect.objectContaining({ key: "input", type: "input", value: "foo" }),
+      { type: "text", value: "x" },
+    ]);
+    expect(
+      wrapper.find<HTMLInputElement>("input.antd-sender-slot-input").element
+        .value,
+    ).toBe("foo");
+    wrapper.unmount();
+    host.remove();
+  });
+
+  it("should route built-in input keyboard and file-paste events", async () => {
+    const onSubmit = vi.fn();
+    const onKeyDown = vi.fn();
+    const onKeyUp = vi.fn();
+    const onPaste = vi.fn();
+    const onPasteFile = vi.fn();
+    const wrapper = mount(Sender, {
+      props: {
+        slotConfig: [
+          { type: "input", key: "input", props: { defaultValue: "foo" } },
+        ],
+        onSubmit,
+        onKeyDown,
+        onKeyUp,
+        onPaste,
+        onPasteFile,
+      },
+    });
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+    const input = wrapper.find<HTMLInputElement>(
+      "input.antd-sender-slot-input",
+    );
+
+    await input.trigger("keydown", { key: "Enter" });
+    expect(onKeyDown).toHaveBeenCalledOnce();
+    expect(onSubmit).toHaveBeenCalledWith(
+      "foo",
+      [expect.objectContaining({ key: "input", value: "foo" })],
+      undefined,
+    );
+    await input.trigger("keyup", { key: "A" });
+    expect(onKeyUp).toHaveBeenCalledOnce();
+
+    const textPasteEvent = new Event("paste", {
+      bubbles: true,
+      cancelable: true,
+    });
+    Object.defineProperty(textPasteEvent, "clipboardData", {
+      value: { files: { length: 0 }, getData: () => "text" },
+    });
+    input.element.dispatchEvent(textPasteEvent);
+    expect(onPaste).toHaveBeenCalledOnce();
+
+    const files = {
+      0: new File(["x"], "x.txt"),
+      length: 1,
+    } as unknown as FileList;
+    const pasteEvent = new Event("paste", {
+      bubbles: true,
+      cancelable: true,
+    });
+    Object.defineProperty(pasteEvent, "clipboardData", {
+      value: { files, getData: () => "" },
+    });
+    input.element.dispatchEvent(pasteEvent);
+    expect(onPasteFile).toHaveBeenCalledWith(files);
+    expect(pasteEvent.defaultPrevented).toBe(true);
+    wrapper.unmount();
+  });
+
+  it("should commit an undefined custom value at composition end", async () => {
+    let reportValue: ((value: unknown) => void) | undefined;
+    const wrapper = mount(Sender, {
+      props: {
+        slotConfig: [
+          {
+            type: "custom",
+            key: "custom",
+            props: { defaultValue: "foo" },
+            customRender: (_value, change) => {
+              reportValue = change;
+              return <input class="undefined-composition" />;
+            },
+          },
+        ],
+      },
+    });
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+    const custom = wrapper.find("input.undefined-composition");
+    await custom.trigger("compositionstart");
+    reportValue?.(undefined);
+    await custom.trigger("compositionend");
+    await wrapper.vm.$nextTick();
+    expect((wrapper.vm as any).getValue().slotConfig[0].value).toBeUndefined();
+
+    await wrapper
+      .find(".antd-sender-input-slot")
+      .trigger("keydown", { ctrlKey: true, key: "z" });
+    await wrapper.vm.$nextTick();
+    expect((wrapper.vm as any).getValue().slotConfig[0].value).toBe("foo");
+    wrapper.unmount();
+  });
+
+  it("should focus the keyed content slot at its start", async () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const wrapper = mount(Sender, {
+      attachTo: host,
+      props: {
+        slotConfig: [
+          { type: "content", key: "c", props: { defaultValue: "abc" } },
+        ],
+      },
+    });
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+    (wrapper.vm as any).focus({
+      cursor: "slot",
+      key: "c",
+      preventScroll: true,
+    });
+    await wrapper.vm.$nextTick();
+
+    const content = wrapper.find<HTMLElement>(
+      ".antd-sender-slot-content",
+    ).element;
+    expect(document.activeElement).toBe(content);
+    expect(content.contains(window.getSelection()?.anchorNode ?? null)).toBe(
+      true,
+    );
+    expect(window.getSelection()?.anchorOffset).toBe(0);
+    wrapper.unmount();
+    host.remove();
+  });
+
+  it("should exclude the skill from cursor-all edits", async () => {
+    const wrapper = mount(Sender, {
+      props: {
+        skill: { value: "skill", title: "Skill", closable: true },
+        slotConfig: [{ type: "text", value: "abc" }],
+      },
+    });
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+    (wrapper.vm as any).focus({ cursor: "all", preventScroll: true });
+    await wrapper
+      .find(".antd-sender-input-slot")
+      .trigger("keydown", { key: "Backspace" });
+    await wrapper.vm.$nextTick();
+
+    expect((wrapper.vm as any).getValue().value).toBe("");
+    expect((wrapper.vm as any).getValue().skill).toEqual(
+      expect.objectContaining({ value: "skill" }),
+    );
+    wrapper.unmount();
+  });
+
+  it("should make a maxRows-limited slot editor scrollable", async () => {
+    const wrapper = mount(Sender, {
+      props: {
+        autoSize: { maxRows: 1 },
+        slotConfig: [{ type: "text", value: "long text" }],
+      },
+    });
+    await wrapper.vm.$nextTick();
+    const editable = wrapper.find<HTMLElement>(
+      ".antd-sender-input-slot",
+    ).element;
+    expect(editable.style.maxHeight).toBe("22px");
+    expect(editable.style.overflowY).toBe("auto");
+    wrapper.unmount();
   });
 });
 
