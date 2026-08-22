@@ -82,59 +82,81 @@ function getDefaultSlotValue(config: SlotConfigType) {
   return props.value ?? props.label ?? "";
 }
 
+type EquivalenceState = {
+  leftToRight: Map<object, object>;
+  rightToLeft: Map<object, object>;
+};
+
+const cloneEquivalenceState = (state: EquivalenceState): EquivalenceState => ({
+  leftToRight: new Map(state.leftToRight),
+  rightToLeft: new Map(state.rightToLeft),
+});
+
+const adoptEquivalenceState = (
+  target: EquivalenceState,
+  source: EquivalenceState,
+) => {
+  target.leftToRight = source.leftToRight;
+  target.rightToLeft = source.rightToLeft;
+};
+
 function isEquivalentValue(
   left: unknown,
   right: unknown,
-  seen = new WeakMap<object, object>(),
+  state: EquivalenceState = {
+    leftToRight: new Map(),
+    rightToLeft: new Map(),
+  },
 ): boolean {
   const rawLeft =
     left && typeof left === "object" ? toRaw(left as object) : left;
   const rawRight =
     right && typeof right === "object" ? toRaw(right as object) : right;
-  if (Object.is(rawLeft, rawRight)) return true;
   if (
-    !rawLeft ||
-    !rawRight ||
     typeof rawLeft !== "object" ||
-    typeof rawRight !== "object"
+    rawLeft === null ||
+    typeof rawRight !== "object" ||
+    rawRight === null
   ) {
+    return Object.is(rawLeft, rawRight);
+  }
+
+  const mappedRight = state.leftToRight.get(rawLeft);
+  const mappedLeft = state.rightToLeft.get(rawRight);
+  if (mappedRight || mappedLeft) {
+    return mappedRight === rawRight && mappedLeft === rawLeft;
+  }
+  state.leftToRight.set(rawLeft, rawRight);
+  state.rightToLeft.set(rawRight, rawLeft);
+  if (rawLeft === rawRight) return true;
+
+  // Functions and VNodes are runtime resources whose behavior is defined by
+  // identity rather than by their enumerable properties.
+  if ((rawLeft as any).__v_isVNode || (rawRight as any).__v_isVNode) {
     return false;
   }
-  // bidirectional cycle check
-  if (seen.get(rawLeft as object) === rawRight) return true;
-  if (seen.get(rawRight as object) === rawLeft) return true;
-  seen.set(rawLeft as object, rawRight as object);
-  seen.set(rawRight as object, rawLeft as object);
 
   if (Array.isArray(rawLeft) || Array.isArray(rawRight)) {
-    return (
-      Array.isArray(rawLeft) &&
-      Array.isArray(rawRight) &&
-      rawLeft.length === rawRight.length &&
-      rawLeft.every((value, index) =>
-        isEquivalentValue(value, rawRight[index], seen),
-      )
-    );
+    if (!(Array.isArray(rawLeft) && Array.isArray(rawRight))) return false;
+    if (rawLeft.length !== rawRight.length) return false;
   }
 
-  // Date
   if (rawLeft instanceof Date || rawRight instanceof Date) {
     return (
       rawLeft instanceof Date &&
       rawRight instanceof Date &&
-      rawLeft.getTime() === rawRight.getTime()
+      Object.is(rawLeft.getTime(), rawRight.getTime())
     );
   }
-  // RegExp
   if (rawLeft instanceof RegExp || rawRight instanceof RegExp) {
     return (
       rawLeft instanceof RegExp &&
       rawRight instanceof RegExp &&
       rawLeft.source === rawRight.source &&
-      rawLeft.flags === rawRight.flags
+      rawLeft.flags === rawRight.flags &&
+      rawLeft.lastIndex === rawRight.lastIndex
     );
   }
-  // ArrayBuffer and typed array views
   if (rawLeft instanceof ArrayBuffer || rawRight instanceof ArrayBuffer) {
     if (!(rawLeft instanceof ArrayBuffer && rawRight instanceof ArrayBuffer)) {
       return false;
@@ -168,10 +190,13 @@ function isEquivalentValue(
     }
     if (
       rawLeft.constructor !== rawRight.constructor ||
+      rawLeft.byteOffset !== rawRight.byteOffset ||
       rawLeft.byteLength !== rawRight.byteLength
     ) {
       return false;
     }
+    if (!isEquivalentValue(rawLeft.buffer, rawRight.buffer, state))
+      return false;
     const leftBytes = new Uint8Array(
       rawLeft.buffer,
       rawLeft.byteOffset,
@@ -184,52 +209,77 @@ function isEquivalentValue(
     );
     return leftBytes.every((value, index) => value === rightBytes[index]);
   }
-  // Map
   if (rawLeft instanceof Map || rawRight instanceof Map) {
     if (!(rawLeft instanceof Map && rawRight instanceof Map)) return false;
     if (rawLeft.size !== rawRight.size) return false;
-    for (const [k, v] of rawLeft as Map<unknown, unknown>) {
-      // try direct key, fallback to deep key search
-      if ((rawRight as Map<unknown, unknown>).has(k)) {
+    const leftEntries = Array.from(rawLeft.entries());
+    const rightEntries = Array.from(rawRight.entries());
+    const matchEntry = (
+      index: number,
+      used: Set<number>,
+      candidateState: EquivalenceState,
+    ): EquivalenceState | null => {
+      if (index === leftEntries.length) return candidateState;
+      const [leftKey, leftValue] = leftEntries[index]!;
+      for (let rightIndex = 0; rightIndex < rightEntries.length; rightIndex++) {
+        if (used.has(rightIndex)) continue;
+        const [rightKey, rightValue] = rightEntries[rightIndex]!;
+        const nextState = cloneEquivalenceState(candidateState);
         if (
-          !isEquivalentValue(
-            v,
-            (rawRight as Map<unknown, unknown>).get(k),
-            seen,
-          )
-        )
-          return false;
-      } else {
-        let found = false;
-        for (const [rk, rv] of rawRight as Map<unknown, unknown>) {
-          if (
-            isEquivalentValue(k, rk, seen) &&
-            isEquivalentValue(v, rv, seen)
-          ) {
-            found = true;
-            break;
-          }
+          !isEquivalentValue(leftKey, rightKey, nextState) ||
+          !isEquivalentValue(leftValue, rightValue, nextState)
+        ) {
+          continue;
         }
-        if (!found) return false;
+        const result = matchEntry(
+          index + 1,
+          new Set([...used, rightIndex]),
+          nextState,
+        );
+        if (result) return result;
       }
-    }
+      return null;
+    };
+    const matchedState = matchEntry(0, new Set(), state);
+    if (!matchedState) return false;
+    adoptEquivalenceState(state, matchedState);
     return true;
   }
-  // Set
   if (rawLeft instanceof Set || rawRight instanceof Set) {
     if (!(rawLeft instanceof Set && rawRight instanceof Set)) return false;
-    if ((rawLeft as Set<unknown>).size !== (rawRight as Set<unknown>).size)
-      return false;
-    for (const v of rawLeft as Set<unknown>) {
-      let has = false;
-      for (const rv of rawRight as Set<unknown>) {
-        if (isEquivalentValue(v, rv, seen)) {
-          has = true;
-          break;
+    if (rawLeft.size !== rawRight.size) return false;
+    const leftValues = Array.from(rawLeft.values());
+    const rightValues = Array.from(rawRight.values());
+    const matchValue = (
+      index: number,
+      used: Set<number>,
+      candidateState: EquivalenceState,
+    ): EquivalenceState | null => {
+      if (index === leftValues.length) return candidateState;
+      for (let rightIndex = 0; rightIndex < rightValues.length; rightIndex++) {
+        if (used.has(rightIndex)) continue;
+        const nextState = cloneEquivalenceState(candidateState);
+        if (
+          !isEquivalentValue(
+            leftValues[index],
+            rightValues[rightIndex],
+            nextState,
+          )
+        ) {
+          continue;
         }
+        const result = matchValue(
+          index + 1,
+          new Set([...used, rightIndex]),
+          nextState,
+        );
+        if (result) return result;
       }
-      if (!has) return false;
-    }
+      return null;
+    };
+    const matchedState = matchValue(0, new Set(), state);
+    if (!matchedState) return false;
+    adoptEquivalenceState(state, matchedState);
     return true;
   }
 
@@ -237,29 +287,41 @@ function isEquivalentValue(
   const rightPrototype = Object.getPrototypeOf(rawRight);
   if (
     leftPrototype !== rightPrototype ||
-    (leftPrototype !== Object.prototype && leftPrototype !== null)
+    (!Array.isArray(rawLeft) &&
+      leftPrototype !== Object.prototype &&
+      leftPrototype !== null)
   ) {
     return false;
   }
 
-  const leftKeys: (string | symbol)[] = [
-    ...Object.keys(rawLeft as object),
-    ...Object.getOwnPropertySymbols(rawLeft as object),
-  ];
-  const rightKeys: (string | symbol)[] = [
-    ...Object.keys(rawRight as object),
-    ...Object.getOwnPropertySymbols(rawRight as object),
-  ];
+  const leftKeys = Reflect.ownKeys(rawLeft);
+  const rightKeys = Reflect.ownKeys(rawRight);
   if (leftKeys.length !== rightKeys.length) return false;
-  return leftKeys.every(
-    key =>
-      Object.prototype.hasOwnProperty.call(rawRight as object, key) &&
-      isEquivalentValue(
-        (rawLeft as Record<string | symbol, unknown>)[key as string],
-        (rawRight as Record<string | symbol, unknown>)[key as string],
-        seen,
-      ),
-  );
+  return leftKeys.every(key => {
+    if (!Object.prototype.hasOwnProperty.call(rawRight, key)) return false;
+    const leftDescriptor = Object.getOwnPropertyDescriptor(rawLeft, key);
+    const rightDescriptor = Object.getOwnPropertyDescriptor(rawRight, key);
+    if (!leftDescriptor || !rightDescriptor) return false;
+    if (
+      leftDescriptor.enumerable !== rightDescriptor.enumerable ||
+      leftDescriptor.configurable !== rightDescriptor.configurable
+    ) {
+      return false;
+    }
+    const leftIsData = "value" in leftDescriptor;
+    const rightIsData = "value" in rightDescriptor;
+    if (leftIsData !== rightIsData) return false;
+    if (leftIsData && rightIsData) {
+      return (
+        leftDescriptor.writable === rightDescriptor.writable &&
+        isEquivalentValue(leftDescriptor.value, rightDescriptor.value, state)
+      );
+    }
+    return (
+      leftDescriptor.get === rightDescriptor.get &&
+      leftDescriptor.set === rightDescriptor.set
+    );
+  });
 }
 
 function cloneHistoryValue<T>(
@@ -403,19 +465,23 @@ export default defineComponent({
     // ==================== History: full snapshot stack + groups ====================
     // 全量快照栈：每次操作后提交统一 EditorDocument + cursor 快照，
     // Ctrl+Z 只是 index-- 并 restore(stack[index])，不额外 push，避免“越撤销越多”
-    type SelectionSnapshot = {
+    type OuterSelectionSnapshot = {
       startPath: number[];
       startOffset: number;
       endPath: number[];
       endOffset: number;
       collapsed: boolean;
-    } | null;
+    };
     type SlotControlSelectionSnapshot = {
       key: string;
       start: number;
       end: number;
       direction: "forward" | "backward" | "none";
-    } | null;
+    };
+    type EditorSelectionSnapshot =
+      | { kind: "outer"; value: OuterSelectionSnapshot }
+      | { kind: "control"; value: SlotControlSelectionSnapshot }
+      | null;
     type EditorNodeSnapshot =
       | { kind: "text"; value: string }
       | {
@@ -438,10 +504,9 @@ export default defineComponent({
     };
     type HistorySnapshot = {
       document: EditorDocumentSnapshot;
-      cursor: SelectionSnapshot; // after cursor (光标在操作后)
-      beforeCursor: SelectionSnapshot | null; // before cursor (撤销应回到此处)
-      controlCursor: SlotControlSelectionSnapshot;
-      beforeControlCursor: SlotControlSelectionSnapshot;
+      selection: EditorSelectionSnapshot;
+      beforeSelection: EditorSelectionSnapshot;
+      hasBeforeSelection: boolean;
       t: number;
       inputType: string;
     };
@@ -450,8 +515,7 @@ export default defineComponent({
     let isRestoringHistory = false;
     let isManagedHistoryActive = false;
     let pendingHistoryType: string | null = null; // beforeinput 标记，input 后推入
-    let pendingBeforeCursor: SelectionSnapshot | null = null; // 操作前的光标，撤销应回到此处而非操作后
-    let pendingBeforeControlCursor: SlotControlSelectionSnapshot = null;
+    let pendingBeforeSelection: EditorSelectionSnapshot | undefined;
     let hasPendingControlledSlotConfig = false;
     let pendingControlledSlotConfig: readonly SlotConfigType[] | undefined =
       undefined;
@@ -511,7 +575,7 @@ export default defineComponent({
       return { node: cur, offsetInNode: false };
     };
 
-    const captureSelectionSnapshot = (): SelectionSnapshot => {
+    const captureSelectionSnapshot = (): OuterSelectionSnapshot | null => {
       const sel = getSelection();
       const editable = editableRef.value;
       if (!sel || sel.rangeCount === 0 || !editable) return null;
@@ -537,7 +601,7 @@ export default defineComponent({
     const captureSlotControlSelection = (
       target: EventTarget | null,
       knownKey?: string,
-    ): SlotControlSelectionSnapshot => {
+    ): SlotControlSelectionSnapshot | null => {
       if (
         !(target instanceof HTMLInputElement) &&
         !(target instanceof HTMLTextAreaElement)
@@ -559,30 +623,67 @@ export default defineComponent({
       };
     };
 
+    const captureEditorSelection = (
+      target: EventTarget | null = document.activeElement,
+      knownKey?: string,
+    ): EditorSelectionSnapshot => {
+      const controlSelection = captureSlotControlSelection(target, knownKey);
+      if (controlSelection) {
+        return { kind: "control", value: controlSelection };
+      }
+
+      const targetElement = target instanceof Element ? target : null;
+      const targetSlotKey =
+        targetElement?.closest<HTMLElement>("[data-slot-key]")?.dataset.slotKey;
+      if (
+        targetSlotKey &&
+        slotConfigMap.value.get(targetSlotKey)?.type === "custom"
+      ) {
+        return null;
+      }
+
+      const editable = editableRef.value;
+      if (
+        targetElement &&
+        editable &&
+        targetElement !== editable &&
+        !editable.contains(targetElement) &&
+        targetElement !== document.body
+      ) {
+        return null;
+      }
+
+      const outerSelection = captureSelectionSnapshot();
+      return outerSelection ? { kind: "outer", value: outerSelection } : null;
+    };
+
     const isSameCollapsedSelection = (
-      left: SelectionSnapshot,
-      right: SelectionSnapshot,
+      left: EditorSelectionSnapshot,
+      right: EditorSelectionSnapshot,
     ) => {
-      if (!left?.collapsed || !right?.collapsed) return false;
+      if (
+        left?.kind !== "outer" ||
+        right?.kind !== "outer" ||
+        !left.value.collapsed ||
+        !right.value.collapsed
+      ) {
+        return false;
+      }
       const isSamePath = (a: number[], b: number[]) =>
         a.length === b.length && a.every((value, index) => value === b[index]);
       return (
-        left.startOffset === right.startOffset &&
-        left.endOffset === right.endOffset &&
-        isSamePath(left.startPath, right.startPath) &&
-        isSamePath(left.endPath, right.endPath)
+        left.value.startOffset === right.value.startOffset &&
+        left.value.endOffset === right.value.endOffset &&
+        isSamePath(left.value.startPath, right.value.startPath) &&
+        isSamePath(left.value.endPath, right.value.endPath)
       );
     };
 
-    const restoreSelectionSnapshot = (cursor: SelectionSnapshot) => {
+    const restoreSelectionSnapshot = (cursor: OuterSelectionSnapshot) => {
       const editable = editableRef.value;
       if (!editable) return;
       const sel = getSelection();
       if (!sel) return;
-      if (!cursor) {
-        setEndCursor();
-        return;
-      }
       // Focusing after addRange can reset the freshly restored selection in
       // browsers (and does so in JSDOM). Focus first, then apply the snapshot.
       editable.focus();
@@ -748,53 +849,52 @@ export default defineComponent({
           ),
           skill: clonedSkill,
         },
-        cursor: captureSelectionSnapshot(),
-        beforeCursor: null as SelectionSnapshot,
-        controlCursor: null,
-        beforeControlCursor: null,
+        selection: captureEditorSelection(),
+        beforeSelection: null,
+        hasBeforeSelection: false,
         t: Date.now(),
         inputType,
       };
     };
 
     // 推入全量快照（操作后调用），栈里全是完整状态，undo 只是指针--
-    // beforeCursor 存操作前的光标，撤销时应回到 before 而非 after
+    // beforeSelection 存操作前的选择，撤销时应回到 before 而非 after
     const pushHistory = (
       inputType: string = "unknown",
       forceNewGroup: boolean = false,
-      controlCursor: SlotControlSelectionSnapshot = null,
+      selection?: EditorSelectionSnapshot,
     ) => {
       if (isRestoringHistory) return;
       const now = Date.now();
       const snap = captureSnapshot(inputType);
-      snap.beforeCursor = pendingBeforeCursor;
-      snap.controlCursor = controlCursor;
-      snap.beforeControlCursor = pendingBeforeControlCursor;
-      pendingBeforeCursor = null;
-      pendingBeforeControlCursor = null;
+      if (selection !== undefined) snap.selection = selection;
+      snap.beforeSelection = pendingBeforeSelection ?? null;
+      snap.hasBeforeSelection = pendingBeforeSelection !== undefined;
+      pendingBeforeSelection = undefined;
       const last = historyStack[historyIndex];
       // Deduplicate no-op input, including a cancelled IME composition.
       const isSameContent =
         !!last && isEquivalentValue(snap.document, last.document);
       const hasRedoBranch = historyIndex < historyStack.length - 1;
-      // 分组：500ms 内连续 insertText 覆盖栈顶，不产生新条目，且保留组首的 beforeCursor
+      // 分组：500ms 内连续 insertText 覆盖栈顶，不产生新条目，且保留组首的 beforeSelection
       const canGroup =
         !forceNewGroup &&
         !hasRedoBranch &&
         last &&
         last.inputType === "insertText" &&
         inputType === "insertText" &&
-        isSameCollapsedSelection(last.cursor, snap.beforeCursor) &&
+        isSameCollapsedSelection(last.selection, snap.beforeSelection) &&
         now - last.t < GROUP_MS;
       if (canGroup) {
         if (isSameContent) {
-          last.cursor = snap.cursor;
+          last.selection = snap.selection;
           last.t = snap.t;
           pendingHistoryType = null;
           return;
         }
-        // 保留组首的 beforeCursor（首次输入前），cursor 保持为当前 after
-        snap.beforeCursor = last.beforeCursor;
+        // 保留组首的 beforeSelection（首次输入前），selection 保持为当前 after
+        snap.beforeSelection = last.beforeSelection;
+        snap.hasBeforeSelection = last.hasBeforeSelection;
         historyStack[historyIndex] = snap;
       } else {
         if (isSameContent) {
@@ -815,8 +915,7 @@ export default defineComponent({
 
     const restoreSnapshot = (
       snap: HistorySnapshot,
-      overrideCursor?: SelectionSnapshot | null,
-      overrideControlCursor?: SlotControlSelectionSnapshot,
+      overrideSelection?: EditorSelectionSnapshot,
     ) => {
       isRestoringHistory = true;
       const editable = editableRef.value;
@@ -905,26 +1004,25 @@ export default defineComponent({
         }
       });
       triggerValueChange();
-      // Restore cursor after DOM rebuild - defer to nextTick to ensure DOM is ready
-      const cursorToRestore =
-        overrideCursor !== undefined ? overrideCursor : snap.cursor;
-      const controlCursorToRestore =
-        overrideControlCursor !== undefined
-          ? overrideControlCursor
-          : snap.controlCursor;
+      // Outer and built-in-control selections are mutually exclusive, so each
+      // history state restores exactly one managed selection.
+      const selectionToRestore =
+        overrideSelection === undefined ? snap.selection : overrideSelection;
       void nextTick(() => {
-        restoreSelectionSnapshot(cursorToRestore ?? snap.cursor);
-        if (controlCursorToRestore) {
-          const slotDom = slotDomMap.value.get(controlCursorToRestore.key);
+        if (selectionToRestore?.kind === "outer") {
+          restoreSelectionSnapshot(selectionToRestore.value);
+        } else if (selectionToRestore?.kind === "control") {
+          const controlSelection = selectionToRestore.value;
+          const slotDom = slotDomMap.value.get(controlSelection.key);
           const control = slotDom?.querySelector<
             HTMLInputElement | HTMLTextAreaElement
           >("input, textarea");
           if (control) {
             control.focus();
             control.setSelectionRange(
-              Math.min(controlCursorToRestore.start, control.value.length),
-              Math.min(controlCursorToRestore.end, control.value.length),
-              controlCursorToRestore.direction,
+              Math.min(controlSelection.start, control.value.length),
+              Math.min(controlSelection.end, control.value.length),
+              controlSelection.direction,
             );
           }
         }
@@ -933,34 +1031,29 @@ export default defineComponent({
       });
     };
 
-    // 全量快照：undo 直接指针--，撤销应回到操作前的光标（cur.beforeCursor），而非 prev 的 after
+    // 全量快照：undo 直接指针--，撤销应回到当前操作的 beforeSelection。
     const handleUndo = (
-      fallbackControlCursor: SlotControlSelectionSnapshot = null,
+      fallbackControlSelection: SlotControlSelectionSnapshot | null = null,
     ) => {
       if (historyIndex <= 0) return false;
       const cur = historyStack[historyIndex]!;
       historyIndex--;
       const prev = historyStack[historyIndex]!;
-      // 用 prev 的内容 + cur 的 beforeCursor（操作前）
-      const cursorBefore = (cur as any).beforeCursor ?? cur.cursor;
-      const controlCursorBefore =
-        cur.beforeControlCursor ?? prev.controlCursor ?? fallbackControlCursor;
-      restoreSnapshot(prev, cursorBefore, controlCursorBefore);
+      const selectionBefore =
+        cur.hasBeforeSelection ||
+        cur.inputType !== "slotValue" ||
+        !fallbackControlSelection
+          ? cur.beforeSelection
+          : { kind: "control" as const, value: fallbackControlSelection };
+      restoreSnapshot(prev, selectionBefore);
       return true;
     };
 
-    const handleRedo = (
-      fallbackControlCursor: SlotControlSelectionSnapshot = null,
-    ) => {
+    const handleRedo = () => {
       if (historyIndex >= historyStack.length - 1) return false;
       historyIndex++;
       const next = historyStack[historyIndex]!;
-      // redo 回到操作后的状态，光标为 after
-      restoreSnapshot(
-        next,
-        next.cursor,
-        next.controlCursor ?? fallbackControlCursor,
-      );
+      restoreSnapshot(next, next.selection);
       return true;
     };
 
@@ -1180,22 +1273,28 @@ export default defineComponent({
     };
     const updateSlot = (key: string, value: any, event?: Event) => {
       if (senderCtx.value.readOnly || senderCtx.value.disabled) return;
-      const controlCursor = captureSlotControlSelection(
-        event?.target ?? null,
-        key,
-      );
+      const config = slotConfigMap.value.get(key);
+      const eventTarget = event?.target ?? document.activeElement;
+      const controlSelection = captureSlotControlSelection(eventTarget, key);
+      const selectionAfter = controlSelection
+        ? ({ kind: "control", value: controlSelection } as const)
+        : captureEditorSelection(eventTarget, key);
       // Composition owns a single history entry from compositionstart to
       // compositionend. Recording each custom-slot update here would clear
       // that marker and make one IME commit require multiple undos.
-      if (!isComposing.value) {
-        pendingBeforeCursor = captureSelectionSnapshot();
+      if (!isComposing.value && pendingBeforeSelection === undefined) {
+        // A native input event has already advanced its caret by the time the
+        // value callback runs. Only beforeinput can provide its true pre-edit
+        // selection; synthetic input events fall back at undo time.
+        if (!(config?.type === "input" && controlSelection)) {
+          pendingBeforeSelection = captureEditorSelection(eventTarget, key);
+        }
       }
       slotValues.value = {
         ...slotValues.value,
         [key]: value,
       };
 
-      const config = slotConfigMap.value.get(key);
       const dom = slotDomMap.value.get(key);
       if (config && dom && config.type !== "content") {
         renderSlot(config as any, dom);
@@ -1203,7 +1302,7 @@ export default defineComponent({
 
       triggerValueChange(event);
       if (!isComposing.value) {
-        pushHistory("slotValue", true, controlCursor);
+        pushHistory("slotValue", true, selectionAfter);
       }
     };
 
@@ -1499,7 +1598,9 @@ export default defineComponent({
     const removeSlot = (key: string, event?: Event) => {
       const editable = editableRef.value;
       if (!editable) return;
-      pendingBeforeCursor = captureSelectionSnapshot();
+      pendingBeforeSelection = captureEditorSelection(
+        event?.target ?? document.activeElement,
+      );
       editable.querySelectorAll(`[data-slot-key="${key}"]`).forEach(element => {
         unmountDom(element as HTMLElement);
         element.remove();
@@ -1521,7 +1622,9 @@ export default defineComponent({
     const removeSkill = (triggerChange = true) => {
       const skillDom = skillDomRef.value;
       if (!skillDom) return;
-      if (triggerChange) pendingBeforeCursor = captureSelectionSnapshot();
+      if (triggerChange) {
+        pendingBeforeSelection = captureEditorSelection();
+      }
       unmountDom(skillDom);
       skillDom.remove();
       skillDomRef.value = null;
@@ -1747,7 +1850,7 @@ export default defineComponent({
       // Selection contains slot(s) – ensure undo can restore via history
       if (event instanceof KeyboardEvent) event.preventDefault();
       else (event as InputEvent).preventDefault?.();
-      pendingBeforeCursor = captureSelectionSnapshot();
+      pendingBeforeSelection = captureEditorSelection(event.target);
       const startContainer = findManagedContainer(range.startContainer);
       const endContainer = findManagedContainer(range.endContainer);
       if (
@@ -1886,7 +1989,7 @@ export default defineComponent({
           (isFullTextSelected || isSingleCharAtEnd)
         ) {
           event.preventDefault();
-          pendingBeforeCursor = captureSelectionSnapshot();
+          pendingBeforeSelection = captureEditorSelection(event.target);
           parentElement.innerHTML = "";
           parentElement.innerText = "";
           // sync slotValues for content clearing
@@ -2028,17 +2131,19 @@ export default defineComponent({
         }
         if (!hasManagedHistory()) return;
         event.preventDefault();
-        const controlCursor = captureSlotControlSelection(event.target);
-        if (inputType === "historyUndo") handleUndo(controlCursor);
-        else handleRedo(controlCursor);
+        const controlSelection = captureSlotControlSelection(event.target);
+        if (inputType === "historyUndo") handleUndo(controlSelection);
+        else handleRedo();
         return;
       }
-      const controlCursor = captureSlotControlSelection(event.target);
-      if (controlCursor) {
-        pendingBeforeControlCursor = controlCursor;
+      const controlSelection = captureSlotControlSelection(event.target);
+      if (controlSelection) {
+        pendingBeforeSelection = {
+          kind: "control",
+          value: controlSelection,
+        };
         return;
       }
-      pendingBeforeControlCursor = null;
       const sel = getSelection();
       if (!sel || sel.rangeCount === 0) return;
       const range = sel.getRangeAt(0);
@@ -2047,8 +2152,9 @@ export default defineComponent({
         return;
       if (pendingHistoryType === "insertFromPaste") return;
       const captureIfNeeded = () => {
-        if (!pendingBeforeCursor)
-          pendingBeforeCursor = captureSelectionSnapshot();
+        if (pendingBeforeSelection === undefined) {
+          pendingBeforeSelection = captureEditorSelection(event.target);
+        }
       };
       const isDeleteType =
         inputType.startsWith("delete") || inputType.includes("Cut");
@@ -2148,7 +2254,7 @@ export default defineComponent({
         keyLower === "z"
       ) {
         event.preventDefault();
-        if (event.shiftKey) handleRedo(nestedControlSelection);
+        if (event.shiftKey) handleRedo();
         else handleUndo(nestedControlSelection);
         return;
       }
@@ -2162,7 +2268,7 @@ export default defineComponent({
         keyLower === "y"
       ) {
         event.preventDefault();
-        handleRedo(nestedControlSelection);
+        handleRedo();
         return;
       }
 
@@ -2277,9 +2383,9 @@ export default defineComponent({
         pendingHistoryType = null;
         const forceNew = t !== "insertText";
         pushHistory(t, forceNew);
-        // pushHistory normally consumes this cursor. Keep the input boundary
+        // pushHistory normally consumes this selection. Keep the input boundary
         // explicit as well so a restore-time input cannot leak it forward.
-        pendingBeforeCursor = null;
+        pendingBeforeSelection = undefined;
       }
     };
 
@@ -2287,18 +2393,17 @@ export default defineComponent({
       if (senderCtx.value.readOnly || senderCtx.value.disabled) return;
       isComposing.value = true;
       if (!hasManagedHistory()) return;
-      pendingBeforeCursor = captureSelectionSnapshot();
-      pendingBeforeControlCursor = captureSlotControlSelection(event.target);
+      pendingBeforeSelection = captureEditorSelection(event.target);
       pendingHistoryType = "insertCompositionText";
     };
     const onInternalCompositionEnd = (event: CompositionEvent) => {
       isComposing.value = false;
       keyLock.value = false;
       if (senderCtx.value.readOnly || senderCtx.value.disabled) return;
-      const controlCursor = captureSlotControlSelection(event.target);
+      const selectionAfter = captureEditorSelection(event.target);
       void nextTick(() => {
         if (pendingHistoryType === "insertCompositionText") {
-          pushHistory("insertCompositionText", true, controlCursor);
+          pushHistory("insertCompositionText", true, selectionAfter);
         }
       });
     };
@@ -2319,8 +2424,9 @@ export default defineComponent({
       }
 
       if (text) {
-        if (!pendingBeforeCursor)
-          pendingBeforeCursor = captureSelectionSnapshot();
+        if (pendingBeforeSelection === undefined) {
+          pendingBeforeSelection = captureEditorSelection(event.target);
+        }
         const cleanedText = getCleanedText(text);
         pendingHistoryType = "insertFromPaste";
         let success = false;
@@ -2336,7 +2442,7 @@ export default defineComponent({
             // this point the editor must use managed history even without a
             // slot or skill, seeded with the current plain-text baseline.
             ensureManagedHistoryBaseline();
-            pendingBeforeCursor = captureSelectionSnapshot();
+            pendingBeforeSelection = captureEditorSelection(event.target);
             pendingHistoryType = "insertFromPaste";
             const range = selection.getRangeAt(0);
             range.deleteContents();
@@ -2433,7 +2539,7 @@ export default defineComponent({
       )
         return;
       ensureManagedHistoryBaseline();
-      pendingBeforeCursor = captureSelectionSnapshot();
+      pendingBeforeSelection = captureEditorSelection();
       mergeSlotConfig(slotConfig);
       const nodes = buildSlotNodes(slotConfig);
       if (!nodes.length) return;
@@ -2495,7 +2601,7 @@ export default defineComponent({
     const clear: SlotTextAreaRef["clear"] = () => {
       if (senderCtx.value.readOnly || senderCtx.value.disabled) return;
       ensureManagedHistoryBaseline();
-      pendingBeforeCursor = captureSelectionSnapshot();
+      pendingBeforeSelection = captureEditorSelection();
       clearEditor();
       renderSkill();
       onInternalInput();
@@ -2532,8 +2638,7 @@ export default defineComponent({
       historyIndex = -1;
       isManagedHistoryActive = slotDomMap.value.size > 0 || !!skillDomRef.value;
       pendingHistoryType = null;
-      pendingBeforeCursor = null;
-      pendingBeforeControlCursor = null;
+      pendingBeforeSelection = undefined;
       void nextTick(() => {
         if (initVersion !== historyInitVersion) return;
         // Skip if insert/clear already seeded managed history in this tick.
@@ -2655,8 +2760,7 @@ export default defineComponent({
         // switching to readOnly/disabled should not leave stale pending history
         if (readOnly || disabled) {
           pendingHistoryType = null;
-          pendingBeforeCursor = null;
-          pendingBeforeControlCursor = null;
+          pendingBeforeSelection = undefined;
           isComposing.value = false;
           keyLock.value = false;
         }
@@ -2665,8 +2769,7 @@ export default defineComponent({
 
     onBeforeUnmount(() => {
       pendingHistoryType = null;
-      pendingBeforeCursor = null;
-      pendingBeforeControlCursor = null;
+      pendingBeforeSelection = undefined;
       unmountAllPortals();
     });
 
@@ -2701,12 +2804,12 @@ export default defineComponent({
           }}
           onBlur={(e: FocusEvent) => {
             keyLock.value = false;
-            pendingBeforeControlCursor = null;
+            pendingBeforeSelection = undefined;
             // blur mid-composition without compositionend (e.g. IME cancelled) should not leave stale pending
             if (isComposing.value) {
               isComposing.value = false;
               pendingHistoryType = null;
-              pendingBeforeCursor = null;
+              pendingBeforeSelection = undefined;
             }
             senderCtx.value.onBlur?.(e);
           }}
