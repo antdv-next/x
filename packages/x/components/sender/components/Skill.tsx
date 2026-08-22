@@ -19,6 +19,7 @@ export default defineComponent({
       type: Function as PropType<() => void>,
       required: true,
     },
+    disabled: { type: Boolean, default: false },
   },
   setup(props) {
     const componentCls = computed(() => `${props.prefixCls}-skill`);
@@ -28,6 +29,7 @@ export default defineComponent({
       if (!closable) return null;
 
       const config = typeof closable === "boolean" ? {} : closable;
+      const disabled = !!(props.disabled || config.disabled);
       const closeIcon = config.closeIcon ?? (
         <CloseOutlined class={`${componentCls.value}-close-icon`} />
       );
@@ -36,16 +38,43 @@ export default defineComponent({
         <div
           class={classNames([
             `${componentCls.value}-close`,
-            { [`${componentCls.value}-close-disabled`]: config.disabled },
+            { [`${componentCls.value}-close-disabled`]: disabled },
           ])}
           role="button"
           aria-label="Close skill"
-          tabindex={0}
+          aria-disabled={disabled}
+          tabindex={disabled ? -1 : 0}
           onClick={(event: MouseEvent) => {
-            if (config.disabled) return;
             event.stopPropagation();
+            if (disabled) return;
             props.removeSkill();
             config.onClose?.(event);
+          }}
+          onKeydown={(event: KeyboardEvent) => {
+            if (disabled) return;
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              event.stopPropagation();
+              const closeElement = event.currentTarget;
+              if (closeElement instanceof HTMLElement) {
+                closeElement.dispatchEvent(
+                  new MouseEvent("click", {
+                    bubbles: true,
+                    cancelable: true,
+                    view: event.view,
+                    detail: 1,
+                    button: 0,
+                    buttons: 0,
+                    clientX: 0,
+                    clientY: 0,
+                    ctrlKey: event.ctrlKey,
+                    altKey: event.altKey,
+                    shiftKey: event.shiftKey,
+                    metaKey: event.metaKey,
+                  }),
+                );
+              }
+            }
           }}
         >
           {closeIcon}

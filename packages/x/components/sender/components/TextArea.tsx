@@ -1,7 +1,7 @@
 import { TextArea as ATextarea } from "antdv-next";
 import { defineComponent, ref } from "vue";
 
-import type { SenderFocusOptions } from "../interface";
+import type { SenderCopyInfo, SenderFocusOptions } from "../interface";
 
 import { useSenderContext } from "../context";
 
@@ -24,7 +24,13 @@ export default defineComponent({
     const isComposing = ref(false);
 
     const getNativeEl = (): HTMLTextAreaElement | null => {
-      return (inputRef.value as any)?.nativeElement ?? null;
+      return (
+        (
+          inputRef.value as unknown as {
+            nativeElement?: HTMLTextAreaElement | null;
+          }
+        )?.nativeElement ?? null
+      );
     };
 
     expose<TextAreaRef>({
@@ -108,6 +114,43 @@ export default defineComponent({
       ctx.onPaste?.(e);
     };
 
+    const onInternalCopy = (e: ClipboardEvent) => {
+      const ctx = senderCtx.value;
+      if (!ctx.onCopy) return;
+      const text =
+        window.getSelection()?.toString() ?? getNativeEl()?.value ?? "";
+      const info: SenderCopyInfo = {
+        value: text,
+        slotConfig: [],
+        skill: undefined,
+        text,
+      };
+      const result = ctx.onCopy(e, info);
+      if (result === false) e.preventDefault();
+      if (typeof result === "string") {
+        e.preventDefault();
+        e.clipboardData?.setData("text/plain", result);
+      }
+    };
+
+    const onInternalCut = (e: ClipboardEvent) => {
+      const ctx = senderCtx.value;
+      if (!ctx.onCut) return;
+      const text =
+        window.getSelection()?.toString() ?? getNativeEl()?.value ?? "";
+      const info: SenderCopyInfo = {
+        value: text,
+        slotConfig: [],
+        skill: undefined,
+        text,
+      };
+      const result = ctx.onCut(e, info);
+      if (result === false) e.preventDefault();
+      if (typeof result === "string") {
+        e.preventDefault();
+        e.clipboardData?.setData("text/plain", result);
+      }
+    };
     return () => {
       const ctx = senderCtx.value;
 
@@ -131,7 +174,11 @@ export default defineComponent({
             isComposing.value = false;
           }}
           onKeydown={onInternalKeyDown}
-          {...{ onPaste: onInternalPaste }}
+          {...{
+            onPaste: onInternalPaste,
+            onCopy: onInternalCopy,
+            onCut: onInternalCut,
+          }}
           variant="borderless"
           readonly={ctx.readOnly}
           placeholder={ctx.placeholder}

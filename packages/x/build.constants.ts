@@ -15,6 +15,12 @@ export const LIB_EXTERNALS = [
   /^mermaid\/.*/,
   "shiki",
   /^shiki\/.*/,
+  /^prosemirror-.*/,
+  "prosemirror-transform",
+  "orderedmap",
+  "w3c-keyname",
+  "rope-sequence",
+  "crelt",
 ];
 
 export const TEST_FILE_PATTERNS = [
