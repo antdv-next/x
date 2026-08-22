@@ -63,6 +63,13 @@ function stringifyValue(value: any) {
   }
 }
 
+const isNativeFormControl = (
+  target: EventTarget | null,
+): target is HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement =>
+  target instanceof HTMLInputElement ||
+  target instanceof HTMLTextAreaElement ||
+  target instanceof HTMLSelectElement;
+
 function getDefaultSlotValue(config: SlotConfigType) {
   const key = (config as any).key as string | undefined;
   if (!key) return undefined;
@@ -280,9 +287,9 @@ function cloneHistoryValue<T>(
     return result as T;
   }
   if (typeof Node !== "undefined" && rawValue instanceof Node) {
-    const result = rawValue.cloneNode(true);
-    seen.set(rawValue, result);
-    return result as T;
+    // DOM nodes are opaque runtime resources. A clone would lose identity,
+    // listeners, and other private state without producing a safe snapshot.
+    return rawValue as T;
   }
   if (rawValue instanceof ArrayBuffer) {
     const result = rawValue.slice(0);
@@ -346,16 +353,14 @@ function cloneHistoryValue<T>(
   }
 
   const prototype = Object.getPrototypeOf(rawValue);
-  const constructor = prototype?.constructor;
   if (
     !Array.isArray(rawValue) &&
     prototype !== Object.prototype &&
-    prototype !== null &&
-    typeof constructor === "function" &&
-    Function.prototype.toString.call(constructor).includes("[native code]")
+    prototype !== null
   ) {
-    // Preserve unrecognized native objects (URL, Blob, Intl instances, etc.)
-    // instead of producing an object that lacks their private internal slots.
+    // Preserve opaque native and user-defined instances by identity. Their
+    // internal mutable state belongs to the custom slot and cannot be
+    // reconstructed safely by Sender history.
     return rawValue as T;
   }
 
@@ -405,6 +410,12 @@ export default defineComponent({
       endOffset: number;
       collapsed: boolean;
     } | null;
+    type SlotControlSelectionSnapshot = {
+      key: string;
+      start: number;
+      end: number;
+      direction: "forward" | "backward" | "none";
+    } | null;
     type EditorNodeSnapshot =
       | { kind: "text"; value: string }
       | {
@@ -429,6 +440,8 @@ export default defineComponent({
       document: EditorDocumentSnapshot;
       cursor: SelectionSnapshot; // after cursor (光标在操作后)
       beforeCursor: SelectionSnapshot | null; // before cursor (撤销应回到此处)
+      controlCursor: SlotControlSelectionSnapshot;
+      beforeControlCursor: SlotControlSelectionSnapshot;
       t: number;
       inputType: string;
     };
@@ -438,6 +451,7 @@ export default defineComponent({
     let isManagedHistoryActive = false;
     let pendingHistoryType: string | null = null; // beforeinput 标记，input 后推入
     let pendingBeforeCursor: SelectionSnapshot | null = null; // 操作前的光标，撤销应回到此处而非操作后
+    let pendingBeforeControlCursor: SlotControlSelectionSnapshot = null;
     let hasPendingControlledSlotConfig = false;
     let pendingControlledSlotConfig: readonly SlotConfigType[] | undefined =
       undefined;
@@ -518,6 +532,31 @@ export default defineComponent({
       } catch {
         return null;
       }
+    };
+
+    const captureSlotControlSelection = (
+      target: EventTarget | null,
+      knownKey?: string,
+    ): SlotControlSelectionSnapshot => {
+      if (
+        !(target instanceof HTMLInputElement) &&
+        !(target instanceof HTMLTextAreaElement)
+      ) {
+        return null;
+      }
+      const key =
+        knownKey ??
+        target.closest<HTMLElement>("[data-slot-key]")?.dataset.slotKey;
+      if (!key || slotConfigMap.value.get(key)?.type !== "input") return null;
+      const start = target.selectionStart;
+      const end = target.selectionEnd;
+      if (start === null || end === null) return null;
+      return {
+        key,
+        start,
+        end,
+        direction: target.selectionDirection ?? "none",
+      };
     };
 
     const isSameCollapsedSelection = (
@@ -672,11 +711,13 @@ export default defineComponent({
             .map(captureEditorNode)
             .filter((node): node is EditorNodeSnapshot => !!node)
         : [];
-      const activeSlotKeys = new Set<string>();
+      const snapshotSlotKeys = new Set<string>();
       let hasSkillNode = false;
       const collectManagedNodes = (node: EditorNodeSnapshot) => {
-        if (node.kind === "slot" && node.variant === "main") {
-          activeSlotKeys.add(node.key);
+        if (node.kind === "slot") {
+          // Spacer nodes are part of a content slot's managed structure. Keep
+          // their config even when a selection deleted only the main span.
+          snapshotSlotKeys.add(node.key);
         } else if (node.kind === "skill") {
           hasSkillNode = true;
         } else if (node.kind === "element") {
@@ -687,7 +728,7 @@ export default defineComponent({
       // Clone mutable config/value data while retaining function and VNode
       // identities required by customRender and formatResult.
       const rawConfigs = Array.from(slotConfigMap.value.entries())
-        .filter(([key]) => activeSlotKeys.has(key))
+        .filter(([key]) => snapshotSlotKeys.has(key))
         .map(([, config]) => config);
       const clonedConfigs = cloneHistoryValue(rawConfigs);
       const rawSkill: any = hasSkillNode
@@ -701,7 +742,7 @@ export default defineComponent({
           slotValues: cloneHistoryValue(
             Object.fromEntries(
               Object.entries(slotValues.value).filter(([key]) =>
-                activeSlotKeys.has(key),
+                snapshotSlotKeys.has(key),
               ),
             ),
           ),
@@ -709,6 +750,8 @@ export default defineComponent({
         },
         cursor: captureSelectionSnapshot(),
         beforeCursor: null as SelectionSnapshot,
+        controlCursor: null,
+        beforeControlCursor: null,
         t: Date.now(),
         inputType,
       };
@@ -719,12 +762,16 @@ export default defineComponent({
     const pushHistory = (
       inputType: string = "unknown",
       forceNewGroup: boolean = false,
+      controlCursor: SlotControlSelectionSnapshot = null,
     ) => {
       if (isRestoringHistory) return;
       const now = Date.now();
       const snap = captureSnapshot(inputType);
       snap.beforeCursor = pendingBeforeCursor;
+      snap.controlCursor = controlCursor;
+      snap.beforeControlCursor = pendingBeforeControlCursor;
       pendingBeforeCursor = null;
+      pendingBeforeControlCursor = null;
       const last = historyStack[historyIndex];
       // Deduplicate no-op input, including a cancelled IME composition.
       const isSameContent =
@@ -769,6 +816,7 @@ export default defineComponent({
     const restoreSnapshot = (
       snap: HistorySnapshot,
       overrideCursor?: SelectionSnapshot | null,
+      overrideControlCursor?: SlotControlSelectionSnapshot,
     ) => {
       isRestoringHistory = true;
       const editable = editableRef.value;
@@ -860,31 +908,59 @@ export default defineComponent({
       // Restore cursor after DOM rebuild - defer to nextTick to ensure DOM is ready
       const cursorToRestore =
         overrideCursor !== undefined ? overrideCursor : snap.cursor;
+      const controlCursorToRestore =
+        overrideControlCursor !== undefined
+          ? overrideControlCursor
+          : snap.controlCursor;
       void nextTick(() => {
         restoreSelectionSnapshot(cursorToRestore ?? snap.cursor);
+        if (controlCursorToRestore) {
+          const slotDom = slotDomMap.value.get(controlCursorToRestore.key);
+          const control = slotDom?.querySelector<
+            HTMLInputElement | HTMLTextAreaElement
+          >("input, textarea");
+          if (control) {
+            control.focus();
+            control.setSelectionRange(
+              Math.min(controlCursorToRestore.start, control.value.length),
+              Math.min(controlCursorToRestore.end, control.value.length),
+              controlCursorToRestore.direction,
+            );
+          }
+        }
         isRestoringHistory = false;
         reconcilePendingControlledValues();
       });
     };
 
     // 全量快照：undo 直接指针--，撤销应回到操作前的光标（cur.beforeCursor），而非 prev 的 after
-    const handleUndo = () => {
+    const handleUndo = (
+      fallbackControlCursor: SlotControlSelectionSnapshot = null,
+    ) => {
       if (historyIndex <= 0) return false;
       const cur = historyStack[historyIndex]!;
       historyIndex--;
       const prev = historyStack[historyIndex]!;
       // 用 prev 的内容 + cur 的 beforeCursor（操作前）
       const cursorBefore = (cur as any).beforeCursor ?? cur.cursor;
-      restoreSnapshot(prev, cursorBefore);
+      const controlCursorBefore =
+        cur.beforeControlCursor ?? prev.controlCursor ?? fallbackControlCursor;
+      restoreSnapshot(prev, cursorBefore, controlCursorBefore);
       return true;
     };
 
-    const handleRedo = () => {
+    const handleRedo = (
+      fallbackControlCursor: SlotControlSelectionSnapshot = null,
+    ) => {
       if (historyIndex >= historyStack.length - 1) return false;
       historyIndex++;
       const next = historyStack[historyIndex]!;
       // redo 回到操作后的状态，光标为 after
-      restoreSnapshot(next, next.cursor);
+      restoreSnapshot(
+        next,
+        next.cursor,
+        next.controlCursor ?? fallbackControlCursor,
+      );
       return true;
     };
 
@@ -1104,6 +1180,10 @@ export default defineComponent({
     };
     const updateSlot = (key: string, value: any, event?: Event) => {
       if (senderCtx.value.readOnly || senderCtx.value.disabled) return;
+      const controlCursor = captureSlotControlSelection(
+        event?.target ?? null,
+        key,
+      );
       // Composition owns a single history entry from compositionstart to
       // compositionend. Recording each custom-slot update here would clear
       // that marker and make one IME commit require multiple undos.
@@ -1123,7 +1203,7 @@ export default defineComponent({
 
       triggerValueChange(event);
       if (!isComposing.value) {
-        pushHistory("slotValue", true);
+        pushHistory("slotValue", true, controlCursor);
       }
     };
 
@@ -1936,12 +2016,29 @@ export default defineComponent({
         return;
       const inputType = (event as InputEvent).inputType || "";
       if (inputType === "historyUndo" || inputType === "historyRedo") {
+        const nestedSlotKey = isNativeFormControl(event.target)
+          ? event.target.closest<HTMLElement>("[data-slot-key]")?.dataset
+              .slotKey
+          : undefined;
+        if (
+          nestedSlotKey &&
+          slotConfigMap.value.get(nestedSlotKey)?.type === "custom"
+        ) {
+          return;
+        }
         if (!hasManagedHistory()) return;
         event.preventDefault();
-        if (inputType === "historyUndo") handleUndo();
-        else handleRedo();
+        const controlCursor = captureSlotControlSelection(event.target);
+        if (inputType === "historyUndo") handleUndo(controlCursor);
+        else handleRedo(controlCursor);
         return;
       }
+      const controlCursor = captureSlotControlSelection(event.target);
+      if (controlCursor) {
+        pendingBeforeControlCursor = controlCursor;
+        return;
+      }
+      pendingBeforeControlCursor = null;
       const sel = getSelection();
       if (!sel || sel.rangeCount === 0) return;
       const range = sel.getRangeAt(0);
@@ -1995,6 +2092,9 @@ export default defineComponent({
     };
     const onInternalCut = (event: ClipboardEvent) => {
       if (senderCtx.value.readOnly || senderCtx.value.disabled) return;
+      // A nested native control owns its cut operation. Browsers may retain a
+      // stale outer document selection after focus moves into the control.
+      if (isNativeFormControl(event.target)) return;
       // Cut with slot selection is handled as delete with history (push after)
       if (selectionContainsSlot()) {
         const selection = getSelection();
@@ -2024,43 +2124,15 @@ export default defineComponent({
         !!editableRef.value &&
         event.target instanceof Node &&
         editableRef.value.contains(event.target);
-      const eventFromNestedFormControl =
-        event.target instanceof HTMLInputElement ||
-        event.target instanceof HTMLTextAreaElement ||
-        event.target instanceof HTMLSelectElement;
+      const eventFromNestedFormControl = isNativeFormControl(event.target);
       const nestedControlKey = eventFromNestedFormControl
         ? (event.target as HTMLElement).closest<HTMLElement>("[data-slot-key]")
             ?.dataset.slotKey
         : undefined;
-      const nestedControlSelection =
-        event.target instanceof HTMLInputElement ||
-        event.target instanceof HTMLTextAreaElement
-          ? {
-              start: event.target.selectionStart,
-              end: event.target.selectionEnd,
-              direction: event.target.selectionDirection,
-            }
-          : null;
-      const restoreNestedControlFocus = () => {
-        if (!nestedControlKey) return;
-        void nextTick(() => {
-          const slotDom = slotDomMap.value.get(nestedControlKey);
-          const control = slotDom?.querySelector<
-            HTMLInputElement | HTMLTextAreaElement
-          >("input, textarea");
-          if (!control) return;
-          control.focus();
-          if (nestedControlSelection) {
-            const start = nestedControlSelection.start ?? control.value.length;
-            const end = nestedControlSelection.end ?? start;
-            control.setSelectionRange(
-              Math.min(start, control.value.length),
-              Math.min(end, control.value.length),
-              nestedControlSelection.direction ?? undefined,
-            );
-          }
-        });
-      };
+      const nestedCustomControl =
+        !!nestedControlKey &&
+        slotConfigMap.value.get(nestedControlKey)?.type === "custom";
+      const nestedControlSelection = captureSlotControlSelection(event.target);
       const editableFocused =
         inEditable ||
         eventFromEditable ||
@@ -2071,13 +2143,13 @@ export default defineComponent({
         !senderCtx.value.disabled &&
         editableFocused &&
         shouldUseManagedHistory &&
+        !nestedCustomControl &&
         isMod &&
         keyLower === "z"
       ) {
         event.preventDefault();
-        if (event.shiftKey) handleRedo();
-        else handleUndo();
-        restoreNestedControlFocus();
+        if (event.shiftKey) handleRedo(nestedControlSelection);
+        else handleUndo(nestedControlSelection);
         return;
       }
       if (
@@ -2085,12 +2157,12 @@ export default defineComponent({
         !senderCtx.value.disabled &&
         editableFocused &&
         shouldUseManagedHistory &&
+        !nestedCustomControl &&
         isMod &&
         keyLower === "y"
       ) {
         event.preventDefault();
-        handleRedo();
-        restoreNestedControlFocus();
+        handleRedo(nestedControlSelection);
         return;
       }
 
@@ -2211,26 +2283,32 @@ export default defineComponent({
       }
     };
 
-    const onInternalCompositionStart = () => {
+    const onInternalCompositionStart = (event: CompositionEvent) => {
       if (senderCtx.value.readOnly || senderCtx.value.disabled) return;
       isComposing.value = true;
       if (!hasManagedHistory()) return;
       pendingBeforeCursor = captureSelectionSnapshot();
+      pendingBeforeControlCursor = captureSlotControlSelection(event.target);
       pendingHistoryType = "insertCompositionText";
     };
-    const onInternalCompositionEnd = () => {
+    const onInternalCompositionEnd = (event: CompositionEvent) => {
       isComposing.value = false;
       keyLock.value = false;
       if (senderCtx.value.readOnly || senderCtx.value.disabled) return;
+      const controlCursor = captureSlotControlSelection(event.target);
       void nextTick(() => {
         if (pendingHistoryType === "insertCompositionText") {
-          pushHistory("insertCompositionText", true);
+          pushHistory("insertCompositionText", true, controlCursor);
         }
       });
     };
 
     const onInternalPaste = (event: ClipboardEvent) => {
       if (senderCtx.value.readOnly || senderCtx.value.disabled) return;
+      if (isNativeFormControl(event.target)) {
+        senderCtx.value.onPaste?.(event);
+        return;
+      }
       event.preventDefault();
       const files = event.clipboardData?.files;
       const text = event.clipboardData?.getData("text/plain") ?? "";
@@ -2454,6 +2532,8 @@ export default defineComponent({
       historyIndex = -1;
       isManagedHistoryActive = slotDomMap.value.size > 0 || !!skillDomRef.value;
       pendingHistoryType = null;
+      pendingBeforeCursor = null;
+      pendingBeforeControlCursor = null;
       void nextTick(() => {
         if (initVersion !== historyInitVersion) return;
         // Skip if insert/clear already seeded managed history in this tick.
@@ -2576,6 +2656,7 @@ export default defineComponent({
         if (readOnly || disabled) {
           pendingHistoryType = null;
           pendingBeforeCursor = null;
+          pendingBeforeControlCursor = null;
           isComposing.value = false;
           keyLock.value = false;
         }
@@ -2585,6 +2666,7 @@ export default defineComponent({
     onBeforeUnmount(() => {
       pendingHistoryType = null;
       pendingBeforeCursor = null;
+      pendingBeforeControlCursor = null;
       unmountAllPortals();
     });
 
@@ -2619,6 +2701,7 @@ export default defineComponent({
           }}
           onBlur={(e: FocusEvent) => {
             keyLock.value = false;
+            pendingBeforeControlCursor = null;
             // blur mid-composition without compositionend (e.g. IME cancelled) should not leave stale pending
             if (isComposing.value) {
               isComposing.value = false;
