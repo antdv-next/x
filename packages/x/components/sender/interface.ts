@@ -142,6 +142,23 @@ export interface SenderCopyInfo {
   skill?: SkillType;
   text: string;
 }
+export interface SenderCopyResult {
+  text?: string;
+  slotConfig?: SlotConfigType[];
+  skill?: SkillType | null;
+}
+export type SenderCopyReturn = void | false | string | SenderCopyResult;
+export interface SenderPasteInfo {
+  text: string;
+  slotConfig: SlotConfigType[];
+  skill?: SkillType;
+}
+export interface SenderPasteResult {
+  text?: string;
+  slotConfig?: SlotConfigType[];
+  skill?: SkillType | null;
+}
+export type SenderPasteReturn = void | false | string | SenderPasteResult;
 export interface SenderProps {
   prefixCls?: string;
   defaultValue?: string;
@@ -166,16 +183,10 @@ export interface SenderProps {
   onCancel?: () => void;
   onKeyDown?: (event: KeyboardEvent) => void | false;
   onKeyUp?: (event: KeyboardEvent) => void;
-  onPaste?: (event: ClipboardEvent) => void;
+  onPaste?: (event: ClipboardEvent, info: SenderPasteInfo) => SenderPasteReturn;
   onPasteFile?: (files: FileList) => void;
-  onCopy?: (
-    event: ClipboardEvent,
-    info: SenderCopyInfo,
-  ) => void | false | string;
-  onCut?: (
-    event: ClipboardEvent,
-    info: SenderCopyInfo,
-  ) => void | false | string;
+  onCopy?: (event: ClipboardEvent, info: SenderCopyInfo) => SenderCopyReturn;
+  onCut?: (event: ClipboardEvent, info: SenderCopyInfo) => SenderCopyReturn;
   onFocus?: (event: FocusEvent) => void;
   onBlur?: (event: FocusEvent) => void;
   classNames?: Partial<Record<SemanticType, string>>;

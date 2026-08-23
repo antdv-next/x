@@ -5,6 +5,7 @@ import { markRaw } from "vue";
 import type { SkillType, SlotConfigType } from "../interface";
 
 import Sender from "..";
+import { cleanup, createHost, selectAllEditable } from "./helpers";
 
 beforeEach(() => {
   document.head.innerHTML = "";
@@ -422,8 +423,7 @@ describe("Sender", () => {
 
   it("should remove the slot before cursor when backspacing at the editor boundary", async () => {
     const onChange = vi.fn();
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     const wrapper = mount(Sender, {
       attachTo: host,
       props: {
@@ -466,14 +466,12 @@ describe("Sender", () => {
       "assistant2",
     ]);
 
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should clear content slot text when backspacing inside the slot", async () => {
     const onChange = vi.fn();
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     const wrapper = mount(Sender, {
       attachTo: host,
       props: {
@@ -513,8 +511,7 @@ describe("Sender", () => {
       }),
     ]);
 
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should keep user input when typing after removing content slot with skill", async () => {
@@ -554,8 +551,7 @@ describe("Sender", () => {
 
   it("should remove slot when backspacing past empty text nodes at editor boundary", async () => {
     const onChange = vi.fn();
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     const wrapper = mount(Sender, {
       attachTo: host,
       props: {
@@ -598,8 +594,7 @@ describe("Sender", () => {
       "a1",
     ]);
 
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should not show empty placeholder when skill has child nodes", async () => {
@@ -629,8 +624,7 @@ describe("Sender", () => {
   });
 
   it("should replace characters when insert is called with replaceCharacters", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     const wrapper = mount(Sender, {
       attachTo: host,
       props: {
@@ -678,8 +672,7 @@ describe("Sender", () => {
       ]),
     );
 
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should keep cursor after restoring slotConfig and typing into skill placeholder", async () => {
@@ -691,8 +684,7 @@ describe("Sender", () => {
     const slotConfig: SlotConfigType[] = [
       { type: "content", key: "input", props: { placeholder: "Content" } },
     ];
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     const wrapper = mount(Sender, {
       attachTo: host,
       props: {
@@ -727,13 +719,11 @@ describe("Sender", () => {
     expect(selection?.anchorNode?.textContent).toContain("a");
     expect(selection?.anchorOffset).toBe(1);
 
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should preserve native undo for plain text when slotConfig is empty", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     const wrapper = mount(Sender, {
       attachTo: host,
       props: { slotConfig: [] },
@@ -784,13 +774,11 @@ describe("Sender", () => {
     editable.element.dispatchEvent(beforeInputRedo);
     expect(beforeInputRedo.defaultPrevented).toBe(false);
 
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should preserve native history for an initially controlled text document", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     const wrapper = mount(Sender, {
       attachTo: host,
       props: {
@@ -818,13 +806,11 @@ describe("Sender", () => {
     editable.element.dispatchEvent(beforeInputUndo);
     expect(beforeInputUndo.defaultPrevented).toBe(false);
 
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should route beforeinput history commands through managed history", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     const wrapper = mount(Sender, {
       attachTo: host,
       props: {
@@ -870,13 +856,11 @@ describe("Sender", () => {
     expect(redoEvent.defaultPrevented).toBe(true);
     expect((wrapper.vm as any).getValue().slotConfig).toEqual([]);
 
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should block unsupported rich-text mutations before they reach history", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     const wrapper = mount(Sender, {
       attachTo: host,
       props: {
@@ -933,13 +917,11 @@ describe("Sender", () => {
     expect(contentFormatEvent.defaultPrevented).toBe(true);
     expect(contentSlot.find("i").exists()).toBe(false);
 
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should preserve existing text when undoing the first managed insert", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     const wrapper = mount(Sender, {
       attachTo: host,
       props: { slotConfig: [] },
@@ -988,13 +970,11 @@ describe("Sender", () => {
       expect.objectContaining({ type: "text", value: "typed first" }),
     ]);
 
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should restore existing text when undoing clear in slot mode", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     const wrapper = mount(Sender, {
       attachTo: host,
       props: { slotConfig: [] },
@@ -1016,13 +996,11 @@ describe("Sender", () => {
 
     expect((wrapper.vm as any).getValue().value).toBe("keep me");
 
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should restore the last deleted slot with undo and remove it with redo", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     const wrapper = mount(Sender, {
       attachTo: host,
       props: {
@@ -1062,13 +1040,11 @@ describe("Sender", () => {
     await wrapper.vm.$nextTick();
     expect((wrapper.vm as any).getValue().slotConfig).toEqual([]);
 
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should keep content empty after Ctrl+A then Backspace in slot-filling mode", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     const wrapper = mount(Sender, {
       attachTo: host,
       props: {
@@ -1113,13 +1089,11 @@ describe("Sender", () => {
     await wrapper.vm.$nextTick();
     expect((wrapper.vm as any).getValue().value).toBe("");
 
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should write a slot selection to the clipboard before cutting", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     const wrapper = mount(Sender, {
       attachTo: host,
       props: {
@@ -1156,13 +1130,11 @@ describe("Sender", () => {
 
     expect(setData).toHaveBeenCalledWith("text/plain", selectedText);
 
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should retain a partial content-slot deletion after redo", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     const wrapper = mount(Sender, {
       attachTo: host,
       props: {
@@ -1205,13 +1177,11 @@ describe("Sender", () => {
     await wrapper.vm.$nextTick();
     expect((wrapper.vm as any).getValue().slotConfig[0].value).toBe("Alpha ");
 
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should restore orphan content-slot spacers after redo", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     const wrapper = mount(Sender, {
       attachTo: host,
       props: {
@@ -1262,13 +1232,11 @@ describe("Sender", () => {
       }),
     );
 
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should preserve edited content-slot text after undo and redo", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     const wrapper = mount(Sender, {
       attachTo: host,
       props: {
@@ -1324,13 +1292,11 @@ describe("Sender", () => {
       "Initial edited",
     );
 
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should let onKeyDown veto selection deletion", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     const onKeyDown = vi.fn(() => false as const);
     const wrapper = mount(Sender, {
       attachTo: host,
@@ -1361,13 +1327,11 @@ describe("Sender", () => {
       expect.objectContaining({ key: "tag", type: "tag" }),
     ]);
 
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should not apply managed undo while readOnly", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     const wrapper = mount(Sender, {
       attachTo: host,
       props: {
@@ -1405,8 +1369,7 @@ describe("Sender", () => {
     expect(undoEvent.defaultPrevented).toBe(false);
     expect((wrapper.vm as any).getValue().slotConfig).toEqual([]);
 
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should not close a skill while readOnly", async () => {
@@ -1436,8 +1399,7 @@ describe("Sender", () => {
   });
 
   it("should not apply managed undo while disabled", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     const wrapper = mount(Sender, {
       attachTo: host,
       props: {
@@ -1476,8 +1438,7 @@ describe("Sender", () => {
     expect((wrapper.vm as any).getValue().slotConfig).toEqual([]);
     expect(editable.attributes("contenteditable")).toBe("false");
 
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should update manually rendered slot controls when disabled changes", async () => {
@@ -1594,8 +1555,7 @@ describe("Sender", () => {
   });
 
   it("should delete an entire atomic slot selected through its label", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     const wrapper = mount(Sender, {
       attachTo: host,
       props: {
@@ -1624,13 +1584,11 @@ describe("Sender", () => {
     expect(wrapper.find(".antd-sender-slot-tag").exists()).toBe(false);
     expect((wrapper.vm as any).getValue().slotConfig).toEqual([]);
 
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should record custom slot value changes in managed history", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     const wrapper = mount(Sender, {
       attachTo: host,
       props: {
@@ -1668,13 +1626,11 @@ describe("Sender", () => {
     await wrapper.vm.$nextTick();
     expect((wrapper.vm as any).getValue().slotConfig[0].value).toBe("Updated");
 
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should isolate in-place custom object mutations between snapshots", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     const initialValue = { nested: { count: 1 }, items: [1] };
     let mutateCustomValue: (() => void) | undefined;
     let renderedCustomValue: typeof initialValue | undefined;
@@ -1728,13 +1684,11 @@ describe("Sender", () => {
       items: [1, 2],
     });
 
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should snapshot cyclic Map and Set custom values", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     type CyclicValue = {
       map: Map<string, number>;
       set: Set<string>;
@@ -1797,8 +1751,7 @@ describe("Sender", () => {
     expect(renderedValue?.set).toEqual(new Set(["a", "b"]));
     expect(renderedValue?.self).toBe(renderedValue);
 
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should retain opaque custom values by identity in history", async () => {
@@ -1848,8 +1801,7 @@ describe("Sender", () => {
   });
 
   it("should handle a bubbled input-slot undo only once", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     const onKeyDown = vi.fn();
     const wrapper = mount(Sender, {
       attachTo: host,
@@ -1877,8 +1829,7 @@ describe("Sender", () => {
     expect(onKeyDown).toHaveBeenCalledOnce();
     expect((wrapper.vm as any).getValue().slotConfig[0].value).toBe("First");
 
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should leave custom-slot native history shortcuts to the consumer", async () => {
@@ -1920,8 +1871,7 @@ describe("Sender", () => {
   });
 
   it("should leave structural deletion to a nested form control", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     const wrapper = mount(Sender, {
       attachTo: host,
       props: {
@@ -1961,13 +1911,11 @@ describe("Sender", () => {
       ]);
     }
 
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should leave cut handling to a nested form control", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     const wrapper = mount(Sender, {
       attachTo: host,
       props: {
@@ -2007,13 +1955,11 @@ describe("Sender", () => {
       expect.objectContaining({ key: "input", value: "Initial" }),
     ]);
 
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should leave paste handling to a nested form control", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     const onPaste = vi.fn();
     const wrapper = mount(Sender, {
       attachTo: host,
@@ -2059,13 +2005,11 @@ describe("Sender", () => {
       expect.objectContaining({ key: "input", value: "Initial" }),
     ]);
 
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should keep managed undo focus inside a slot input", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     const wrapper = mount(Sender, {
       attachTo: host,
       props: {
@@ -2102,13 +2046,11 @@ describe("Sender", () => {
       "Continued",
     );
 
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should restore built-in input carets on undo and redo", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     const wrapper = mount(Sender, {
       attachTo: host,
       props: {
@@ -2189,13 +2131,11 @@ describe("Sender", () => {
     expect(input.selectionStart).toBe(3);
     expect(input.selectionEnd).toBe(3);
 
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should restore the selection owned by each mixed slot and outer edit", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     const wrapper = mount(Sender, {
       attachTo: host,
       props: {
@@ -2317,13 +2257,11 @@ describe("Sender", () => {
     expect(window.getSelection()?.anchorNode?.textContent).toBe("abc!");
     expect(window.getSelection()?.anchorOffset).toBe(4);
 
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should restore an input selection when undoing public clear", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     const wrapper = mount(Sender, {
       attachTo: host,
       props: {
@@ -2358,13 +2296,11 @@ describe("Sender", () => {
     expect(input.selectionStart).toBe(2);
     expect(input.selectionEnd).toBe(2);
 
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should restore an input selection when undoing public insert", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     const wrapper = mount(Sender, {
       attachTo: host,
       props: {
@@ -2408,13 +2344,11 @@ describe("Sender", () => {
     expect(input.selectionStart).toBe(2);
     expect(input.selectionEnd).toBe(2);
 
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should preserve line breaks when pasting in slot mode", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     const wrapper = mount(Sender, {
       attachTo: host,
       props: { slotConfig: [] },
@@ -2444,13 +2378,11 @@ describe("Sender", () => {
 
     expect((wrapper.vm as any).getValue().value).toBe("first\nsecond");
 
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should preserve edge line breaks when pasting in slot mode", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     const wrapper = mount(Sender, {
       attachTo: host,
       props: { slotConfig: [] },
@@ -2480,13 +2412,11 @@ describe("Sender", () => {
 
     expect((wrapper.vm as any).getValue().value).toBe("\nfirst\nsecond\n");
 
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should preserve redo when a cloned controlled slotConfig follows an undo", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     let wrapper: ReturnType<typeof mount>;
     let syncControlledValue = false;
     const onChange = vi.fn(
@@ -2555,13 +2485,11 @@ describe("Sender", () => {
     await wrapper.vm.$nextTick();
     expect((wrapper.vm as any).getValue().slotConfig).toEqual([]);
 
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should reconcile a transformed controlled slotConfig during undo", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     let wrapper: ReturnType<typeof mount>;
     let transformRestoredValue = false;
     const onChange = vi.fn(
@@ -2635,13 +2563,11 @@ describe("Sender", () => {
       expect.objectContaining({ key: "server-tag" }),
     ]);
 
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should preserve history for delayed controlled slotConfig echoes", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     let wrapper: ReturnType<typeof mount>;
     let syncControlledValue = false;
     const onChange = vi.fn(
@@ -2708,13 +2634,11 @@ describe("Sender", () => {
     await wrapper.vm.$nextTick();
     expect((wrapper.vm as any).getValue().slotConfig).toEqual([]);
 
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should preserve history when controlled slotConfig echoes are coalesced", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     let wrapper: ReturnType<typeof mount>;
     let syncControlledValue = false;
     let pendingTimer: ReturnType<typeof globalThis.setTimeout> | undefined;
@@ -2780,13 +2704,11 @@ describe("Sender", () => {
     expect((wrapper.vm as any).getValue().slotConfig).toEqual([]);
 
     if (pendingTimer) globalThis.clearTimeout(pendingTimer);
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should keep managed ownership after a controlled pure-text baseline", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     const wrapper = mount(Sender, {
       attachTo: host,
       props: {
@@ -2871,13 +2793,11 @@ describe("Sender", () => {
     await wrapper.vm.$nextTick();
     expect((wrapper.vm as any).getValue().value).toBe("server");
 
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should apply an out-of-order controlled slotConfig update", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     const initialSlot: SlotConfigType = {
       type: "tag",
       key: "tag",
@@ -2922,13 +2842,11 @@ describe("Sender", () => {
       expect.objectContaining({ key: "tag", type: "tag" }),
     ]);
 
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should record composition input in managed history", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     const wrapper = mount(Sender, {
       attachTo: host,
       props: {
@@ -2969,13 +2887,11 @@ describe("Sender", () => {
       expect.objectContaining({ key: "tag", type: "tag" }),
     ]);
 
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should not record a cancelled composition as a history entry", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     const wrapper = mount(Sender, {
       attachTo: host,
       props: {
@@ -3028,13 +2944,11 @@ describe("Sender", () => {
     await wrapper.vm.$nextTick();
     expect((wrapper.vm as any).getValue().value).not.toContain("a");
 
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should undo and redo native paragraph nodes in managed history", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     const wrapper = mount(Sender, {
       attachTo: host,
       props: {
@@ -3094,13 +3008,11 @@ describe("Sender", () => {
     expect((wrapper.vm as any).getValue().value).toContain("paragraph");
     expect(editable.element.textContent).toContain("paragraph");
 
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should preserve an interactive slot nested in a native paragraph", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     const wrapper = mount(Sender, {
       attachTo: host,
       props: {
@@ -3181,13 +3093,11 @@ describe("Sender", () => {
       ]),
     );
 
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should group custom slot updates during composition", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     let updateCustomSlot: ((value: string) => void) | undefined;
     const wrapper = mount(Sender, {
       attachTo: host,
@@ -3229,13 +3139,11 @@ describe("Sender", () => {
     await wrapper.vm.$nextTick();
     expect((wrapper.vm as any).getValue().slotConfig[0].value).toBe("中文");
 
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should restore and remove a skill according to history snapshots", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     let wrapper: ReturnType<typeof mount>;
     let syncControlledValue = false;
     const onChange = vi.fn(
@@ -3304,13 +3212,11 @@ describe("Sender", () => {
     expect((wrapper as any).props("skill")).toBeUndefined();
     expect((wrapper.vm as any).getValue().skill).toBeUndefined();
 
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should reconcile a transformed controlled skill during undo", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     let wrapper: ReturnType<typeof mount>;
     let transformRestoredValue = false;
     const onChange = vi.fn(
@@ -3375,13 +3281,11 @@ describe("Sender", () => {
       expect.objectContaining({ value: "server-skill" }),
     );
 
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should reset managed history after an external skill change", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     const wrapper = mount(Sender, {
       attachTo: host,
       props: {
@@ -3415,13 +3319,11 @@ describe("Sender", () => {
       expect.objectContaining({ value: "skill-b" }),
     );
 
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should reset history for a delayed controlled skill update", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     let wrapper: ReturnType<typeof mount>;
     let syncControlledValue = false;
     const delayedSkills: Array<SkillType | undefined> = [];
@@ -3480,13 +3382,11 @@ describe("Sender", () => {
       expect.objectContaining({ value: "translate" }),
     );
 
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should keep synchronous paste separate from preceding typing history", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     const wrapper = mount(Sender, {
       attachTo: host,
       props: {
@@ -3596,13 +3496,11 @@ describe("Sender", () => {
     } else {
       Reflect.deleteProperty(document, "execCommand");
     }
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should keep typing grouped only while the caret is contiguous", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     const wrapper = mount(Sender, {
       attachTo: host,
       props: {
@@ -3673,13 +3571,11 @@ describe("Sender", () => {
     await wrapper.vm.$nextTick();
     expect((wrapper.vm as any).getValue().value).not.toContain("FIRST");
 
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should still group contiguous typing into one undo operation", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     const wrapper = mount(Sender, {
       attachTo: host,
       props: {
@@ -3736,13 +3632,11 @@ describe("Sender", () => {
     expect((wrapper.vm as any).getValue().value).not.toContain("A");
     expect((wrapper.vm as any).getValue().value).not.toContain("B");
 
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should discard redo before recording typing after undo", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     const wrapper = mount(Sender, {
       attachTo: host,
       props: {
@@ -3816,13 +3710,11 @@ describe("Sender", () => {
     expect((wrapper.vm as any).getValue().value).toContain("a");
     expect((wrapper.vm as any).getValue().value).not.toContain("ab");
 
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should keep the next typed cursor independent from paste history", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     const wrapper = mount(Sender, {
       attachTo: host,
       props: {
@@ -3921,13 +3813,11 @@ describe("Sender", () => {
     } else {
       Reflect.deleteProperty(document, "execCommand");
     }
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should undo fallback paste in an otherwise plain text editor", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     const wrapper = mount(Sender, {
       attachTo: host,
       props: { slotConfig: [] },
@@ -3992,13 +3882,11 @@ describe("Sender", () => {
     } else {
       Reflect.deleteProperty(document, "execCommand");
     }
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should normalize fallback paste text typed in the skill placeholder", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     const wrapper = mount(Sender, {
       attachTo: host,
       props: {
@@ -4062,179 +3950,7 @@ describe("Sender", () => {
     } else {
       Reflect.deleteProperty(document, "execCommand");
     }
-    wrapper.unmount();
-    host.remove();
-  });
-
-  it("should keep history when controlled slotConfig echo contains Date", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
-    const date = new Date("2025-01-01T00:00:00.000Z");
-    const wrapper = mount(Sender, {
-      attachTo: host,
-      props: {
-        slotConfig: [
-          {
-            type: "tag",
-            key: "tag",
-            props: {
-              label: "T",
-              value: "v",
-              deadline: date,
-            } as unknown as Record<string, unknown>,
-          } as SlotConfigType,
-        ],
-      },
-    });
-    await wrapper.vm.$nextTick();
-    await wrapper.vm.$nextTick();
-    const editable = wrapper.find(".antd-sender-input-slot");
-    const sel = window.getSelection();
-    const range = document.createRange();
-    range.selectNodeContents(editable.element);
-    sel?.removeAllRanges();
-    sel?.addRange(range);
-    await editable.trigger("keydown", { key: "Backspace" });
-    expect((wrapper.vm as any).getValue().slotConfig).toEqual([]);
-    await editable.trigger("keydown", { ctrlKey: true, key: "z" });
-    await wrapper.vm.$nextTick();
-    expect((wrapper.vm as any).getValue().slotConfig.length).toBe(1);
-    const clonedDate = new Date(date.getTime());
-    await wrapper.setProps({
-      slotConfig: [
-        {
-          type: "tag",
-          key: "tag",
-          props: {
-            label: "T",
-            value: "v",
-            deadline: clonedDate,
-          } as unknown as Record<string, unknown>,
-        } as SlotConfigType,
-      ],
-    });
-    await wrapper.vm.$nextTick();
-    const sel2 = window.getSelection();
-    const range2 = document.createRange();
-    range2.selectNodeContents(editable.element);
-    sel2?.removeAllRanges();
-    sel2?.addRange(range2);
-    await editable.trigger("keydown", { key: "Backspace" });
-    expect((wrapper.vm as any).getValue().slotConfig).toEqual([]);
-    await editable.trigger("keydown", { ctrlKey: true, key: "z" });
-    await wrapper.vm.$nextTick();
-    expect((wrapper.vm as any).getValue().slotConfig.length).toBe(1);
-    wrapper.unmount();
-    host.remove();
-  });
-
-  it("should preserve redo for an equivalent cloned invalid Date", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
-    const wrapper = mount(Sender, {
-      attachTo: host,
-      props: {
-        slotConfig: [
-          {
-            type: "tag",
-            key: "tag",
-            props: {
-              label: "T",
-              value: "v",
-              deadline: new Date(Number.NaN),
-            } as unknown as Record<string, unknown>,
-          } as SlotConfigType,
-        ],
-      },
-    });
-    await wrapper.vm.$nextTick();
-    await wrapper.vm.$nextTick();
-
-    const editable = wrapper.find(".antd-sender-input-slot");
-    const range = document.createRange();
-    range.selectNodeContents(editable.element);
-    window.getSelection()?.removeAllRanges();
-    window.getSelection()?.addRange(range);
-    await editable.trigger("keydown", { key: "Backspace" });
-    await editable.trigger("keydown", { ctrlKey: true, key: "z" });
-    await wrapper.vm.$nextTick();
-    await wrapper.vm.$nextTick();
-
-    await wrapper.setProps({
-      slotConfig: [
-        {
-          type: "tag",
-          key: "tag",
-          value: "v",
-          props: {
-            label: "T",
-            value: "v",
-            deadline: new Date(Number.NaN),
-          } as unknown as Record<string, unknown>,
-        } as unknown as SlotConfigType,
-      ],
-    });
-    await wrapper.vm.$nextTick();
-
-    await editable.trigger("keydown", {
-      ctrlKey: true,
-      key: "z",
-      shiftKey: true,
-    });
-    await wrapper.vm.$nextTick();
-    expect((wrapper.vm as any).getValue().slotConfig).toEqual([]);
-
-    wrapper.unmount();
-    host.remove();
-  });
-
-  it("should apply an authoritative RegExp lastIndex change", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
-    const initialPattern = /a/g;
-    const wrapper = mount(Sender, {
-      attachTo: host,
-      props: {
-        slotConfig: [
-          {
-            type: "tag",
-            key: "tag",
-            props: {
-              label: "T",
-              value: "v",
-              pattern: initialPattern,
-            } as unknown as Record<string, unknown>,
-          } as SlotConfigType,
-        ],
-      },
-    });
-    await wrapper.vm.$nextTick();
-    await wrapper.vm.$nextTick();
-
-    const nextPattern = /a/g;
-    nextPattern.lastIndex = 2;
-    await wrapper.setProps({
-      slotConfig: [
-        {
-          type: "tag",
-          key: "tag",
-          props: {
-            label: "T",
-            value: "v",
-            pattern: nextPattern,
-          } as unknown as Record<string, unknown>,
-        } as SlotConfigType,
-      ],
-    });
-    await wrapper.vm.$nextTick();
-    await wrapper.vm.$nextTick();
-
-    const actualPattern = (wrapper.vm as any).getValue().slotConfig[0].props
-      .pattern as RegExp;
-    expect(actualPattern.lastIndex).toBe(2);
-
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should apply authoritative complex values with different observable structure", async () => {
@@ -4301,8 +4017,7 @@ describe("Sender", () => {
     ];
 
     for (const testCase of cases) {
-      const host = document.createElement("div");
-      document.body.appendChild(host);
+      const host = createHost();
       const wrapper = mount(Sender, {
         attachTo: host,
         props: {
@@ -4347,83 +4062,12 @@ describe("Sender", () => {
           `Failed complex-value case: ${testCase.name}: ${detail}`,
         );
       }
-      wrapper.unmount();
-      host.remove();
+      cleanup(host, wrapper);
     }
   });
 
-  it("should keep history when controlled slotConfig echo contains Map/Set/Symbol", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
-    const sym = Symbol("s");
-    const map = new Map([["k", 1]]);
-    const set = new Set([1, 2]);
-    const wrapper = mount(Sender, {
-      attachTo: host,
-      props: {
-        slotConfig: [
-          {
-            type: "tag",
-            key: "tag",
-            props: {
-              label: "T",
-              value: "v",
-              map,
-              set,
-              [sym]: 123,
-            } as unknown as Record<string, unknown>,
-          } as SlotConfigType,
-        ],
-      },
-    });
-    await wrapper.vm.$nextTick();
-    await wrapper.vm.$nextTick();
-    const editable = wrapper.find(".antd-sender-input-slot");
-    const sel = window.getSelection();
-    const range = document.createRange();
-    range.selectNodeContents(editable.element);
-    sel?.removeAllRanges();
-    sel?.addRange(range);
-    await editable.trigger("keydown", { key: "Backspace" });
-    expect((wrapper.vm as any).getValue().slotConfig).toEqual([]);
-    await editable.trigger("keydown", { ctrlKey: true, key: "z" });
-    await wrapper.vm.$nextTick();
-    expect((wrapper.vm as any).getValue().slotConfig.length).toBe(1);
-    const clonedMap = new Map([["k", 1]]);
-    const clonedSet = new Set([1, 2]);
-    await wrapper.setProps({
-      slotConfig: [
-        {
-          type: "tag",
-          key: "tag",
-          props: {
-            label: "T",
-            value: "v",
-            map: clonedMap,
-            set: clonedSet,
-            [sym]: 123,
-          } as unknown as Record<string, unknown>,
-        } as SlotConfigType,
-      ],
-    });
-    await wrapper.vm.$nextTick();
-    const sel2 = window.getSelection();
-    const range2 = document.createRange();
-    range2.selectNodeContents(editable.element);
-    sel2?.removeAllRanges();
-    sel2?.addRange(range2);
-    await editable.trigger("keydown", { key: "Backspace" });
-    expect((wrapper.vm as any).getValue().slotConfig).toEqual([]);
-    await editable.trigger("keydown", { ctrlKey: true, key: "z" });
-    await wrapper.vm.$nextTick();
-    expect((wrapper.vm as any).getValue().slotConfig.length).toBe(1);
-    wrapper.unmount();
-    host.remove();
-  });
-
   it("should not swallow native undo after redo branch is discarded (slice fix)", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     const wrapper = mount(Sender, {
       attachTo: host,
       props: {
@@ -4486,13 +4130,11 @@ describe("Sender", () => {
     // after undo, "a" should be gone but tag should remain
     expect((wrapper.vm as any).getValue().value).not.toContain("a");
     expect((wrapper.vm as any).getValue().slotConfig.length).toBe(1);
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should expose disabled skill close with aria-disabled and keyboard guard", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     const onClose = vi.fn();
     const wrapper = mount(Sender, {
       attachTo: host,
@@ -4526,13 +4168,11 @@ describe("Sender", () => {
     );
     await wrapper.vm.$nextTick();
     expect(onClose).not.toHaveBeenCalled();
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should pass a MouseEvent to onClose for keyboard activation", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     const onClose = vi.fn();
     const wrapper = mount(Sender, {
       attachTo: host,
@@ -4559,8 +4199,7 @@ describe("Sender", () => {
     expect(closeEvent.target).toBe(close.element);
     expect((wrapper.vm as any).getValue().skill).toBeUndefined();
 
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should apply a controlled custom Map value as a new baseline", async () => {
@@ -4951,8 +4590,7 @@ describe("Sender", () => {
   });
 
   it("should insert after a focused input without replacing it", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     const wrapper = mount(Sender, {
       attachTo: host,
       props: {
@@ -4980,8 +4618,7 @@ describe("Sender", () => {
       wrapper.find<HTMLInputElement>("input.antd-sender-slot-input").element
         .value,
     ).toBe("foo");
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should route built-in input keyboard and file-paste events", async () => {
@@ -5080,8 +4717,7 @@ describe("Sender", () => {
   });
 
   it("should focus the keyed content slot at its start", async () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
+    const host = createHost();
     const wrapper = mount(Sender, {
       attachTo: host,
       props: {
@@ -5107,8 +4743,7 @@ describe("Sender", () => {
       true,
     );
     expect(window.getSelection()?.anchorOffset).toBe(0);
-    wrapper.unmount();
-    host.remove();
+    cleanup(host, wrapper);
   });
 
   it("should exclude the skill from cursor-all edits", async () => {
@@ -5147,168 +4782,5 @@ describe("Sender", () => {
     expect(editable.style.maxHeight).toBe("22px");
     expect(editable.style.overflowY).toBe("auto");
     wrapper.unmount();
-  });
-});
-
-describe("Sender.Header", () => {
-  it("should use sender default prefix class", () => {
-    const wrapper = mount(Sender.Header, {
-      props: { open: true },
-    });
-    expect(wrapper.find(".antd-sender-header").exists()).toBe(true);
-  });
-
-  it("should inherit prefix class from Sender context", () => {
-    const wrapper = mount(Sender, {
-      props: {
-        prefixCls: "custom-sender",
-        header: () => <Sender.Header open title="Header Title" />,
-      },
-    });
-    expect(wrapper.find(".custom-sender-header").exists()).toBe(true);
-  });
-
-  it("should render when open", () => {
-    const wrapper = mount(Sender.Header, {
-      props: { open: true, title: "Header Title" },
-    });
-    expect(wrapper.text()).toContain("Header Title");
-  });
-
-  it("should support title slot", () => {
-    const wrapper = mount(Sender.Header, {
-      props: { open: true, title: "Prop Title" },
-      slots: {
-        title: () => <span class="header-slot-title">Slot Title</span>,
-      },
-    });
-    expect(wrapper.find(".header-slot-title").exists()).toBe(true);
-    expect(wrapper.text()).toContain("Slot Title");
-    expect(wrapper.text()).not.toContain("Prop Title");
-  });
-
-  it("should not render content when closed", () => {
-    const wrapper = mount(Sender.Header, {
-      props: { open: false, title: "Hidden" },
-    });
-    expect(wrapper.text()).not.toContain("Hidden");
-  });
-
-  it("should call onOpenChange when close clicked", async () => {
-    const onOpenChange = vi.fn();
-    const wrapper = mount(Sender.Header, {
-      props: { open: true, title: "Test", onOpenChange },
-    });
-
-    const closeBtn = wrapper.find("button");
-    await closeBtn.trigger("click");
-    expect(onOpenChange).toHaveBeenCalledWith(false);
-  });
-
-  it("should hide close button when closable is false", () => {
-    const wrapper = mount(Sender.Header, {
-      props: { open: true, title: "Test", closable: false },
-    });
-    expect(wrapper.find("button").exists()).toBe(false);
-  });
-
-  it("should render slot content", () => {
-    const wrapper = mount(Sender.Header, {
-      props: { open: true },
-      slots: {
-        default: () => <div class="custom-content">Content</div>,
-      },
-    });
-    expect(wrapper.find(".custom-content").exists()).toBe(true);
-  });
-});
-
-describe("Sender.Switch", () => {
-  it("should render unchecked by default", () => {
-    const wrapper = mount(Sender.Switch, {
-      props: {
-        checkedChildren: "On",
-        unCheckedChildren: "Off",
-      },
-    });
-    expect(wrapper.text()).toContain("Off");
-  });
-
-  it("should toggle on click", async () => {
-    const onChange = vi.fn();
-    const wrapper = mount(Sender.Switch, {
-      props: {
-        checkedChildren: "On",
-        unCheckedChildren: "Off",
-        onChange,
-      },
-    });
-
-    await wrapper.find("button").trigger("click");
-    expect(onChange).toHaveBeenCalledWith(true);
-  });
-
-  it("should support controlled value", () => {
-    const wrapper = mount(Sender.Switch, {
-      props: {
-        value: true,
-        checkedChildren: "On",
-        unCheckedChildren: "Off",
-      },
-    });
-    expect(wrapper.text()).toContain("On");
-  });
-
-  it("should render icon", () => {
-    const wrapper = mount(Sender.Switch, {
-      props: {
-        icon: <span class="my-icon">I</span>,
-      },
-    });
-    expect(wrapper.find(".my-icon").exists()).toBe(true);
-  });
-
-  it("should support icon and checked state slots", () => {
-    const wrapper = mount(Sender.Switch, {
-      props: {
-        value: true,
-        icon: <span class="prop-icon">P</span>,
-        checkedChildren: "Prop Checked",
-        unCheckedChildren: "Prop Unchecked",
-      },
-      slots: {
-        icon: () => <span class="slot-icon">S</span>,
-        checkedChildren: () => (
-          <span class="slot-checked-children">Slot Checked</span>
-        ),
-        unCheckedChildren: () => (
-          <span class="slot-unchecked-children">Slot Unchecked</span>
-        ),
-      },
-    });
-
-    expect(wrapper.find(".slot-icon").exists()).toBe(true);
-    expect(wrapper.find(".prop-icon").exists()).toBe(false);
-    expect(wrapper.find(".slot-checked-children").exists()).toBe(true);
-    expect(wrapper.text()).not.toContain("Prop Checked");
-  });
-
-  it("should support uncheckedChildren slot", () => {
-    const wrapper = mount(Sender.Switch, {
-      slots: {
-        unCheckedChildren: () => (
-          <span class="slot-unchecked-children">Slot Unchecked</span>
-        ),
-      },
-    });
-
-    expect(wrapper.find(".slot-unchecked-children").exists()).toBe(true);
-  });
-
-  it("should apply checked class", () => {
-    const wrapper = mount(Sender.Switch, {
-      props: { value: true },
-    });
-    expect(wrapper.find("[class*='switch-checked']").exists()).toBe(true);
   });
 });

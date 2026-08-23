@@ -371,7 +371,6 @@ export default defineComponent({
         senderCtx.value.onPasteFile(files);
         return true;
       }
-      senderCtx.value.onPaste?.(event);
       return false;
     };
 
@@ -485,13 +484,47 @@ export default defineComponent({
       };
       const handler =
         type === "copy" ? senderCtx.value.onCopy : senderCtx.value.onCut;
-      const result = handler?.(event, info);
+      const result = handler?.(event, info) as unknown as
+        | false
+        | string
+        | {
+            text?: string;
+            slotConfig?: SlotConfigType[];
+            skill?: SkillType | null;
+          }
+        | void;
+      let shouldWriteStructured = false;
       if (result === false) return true;
-      if (typeof result === "string") payloadText = result;
+      if (typeof result === "string") {
+        payloadText = result;
+        payload.text = result;
+        payload.value = result;
+        shouldWriteStructured = false;
+      } else if (result && typeof result === "object") {
+        if (typeof result.text === "string") {
+          payloadText = result.text;
+          payload.text = result.text;
+          payload.value = result.text;
+        }
+        if (Array.isArray(result.slotConfig)) {
+          payload.slotConfig = result.slotConfig as SlotConfigType[];
+          shouldWriteStructured = true;
+        }
+        if ("skill" in result) {
+          payload.skill =
+            (result.skill as SkillType | null | undefined) ?? undefined;
+          shouldWriteStructured = true;
+        }
+      } else {
+        shouldWriteStructured = false;
+      }
       if (event.defaultPrevented) return true;
       try {
         event.clipboardData?.setData("text/plain", payloadText);
-        if (payload.slotConfig.length || payload.skill) {
+        if (
+          shouldWriteStructured &&
+          (payload.slotConfig.length || payload.skill)
+        ) {
           event.clipboardData?.setData(
             SENDER_COPY_MIME,
             serializeCopyPayload(payload),
@@ -501,16 +534,48 @@ export default defineComponent({
         // Some browsers restrict custom MIME — fallback to plain text only
       }
       if (type === "cut" && slice) {
-        const { from, to } = editorView.state.selection;
-        if (from !== to) {
+        flushDom();
+        syncSelectionFromDom();
+        const sel = editorView.state.selection;
+        const hasRange = sel.from !== sel.to;
+        let delFrom = sel.from;
+        let delTo = sel.to;
+        if (!hasRange) {
+          const nativeSel = window.getSelection();
+          const range = nativeSel?.rangeCount ? nativeSel.getRangeAt(0) : null;
+          const coversDomAll =
+            !!range &&
+            !range.collapsed &&
+            editorView.dom.contains(range.commonAncestorContainer);
+          if (coversDomAll) {
+            delFrom = 0;
+            delTo = editorView.state.doc.content.size;
+          } else {
+            return false;
+          }
+        }
+        if (delFrom !== delTo) {
+          managedHistoryActive = true;
+          closeManagedGroup();
+          editorView.dispatch(editorView.state.tr.delete(delFrom, delTo));
+          closeManagedGroup();
+          lastEditOwner = "outer";
+        }
+      } else if (type === "cut" && !slice) {
+        const nativeSel = window.getSelection();
+        const range = nativeSel?.rangeCount ? nativeSel.getRangeAt(0) : null;
+        const coversDomAll =
+          !!range &&
+          !range.collapsed &&
+          editorView.dom.contains(range.commonAncestorContainer);
+        if (coversDomAll && payloadText) {
           flushDom();
           syncSelectionFromDom();
           managedHistoryActive = true;
           closeManagedGroup();
-          const { from: curFrom, to: curTo } = editorView.state.selection;
-          if (curFrom !== curTo)
-            editorView.dispatch(editorView.state.tr.delete(curFrom, curTo));
-          else editorView.dispatch(editorView.state.tr.delete(from, to));
+          editorView.dispatch(
+            editorView.state.tr.delete(0, editorView.state.doc.content.size),
+          );
           closeManagedGroup();
           lastEditOwner = "outer";
         }
@@ -520,9 +585,69 @@ export default defineComponent({
 
     const handlePasteWithSenderPayload = (event: ClipboardEvent): boolean => {
       const raw = event.clipboardData?.getData(SENDER_COPY_MIME) ?? "";
-      const payload = tryRestoreSenderPayload(raw);
-      if (!payload || (!payload.slotConfig.length && !payload.skill))
-        return false;
+      const structured = tryRestoreSenderPayload(raw);
+      const text = event.clipboardData?.getData("text/plain") ?? "";
+      const pasteInfo = {
+        text,
+        slotConfig: structured?.slotConfig ?? [],
+        skill: structured?.skill,
+      };
+      const pasteResult = senderCtx.value.onPaste?.(
+        event,
+        pasteInfo as unknown as Parameters<
+          NonNullable<typeof senderCtx.value.onPaste>
+        >[1],
+      ) as unknown as
+        | false
+        | string
+        | {
+            text?: string;
+            slotConfig?: SlotConfigType[];
+            skill?: SkillType | null;
+          }
+        | void;
+      if (pasteResult === false) return true;
+      if (event.defaultPrevented) return true;
+      let pasteText: string | undefined;
+      let pasteSlotConfig: SlotConfigType[] | undefined;
+      let pasteSkill: SkillType | undefined;
+      let hasStructured = false;
+      if (typeof pasteResult === "string") {
+        pasteText = pasteResult;
+      } else if (pasteResult && typeof pasteResult === "object") {
+        if (typeof pasteResult.text === "string") pasteText = pasteResult.text;
+        if (Array.isArray(pasteResult.slotConfig)) {
+          pasteSlotConfig = pasteResult.slotConfig as SlotConfigType[];
+          hasStructured = true;
+        }
+        if ("skill" in pasteResult) {
+          pasteSkill =
+            (pasteResult.skill as SkillType | null | undefined) ?? undefined;
+          hasStructured = true;
+        }
+      }
+      const structuredForPaste =
+        hasStructured && (pasteSlotConfig?.length || pasteSkill)
+          ? { slotConfig: pasteSlotConfig ?? [], skill: pasteSkill }
+          : !pasteText &&
+              structured &&
+              (structured.slotConfig.length || structured.skill)
+            ? structured
+            : null;
+      if (!structuredForPaste && pasteText !== undefined) {
+        if (!editorView) return true;
+        if (routePasteEvent(event)) return true;
+        event.preventDefault();
+        flushDom();
+        syncSelectionFromDom();
+        managedHistoryActive = true;
+        closeManagedGroup();
+        editorView.dispatch(editorView.state.tr.insertText(pasteText));
+        closeManagedGroup();
+        lastEditOwner = "outer";
+        return true;
+      }
+      if (!structuredForPaste) return false;
       if (routePasteEvent(event)) return true;
       event.preventDefault();
       flushDom();
@@ -533,14 +658,16 @@ export default defineComponent({
       let tr = editorView!.state.tr.delete(from, to);
       const insertPos = tr.selection.from;
       const fragmentNodes: ProseMirrorNode[] = [];
-      if (payload.skill?.value) {
+      if (structuredForPaste.skill?.value) {
         fragmentNodes.push(
-          senderSchema.nodes.skill!.create({ value: payload.skill.value }),
+          senderSchema.nodes.skill!.create({
+            value: structuredForPaste.skill.value,
+          }),
         );
-        if (!skills.has(payload.skill.value))
-          skills.set(payload.skill.value, payload.skill);
+        if (!skills.has(structuredForPaste.skill.value))
+          skills.set(structuredForPaste.skill.value, structuredForPaste.skill);
       }
-      payload.slotConfig.forEach(config => {
+      structuredForPaste.slotConfig.forEach(config => {
         collectDefinitions(definitions, [config]);
         if (config.type === "text") {
           if (config.value) fragmentNodes.push(senderSchema.text(config.value));
@@ -582,6 +709,7 @@ export default defineComponent({
       if (fragmentNodes.length) {
         tr = tr.replaceWith(insertPos, insertPos, Fragment.from(fragmentNodes));
       }
+      if (pasteText) tr = tr.insertText(pasteText, tr.selection.from);
       editorView!.dispatch(tr);
       closeManagedGroup();
       lastEditOwner = "outer";
@@ -694,7 +822,16 @@ export default defineComponent({
                 senderCtx.value.onKeyUp?.(event);
               }}
               onPaste={(event: ClipboardEvent) => {
-                routePasteEvent(event);
+                const text = event.clipboardData?.getData("text/plain") ?? "";
+                const info = { text, slotConfig: [], skill: undefined };
+                const result = (
+                  senderCtx.value.onPaste as unknown as (
+                    ev: ClipboardEvent,
+                    i: typeof info,
+                  ) => unknown
+                )?.(event, info);
+                if (result === false) event.preventDefault();
+                if (!event.defaultPrevented) routePasteEvent(event);
               }}
               onCompositionstart={() => {
                 isComposing = true;
@@ -1183,13 +1320,45 @@ export default defineComponent({
       if (!editorView) return;
       const configs = senderCtx.value.slotConfig;
       const skill = senderCtx.value.skill;
-      if (configs === controlledConfigs && skill === controlledSkill) return;
+      const configsChanged = configs !== controlledConfigs;
+      const skillChanged = skill !== controlledSkill;
+      if (!configsChanged && !skillChanged) return;
       controlledConfigs = configs;
       controlledSkill = skill;
       if (skill?.value || configs?.some(config => config.type !== "text")) {
         managedHistoryActive = true;
       }
       if (skill?.value) skills.set(skill.value, skill);
+      // Skill-only external change must not clobber locally edited slots
+      // (demo keeps slotConfig as static template while skill is controlled).
+      // If slotConfig reference is unchanged, patch skill node incrementally.
+      if (!configsChanged && skillChanged) {
+        collectDefinitions(definitions, configs);
+        const doc = editorView.state.doc;
+        const hasSkill = doc.firstChild?.type === senderSchema.nodes.skill;
+        const currentSkillValue = hasSkill
+          ? (doc.firstChild!.attrs.value as string | undefined)
+          : undefined;
+        const nextSkillValue = skill?.value;
+        if (currentSkillValue !== nextSkillValue) {
+          let tr = editorView.state.tr;
+          if (hasSkill) {
+            tr = tr.delete(0, doc.firstChild!.nodeSize);
+          }
+          if (nextSkillValue) {
+            const skillNode = senderSchema.nodes.skill!.create({
+              value: nextSkillValue,
+            });
+            tr = tr.insert(0, skillNode);
+          }
+          tr.setMeta("addToHistory", false);
+          tr.setMeta(SILENT_META, true);
+          dispatchTransaction(tr);
+        } else {
+          refreshNodeViews();
+        }
+        return;
+      }
       // 受控为空（Ctrl+A 全删后 demo 未驱动 slotConfig）时，不应把空 doc 误判为等效而跳过；
       // 需让本地删除的空文档保持为空，不被受控回声还原。
       const controlledEmpty =

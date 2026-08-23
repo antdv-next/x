@@ -111,9 +111,53 @@ export default defineComponent({
         ctx.onPasteFile(files);
         e.preventDefault();
       }
-      ctx.onPaste?.(e);
+      const info = { text: text ?? "", slotConfig: [], skill: undefined };
+      const result = (
+        ctx.onPaste as unknown as (
+          ev: ClipboardEvent,
+          i: { text: string; slotConfig: never[]; skill: undefined },
+        ) => unknown
+      )?.(e, info);
+      if (result === false) {
+        e.preventDefault();
+        return;
+      }
+      if (typeof result === "string") {
+        e.preventDefault();
+        e.clipboardData?.setData("text/plain", result);
+        return;
+      }
+      if (
+        result &&
+        typeof result === "object" &&
+        typeof (result as { text?: unknown }).text === "string"
+      ) {
+        e.preventDefault();
+        e.clipboardData?.setData(
+          "text/plain",
+          (result as { text: string }).text,
+        );
+      }
     };
 
+    const applyCopyResult = (e: ClipboardEvent, result: unknown): void => {
+      if (result === false) {
+        e.preventDefault();
+        return;
+      }
+      if (typeof result === "string") {
+        e.preventDefault();
+        e.clipboardData?.setData("text/plain", result);
+        return;
+      }
+      if (result && typeof result === "object") {
+        const obj = result as { text?: unknown };
+        if (typeof obj.text === "string") {
+          e.preventDefault();
+          e.clipboardData?.setData("text/plain", obj.text);
+        }
+      }
+    };
     const onInternalCopy = (e: ClipboardEvent) => {
       const ctx = senderCtx.value;
       if (!ctx.onCopy) return;
@@ -126,11 +170,7 @@ export default defineComponent({
         text,
       };
       const result = ctx.onCopy(e, info);
-      if (result === false) e.preventDefault();
-      if (typeof result === "string") {
-        e.preventDefault();
-        e.clipboardData?.setData("text/plain", result);
-      }
+      applyCopyResult(e, result);
     };
 
     const onInternalCut = (e: ClipboardEvent) => {
@@ -145,11 +185,7 @@ export default defineComponent({
         text,
       };
       const result = ctx.onCut(e, info);
-      if (result === false) e.preventDefault();
-      if (typeof result === "string") {
-        e.preventDefault();
-        e.clipboardData?.setData("text/plain", result);
-      }
+      applyCopyResult(e, result);
     };
     return () => {
       const ctx = senderCtx.value;
