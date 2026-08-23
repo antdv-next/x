@@ -1206,6 +1206,46 @@ describe("Sender", () => {
     cleanup(host, wrapper);
   });
 
+  it("should preserve the clipboard when copying without a slot selection", async () => {
+    const host = createHost();
+    const onCopy = vi.fn();
+    const wrapper = mount(Sender, {
+      attachTo: host,
+      props: {
+        slotConfig: [{ type: "text", value: "hello" }],
+        onCopy,
+      },
+    });
+    await wrapper.vm.$nextTick();
+
+    const editable = wrapper.find(".antd-sender-input-slot");
+    const selection = window.getSelection();
+    const range = document.createRange();
+    range.selectNodeContents(editable.element);
+    range.collapse(false);
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+    const setData = vi.fn();
+    const copyEvent = new Event("copy", {
+      bubbles: true,
+      cancelable: true,
+    });
+    Object.defineProperty(copyEvent, "clipboardData", {
+      value: { setData },
+    });
+
+    editable.element.dispatchEvent(copyEvent);
+
+    expect(onCopy).toHaveBeenCalledWith(
+      copyEvent,
+      expect.objectContaining({ text: "", value: "" }),
+    );
+    expect(setData).not.toHaveBeenCalled();
+    expect(copyEvent.defaultPrevented).toBe(false);
+
+    cleanup(host, wrapper);
+  });
+
   it("should retain a partial content-slot deletion after redo", async () => {
     const host = createHost();
     const wrapper = mount(Sender, {
@@ -3009,6 +3049,54 @@ describe("Sender", () => {
     cleanup(host, wrapper);
   });
 
+  it("should skip slot-editor key handling during IME composition", async () => {
+    const host = createHost();
+    const onKeyDown = vi.fn();
+    const onSubmit = vi.fn();
+    const wrapper = mount(Sender, {
+      attachTo: host,
+      props: {
+        slotConfig: [
+          {
+            type: "tag",
+            key: "tag",
+            props: { label: "Slot", value: "slot" },
+          },
+        ],
+        onKeyDown,
+        onSubmit,
+      },
+    });
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+
+    const editable = wrapper.find(".antd-sender-input-slot");
+    const selection = window.getSelection();
+    const range = document.createRange();
+    range.selectNodeContents(editable.element);
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+
+    for (const key of ["Enter", "Backspace", "Delete"]) {
+      const event = new KeyboardEvent("keydown", {
+        bubbles: true,
+        cancelable: true,
+        key,
+      });
+      Object.defineProperty(event, "isComposing", { value: true });
+      editable.element.dispatchEvent(event);
+    }
+    await wrapper.vm.$nextTick();
+
+    expect(onKeyDown).toHaveBeenCalledTimes(3);
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect((wrapper.vm as any).getValue().slotConfig).toEqual([
+      expect.objectContaining({ key: "tag", type: "tag" }),
+    ]);
+
+    cleanup(host, wrapper);
+  });
+
   it("should not record a cancelled composition as a history entry", async () => {
     const host = createHost();
     const wrapper = mount(Sender, {
@@ -4798,6 +4886,54 @@ describe("Sender", () => {
     input.element.dispatchEvent(pasteEvent);
     expect(onPasteFile).toHaveBeenCalledWith(files);
     expect(pasteEvent.defaultPrevented).toBe(true);
+    wrapper.unmount();
+  });
+
+  it("should defer textarea file-paste fallback to the application callback", async () => {
+    const calls: string[] = [];
+    let takeOver = true;
+    const onPaste = vi.fn((event: ClipboardEvent) => {
+      calls.push("paste");
+      if (takeOver) event.preventDefault();
+    });
+    const onPasteFile = vi.fn(() => calls.push("file"));
+    const wrapper = mount(Sender, {
+      props: { onPaste, onPasteFile },
+    });
+    const textarea = wrapper.find<HTMLTextAreaElement>("textarea");
+    const files = {
+      0: new File(["x"], "x.txt"),
+      length: 1,
+    } as unknown as FileList;
+    const pasteFile = () => {
+      const event = new Event("paste", {
+        bubbles: true,
+        cancelable: true,
+      });
+      Object.defineProperty(event, "clipboardData", {
+        value: { files, getData: () => "" },
+      });
+      textarea.element.dispatchEvent(event);
+      return event;
+    };
+
+    const handledEvent = pasteFile();
+    expect(calls).toEqual(["paste"]);
+    expect(handledEvent.defaultPrevented).toBe(true);
+
+    takeOver = false;
+    await wrapper.setProps({ readOnly: true });
+    const readOnlyEvent = pasteFile();
+    expect(calls).toEqual(["paste", "paste"]);
+    expect(readOnlyEvent.defaultPrevented).toBe(false);
+
+    await wrapper.setProps({ readOnly: false });
+    const fallbackEvent = pasteFile();
+    expect(calls).toEqual(["paste", "paste", "paste", "file"]);
+    expect(fallbackEvent.defaultPrevented).toBe(true);
+    expect(onPaste).toHaveBeenCalledTimes(3);
+    expect(onPasteFile).toHaveBeenCalledOnce();
+
     wrapper.unmount();
   });
 

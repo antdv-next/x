@@ -107,12 +107,19 @@ export default defineComponent({
       const ctx = senderCtx.value;
       const files = e.clipboardData?.files;
       const text = e.clipboardData?.getData("text/plain");
-      if (!text && files?.length && ctx.onPasteFile) {
+      const info = { text: text ?? "", slotConfig: [], skill: undefined };
+      ctx.onPaste?.(e, info);
+      if (
+        !e.defaultPrevented &&
+        !ctx.disabled &&
+        !ctx.readOnly &&
+        !text &&
+        files?.length &&
+        ctx.onPasteFile
+      ) {
         ctx.onPasteFile(files);
         e.preventDefault();
       }
-      const info = { text: text ?? "", slotConfig: [], skill: undefined };
-      ctx.onPaste?.(e, info);
     };
 
     const getSelectedText = (): string => {

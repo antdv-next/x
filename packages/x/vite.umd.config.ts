@@ -4,7 +4,7 @@ import { tsxResolveTypes } from "vite-plugin-tsx-resolve-types";
 import vueResolveTypes from "vite-plugin-vue-resolve-types";
 import { defineConfig } from "vite-plus";
 
-import { LIB_EXTERNALS } from "./build.constants";
+import { UMD_EXTERNALS } from "./build.constants";
 
 export default defineConfig({
   base: "./",
@@ -20,7 +20,7 @@ export default defineConfig({
     minify: false,
     sourcemap: false,
     rolldownOptions: {
-      external: LIB_EXTERNALS,
+      external: UMD_EXTERNALS,
       output: {
         globals: {
           vue: "Vue",

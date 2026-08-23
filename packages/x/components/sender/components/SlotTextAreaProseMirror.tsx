@@ -471,6 +471,7 @@ export default defineComponent({
         type === "copy" ? senderCtx.value.onCopy : senderCtx.value.onCut;
       handler?.(event, info);
       if (event.defaultPrevented) return true;
+      if (type === "copy" && !slice && !payloadText) return false;
       try {
         event.clipboardData?.setData("text/plain", payloadText);
       } catch {
@@ -1398,6 +1399,7 @@ export default defineComponent({
               const event = rawEvent as KeyboardEvent;
               const result = senderCtx.value.onKeyDown?.(event);
               if (result === false) return true;
+              if (event.isComposing) return false;
               const modifier = event.ctrlKey || event.metaKey;
               const key = event.key.toLowerCase();
               if (modifier && (key === "z" || key === "y")) {
@@ -1440,9 +1442,9 @@ export default defineComponent({
               return false;
             },
             copy: (_view, event) => {
-              handleCopyOrCut(event as ClipboardEvent, "copy");
-              event.preventDefault();
-              return true;
+              const handled = handleCopyOrCut(event as ClipboardEvent, "copy");
+              if (handled) event.preventDefault();
+              return handled;
             },
             paste: (_view, event) => {
               const clipboardEvent = event as ClipboardEvent;
