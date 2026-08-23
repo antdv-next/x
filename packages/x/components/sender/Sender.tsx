@@ -239,7 +239,12 @@ export default defineComponent({
 
     // Events
     const triggerSend = () => {
-      if (!props.onSubmit || props.loading || submitDisabled.value) {
+      if (
+        !props.onSubmit ||
+        props.disabled ||
+        props.loading ||
+        submitDisabled.value
+      ) {
         return;
       }
 

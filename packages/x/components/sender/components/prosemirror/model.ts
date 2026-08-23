@@ -162,6 +162,11 @@ export function documentToResult(
       if (value) slotConfig.push({ type: "text", value });
       return;
     }
+    if (node.type === senderSchema.nodes.hardBreak) {
+      text.push("\n");
+      slotConfig.push({ type: "text", value: "\n" });
+      return;
+    }
     if (node.type === senderSchema.nodes.skill) {
       skill = skills.get(node.attrs.value);
       return;
@@ -251,6 +256,10 @@ function docToComparable(
   doc.forEach(node => {
     if (node.isText) {
       if (node.text) result.push({ kind: "text", value: node.text });
+      return;
+    }
+    if (node.type === senderSchema.nodes.hardBreak) {
+      result.push({ kind: "text", value: "\n" });
       return;
     }
     if (node.type === senderSchema.nodes.skill) {

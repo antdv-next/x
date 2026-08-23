@@ -587,6 +587,111 @@ describe("Sender", () => {
     cleanup(host, wrapper);
   });
 
+  it("should preserve native modified deletion shortcuts", async () => {
+    const host = createHost();
+    const wrapper = mount(Sender, {
+      attachTo: host,
+      props: {
+        slotConfig: [{ type: "text", value: "hello world" }],
+      },
+    });
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+
+    const editable = wrapper.find(".antd-sender-input-slot");
+    const textNode = editable.element.firstChild!;
+    const selection = window.getSelection();
+    const range = document.createRange();
+    range.setStart(textNode, textNode.textContent!.length);
+    range.collapse(true);
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+
+    const event = new KeyboardEvent("keydown", {
+      bubbles: true,
+      cancelable: true,
+      ctrlKey: true,
+      key: "Backspace",
+    });
+    editable.element.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(false);
+    expect((wrapper.vm as any).getValue().value).toBe("hello world");
+
+    cleanup(host, wrapper);
+  });
+
+  it("should insert and undo a top-level hard break", async () => {
+    const host = createHost();
+    const wrapper = mount(Sender, {
+      attachTo: host,
+      props: {
+        submitType: "shiftEnter",
+        slotConfig: [
+          { type: "text", value: "firstsecond" },
+          {
+            type: "tag",
+            key: "tag",
+            props: { label: "Tag", value: "tag" },
+          },
+        ],
+      },
+    });
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+
+    const editable = wrapper.find(".antd-sender-input-slot");
+    const textNode = editable.element.firstChild!;
+    const selection = window.getSelection();
+    const range = document.createRange();
+    range.setStart(textNode, "first".length);
+    range.collapse(true);
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+
+    await editable.trigger("keydown", { key: "Enter" });
+
+    expect((wrapper.vm as any).getValue().value).toBe("first\nsecondtag");
+    expect((wrapper.vm as any).getValue().slotConfig).toEqual([
+      { type: "text", value: "first" },
+      { type: "text", value: "\n" },
+      { type: "text", value: "second" },
+      expect.objectContaining({ key: "tag", type: "tag", value: "tag" }),
+    ]);
+
+    await editable.trigger("keydown", { ctrlKey: true, key: "z" });
+    await wrapper.vm.$nextTick();
+    expect((wrapper.vm as any).getValue().value).toBe("firstsecondtag");
+
+    cleanup(host, wrapper);
+  });
+
+  it("should not submit a disabled slot editor from the keyboard", async () => {
+    const onSubmit = vi.fn();
+    const wrapper = mount(Sender, {
+      props: {
+        disabled: true,
+        slotConfig: [
+          {
+            type: "tag",
+            key: "tag",
+            props: { label: "Tag", value: "tag" },
+          },
+        ],
+        onSubmit,
+      },
+    });
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+
+    await wrapper.find(".antd-sender-input-slot").trigger("keydown", {
+      key: "Enter",
+    });
+
+    expect(onSubmit).not.toHaveBeenCalled();
+    wrapper.unmount();
+  });
+
   it("should keep user input when typing after removing content slot with skill", async () => {
     const onChange = vi.fn();
     const skill = {

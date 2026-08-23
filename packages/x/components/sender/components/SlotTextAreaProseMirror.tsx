@@ -1146,6 +1146,11 @@ export default defineComponent({
     const handleSyntheticDeletion = (event: KeyboardEvent) => {
       if (!editorView || isLocked()) return false;
       if (event.key !== "Backspace" && event.key !== "Delete") return false;
+      // Let the browser preserve platform-specific word/line deletion for
+      // shortcuts such as Ctrl/Alt/Meta + Backspace/Delete. The resulting DOM
+      // mutation is still reconciled into the ProseMirror document by the
+      // normal beforeinput/input pipeline.
+      if (event.ctrlKey || event.altKey || event.metaKey) return false;
       const nativeRange = window.getSelection()?.rangeCount
         ? window.getSelection()!.getRangeAt(0)
         : null;
@@ -1410,29 +1415,44 @@ export default defineComponent({
                 );
               }
               if (handleSyntheticDeletion(event)) return true;
-              // Handle Enter key in content slots to insert hardBreak
+              // Keep line breaks in the document model instead of relying on
+              // browser-specific contenteditable paragraph markup.
               if (
                 event.key === "Enter" &&
                 !shouldSubmit(event) &&
                 editorView &&
                 !isLocked()
               ) {
+                syncSelectionFromDom();
                 const { selection } = editorView.state;
-                const $pos = selection.$from;
-                const parent = $pos.parent;
-                // Check if we're inside a contentSlot
-                if (parent.type === senderSchema.nodes.contentSlot) {
-                  event.preventDefault();
-                  const tr = editorView.state.tr.replaceSelectionWith(
-                    senderSchema.nodes.hardBreak!.create(),
+                const hardBreak = senderSchema.nodes.hardBreak!.create();
+                let transaction;
+                if (selection instanceof NodeSelection) {
+                  transaction = editorView.state.tr.insert(
+                    selection.to,
+                    hardBreak,
                   );
-                  editorView.dispatch(tr);
-                  return true;
+                  transaction.setSelection(
+                    TextSelection.near(
+                      transaction.doc.resolve(
+                        selection.to + hardBreak.nodeSize,
+                      ),
+                    ),
+                  );
+                } else {
+                  transaction =
+                    editorView.state.tr.replaceSelectionWith(hardBreak);
                 }
+                event.preventDefault();
+                managedHistoryActive = true;
+                editorView.dispatch(transaction);
+                return true;
               }
               if (shouldSubmit(event)) {
                 event.preventDefault();
-                senderCtx.value.triggerSend?.();
+                if (!senderCtx.value.disabled) {
+                  senderCtx.value.triggerSend?.();
+                }
                 return true;
               }
               return false;
