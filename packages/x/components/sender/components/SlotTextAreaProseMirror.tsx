@@ -1190,6 +1190,17 @@ export default defineComponent({
         managedHistoryActive = true;
       }
       if (skill?.value) skills.set(skill.value, skill);
+      // 受控为空（Ctrl+A 全删后 demo 未驱动 slotConfig）时，不应把空 doc 误判为等效而跳过；
+      // 需让本地删除的空文档保持为空，不被受控回声还原。
+      const controlledEmpty =
+        !skill?.value && (!configs || configs.length === 0);
+      const docEmpty = editorView.state.doc.content.size === 0;
+      if (controlledEmpty && docEmpty) {
+        collectDefinitions(definitions, configs);
+        refreshNodeViews();
+        return;
+      }
+      collectDefinitions(definitions, configs);
       const equivalent = isEquivalentDocument(
         editorView.state.doc,
         configs,
@@ -1197,7 +1208,6 @@ export default defineComponent({
         values,
         definitions,
       );
-      collectDefinitions(definitions, configs);
       if (equivalent) {
         refreshNodeViews();
         return;

@@ -1066,6 +1066,57 @@ describe("Sender", () => {
     host.remove();
   });
 
+  it("should keep content empty after Ctrl+A then Backspace in slot-filling mode", async () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const wrapper = mount(Sender, {
+      attachTo: host,
+      props: {
+        slotConfig: [
+          { type: "text", value: "I want to travel to " },
+          {
+            type: "content",
+            key: "location",
+            props: { defaultValue: "Beijing", placeholder: "[Please enter]" },
+          },
+          { type: "text", value: " by " },
+          {
+            type: "tag",
+            key: "tag",
+            props: { label: "@Travel Planner ", value: "travelTool" },
+          },
+          { type: "text", value: "." },
+        ],
+        skill: { value: "travelId", title: "Travel Planner" },
+      },
+    });
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+
+    const editable = wrapper.find(".antd-sender-input-slot");
+    (editable.element as HTMLElement).focus();
+    const selection = window.getSelection();
+    const range = document.createRange();
+    range.selectNodeContents(editable.element);
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+    await editable.trigger("keydown", { key: "a", ctrlKey: true });
+
+    await editable.trigger("keydown", { key: "Backspace" });
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+
+    expect((wrapper.vm as any).getValue().value).toBe("");
+    expect(editable.element.textContent?.trim()).toBe("");
+
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+    expect((wrapper.vm as any).getValue().value).toBe("");
+
+    wrapper.unmount();
+    host.remove();
+  });
+
   it("should write a slot selection to the clipboard before cutting", async () => {
     const host = document.createElement("div");
     document.body.appendChild(host);
