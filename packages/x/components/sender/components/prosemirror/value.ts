@@ -94,6 +94,14 @@ export function snapshotValue<T>(value: T): T {
     if (ArrayBuffer.isView(rawInput)) {
       return structuredClone(rawInput);
     }
+    if (rawInput instanceof Error) {
+      const result = Object.create(Object.getPrototypeOf(rawInput));
+      clones.set(rawInput, result);
+      result.message = rawInput.message;
+      result.name = rawInput.name;
+      result.stack = rawInput.stack;
+      return result;
+    }
     if (rawInput instanceof Map) {
       const result = new Map();
       clones.set(rawInput, result);
@@ -133,6 +141,7 @@ export function isSameValue(left: unknown, right: unknown): boolean {
   const leftMatches = new WeakMap<object, object>();
   const rightMatches = new WeakMap<object, object>();
   let comparedObjects = 0;
+  let pendingPairs = 0;
 
   const sameBytes = (leftBytes: Uint8Array, rightBytes: Uint8Array) =>
     leftBytes.byteLength === rightBytes.byteLength &&
@@ -154,6 +163,8 @@ export function isSameValue(left: unknown, right: unknown): boolean {
     const rightValue = asRaw(pendingRight as object);
     if (Object.is(leftValue, rightValue)) continue;
     if (++comparedObjects > VALUE_COMPARE_LIMIT) return false;
+    pendingPairs += pending.length;
+    if (pendingPairs > VALUE_COMPARE_LIMIT * 2) return false;
 
     const matchedRight = leftMatches.get(leftValue);
     if (matchedRight) {

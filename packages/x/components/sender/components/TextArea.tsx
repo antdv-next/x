@@ -112,80 +112,41 @@ export default defineComponent({
         e.preventDefault();
       }
       const info = { text: text ?? "", slotConfig: [], skill: undefined };
-      const result = (
-        ctx.onPaste as unknown as (
-          ev: ClipboardEvent,
-          i: { text: string; slotConfig: never[]; skill: undefined },
-        ) => unknown
-      )?.(e, info);
-      if (result === false) {
-        e.preventDefault();
-        return;
-      }
-      if (typeof result === "string") {
-        e.preventDefault();
-        e.clipboardData?.setData("text/plain", result);
-        return;
-      }
-      if (
-        result &&
-        typeof result === "object" &&
-        typeof (result as { text?: unknown }).text === "string"
-      ) {
-        e.preventDefault();
-        e.clipboardData?.setData(
-          "text/plain",
-          (result as { text: string }).text,
-        );
-      }
+      ctx.onPaste?.(e, info);
     };
 
-    const applyCopyResult = (e: ClipboardEvent, result: unknown): void => {
-      if (result === false) {
-        e.preventDefault();
-        return;
-      }
-      if (typeof result === "string") {
-        e.preventDefault();
-        e.clipboardData?.setData("text/plain", result);
-        return;
-      }
-      if (result && typeof result === "object") {
-        const obj = result as { text?: unknown };
-        if (typeof obj.text === "string") {
-          e.preventDefault();
-          e.clipboardData?.setData("text/plain", obj.text);
-        }
-      }
+    const getSelectedText = (): string => {
+      const el = getNativeEl();
+      if (!el) return "";
+      const start = el.selectionStart ?? 0;
+      const end = el.selectionEnd ?? start;
+      return el.value.slice(start, end);
     };
+
     const onInternalCopy = (e: ClipboardEvent) => {
       const ctx = senderCtx.value;
       if (!ctx.onCopy) return;
-      const text =
-        window.getSelection()?.toString() ?? getNativeEl()?.value ?? "";
+      const text = getSelectedText();
       const info: SenderCopyInfo = {
         value: text,
         slotConfig: [],
         skill: undefined,
         text,
       };
-      const result = ctx.onCopy(e, info);
-      applyCopyResult(e, result);
+      ctx.onCopy(e, info);
     };
 
     const onInternalCut = (e: ClipboardEvent) => {
       const ctx = senderCtx.value;
       if (!ctx.onCut) return;
-      const text =
-        window.getSelection()?.toString() ?? getNativeEl()?.value ?? "";
+      const text = getSelectedText();
       const info: SenderCopyInfo = {
         value: text,
         slotConfig: [],
         skill: undefined,
         text,
       };
-      const result = ctx.onCut(e, info);
-      applyCopyResult(e, result);
+      ctx.onCut(e, info);
     };
     return () => {
       const ctx = senderCtx.value;

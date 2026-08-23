@@ -25,7 +25,7 @@ const genSlotTextAreaStyle: GenerateStyle<SenderToken> = token => {
         caretColor: token.colorPrimary,
         fontSize: token.fontSize,
         lineHeight: token.lineHeight,
-        [`&:empty::before`]: {
+        [`&[data-empty]::before`]: {
           content: "attr(data-placeholder)",
           color: token.colorTextPlaceholder,
         },

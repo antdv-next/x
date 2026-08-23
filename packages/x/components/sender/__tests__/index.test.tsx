@@ -5,7 +5,7 @@ import { markRaw } from "vue";
 import type { SkillType, SlotConfigType } from "../interface";
 
 import Sender from "..";
-import { cleanup, createHost, selectAllEditable } from "./helpers";
+import { cleanup, createHost } from "./helpers";
 
 beforeEach(() => {
   document.head.innerHTML = "";
@@ -188,6 +188,79 @@ describe("Sender", () => {
     expect(textarea.attributes("placeholder")).toBe("Type something...");
   });
 
+  it("should mark an empty slot editor for placeholder rendering", async () => {
+    const wrapper = mount(Sender, {
+      props: {
+        slotConfig: [],
+        placeholder: "Type something...",
+      },
+    });
+    await wrapper.vm.$nextTick();
+
+    expect(
+      wrapper.find(".antd-sender-input-slot").attributes("data-empty"),
+    ).toBe("");
+
+    wrapper.unmount();
+  });
+
+  it("should report native textarea selections to copy and cut callbacks", () => {
+    const onCopy = vi.fn();
+    const onCut = vi.fn();
+    const wrapper = mount(Sender, {
+      props: {
+        defaultValue: "hello world",
+        onCopy,
+        onCut,
+      },
+    });
+    const textarea = wrapper.find<HTMLTextAreaElement>("textarea").element;
+    textarea.setSelectionRange(0, 5);
+
+    textarea.dispatchEvent(new Event("copy", { bubbles: true }));
+    textarea.dispatchEvent(new Event("cut", { bubbles: true }));
+
+    for (const callback of [onCopy, onCut]) {
+      expect(callback).toHaveBeenCalledWith(
+        expect.any(Event),
+        expect.objectContaining({ text: "hello", value: "hello" }),
+      );
+    }
+
+    wrapper.unmount();
+  });
+
+  it("should ignore clipboard callback return values", () => {
+    const wrapper = mount(Sender, {
+      props: {
+        defaultValue: "hello",
+        onPaste: (() => false) as () => void,
+        onCut: (() => "replacement") as () => void,
+      },
+    });
+    const textarea = wrapper.find<HTMLTextAreaElement>("textarea").element;
+    textarea.setSelectionRange(0, textarea.value.length);
+    const pasteEvent = new Event("paste", {
+      bubbles: true,
+      cancelable: true,
+    });
+    Object.defineProperty(pasteEvent, "clipboardData", {
+      value: { files: [], getData: () => "pasted" },
+    });
+    const cutEvent = new Event("cut", {
+      bubbles: true,
+      cancelable: true,
+    });
+
+    textarea.dispatchEvent(pasteEvent);
+    textarea.dispatchEvent(cutEvent);
+
+    expect(pasteEvent.defaultPrevented).toBe(false);
+    expect(cutEvent.defaultPrevented).toBe(false);
+
+    wrapper.unmount();
+  });
+
   it("should render with prefix", () => {
     const wrapper = mount(Sender, {
       props: { prefix: <span class="my-prefix">P</span> },
@@ -315,7 +388,7 @@ describe("Sender", () => {
     expect(formatResult).toHaveBeenLastCalledWith("Edited Value");
     expect((wrapper.vm as any).getValue()).toEqual(
       expect.objectContaining({
-        value: " [formatted:Edited Value] ",
+        value: "[formatted:Edited Value]",
         slotConfig: [
           expect.objectContaining({
             key: "content",
@@ -341,7 +414,7 @@ describe("Sender", () => {
     });
     await wrapper.vm.$nextTick();
 
-    expect((wrapper.vm as any).getValue().value).toBe(" Content Value ");
+    expect((wrapper.vm as any).getValue().value).toBe("Content Value");
     expect((wrapper.vm as any).getValue().slotConfig).toEqual([
       expect.objectContaining({
         key: "content",
@@ -378,7 +451,7 @@ describe("Sender", () => {
     await wrapper.vm.$nextTick();
 
     const result = (wrapper.vm as any).getValue();
-    expect(result.value).toBe('Translate " [Hello] " from {English}');
+    expect(result.value).toBe('Translate "[Hello]" from {English}');
     expect(result.slotConfig).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ type: "content", value: "[Hello]" }),
@@ -1208,7 +1281,7 @@ describe("Sender", () => {
     await editable.trigger("keydown", { key: "Backspace" });
     expect((wrapper.vm as any).getValue()).toEqual(
       expect.objectContaining({
-        value: "  ",
+        value: "",
         slotConfig: [expect.objectContaining({ key: "content", value: "" })],
       }),
     );
@@ -1227,7 +1300,7 @@ describe("Sender", () => {
     await wrapper.vm.$nextTick();
     expect((wrapper.vm as any).getValue()).toEqual(
       expect.objectContaining({
-        value: "  ",
+        value: "",
         slotConfig: [expect.objectContaining({ key: "content", value: "" })],
       }),
     );
@@ -1370,6 +1443,52 @@ describe("Sender", () => {
     expect((wrapper.vm as any).getValue().slotConfig).toEqual([]);
 
     cleanup(host, wrapper);
+  });
+
+  it("should not paste or delete a cut selection while slot mode is locked", async () => {
+    const onPaste = vi.fn();
+    const wrapper = mount(Sender, {
+      props: {
+        slotConfig: [{ type: "text", value: "locked" }],
+        readOnly: true,
+        onPaste,
+      },
+    });
+    await wrapper.vm.$nextTick();
+    const editable = wrapper.find<HTMLElement>(".antd-sender-input-slot");
+    const selection = window.getSelection()!;
+    const range = document.createRange();
+    range.selectNodeContents(editable.element);
+    selection.removeAllRanges();
+    selection.addRange(range);
+
+    const pasteEvent = new Event("paste", {
+      bubbles: true,
+      cancelable: true,
+    });
+    Object.defineProperty(pasteEvent, "clipboardData", {
+      value: { files: [], getData: () => "pasted" },
+    });
+    editable.element.dispatchEvent(pasteEvent);
+
+    expect(onPaste).toHaveBeenCalledOnce();
+    expect(pasteEvent.defaultPrevented).toBe(true);
+    expect((wrapper.vm as any).getValue().value).toBe("locked");
+
+    await wrapper.setProps({ readOnly: false, disabled: true });
+    const cutEvent = new Event("cut", {
+      bubbles: true,
+      cancelable: true,
+    });
+    Object.defineProperty(cutEvent, "clipboardData", {
+      value: { setData: vi.fn() },
+    });
+    editable.element.dispatchEvent(cutEvent);
+
+    expect(cutEvent.defaultPrevented).toBe(true);
+    expect((wrapper.vm as any).getValue().value).toBe("locked");
+
+    wrapper.unmount();
   });
 
   it("should not close a skill while readOnly", async () => {
@@ -4679,6 +4798,38 @@ describe("Sender", () => {
     input.element.dispatchEvent(pasteEvent);
     expect(onPasteFile).toHaveBeenCalledWith(files);
     expect(pasteEvent.defaultPrevented).toBe(true);
+    wrapper.unmount();
+  });
+
+  it("should route built-in input copy and cut selections", async () => {
+    const onCopy = vi.fn();
+    const onCut = vi.fn();
+    const wrapper = mount(Sender, {
+      props: {
+        slotConfig: [
+          { type: "input", key: "input", props: { defaultValue: "hello" } },
+        ],
+        onCopy,
+        onCut,
+      },
+    });
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+    const input = wrapper.find<HTMLInputElement>(
+      "input.antd-sender-slot-input",
+    ).element;
+    input.setSelectionRange(1, 4);
+
+    input.dispatchEvent(new Event("copy", { bubbles: true }));
+    input.dispatchEvent(new Event("cut", { bubbles: true }));
+
+    for (const callback of [onCopy, onCut]) {
+      expect(callback).toHaveBeenCalledWith(
+        expect.any(Event),
+        expect.objectContaining({ text: "ell", value: "ell" }),
+      );
+    }
+
     wrapper.unmount();
   });
 

@@ -10,6 +10,13 @@ export const senderSchema = new Schema({
   nodes: {
     doc: { content: "inline*" },
     text: { group: "inline" },
+    hardBreak: {
+      group: "inline",
+      inline: true,
+      selectable: false,
+      parseDOM: [{ tag: "br" }],
+      toDOM: () => ["br"],
+    },
     slot: {
       group: "inline",
       inline: true,
@@ -34,7 +41,7 @@ export const senderSchema = new Schema({
     contentSlot: {
       group: "inline",
       inline: true,
-      content: "text*",
+      content: "(text | hardBreak)*",
       isolating: true,
       selectable: true,
       attrs: { key: {} },
@@ -75,6 +82,14 @@ export function getSlotValue(config: SlotConfigType): unknown {
     return rawConfig.value;
   }
   if (config.type === "tag") return config.props?.value ?? "";
+  if (config.type === "select") {
+    const defaultValue = config.props?.defaultValue;
+    const options = config.props?.options ?? [];
+    if (defaultValue !== undefined && !options.includes(defaultValue)) {
+      return options[0] ?? "";
+    }
+    return defaultValue ?? "";
+  }
   return config.props?.defaultValue ?? "";
 }
 
@@ -94,10 +109,21 @@ export function createDocument(
     }
     if (config.type === "content") {
       const text = stringifyValue(getSlotValue(config));
+      const contentNodes: ProseMirrorNode[] = [];
+      if (text) {
+        // Split by \n and create text nodes with hardBreak between them
+        const lines = text.split("\n");
+        lines.forEach((line, index) => {
+          if (line) contentNodes.push(senderSchema.text(line));
+          if (index < lines.length - 1) {
+            contentNodes.push(senderSchema.nodes.hardBreak!.create());
+          }
+        });
+      }
       nodes.push(
         senderSchema.nodes.contentSlot!.create(
           { key: config.key },
-          text ? senderSchema.text(text) : undefined,
+          contentNodes.length > 0 ? contentNodes : undefined,
         ),
       );
       return;
@@ -144,13 +170,30 @@ export function documentToResult(
     const key = node.attrs.key as string;
     const definition = definitions.get(key);
     if (!definition) return;
-    const rawValue =
-      node.type === senderSchema.nodes.contentSlot
-        ? node.textContent
-        : values.read(node.attrs.valueId);
-    const displayValue =
-      definition.formatResult?.(rawValue) ?? stringifyValue(rawValue);
-    if (definition.type === "content") text.push(` ${displayValue} `);
+
+    let rawValue: unknown;
+    let displayValue: string;
+
+    if (node.type === senderSchema.nodes.contentSlot) {
+      // Serialize content with hardBreak nodes as \n
+      const parts: string[] = [];
+      node.forEach(child => {
+        if (child.isText) {
+          parts.push(child.text ?? "");
+        } else if (child.type === senderSchema.nodes.hardBreak) {
+          parts.push("\n");
+        }
+      });
+      rawValue = parts.join("");
+      displayValue =
+        definition.formatResult?.(rawValue) ?? stringifyValue(rawValue);
+    } else {
+      rawValue = values.read(node.attrs.valueId);
+      displayValue =
+        definition.formatResult?.(rawValue) ?? stringifyValue(rawValue);
+    }
+
+    if (definition.type === "content") text.push(displayValue);
     else text.push(displayValue);
 
     const structuredValue =
@@ -217,14 +260,28 @@ function docToComparable(
     const key = node.attrs.key as string;
     const definition = definitions.get(key);
     if (!definition) return;
+
+    let value: unknown;
+    if (node.type === senderSchema.nodes.contentSlot) {
+      // Serialize content with hardBreak nodes as \n
+      const parts: string[] = [];
+      node.forEach(child => {
+        if (child.isText) {
+          parts.push(child.text ?? "");
+        } else if (child.type === senderSchema.nodes.hardBreak) {
+          parts.push("\n");
+        }
+      });
+      value = parts.join("");
+    } else {
+      value = values.peek(node.attrs.valueId);
+    }
+
     result.push({
       kind: "slot",
       key,
       type: definition.type,
-      value:
-        node.type === senderSchema.nodes.contentSlot
-          ? node.textContent
-          : values.peek(node.attrs.valueId),
+      value,
       definition,
     });
   });

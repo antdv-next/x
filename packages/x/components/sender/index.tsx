@@ -1,5 +1,6 @@
 import type {
   SenderCopyInfo,
+  SenderPasteInfo,
   SenderProps,
   SenderRef,
   SlotConfigType,
@@ -9,7 +10,13 @@ import ForwardSender from "./Sender";
 import SenderHeader from "./SenderHeader";
 import SenderSwitch from "./SenderSwitch";
 
-export type { SenderCopyInfo, SenderProps, SenderRef, SlotConfigType };
+export type {
+  SenderCopyInfo,
+  SenderPasteInfo,
+  SenderProps,
+  SenderRef,
+  SlotConfigType,
+};
 
 type CompoundedSender = typeof ForwardSender & {
   Header: typeof SenderHeader;

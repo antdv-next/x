@@ -38,32 +38,32 @@ description: A chat input component for sending messages.
 
 ### SenderProps
 
-| Property     | Description                                                                                                                       | Type                                                                                       | Default                |
-| ------------ | --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ---------------------- |
-| allowSpeech  | Whether to allow voice input                                                                                                      | `boolean \| SpeechConfig`                                                                  | `false`                |
-| classNames   | Style class names                                                                                                                 | `Partial<Record<SemanticType, string>>`                                                    | -                      |
-| defaultValue | Default value of the input box                                                                                                    | `string`                                                                                   | -                      |
-| disabled     | Whether to disable                                                                                                                | `boolean`                                                                                  | `false`                |
-| loading      | Whether in loading state                                                                                                          | `boolean`                                                                                  | `false`                |
-| suffix       | Suffix content, displays action buttons by default. Set `false` to hide default action buttons                                    | `VNodeChild \| false \| NodeRender`                                                        | Default action buttons |
-| header       | Header panel                                                                                                                      | `VNodeChild \| false \| NodeRender`                                                        | `false`                |
-| prefix       | Prefix content                                                                                                                    | `VNodeChild \| false \| NodeRender`                                                        | `false`                |
-| footer       | Footer content                                                                                                                    | `VNodeChild \| false \| NodeRender`                                                        | `false`                |
-| readOnly     | Whether to make the input box read-only                                                                                           | `boolean`                                                                                  | `false`                |
-| rootClass    | Root element style class                                                                                                          | `string`                                                                                   | -                      |
-| styles       | Semantic style definition                                                                                                         | `Partial<Record<SemanticType, CSSProperties>>`                                             | -                      |
-| submitType   | Submission mode                                                                                                                   | `'enter' \| 'shiftEnter'`                                                                  | `'enter'`              |
-| onSubmit     | Callback for clicking the send button                                                                                             | `(message: string, slotConfig?: SlotConfigType[], skill?: SkillType) => void`              | -                      |
-| onChange     | Callback for input box value change                                                                                               | `(value: string, event?: Event, slotConfig?: SlotConfigType[], skill?: SkillType) => void` | -                      |
-| onCancel     | Callback for clicking the cancel button                                                                                           | `() => void`                                                                               | -                      |
-| onPaste      | Paste callback; return `false` to prevent, `string`/`{text}` to override text, or `{slotConfig, skill}` to restore structure      | `(event: ClipboardEvent, info: SenderPasteInfo) => SenderPasteReturn`                      | -                      |
-| onPasteFile  | Callback for pasting files                                                                                                        | `(files: FileList) => void`                                                                | -                      |
-| onCopy       | Copy callback; default writes `text/plain` only (joined `value`); return `{slotConfig, skill, text?}` to opt into structured MIME | `(event: ClipboardEvent, info: SenderCopyInfo) => SenderCopyReturn`                        | -                      |
-| onCut        | Cut callback, same as `onCopy`                                                                                                    | `(event: ClipboardEvent, info: SenderCopyInfo) => SenderCopyReturn`                        | -                      |
-| onKeyDown    | Callback for keyboard press                                                                                                       | `(event: KeyboardEvent) => void \| false`                                                  | -                      |
-| autoSize     | Auto-adjust content height, can be set to true \| false or object: `{ minRows?: number; maxRows?: number }`                       | `boolean \| { minRows?: number; maxRows?: number }`                                        | `{ maxRows: 8 }`       |
-| slotConfig   | Slot configuration, enables slot mode for structured input. In this mode, `value` and `defaultValue` are invalid                  | `SlotConfigType[]`                                                                         | -                      |
-| skill        | Skill configuration, enables slot mode for structured input. In this mode, `value` and `defaultValue` are invalid                 | `SkillType`                                                                                | -                      |
+| Property     | Description                                                                                                       | Type                                                                                       | Default                |
+| ------------ | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ---------------------- |
+| allowSpeech  | Whether to allow voice input                                                                                      | `boolean \| SpeechConfig`                                                                  | `false`                |
+| classNames   | Style class names                                                                                                 | `Partial<Record<SemanticType, string>>`                                                    | -                      |
+| defaultValue | Default value of the input box                                                                                    | `string`                                                                                   | -                      |
+| disabled     | Whether to disable                                                                                                | `boolean`                                                                                  | `false`                |
+| loading      | Whether in loading state                                                                                          | `boolean`                                                                                  | `false`                |
+| suffix       | Suffix content, displays action buttons by default. Set `false` to hide default action buttons                    | `VNodeChild \| false \| NodeRender`                                                        | Default action buttons |
+| header       | Header panel                                                                                                      | `VNodeChild \| false \| NodeRender`                                                        | `false`                |
+| prefix       | Prefix content                                                                                                    | `VNodeChild \| false \| NodeRender`                                                        | `false`                |
+| footer       | Footer content                                                                                                    | `VNodeChild \| false \| NodeRender`                                                        | `false`                |
+| readOnly     | Whether to make the input box read-only                                                                           | `boolean`                                                                                  | `false`                |
+| rootClass    | Root element style class                                                                                          | `string`                                                                                   | -                      |
+| styles       | Semantic style definition                                                                                         | `Partial<Record<SemanticType, CSSProperties>>`                                             | -                      |
+| submitType   | Submission mode                                                                                                   | `'enter' \| 'shiftEnter'`                                                                  | `'enter'`              |
+| onSubmit     | Callback for clicking the send button                                                                             | `(message: string, slotConfig?: SlotConfigType[], skill?: SkillType) => void`              | -                      |
+| onChange     | Callback for input box value change                                                                               | `(value: string, event?: Event, slotConfig?: SlotConfigType[], skill?: SkillType) => void` | -                      |
+| onCancel     | Callback for clicking the cancel button                                                                           | `() => void`                                                                               | -                      |
+| onPaste      | Paste callback; call `event.preventDefault()` and update controlled state to take over                            | `(event: ClipboardEvent, info: SenderPasteInfo) => void`                                   | -                      |
+| onPasteFile  | Callback for pasting files                                                                                        | `(files: FileList) => void`                                                                | -                      |
+| onCopy       | Copy callback; call `event.preventDefault()` and write the clipboard in application code to take over             | `(event: ClipboardEvent, info: SenderCopyInfo) => void`                                    | -                      |
+| onCut        | Cut callback; call `event.preventDefault()` and update controlled state to take over                              | `(event: ClipboardEvent, info: SenderCopyInfo) => void`                                    | -                      |
+| onKeyDown    | Callback for keyboard press                                                                                       | `(event: KeyboardEvent) => void \| false`                                                  | -                      |
+| autoSize     | Auto-adjust content height, can be set to true \| false or object: `{ minRows?: number; maxRows?: number }`       | `boolean \| { minRows?: number; maxRows?: number }`                                        | `{ maxRows: 8 }`       |
+| slotConfig   | Slot configuration, enables slot mode for structured input. In this mode, `value` and `defaultValue` are invalid  | `SlotConfigType[]`                                                                         | -                      |
+| skill        | Skill configuration, enables slot mode for structured input. In this mode, `value` and `defaultValue` are invalid | `SkillType`                                                                                | -                      |
 
 ### Events
 
@@ -248,7 +248,7 @@ Render priority: `icon` / `checkedChildren` / `unCheckedChildren` corresponding 
 ### Clipboard
 
 - **Default is plain `value` string**: `copy/cut/paste` only handles `text/plain` by default without auto-restoring `tag/select/custom/skill`.
-- **Opt-in structured**: return `{ slotConfig, skill, text? }` from `onCopy/onCut` to write custom MIME, and from `onPaste` to restore as slots. See `clipboard.vue`.
+- **Application-owned edge cases**: `onPaste/onCopy/onCut` expose native events as escape hatches, and callback return values are ignored. To replace the default behavior, call `event.preventDefault()` and update controlled state or clipboard data in application code. See `clipboard.vue`.
 
 ```typescript
 interface SenderCopyInfo {
@@ -257,23 +257,11 @@ interface SenderCopyInfo {
   skill?: SkillType;
   text: string;
 }
-type SenderCopyResult = {
-  text?: string;
-  slotConfig?: SlotConfigType[];
-  skill?: SkillType | null;
-};
-type SenderCopyReturn = void | false | string | SenderCopyResult;
 interface SenderPasteInfo {
   text: string;
   slotConfig: SlotConfigType[];
   skill?: SkillType;
 }
-type SenderPasteResult = {
-  text?: string;
-  slotConfig?: SlotConfigType[];
-  skill?: SkillType | null;
-};
-type SenderPasteReturn = void | false | string | SenderPasteResult;
 ```
 
 <demo src="./demo/_semantic.vue" simplify>Sender Semantic DOM</demo>

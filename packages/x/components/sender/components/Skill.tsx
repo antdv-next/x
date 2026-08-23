@@ -42,7 +42,7 @@ export default defineComponent({
           ])}
           role="button"
           aria-label="Close skill"
-          aria-disabled={disabled}
+          aria-disabled={disabled ? "true" : "false"}
           tabindex={disabled ? -1 : 0}
           onClick={(event: MouseEvent) => {
             event.stopPropagation();

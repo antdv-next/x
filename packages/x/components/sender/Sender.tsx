@@ -13,10 +13,8 @@ import type {
   InsertPosition,
   NodeRender,
   SenderCopyInfo,
-  SenderCopyReturn,
   SenderFocusOptions,
   SenderPasteInfo,
-  SenderPasteReturn,
   SenderRef,
   SkillType,
   SlotConfigType,
@@ -143,7 +141,7 @@ export default defineComponent({
     },
     onPaste: {
       type: Function as PropType<
-        (event: ClipboardEvent, info: SenderPasteInfo) => SenderPasteReturn
+        (event: ClipboardEvent, info: SenderPasteInfo) => void
       >,
       default: undefined,
     },
@@ -153,13 +151,13 @@ export default defineComponent({
     },
     onCopy: {
       type: Function as PropType<
-        (event: ClipboardEvent, info: SenderCopyInfo) => SenderCopyReturn
+        (event: ClipboardEvent, info: SenderCopyInfo) => void
       >,
       default: undefined,
     },
     onCut: {
       type: Function as PropType<
-        (event: ClipboardEvent, info: SenderCopyInfo) => SenderCopyReturn
+        (event: ClipboardEvent, info: SenderCopyInfo) => void
       >,
       default: undefined,
     },

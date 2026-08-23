@@ -38,11 +38,10 @@ import {
   senderSchema,
   stringifyValue,
 } from "./prosemirror/model";
-import { HistoryValueStore } from "./prosemirror/value";
+import { HistoryValueStore, isSameValue } from "./prosemirror/value";
 import Skill from "./Skill";
 
 const SILENT_META = "senderSilent";
-const SENDER_COPY_MIME = "application/x-antdv-next-sender";
 const InputControl = Input as unknown as import("vue").DefineComponent<
   Record<string, unknown>,
   Record<string, unknown>,
@@ -106,8 +105,7 @@ export default defineComponent({
       if (autoSize === true) {
         return {
           minHeight: `${lineHeight}px`,
-          maxHeight: `${lineHeight * 8}px`,
-          overflowY: "auto",
+          overflowY: undefined,
         };
       }
       return {
@@ -192,7 +190,12 @@ export default defineComponent({
       const pos = findNodePosition(key, "input");
       const node = pos === null ? null : editorView.state.doc.nodeAt(pos);
       if (!node) return false;
+      let cancelled = false;
+      const cancel = () => {
+        cancelled = true;
+      };
       void nextTick(() => {
+        if (cancelled) return;
         const slot = Array.from(
           editableRef.value?.querySelectorAll<HTMLElement>("[data-slot-key]") ??
             [],
@@ -212,7 +215,15 @@ export default defineComponent({
         }
         restoreControlKey = null;
       });
+      onBeforeUnmount(cancel);
       return true;
+    };
+
+    const syncDocumentEmptyState = () => {
+      editorView?.dom.toggleAttribute(
+        "data-empty",
+        editorView.state.doc.content.size === 0,
+      );
     };
 
     const dispatchTransaction = (transaction: Transaction) => {
@@ -222,6 +233,7 @@ export default defineComponent({
       }
       const nextState = editorView.state.apply(transaction);
       editorView.updateState(nextState);
+      syncDocumentEmptyState();
       if (transaction.docChanged && !transaction.getMeta(SILENT_META)) {
         triggerValueChange(transaction.getMeta("uiEvent"));
       }
@@ -267,10 +279,18 @@ export default defineComponent({
       if (pos === null) return;
       const node = editorView.state.doc.nodeAt(pos);
       if (!node) return;
+      const selectionStart = Math.min(
+        target.selectionStart ?? 0,
+        target.value.length,
+      );
+      const selectionEnd = Math.min(
+        target.selectionEnd ?? selectionStart,
+        target.value.length,
+      );
       let transaction = editorView.state.tr.setNodeMarkup(pos, undefined, {
         ...node.attrs,
-        selectionStart: target.selectionStart,
-        selectionEnd: target.selectionEnd,
+        selectionStart,
+        selectionEnd,
         selectionDirection: target.selectionDirection ?? "none",
       });
       transaction = transaction.setSelection(
@@ -411,41 +431,6 @@ export default defineComponent({
       };
     };
 
-    const serializeCopyPayload = (payload: {
-      slotConfig: SlotConfigType[];
-      skill?: SkillType;
-      text: string;
-    }): string => {
-      try {
-        return JSON.stringify({
-          slotConfig: payload.slotConfig,
-          skill: payload.skill,
-          text: payload.text,
-        });
-      } catch {
-        return JSON.stringify({ slotConfig: [], text: payload.text });
-      }
-    };
-
-    const tryRestoreSenderPayload = (
-      raw: string,
-    ): { slotConfig: SlotConfigType[]; skill?: SkillType } | null => {
-      if (!raw) return null;
-      try {
-        const parsed = JSON.parse(raw) as {
-          slotConfig?: unknown;
-          skill?: unknown;
-        };
-        if (!Array.isArray(parsed.slotConfig)) return null;
-        return {
-          slotConfig: parsed.slotConfig as SlotConfigType[],
-          skill: parsed.skill as SkillType | undefined,
-        };
-      } catch {
-        return null;
-      }
-    };
-
     const handleCopyOrCut = (
       event: ClipboardEvent,
       type: "copy" | "cut",
@@ -484,55 +469,15 @@ export default defineComponent({
       };
       const handler =
         type === "copy" ? senderCtx.value.onCopy : senderCtx.value.onCut;
-      const result = handler?.(event, info) as unknown as
-        | false
-        | string
-        | {
-            text?: string;
-            slotConfig?: SlotConfigType[];
-            skill?: SkillType | null;
-          }
-        | void;
-      let shouldWriteStructured = false;
-      if (result === false) return true;
-      if (typeof result === "string") {
-        payloadText = result;
-        payload.text = result;
-        payload.value = result;
-        shouldWriteStructured = false;
-      } else if (result && typeof result === "object") {
-        if (typeof result.text === "string") {
-          payloadText = result.text;
-          payload.text = result.text;
-          payload.value = result.text;
-        }
-        if (Array.isArray(result.slotConfig)) {
-          payload.slotConfig = result.slotConfig as SlotConfigType[];
-          shouldWriteStructured = true;
-        }
-        if ("skill" in result) {
-          payload.skill =
-            (result.skill as SkillType | null | undefined) ?? undefined;
-          shouldWriteStructured = true;
-        }
-      } else {
-        shouldWriteStructured = false;
-      }
+      handler?.(event, info);
       if (event.defaultPrevented) return true;
       try {
         event.clipboardData?.setData("text/plain", payloadText);
-        if (
-          shouldWriteStructured &&
-          (payload.slotConfig.length || payload.skill)
-        ) {
-          event.clipboardData?.setData(
-            SENDER_COPY_MIME,
-            serializeCopyPayload(payload),
-          );
-        }
       } catch {
-        // Some browsers restrict custom MIME — fallback to plain text only
+        // Some browsers restrict clipboard writes. The consumer can take over
+        // by preventing the event and writing its own payload in the callback.
       }
+      if (type === "cut" && isLocked()) return true;
       if (type === "cut" && slice) {
         flushDom();
         syncSelectionFromDom();
@@ -563,7 +508,8 @@ export default defineComponent({
         }
       } else if (type === "cut" && !slice) {
         const nativeSel = window.getSelection();
-        const range = nativeSel?.rangeCount ? nativeSel.getRangeAt(0) : null;
+        if (!nativeSel) return false;
+        const range = nativeSel.rangeCount ? nativeSel.getRangeAt(0) : null;
         const coversDomAll =
           !!range &&
           !range.collapsed &&
@@ -583,137 +529,14 @@ export default defineComponent({
       return type === "copy";
     };
 
-    const handlePasteWithSenderPayload = (event: ClipboardEvent): boolean => {
-      const raw = event.clipboardData?.getData(SENDER_COPY_MIME) ?? "";
-      const structured = tryRestoreSenderPayload(raw);
+    const routePasteCallback = (event: ClipboardEvent): boolean => {
       const text = event.clipboardData?.getData("text/plain") ?? "";
-      const pasteInfo = {
+      senderCtx.value.onPaste?.(event, {
         text,
-        slotConfig: structured?.slotConfig ?? [],
-        skill: structured?.skill,
-      };
-      const pasteResult = senderCtx.value.onPaste?.(
-        event,
-        pasteInfo as unknown as Parameters<
-          NonNullable<typeof senderCtx.value.onPaste>
-        >[1],
-      ) as unknown as
-        | false
-        | string
-        | {
-            text?: string;
-            slotConfig?: SlotConfigType[];
-            skill?: SkillType | null;
-          }
-        | void;
-      if (pasteResult === false) return true;
-      if (event.defaultPrevented) return true;
-      let pasteText: string | undefined;
-      let pasteSlotConfig: SlotConfigType[] | undefined;
-      let pasteSkill: SkillType | undefined;
-      let hasStructured = false;
-      if (typeof pasteResult === "string") {
-        pasteText = pasteResult;
-      } else if (pasteResult && typeof pasteResult === "object") {
-        if (typeof pasteResult.text === "string") pasteText = pasteResult.text;
-        if (Array.isArray(pasteResult.slotConfig)) {
-          pasteSlotConfig = pasteResult.slotConfig as SlotConfigType[];
-          hasStructured = true;
-        }
-        if ("skill" in pasteResult) {
-          pasteSkill =
-            (pasteResult.skill as SkillType | null | undefined) ?? undefined;
-          hasStructured = true;
-        }
-      }
-      const structuredForPaste =
-        hasStructured && (pasteSlotConfig?.length || pasteSkill)
-          ? { slotConfig: pasteSlotConfig ?? [], skill: pasteSkill }
-          : !pasteText &&
-              structured &&
-              (structured.slotConfig.length || structured.skill)
-            ? structured
-            : null;
-      if (!structuredForPaste && pasteText !== undefined) {
-        if (!editorView) return true;
-        if (routePasteEvent(event)) return true;
-        event.preventDefault();
-        flushDom();
-        syncSelectionFromDom();
-        managedHistoryActive = true;
-        closeManagedGroup();
-        editorView.dispatch(editorView.state.tr.insertText(pasteText));
-        closeManagedGroup();
-        lastEditOwner = "outer";
-        return true;
-      }
-      if (!structuredForPaste) return false;
-      if (routePasteEvent(event)) return true;
-      event.preventDefault();
-      flushDom();
-      syncSelectionFromDom();
-      managedHistoryActive = true;
-      closeManagedGroup();
-      const { from, to } = editorView!.state.selection;
-      let tr = editorView!.state.tr.delete(from, to);
-      const insertPos = tr.selection.from;
-      const fragmentNodes: ProseMirrorNode[] = [];
-      if (structuredForPaste.skill?.value) {
-        fragmentNodes.push(
-          senderSchema.nodes.skill!.create({
-            value: structuredForPaste.skill.value,
-          }),
-        );
-        if (!skills.has(structuredForPaste.skill.value))
-          skills.set(structuredForPaste.skill.value, structuredForPaste.skill);
-      }
-      structuredForPaste.slotConfig.forEach(config => {
-        collectDefinitions(definitions, [config]);
-        if (config.type === "text") {
-          if (config.value) fragmentNodes.push(senderSchema.text(config.value));
-          return;
-        }
-        if (config.type === "content") {
-          const text = stringifyValue(
-            (config as unknown as { value?: unknown }).value ??
-              (config as unknown as { props?: { defaultValue?: unknown } })
-                .props?.defaultValue ??
-              "",
-          );
-          fragmentNodes.push(
-            senderSchema.nodes.contentSlot!.create(
-              { key: config.key },
-              text ? senderSchema.text(text) : undefined,
-            ),
-          );
-          return;
-        }
-        const rawValue =
-          (config as unknown as { value?: unknown }).value ??
-          (
-            config as unknown as {
-              props?: { value?: unknown; defaultValue?: unknown };
-            }
-          ).props?.value ??
-          (config as unknown as { props?: { defaultValue?: unknown } }).props
-            ?.defaultValue ??
-          "";
-        fragmentNodes.push(
-          senderSchema.nodes.slot!.create({
-            key: config.key,
-            type: config.type,
-            valueId: values.add(rawValue),
-          }),
-        );
+        slotConfig: [],
+        skill: undefined,
       });
-      if (fragmentNodes.length) {
-        tr = tr.replaceWith(insertPos, insertPos, Fragment.from(fragmentNodes));
-      }
-      if (pasteText) tr = tr.insertText(pasteText, tr.selection.from);
-      editorView!.dispatch(tr);
-      closeManagedGroup();
-      lastEditOwner = "outer";
-      return true;
+      return event.defaultPrevented;
     };
     const createSlotNodeView = (
       initialNode: ProseMirrorNode,
@@ -761,6 +584,25 @@ export default defineComponent({
         if (key !== "z" && key !== "y") return false;
         const command = key === "y" || event.shiftKey ? redo : undo;
         return runHistory(command, event, node.attrs.key);
+      };
+
+      const routeControlCopyOrCut = (
+        event: ClipboardEvent,
+        type: "copy" | "cut",
+      ) => {
+        const input = event.target as HTMLInputElement;
+        const start = input.selectionStart ?? 0;
+        const end = input.selectionEnd ?? start;
+        const text = input.value.slice(start, end);
+        const info: SenderCopyInfo = {
+          value: text,
+          slotConfig: [],
+          skill: undefined,
+          text,
+        };
+        const handler =
+          type === "copy" ? senderCtx.value.onCopy : senderCtx.value.onCut;
+        handler?.(event, info);
       };
 
       const refresh = () => {
@@ -824,14 +666,14 @@ export default defineComponent({
               onPaste={(event: ClipboardEvent) => {
                 const text = event.clipboardData?.getData("text/plain") ?? "";
                 const info = { text, slotConfig: [], skill: undefined };
-                const result = (
-                  senderCtx.value.onPaste as unknown as (
-                    ev: ClipboardEvent,
-                    i: typeof info,
-                  ) => unknown
-                )?.(event, info);
-                if (result === false) event.preventDefault();
+                senderCtx.value.onPaste?.(event, info);
                 if (!event.defaultPrevented) routePasteEvent(event);
+              }}
+              onCopy={(event: ClipboardEvent) => {
+                routeControlCopyOrCut(event, "copy");
+              }}
+              onCut={(event: ClipboardEvent) => {
+                routeControlCopyOrCut(event, "cut");
               }}
               onCompositionstart={() => {
                 isComposing = true;
@@ -916,12 +758,21 @@ export default defineComponent({
 
       dom.addEventListener("compositionstart", () => {
         if (node.attrs.type !== "custom") return;
+        const pos = resolvePos();
+        if (pos === null) return;
         isComposing = true;
         pendingValue = undefined;
         hasPendingValue = false;
       });
       dom.addEventListener("compositionend", event => {
         if (node.attrs.type !== "custom") return;
+        const pos = resolvePos();
+        if (pos === null) {
+          isComposing = false;
+          pendingValue = undefined;
+          hasPendingValue = false;
+          return;
+        }
         isComposing = false;
         if (hasPendingValue) {
           updateSlotValue(resolvePos, pendingValue, event, undefined, true);
@@ -1034,15 +885,25 @@ export default defineComponent({
               if (!editorView || isLocked()) return;
               const pos = resolvePos();
               if (pos === null) return;
+              const currentNode = editorView.state.doc.nodeAt(pos);
+              if (
+                !currentNode ||
+                currentNode.type !== senderSchema.nodes.skill
+              ) {
+                return;
+              }
+              managedHistoryActive = true;
+              closeManagedGroup();
               const transaction = editorView.state.tr.delete(
                 pos,
-                pos + node.nodeSize,
+                pos + currentNode.nodeSize,
               );
               transaction.setSelection(
                 TextSelection.near(transaction.doc.resolve(pos)),
               );
               editorView.focus();
               editorView.dispatch(transaction);
+              closeManagedGroup();
             }}
           />,
           dom,
@@ -1119,15 +980,16 @@ export default defineComponent({
         });
       if (changed) (editorView as any).domObserver?.flush?.();
       if (changed && selectedSkill) {
+        const capturedSkill: { value: string; textLength: number } =
+          selectedSkill;
         let selectionPosition: number | null = null;
         editorView.state.doc.descendants((node, pos) => {
           if (
             selectionPosition === null &&
             node.type === senderSchema.nodes.skill &&
-            node.attrs.value === selectedSkill?.value
+            node.attrs.value === capturedSkill.value
           ) {
-            selectionPosition =
-              pos + node.nodeSize + (selectedSkill?.textLength ?? 0);
+            selectionPosition = pos + node.nodeSize + capturedSkill.textLength;
             return false;
           }
           return selectionPosition === null;
@@ -1167,7 +1029,7 @@ export default defineComponent({
         closeGroupAfterInput = false;
         closeManagedGroup();
       }
-      return false;
+      return true;
     };
 
     const syncContentDom = () => {
@@ -1178,15 +1040,44 @@ export default defineComponent({
           `.${prefixCls.value}-slot-content`,
         ) ?? [],
       );
-      const updates: Array<{ from: number; to: number; value: string }> = [];
+      const updates: Array<{
+        from: number;
+        to: number;
+        nodes: ProseMirrorNode[];
+      }> = [];
       editorView.state.doc.descendants((node, pos) => {
         if (node.type !== senderSchema.nodes.contentSlot) return true;
         const content = contents.find(
           element => element.dataset.slotKey === node.attrs.key,
         );
         const value = content?.innerText ?? content?.textContent ?? "";
-        if (value !== node.textContent) {
-          updates.push({ from: pos + 1, to: pos + node.nodeSize - 1, value });
+
+        // Serialize current node content for comparison
+        const parts: string[] = [];
+        node.forEach(child => {
+          if (child.isText) {
+            parts.push(child.text ?? "");
+          } else if (child.type === senderSchema.nodes.hardBreak) {
+            parts.push("\n");
+          }
+        });
+        const currentValue = parts.join("");
+
+        if (value !== currentValue) {
+          // Convert value with \n into text + hardBreak nodes
+          const newNodes: ProseMirrorNode[] = [];
+          const lines = value.split("\n");
+          lines.forEach((line, index) => {
+            if (line) newNodes.push(senderSchema.text(line));
+            if (index < lines.length - 1) {
+              newNodes.push(senderSchema.nodes.hardBreak!.create());
+            }
+          });
+          updates.push({
+            from: pos + 1,
+            to: pos + node.nodeSize - 1,
+            nodes: newNodes,
+          });
         }
         return false;
       });
@@ -1196,7 +1087,7 @@ export default defineComponent({
           transaction = transaction.replaceWith(
             update.from,
             update.to,
-            update.value ? senderSchema.text(update.value) : [],
+            update.nodes.length > 0 ? update.nodes : [],
           );
         });
       if (!transaction.docChanged) return false;
@@ -1242,6 +1133,12 @@ export default defineComponent({
         }
       } catch {
         // Synthetic DOM edits can temporarily point outside the parsed model.
+        // Position calculation errors are logged but don't prevent execution.
+        if (typeof console !== "undefined" && console.warn) {
+          console.warn(
+            "SlotTextArea: syncSelectionFromDom position calculation failed",
+          );
+        }
       }
     };
 
@@ -1267,15 +1164,24 @@ export default defineComponent({
       ) {
         const pos = findNodePosition(startContent.dataset.slotKey ?? "");
         if (pos !== null) {
-          event.preventDefault();
-          const from = pos + 1 + nativeRange.startOffset;
-          const to = pos + 1 + nativeRange.endOffset;
-          const transaction = editorView.state.tr.delete(from, to);
-          transaction.setSelection(
-            TextSelection.near(transaction.doc.resolve(from)),
-          );
-          editorView.dispatch(transaction);
-          return true;
+          const contentNode = editorView.state.doc.nodeAt(pos);
+          if (
+            contentNode &&
+            contentNode.type === senderSchema.nodes.contentSlot
+          ) {
+            const maxOffset = contentNode.content.size;
+            const from = pos + 1 + Math.min(nativeRange.startOffset, maxOffset);
+            const to = pos + 1 + Math.min(nativeRange.endOffset, maxOffset);
+            if (from <= to && to <= pos + contentNode.nodeSize - 1) {
+              event.preventDefault();
+              const transaction = editorView.state.tr.delete(from, to);
+              transaction.setSelection(
+                TextSelection.near(transaction.doc.resolve(from)),
+              );
+              editorView.dispatch(transaction);
+              return true;
+            }
+          }
         }
       }
       syncSelectionFromDom();
@@ -1340,7 +1246,16 @@ export default defineComponent({
           ? (doc.firstChild!.attrs.value as string | undefined)
           : undefined;
         const nextSkillValue = skill?.value;
-        if (currentSkillValue !== nextSkillValue) {
+        const currentSkillProps =
+          hasSkill && currentSkillValue
+            ? skills.get(currentSkillValue)
+            : undefined;
+        const skillPropsChanged =
+          currentSkillValue === nextSkillValue &&
+          skill &&
+          currentSkillProps &&
+          !isSameValue(currentSkillProps, skill);
+        if (currentSkillValue !== nextSkillValue || skillPropsChanged) {
           let tr = editorView.state.tr;
           if (hasSkill) {
             tr = tr.delete(0, doc.firstChild!.nodeSize);
@@ -1387,6 +1302,7 @@ export default defineComponent({
         plugins: createPlugins(),
       });
       editorView.updateState(state);
+      syncDocumentEmptyState();
       void nextTick(() => triggerValueChange());
     };
 
@@ -1492,6 +1408,26 @@ export default defineComponent({
                 );
               }
               if (handleSyntheticDeletion(event)) return true;
+              // Handle Enter key in content slots to insert hardBreak
+              if (
+                event.key === "Enter" &&
+                !shouldSubmit(event) &&
+                editorView &&
+                !isLocked()
+              ) {
+                const { selection } = editorView.state;
+                const $pos = selection.$from;
+                const parent = $pos.parent;
+                // Check if we're inside a contentSlot
+                if (parent.type === senderSchema.nodes.contentSlot) {
+                  event.preventDefault();
+                  const tr = editorView.state.tr.replaceSelectionWith(
+                    senderSchema.nodes.hardBreak!.create(),
+                  );
+                  editorView.dispatch(tr);
+                  return true;
+                }
+              }
               if (shouldSubmit(event)) {
                 event.preventDefault();
                 senderCtx.value.triggerSend?.();
@@ -1510,7 +1446,11 @@ export default defineComponent({
             },
             paste: (_view, event) => {
               const clipboardEvent = event as ClipboardEvent;
-              if (handlePasteWithSenderPayload(clipboardEvent)) return true;
+              if (routePasteCallback(clipboardEvent)) return true;
+              if (isLocked()) {
+                clipboardEvent.preventDefault();
+                return true;
+              }
               const text = clipboardEvent.clipboardData?.getData("text/plain");
               if (routePasteEvent(clipboardEvent)) return true;
               if (text !== undefined) {
@@ -1534,6 +1474,7 @@ export default defineComponent({
           },
         },
       );
+      syncDocumentEmptyState();
       triggerValueChange();
     });
 
@@ -1587,10 +1528,16 @@ export default defineComponent({
             const textBefore =
               range.startContainer.textContent?.slice(0, range.startOffset) ??
               "";
-            if (textBefore.endsWith(replaceCharacters)) {
+            const searchLength = Math.min(
+              replaceCharacters.length,
+              textBefore.length,
+            );
+            const actualMatch = textBefore.slice(-searchLength);
+            const expectedMatch = replaceCharacters.slice(-searchLength);
+            if (actualMatch === expectedMatch) {
               range.setStart(
                 range.startContainer,
-                range.startOffset - replaceCharacters.length,
+                range.startOffset - searchLength,
               );
               range.deleteContents();
               range.collapse(true);
@@ -1699,7 +1646,15 @@ export default defineComponent({
     };
 
     const focus: SlotTextAreaRef["focus"] = options => {
-      const cursor = options?.cursor ?? "end";
+      if (!editorView) return;
+      // When document is empty (only placeholder visible), default to start cursor
+      const doc = editorView.state.doc;
+      const isEmpty =
+        doc.content.size === 0 ||
+        (doc.content.size === doc.firstChild?.nodeSize &&
+          doc.firstChild?.type === senderSchema.nodes.skill);
+      const defaultCursor = isEmpty ? "start" : "end";
+      const cursor = options?.cursor ?? defaultCursor;
       if (cursor !== "slot") {
         setCursor(cursor, options?.preventScroll);
         return;
@@ -1731,7 +1686,7 @@ export default defineComponent({
         if (!options?.preventScroll) {
           dom.scrollIntoView?.({ block: "nearest" });
         }
-      } else setCursor("end", options?.preventScroll);
+      } else setCursor(defaultCursor, options?.preventScroll);
     };
 
     const clear: SlotTextAreaRef["clear"] = () => {

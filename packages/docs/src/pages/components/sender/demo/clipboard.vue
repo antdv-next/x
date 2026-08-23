@@ -1,10 +1,7 @@
 <script setup lang="ts">
 import type { SenderPasteInfo, SenderProps } from "@antdv-next/x";
 
-import { App } from "antdv-next";
 import { ref } from "vue";
-
-const { message } = App.useApp();
 
 const slotConfig: SenderProps["slotConfig"] = [
   { type: "text", value: "请帮我规划去 " },
@@ -28,25 +25,18 @@ const skill: SenderProps["skill"] = {
   title: "行程助手",
 };
 
-const withStructured = ref(false);
-const lastPaste = ref("");
+const lastOperation = ref("");
 
-const onCopy: SenderProps["onCopy"] = (_e, info) => {
-  if (!withStructured.value) return;
-  // 按需返回结构化：框架才会写入自定义 MIME，粘贴时才能还原 slots/skill
-  return { slotConfig: info.slotConfig, skill: info.skill };
+const onCopy: SenderProps["onCopy"] = (_event, info) => {
+  lastOperation.value = `copy: ${info.text} | slots: ${info.slotConfig.length}`;
 };
 
-const onCut = onCopy;
+const onCut: SenderProps["onCut"] = (_event, info) => {
+  lastOperation.value = `cut: ${info.text} | slots: ${info.slotConfig.length}`;
+};
 
-const onPaste = (_e: ClipboardEvent, info: SenderPasteInfo) => {
-  lastPaste.value = `text: ${info.text} | slots: ${info.slotConfig.length} | skill: ${info.skill?.value ?? "-"}`;
-  if (!withStructured.value) return;
-  // 按需还原：返回结构才会以 slots 形式插入，否则仅插 text
-  if (info.slotConfig.length || info.skill) {
-    message.info(`结构化粘贴: ${info.text}`);
-    return { slotConfig: info.slotConfig, skill: info.skill };
-  }
+const onPaste = (_event: ClipboardEvent, info: SenderPasteInfo) => {
+  lastOperation.value = `paste: ${info.text}`;
 };
 
 const onSubmit: SenderProps["onSubmit"] = (value, slots, sk) => {
@@ -58,10 +48,6 @@ const onSubmit: SenderProps["onSubmit"] = (value, slots, sk) => {
 
 <template>
   <a-flex vertical :gap="12">
-    <a-flex :gap="8" align="center">
-      <a-switch v-model:checked="withStructured" />
-      <span>按需结构化复制/粘贴（关闭时仅拼 value 字符串）</span>
-    </a-flex>
     <ax-sender
       :slot-config="slotConfig"
       :skill="skill"
@@ -71,21 +57,20 @@ const onSubmit: SenderProps["onSubmit"] = (value, slots, sk) => {
       :on-paste="onPaste"
       :on-submit="onSubmit"
     />
-    <a-typography-text type="secondary"
-      >最近粘贴：{{ lastPaste || "-" }}</a-typography-text
-    >
     <a-typography-text type="secondary">
-      默认行为：复制/粘贴仅处理 text/value 字符串；需保留 tag/select/skill
-      时，在 onCopy/onCut 返回
-      {{ "{ slotConfig, skill }" }}，在 onPaste 返回同结构即可还原。
+      最近操作：{{ lastOperation || "-" }}
+    </a-typography-text>
+    <a-typography-text type="secondary">
+      回调用于业务接管复杂边界。需要覆盖默认行为时，请调用
+      event.preventDefault()，并由业务更新受控状态或写入剪贴板；框架忽略回调返回值。
     </a-typography-text>
   </a-flex>
 </template>
 
 <docs lang="zh-CN">
-默认仅拼 `value` 字符串，结构化复制/粘贴按需通过 `onCopy/onCut/onPaste` 返回 `{ slotConfig, skill }` 实现。
+默认仅处理纯文本。`onCopy/onCut/onPaste` 是业务处理复杂剪贴板场景的原生事件逃生口，框架不解释回调返回值。
 </docs>
 
 <docs lang="en-US">
-Default copies/pastes plain `value` string; opt into structured slots/skill via `onCopy/onCut/onPaste` returning `{ slotConfig, skill }`.
+The default behavior is plain text only. `onCopy/onCut/onPaste` expose native events for application-owned clipboard edge cases, and the framework ignores callback return values.
 </docs>
