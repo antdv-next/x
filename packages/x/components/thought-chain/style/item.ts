@@ -1,13 +1,15 @@
+import type { CSSObject } from "@antdv-next/cssinjs";
+
 import { unit } from "@antdv-next/cssinjs";
 
-import type { FullToken, GenerateStyle } from "../../theme/interface";
+import type { GenerateStyle } from "../../theme/interface";
+import type { ThoughtChainToken } from "./thought-chain";
 
-export interface ThoughtChainItemToken extends FullToken<"ThoughtChain"> {}
-
-const genItemStyle: GenerateStyle<ThoughtChainItemToken> = token => {
+const genThoughtChainItemStyle: GenerateStyle<ThoughtChainToken, CSSObject> = (
+  token: ThoughtChainToken,
+): CSSObject => {
   const { componentCls, calc } = token;
   const itemCls = `${componentCls}-item`;
-
   return {
     [itemCls]: {
       display: "inline-flex",
@@ -20,91 +22,71 @@ const genItemStyle: GenerateStyle<ThoughtChainItemToken> = token => {
       paddingInline: token.paddingSM,
       boxSizing: "border-box",
       lineHeight: token.lineHeight,
-      borderRadius: token.borderRadius,
+      borderRadius: token.itemBorderRadius,
       alignItems: "baseline",
-
       [`&${itemCls}-rtl`]: {
         direction: "rtl",
       },
-
       [`&${itemCls}-click:not(${itemCls}-disabled)`]: {
         cursor: "pointer",
         transition: `all ${token.motionDurationMid} ${token.motionEaseInOut}`,
       },
-
       [`&${itemCls}-disabled`]: {
         cursor: "not-allowed",
       },
-
-      // Blink effect on description
       [`${componentCls}-motion-blink`]: {
         [`${itemCls}-description`]: {
-          color: (token as any).itemMotionDescription,
+          color: token.itemMotionDescription,
         },
       },
-
-      // Status colors inside Item
       [`${componentCls}-status-success`]: {
         color: token.colorSuccess,
       },
-
       [`${componentCls}-status-loading`]: {
         color: token.colorPrimary,
       },
-
-      // Title
       [`${itemCls}-title`]: {
         display: "inline-block",
         whiteSpace: "nowrap",
       },
-
       [`${itemCls}-title-with-description`]: {
         marginInlineEnd: token.marginXS,
       },
-
-      // Description
       [`${itemCls}-description`]: {
         color: token.colorTextDescription,
         display: "inline-block",
         whiteSpace: "break-spaces",
       },
-
-      // Disabled (non-error)
       [`&${itemCls}-disabled:not(${itemCls}-error)`]: {
-        color: (token as any).colorTitleDisabled,
+        color: token.colorTitleDisabled,
         [`${itemCls}-description`]: {
-          color: (token as any).colorDescriptionDisabled,
+          color: token.colorDescriptionDisabled,
         },
         [`${componentCls}-status-success`]: {
-          color: (token as any).colorSuccessDisabled,
+          color: token.colorSuccessDisabled,
         },
         [`${componentCls}-status-loading`]: {
-          color: (token as any).colorPrimaryDisabled,
+          color: token.colorPrimaryDisabled,
         },
       },
-
-      // Solid variant
       [`&${itemCls}-solid`]: {
-        background: (token as any).itemSolidBg ?? token.colorFillTertiary,
+        background: token.itemSolidBg,
         [`&${itemCls}-disabled`]: {
           background: token.colorBgContainerDisabled,
         },
         [`&${itemCls}-click:not(${itemCls}-error):hover`]: {
-          background: (token as any).itemSolidHoverBg,
+          background: token.itemSolidHoverBg,
         },
         [`&${itemCls}-error:not(${itemCls}-disabled)`]: {
           background: token.colorErrorBg,
         },
         [`&${itemCls}-error:where(${itemCls}-disabled)`]: {
-          background: (token as any).colorErrorBgDisabled,
+          background: token.colorErrorBgDisabled,
         },
       },
-
-      // Outlined variant
       [`&${itemCls}-outlined`]: {
         paddingBlock: token.paddingXXS,
-        backgroundColor:
-          (token as any).itemOutlinedBg ?? token.colorBgContainer,
+        backgroundColor: token.itemOutlinedBg,
         borderWidth: token.lineWidth,
         borderStyle: token.lineType,
         borderColor: token.colorBorder,
@@ -114,32 +96,28 @@ const genItemStyle: GenerateStyle<ThoughtChainItemToken> = token => {
         },
         [`&${itemCls}-error:where(${itemCls}-disabled)`]: {
           borderColor: token.colorErrorBorder,
-          background: (token as any).colorErrorBgDisabled,
+          background: token.colorErrorBgDisabled,
         },
         [`&${itemCls}-click:not(${itemCls}-error):hover`]: {
-          background: (token as any).itemOutlinedHoverBg,
+          background: token.itemOutlinedHoverBg,
         },
       },
-
-      // Text variant
       [`&${itemCls}-text`]: {
         [`&${itemCls}-click:not(${itemCls}-error):hover`]: {
-          background: (token as any).itemSolidHoverBg,
+          background: token.itemSolidHoverBg,
         },
       },
-
-      // Error state
       [`&${itemCls}-error`]: {
         [`&:not(${itemCls}-disabled)`]: {
           color: token.colorErrorText,
           [`${itemCls}-description`]: {
-            color: (token as any).colorErrorTextDescription,
+            color: token.colorErrorTextDescription,
           },
         },
         [`&:where(${itemCls}-disabled)`]: {
-          color: (token as any).colorErrorTextDisabled,
+          color: token.colorErrorTextDisabled,
           [`${itemCls}-description`]: {
-            color: (token as any).colorErrorTextDescriptionDisabled,
+            color: token.colorErrorTextDescriptionDisabled,
           },
         },
         [`&${itemCls}-click:hover`]: {
@@ -150,4 +128,4 @@ const genItemStyle: GenerateStyle<ThoughtChainItemToken> = token => {
   };
 };
 
-export default genItemStyle;
+export default genThoughtChainItemStyle;
