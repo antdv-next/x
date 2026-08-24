@@ -248,7 +248,16 @@ interface SenderFocusOptions extends FocusOptions {
 ### 复制 / 粘贴
 
 - **默认仅拼 `value` 字符串**：`copy/cut/paste` 默认只处理 `text/plain`，不自动还原 `tag/select/custom/skill`，避免框架处理复杂边界。
-- **业务接管复杂场景**：`onPaste/onCopy/onCut` 是原生事件逃生口，框架忽略回调返回值。需要覆盖默认行为时，请调用 `event.preventDefault()`，并由业务更新受控状态或写入剪贴板，详见 `clipboard.vue`。
+- **业务接管复杂场景**：`onPaste/onCopy/onCut` 是原生事件逃生口，框架忽略回调返回值。`return false`、`return "replacement"` 等返回值不会阻止默认操作，也不会替换粘贴内容。
+- 需要覆盖默认行为时，必须调用 `event.preventDefault()`，并由业务更新受控状态或写入剪贴板；未调用 `preventDefault()` 时，框架仍会继续执行默认的 `text/plain` 处理。详见 `clipboard.vue`。
+
+```ts
+const onPaste = (event: ClipboardEvent, info: SenderPasteInfo) => {
+  // return false; // 无效：不会阻止默认粘贴
+  event.preventDefault();
+  // 由业务自行处理 info.text，并更新受控 value/slotConfig
+};
+```
 
 ```typescript
 interface SenderCopyInfo {

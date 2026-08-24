@@ -1,6 +1,6 @@
 import { mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { markRaw } from "vue";
+import { h, markRaw } from "vue";
 
 import type { SkillType, SlotConfigType } from "../interface";
 
@@ -424,6 +424,45 @@ describe("Sender", () => {
     ]);
   });
 
+  it("should use a tag label when its value is omitted", async () => {
+    const wrapper = mount(Sender, {
+      props: {
+        slotConfig: [
+          { type: "tag", key: "mention", props: { label: "@助手" } },
+        ],
+      },
+    });
+    await wrapper.vm.$nextTick();
+
+    expect((wrapper.vm as any).getValue()).toEqual(
+      expect.objectContaining({
+        value: "@助手",
+        slotConfig: [
+          expect.objectContaining({
+            type: "tag",
+            key: "mention",
+            value: "@助手",
+          }),
+        ],
+      }),
+    );
+    wrapper.unmount();
+  });
+
+  it("should use text from a VNode tag label when its value is omitted", async () => {
+    const wrapper = mount(Sender, {
+      props: {
+        slotConfig: [
+          { type: "tag", key: "mention", props: { label: h("span", "@助手") } },
+        ],
+      },
+    });
+    await wrapper.vm.$nextTick();
+
+    expect((wrapper.vm as any).getValue().value).toBe("@助手");
+    wrapper.unmount();
+  });
+
   it("should format content and other slot types together", async () => {
     const wrapper = mount(Sender, {
       props: {
@@ -584,6 +623,41 @@ describe("Sender", () => {
       }),
     ]);
 
+    cleanup(host, wrapper);
+  });
+
+  it("should delete the selected range across lines in a content slot", async () => {
+    const host = createHost();
+    const wrapper = mount(Sender, {
+      attachTo: host,
+      props: {
+        slotConfig: [
+          {
+            type: "content",
+            key: "content",
+            props: { defaultValue: "AB\nCD" },
+          },
+        ],
+      },
+    });
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+
+    const contentSlot = wrapper.find(".antd-sender-slot-content").element;
+    const firstLine = contentSlot.firstChild as Text;
+    const secondLine = contentSlot.lastChild as Text;
+    const selection = window.getSelection();
+    const range = document.createRange();
+    range.setStart(firstLine, 1);
+    range.setEnd(secondLine, 1);
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+
+    await wrapper
+      .find(".antd-sender-input-slot")
+      .trigger("keydown", { key: "Delete" });
+
+    expect((wrapper.vm as any).getValue().value).toBe("AD");
     cleanup(host, wrapper);
   });
 

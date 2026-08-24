@@ -248,7 +248,16 @@ Render priority: `icon` / `checkedChildren` / `unCheckedChildren` corresponding 
 ### Clipboard
 
 - **Default is plain `value` string**: `copy/cut/paste` only handles `text/plain` by default without auto-restoring `tag/select/custom/skill`.
-- **Application-owned edge cases**: `onPaste/onCopy/onCut` expose native events as escape hatches, and callback return values are ignored. To replace the default behavior, call `event.preventDefault()` and update controlled state or clipboard data in application code. See `clipboard.vue`.
+- **Application-owned edge cases**: `onPaste/onCopy/onCut` expose native events as escape hatches, and callback return values are ignored. `return false`, `return "replacement"`, and similar values do not prevent the default operation or replace pasted content.
+- To replace the default behavior, you must call `event.preventDefault()`, then update controlled state or clipboard data in application code. Without `preventDefault()`, Sender continues its default `text/plain` handling. See `clipboard.vue`.
+
+```ts
+const onPaste = (event: ClipboardEvent, info: SenderPasteInfo) => {
+  // return false; // No effect: default paste still runs.
+  event.preventDefault();
+  // Handle info.text and update controlled value/slotConfig yourself.
+};
+```
 
 ```typescript
 interface SenderCopyInfo {

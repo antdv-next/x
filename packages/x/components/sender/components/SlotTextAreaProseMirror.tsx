@@ -1154,14 +1154,19 @@ export default defineComponent({
       const nativeRange = window.getSelection()?.rangeCount
         ? window.getSelection()!.getRangeAt(0)
         : null;
+      const getContentElement = (container: Node) => {
+        const element =
+          container.nodeType === Node.ELEMENT_NODE
+            ? (container as Element)
+            : container.parentElement;
+        return element?.closest<HTMLElement>(
+          `.${prefixCls.value}-slot-content`,
+        );
+      };
       const startContent =
-        nativeRange?.startContainer.parentElement?.closest<HTMLElement>(
-          `.${prefixCls.value}-slot-content`,
-        );
+        nativeRange && getContentElement(nativeRange.startContainer);
       const endContent =
-        nativeRange?.endContainer.parentElement?.closest<HTMLElement>(
-          `.${prefixCls.value}-slot-content`,
-        );
+        nativeRange && getContentElement(nativeRange.endContainer);
       if (
         nativeRange &&
         !nativeRange.collapsed &&
@@ -1175,17 +1180,36 @@ export default defineComponent({
             contentNode &&
             contentNode.type === senderSchema.nodes.contentSlot
           ) {
-            const maxOffset = contentNode.content.size;
-            const from = pos + 1 + Math.min(nativeRange.startOffset, maxOffset);
-            const to = pos + 1 + Math.min(nativeRange.endOffset, maxOffset);
-            if (from <= to && to <= pos + contentNode.nodeSize - 1) {
-              event.preventDefault();
-              const transaction = editorView.state.tr.delete(from, to);
-              transaction.setSelection(
-                TextSelection.near(transaction.doc.resolve(from)),
+            try {
+              // DOM offsets are relative to each text/container node. Map
+              // both endpoints through ProseMirror before deleting so line
+              // breaks and multiple text nodes retain their document offsets.
+              const from = editorView.posAtDOM(
+                nativeRange.startContainer,
+                nativeRange.startOffset,
               );
-              editorView.dispatch(transaction);
-              return true;
+              const to = editorView.posAtDOM(
+                nativeRange.endContainer,
+                nativeRange.endOffset,
+              );
+              const contentFrom = pos + 1;
+              const contentTo = pos + contentNode.nodeSize - 1;
+              if (
+                contentFrom <= from &&
+                from <= to &&
+                to <= contentTo
+              ) {
+                event.preventDefault();
+                const transaction = editorView.state.tr.delete(from, to);
+                transaction.setSelection(
+                  TextSelection.near(transaction.doc.resolve(from)),
+                );
+                editorView.dispatch(transaction);
+                return true;
+              }
+            } catch {
+              // Fall back to the synced ProseMirror selection below when the
+              // browser range points at a transient DOM node.
             }
           }
         }

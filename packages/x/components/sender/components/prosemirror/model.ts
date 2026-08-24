@@ -6,6 +6,30 @@ import type { SkillType, SlotConfigType } from "../../interface";
 
 import { HistoryValueStore, isSameValue, snapshotValue } from "./value";
 
+function stringifyLabel(value: unknown): string {
+  if (value === undefined || value === null || typeof value === "boolean") {
+    return "";
+  }
+  if (typeof value === "string" || typeof value === "number") {
+    return `${value}`;
+  }
+  if (Array.isArray(value)) {
+    return value.map(stringifyLabel).join("");
+  }
+  if ((value as any).__v_isVNode) {
+    const children = (value as any).children;
+    if (typeof children === "function") return stringifyLabel(children());
+    if (children && typeof children === "object" && !Array.isArray(children)) {
+      const defaultSlot = children.default;
+      if (typeof defaultSlot === "function") {
+        return stringifyLabel(defaultSlot());
+      }
+    }
+    return stringifyLabel(children);
+  }
+  return stringifyValue(value);
+}
+
 export const senderSchema = new Schema({
   nodes: {
     doc: { content: "inline*" },
@@ -81,7 +105,9 @@ export function getSlotValue(config: SlotConfigType): unknown {
   if (Object.prototype.hasOwnProperty.call(rawConfig, "value")) {
     return rawConfig.value;
   }
-  if (config.type === "tag") return config.props?.value ?? "";
+  if (config.type === "tag") {
+    return config.props?.value ?? stringifyLabel(config.props?.label);
+  }
   if (config.type === "select") {
     const defaultValue = config.props?.defaultValue;
     const options = config.props?.options ?? [];
@@ -201,6 +227,8 @@ export function documentToResult(
     if (definition.type === "content") text.push(displayValue);
     else text.push(displayValue);
 
+    // Keep custom slot values round-trippable for controlled usage. The
+    // formatted value is only the message text, not the structured value.
     const structuredValue =
       definition.type === "custom" ? snapshotValue(rawValue) : displayValue;
     slotConfig.push({
