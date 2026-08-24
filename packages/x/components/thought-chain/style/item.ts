@@ -21,7 +21,7 @@ const genItemStyle: GenerateStyle<ThoughtChainItemToken> = token => {
       boxSizing: "border-box",
       lineHeight: token.lineHeight,
       borderRadius: token.borderRadius,
-      alignItems: "baseline",
+      alignItems: "center",
 
       [`&${itemCls}-rtl`]: {
         direction: "rtl",
