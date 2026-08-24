@@ -5,14 +5,16 @@ import { Flex } from "antdv-next";
 import { useConfig } from "antdv-next/config-provider/context";
 import { computed, defineComponent, ref, useAttrs, watch } from "vue";
 
-import type { SlotTextAreaRef } from "./components/SlotTextArea";
+import type { SlotTextAreaRef } from "./components/SlotTextAreaProseMirror";
 import type { TextAreaRef } from "./components/TextArea";
 import type {
   AllowSpeech,
   BaseNode,
   InsertPosition,
   NodeRender,
+  SenderCopyInfo,
   SenderFocusOptions,
+  SenderPasteInfo,
   SenderRef,
   SkillType,
   SlotConfigType,
@@ -27,7 +29,7 @@ import {
 import ClearButton from "./components/ClearButton";
 import LoadingButton from "./components/LoadingButton";
 import SendButton from "./components/SendButton";
-import SlotTextArea from "./components/SlotTextArea";
+import SlotTextArea from "./components/SlotTextAreaProseMirror";
 import SpeechButton from "./components/SpeechButton";
 import TextArea from "./components/TextArea";
 import { provideSenderContext } from "./context";
@@ -138,11 +140,25 @@ export default defineComponent({
       default: undefined,
     },
     onPaste: {
-      type: Function as PropType<(event: ClipboardEvent) => void>,
+      type: Function as PropType<
+        (event: ClipboardEvent, info: SenderPasteInfo) => void
+      >,
       default: undefined,
     },
     onPasteFile: {
       type: Function as PropType<(files: FileList) => void>,
+      default: undefined,
+    },
+    onCopy: {
+      type: Function as PropType<
+        (event: ClipboardEvent, info: SenderCopyInfo) => void
+      >,
+      default: undefined,
+    },
+    onCut: {
+      type: Function as PropType<
+        (event: ClipboardEvent, info: SenderCopyInfo) => void
+      >,
       default: undefined,
     },
     onFocus: {
@@ -223,7 +239,12 @@ export default defineComponent({
 
     // Events
     const triggerSend = () => {
-      if (!props.onSubmit || props.loading || submitDisabled.value) {
+      if (
+        !props.onSubmit ||
+        props.disabled ||
+        props.loading ||
+        submitDisabled.value
+      ) {
         return;
       }
 
@@ -302,6 +323,8 @@ export default defineComponent({
         onKeyDown: props.onKeyDown,
         onPaste: props.onPaste,
         onPasteFile: props.onPasteFile,
+        onCopy: props.onCopy,
+        onCut: props.onCut,
         disabled: props.disabled,
         readOnly: props.readOnly,
         submitType: props.submitType,

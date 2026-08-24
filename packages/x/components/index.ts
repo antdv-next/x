@@ -178,7 +178,12 @@ export type {
 
 export { setupCodeHighlighter } from "./code-highlighter";
 
-export type { SenderProps, SenderRef } from "./sender";
+export type {
+  SenderCopyInfo,
+  SenderPasteInfo,
+  SenderProps,
+  SenderRef,
+} from "./sender";
 export type {
   RenderChildrenProps,
   SuggestionItem,
