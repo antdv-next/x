@@ -785,6 +785,12 @@ export default defineComponent({
       const nodeView: ManagedNodeView = {
         dom,
         refresh,
+        selectNode() {
+          dom.classList.add(`${prefixCls.value}-slot-selected`);
+        },
+        deselectNode() {
+          dom.classList.remove(`${prefixCls.value}-slot-selected`);
+        },
         update(nextNode) {
           if (nextNode.type !== node.type) return false;
           node = nextNode;
@@ -1194,11 +1200,7 @@ export default defineComponent({
               );
               const contentFrom = pos + 1;
               const contentTo = pos + contentNode.nodeSize - 1;
-              if (
-                contentFrom <= from &&
-                from <= to &&
-                to <= contentTo
-              ) {
+              if (contentFrom <= from && from <= to && to <= contentTo) {
                 event.preventDefault();
                 const transaction = editorView.state.tr.delete(from, to);
                 transaction.setSelection(
