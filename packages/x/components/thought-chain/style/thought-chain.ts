@@ -29,7 +29,7 @@ const genThoughtChainStyle: GenerateStyle<ThoughtChainToken> = token => {
       [`${componentCls}-node`]: {
         position: "relative",
         display: "flex",
-        alignItems: "center",
+        alignItems: "baseline",
         gap: token.marginSM,
 
         // Status colors inside node
