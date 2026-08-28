@@ -1,3 +1,8 @@
+# Dependencies
+node_modules
+.pnpm-store/
+.worktrees
+
 # Logs
 logs
 *.log
@@ -7,13 +12,16 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-.DS_Store
-.worktrees
+# Environment & local files
+.env
+.env.*
+!.env.example
+*.local
+
+# Build outputs
 dist
 dist-ssr
 coverage
-*.local
 packages/x/es
 packages/x-markdown/plugins
 packages/x-markdown/themes
@@ -28,20 +36,19 @@ packages/x-markdown/themes
 *.sln
 *.sw?
 
+# Tooling caches
 *.tsbuildinfo
-
 .eslintcache
+__screenshots__/
 
 # Cypress
 /cypress/videos/
 /cypress/screenshots/
 
-# Vitest
-__screenshots__/
-
 # Vite
 *.timestamp-*-*.mjs
 
+# Auto-generated types & docs assets
 **/types/auto-imports.d.ts
 **/types/components.d.ts
 packages/docs/public/**/*.md
@@ -52,5 +59,10 @@ packages/docs/public/search.cn.json
 packages/docs/public/search.en.json
 packages/docs/src/assets/token-meta.json
 packages/docs/src/assets/token.json
+
+# Sync tooling
 .sync-upstream.local.json
 .sync-checklist-*.md
+
+# OS
+.DS_Store

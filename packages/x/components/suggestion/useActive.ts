@@ -8,6 +8,20 @@ interface ActiveItem {
 }
 
 /**
+ * An Enter pressed with a modifier or while an IME is composing belongs to the trigger
+ * (submit, newline, candidate confirmation), never to the suggestion list.
+ */
+function isPlainEnter(event: KeyboardEvent) {
+  return (
+    !event.isComposing &&
+    !event.shiftKey &&
+    !event.ctrlKey &&
+    !event.altKey &&
+    !event.metaKey
+  );
+}
+
+/**
  * Cascader does not expose active item control, so we use `value` to mirror focus path.
  */
 export default function useActive(
@@ -70,6 +84,31 @@ export default function useActive(
     }
   };
 
+  const getActiveItem = () => {
+    let currentItems = items.value;
+    let activeItem: ActiveItem | undefined;
+
+    for (const activePath of activePaths.value) {
+      activeItem = currentItems.find(item => item.value === activePath);
+      if (!activeItem) return undefined;
+      currentItems = activeItem.children || [];
+    }
+
+    return activeItem;
+  };
+
+  /**
+   * Whether this Enter belongs to the popup: it needs an open popup, a plain Enter and a
+   * leaf item to select. Anything else stays with the trigger, so the input can still
+   * submit, insert a newline or confirm an IME candidate.
+   */
+  const shouldSelectOnEnter = (event: KeyboardEvent) => {
+    if (!open.value || !isPlainEnter(event)) return false;
+
+    const activeItem = getActiveItem();
+    return !!activeItem && !activeItem.children?.length;
+  };
+
   const onKeyDown = (event: KeyboardEvent) => {
     if (!open.value) return;
 
@@ -102,12 +141,27 @@ export default function useActive(
         event.preventDefault();
         event.stopPropagation();
         break;
-      case "Enter":
+      case "Enter": {
+        if (!isPlainEnter(event)) break;
+
+        const activeItem = getActiveItem();
+        // Nothing to act on (empty list): let the trigger keep the key.
+        if (!activeItem) break;
+
         event.preventDefault();
+
+        // A parent item cannot be selected, so Enter expands it like ArrowRight does.
+        if (activeItem.children?.length) {
+          offsetNext();
+          event.stopPropagation();
+        }
+
         return false;
+      }
       case "Escape":
         onCancel();
         event.preventDefault();
+        event.stopPropagation();
         break;
       default:
         break;
@@ -124,5 +178,5 @@ export default function useActive(
     { immediate: true },
   );
 
-  return [activePaths, onKeyDown] as const;
+  return [activePaths, onKeyDown, shouldSelectOnEnter] as const;
 }

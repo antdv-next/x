@@ -136,6 +136,17 @@ export interface SkillType {
 
 // ===================== SenderProps =====================
 
+export interface SenderCopyInfo {
+  value: string;
+  slotConfig: SlotConfigType[];
+  skill?: SkillType;
+  text: string;
+}
+export interface SenderPasteInfo {
+  text: string;
+  slotConfig: SlotConfigType[];
+  skill?: SkillType;
+}
 export interface SenderProps {
   prefixCls?: string;
   defaultValue?: string;
@@ -160,8 +171,10 @@ export interface SenderProps {
   onCancel?: () => void;
   onKeyDown?: (event: KeyboardEvent) => void | false;
   onKeyUp?: (event: KeyboardEvent) => void;
-  onPaste?: (event: ClipboardEvent) => void;
+  onPaste?: (event: ClipboardEvent, info: SenderPasteInfo) => void;
   onPasteFile?: (files: FileList) => void;
+  onCopy?: (event: ClipboardEvent, info: SenderCopyInfo) => void;
+  onCut?: (event: ClipboardEvent, info: SenderCopyInfo) => void;
   onFocus?: (event: FocusEvent) => void;
   onBlur?: (event: FocusEvent) => void;
   classNames?: Partial<Record<SemanticType, string>>;

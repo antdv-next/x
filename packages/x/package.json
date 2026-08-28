@@ -1,6 +1,6 @@
 {
   "name": "@antdv-next/x",
-  "version": "1.2.1",
+  "version": "1.2.3-beta.1",
   "license": "MIT",
   "files": [
     "dist",
@@ -68,6 +68,12 @@
     "antdv-next": "catalog:prod",
     "dayjs": "catalog:prod",
     "mermaid": "catalog:prod",
+    "prosemirror-commands": "catalog:prod",
+    "prosemirror-history": "catalog:prod",
+    "prosemirror-keymap": "catalog:prod",
+    "prosemirror-model": "catalog:prod",
+    "prosemirror-state": "catalog:prod",
+    "prosemirror-view": "catalog:prod",
     "shiki": "catalog:docs",
     "vue": "catalog:prod"
   },

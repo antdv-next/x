@@ -18,3 +18,17 @@ Docs are local at `node_modules/vite-plus/docs` or online at https://viteplus.de
 - [ ] If setup, runtime, or package-manager behavior looks wrong, run `vp env doctor` and include its output when asking for help.
 
 <!--VITE PLUS END-->
+
+## Clipboard callback boundary
+
+`Sender` clipboard callbacks (`onPaste`, `onCopy`, and `onCut`) are escape
+hatches for application-owned edge cases. They expose the native
+`ClipboardEvent` and selection context, but the framework must not interpret
+callback return values or provide a return-value protocol for replacing text,
+rewriting clipboard payloads, or restoring structured slots. Consumers that
+take over an operation must call `event.preventDefault()` and update their
+controlled state or clipboard data themselves.
+
+The framework remains responsible for routing these callbacks from every
+built-in editing surface, honoring `event.preventDefault()`, providing correct
+selection information, and enforcing `disabled` and `readOnly` invariants.

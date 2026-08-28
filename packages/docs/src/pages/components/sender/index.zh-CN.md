@@ -15,6 +15,7 @@ description: 用于聊天的输入框组件。
 <demo src="./demo/switch.vue">功能开关</demo>
 <demo src="./demo/slot-filling.vue">词槽模式</demo>
 <demo src="./demo/slot-format-result.vue">词槽格式化</demo>
+<demo src="./demo/clipboard.vue">复制粘贴</demo>
 <demo src="./demo/ref-action.vue">实例方法</demo>
 <demo src="./demo/submit-type.vue">提交方式</demo>
 <demo src="./demo/speech.vue">语音输入</demo>
@@ -37,34 +38,32 @@ description: 用于聊天的输入框组件。
 
 ### SenderProps
 
-| 属性            | 说明                                                                                              | 类型                                                                                       | 默认值           |
-| --------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ---------------- |
-| allowSpeech     | 是否允许语音输入                                                                                  | `boolean \| SpeechConfig`                                                                  | `false`          |
-| classNames      | 样式类名                                                                                          | `Partial<Record<SemanticType, string>>`                                                    | -                |
-| defaultValue    | 输入框默认值                                                                                      | `string`                                                                                   | -                |
-| disabled        | 是否禁用                                                                                          | `boolean`                                                                                  | `false`          |
-| loading         | 是否加载中                                                                                        | `boolean`                                                                                  | `false`          |
-| suffix          | 后缀内容，默认展示操作按钮，当不需要默认操作按钮时，可以设为 `false`                              | `VNodeChild \| false \| NodeRender`                                                        | 默认操作按钮     |
-| header          | 头部面板                                                                                          | `VNodeChild \| false \| NodeRender`                                                        | `false`          |
-| prefix          | 前缀内容                                                                                          | `VNodeChild \| false \| NodeRender`                                                        | `false`          |
-| footer          | 底部内容                                                                                          | `VNodeChild \| false \| NodeRender`                                                        | `false`          |
-| readOnly        | 是否让输入框只读                                                                                  | `boolean`                                                                                  | `false`          |
-| rootClass       | 根元素样式类                                                                                      | `string`                                                                                   | -                |
-| styles          | 语义化定义样式                                                                                    | `Partial<Record<SemanticType, CSSProperties>>`                                             | -                |
-| submitType      | 提交模式                                                                                          | `'enter' \| 'shiftEnter'`                                                                  | `'enter'`        |
-| value (v-model) | 输入框值                                                                                          | `string`                                                                                   | -                |
-| onSubmit        | 点击发送按钮的回调                                                                                | `(message: string, slotConfig?: SlotConfigType[], skill?: SkillType) => void`              | -                |
-| onChange        | 输入框值改变的回调                                                                                | `(value: string, event?: Event, slotConfig?: SlotConfigType[], skill?: SkillType) => void` | -                |
-| onCancel        | 点击取消按钮的回调                                                                                | `() => void`                                                                               | -                |
-| onPaste         | 粘贴回调                                                                                          | `(event: ClipboardEvent) => void`                                                          | -                |
-| onPasteFile     | 黏贴文件的回调                                                                                    | `(files: FileList) => void`                                                                | -                |
-| onKeyDown       | 键盘按下回调                                                                                      | `(event: KeyboardEvent) => void \| false`                                                  | -                |
-| onFocus         | 获取焦点回调                                                                                      | `(event: FocusEvent) => void`                                                              | -                |
-| onBlur          | 失去焦点回调                                                                                      | `(event: FocusEvent) => void`                                                              | -                |
-| placeholder     | 输入框占位符                                                                                      | `string`                                                                                   | -                |
-| autoSize        | 自适应内容高度，可设置为 true \| false 或对象：`{ minRows?: number; maxRows?: number }`           | `boolean \| { minRows?: number; maxRows?: number }`                                        | `{ maxRows: 8 }` |
-| slotConfig      | 词槽配置，配置后输入框将变为词槽模式，支持结构化输入，此模式 `value` 和 `defaultValue` 配置将无效 | `SlotConfigType[]`                                                                         | -                |
-| skill           | 技能配置，输入框将变为词槽模式，支持结构化输入，此模式 `value` 和 `defaultValue` 配置将无效       | `SkillType`                                                                                | -                |
+| 属性         | 说明                                                                                              | 类型                                                                                       | 默认值           |
+| ------------ | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ---------------- |
+| allowSpeech  | 是否允许语音输入                                                                                  | `boolean \| SpeechConfig`                                                                  | `false`          |
+| classNames   | 样式类名                                                                                          | `Partial<Record<SemanticType, string>>`                                                    | -                |
+| defaultValue | 输入框默认值                                                                                      | `string`                                                                                   | -                |
+| disabled     | 是否禁用                                                                                          | `boolean`                                                                                  | `false`          |
+| loading      | 是否加载中                                                                                        | `boolean`                                                                                  | `false`          |
+| suffix       | 后缀内容，默认展示操作按钮，当不需要默认操作按钮时，可以设为 `false`                              | `VNodeChild \| false \| NodeRender`                                                        | 默认操作按钮     |
+| header       | 头部面板                                                                                          | `VNodeChild \| false \| NodeRender`                                                        | `false`          |
+| prefix       | 前缀内容                                                                                          | `VNodeChild \| false \| NodeRender`                                                        | `false`          |
+| footer       | 底部内容                                                                                          | `VNodeChild \| false \| NodeRender`                                                        | `false`          |
+| readOnly     | 是否让输入框只读                                                                                  | `boolean`                                                                                  | `false`          |
+| rootClass    | 根元素样式类                                                                                      | `string`                                                                                   | -                |
+| styles       | 语义化定义样式                                                                                    | `Partial<Record<SemanticType, CSSProperties>>`                                             | -                |
+| submitType   | 提交模式                                                                                          | `'enter' \| 'shiftEnter'`                                                                  | `'enter'`        |
+| onSubmit     | 点击发送按钮的回调                                                                                | `(message: string, slotConfig?: SlotConfigType[], skill?: SkillType) => void`              | -                |
+| onChange     | 输入框值改变的回调                                                                                | `(value: string, event?: Event, slotConfig?: SlotConfigType[], skill?: SkillType) => void` | -                |
+| onCancel     | 点击取消按钮的回调                                                                                | `() => void`                                                                               | -                |
+| onPaste      | 粘贴回调；需要接管时调用 `event.preventDefault()` 并由业务更新受控状态                            | `(event: ClipboardEvent, info: SenderPasteInfo) => void`                                   | -                |
+| onPasteFile  | 黏贴文件的回调                                                                                    | `(files: FileList) => void`                                                                | -                |
+| onCopy       | 复制回调；需要接管时调用 `event.preventDefault()` 并由业务写入剪贴板                              | `(event: ClipboardEvent, info: SenderCopyInfo) => void`                                    | -                |
+| onCut        | 剪切回调；需要接管时调用 `event.preventDefault()` 并由业务更新受控状态                            | `(event: ClipboardEvent, info: SenderCopyInfo) => void`                                    | -                |
+| onKeyDown    | 键盘按下回调                                                                                      | `(event: KeyboardEvent) => void \| false`                                                  | -                |
+| autoSize     | 自适应内容高度，可设置为 true \| false 或对象：`{ minRows?: number; maxRows?: number }`           | `boolean \| { minRows?: number; maxRows?: number }`                                        | `{ maxRows: 8 }` |
+| slotConfig   | 词槽配置，配置后输入框将变为词槽模式，支持结构化输入，此模式 `value` 和 `defaultValue` 配置将无效 | `SlotConfigType[]`                                                                         | -                |
+| skill        | 技能配置，输入框将变为词槽模式，支持结构化输入，此模式 `value` 和 `defaultValue` 配置将无效       | `SkillType`                                                                                | -                |
 
 ### 事件
 
@@ -246,7 +245,33 @@ interface SenderFocusOptions extends FocusOptions {
 - **词槽模式下，`value` 和 `defaultValue` 属性无效**，请使用 `ref` 及回调事件获取输入框的值和词槽配置。
 - **词槽模式下，`onChange`/`onSubmit` 回调的第三个参数 `slotConfig`**，仅用于获取当前结构化内容。
 
-## 语义化 DOM
+### 复制 / 粘贴
+
+- **默认仅拼 `value` 字符串**：`copy/cut/paste` 默认只处理 `text/plain`，不自动还原 `tag/select/custom/skill`，避免框架处理复杂边界。
+- **业务接管复杂场景**：`onPaste/onCopy/onCut` 是原生事件逃生口，框架忽略回调返回值。`return false`、`return "replacement"` 等返回值不会阻止默认操作，也不会替换粘贴内容。
+- 需要覆盖默认行为时，必须调用 `event.preventDefault()`，并由业务更新受控状态或写入剪贴板；未调用 `preventDefault()` 时，框架仍会继续执行默认的 `text/plain` 处理。详见 `clipboard.vue`。
+
+```ts
+const onPaste = (event: ClipboardEvent, info: SenderPasteInfo) => {
+  // return false; // 无效：不会阻止默认粘贴
+  event.preventDefault();
+  // 由业务自行处理 info.text，并更新受控 value/slotConfig
+};
+```
+
+```typescript
+interface SenderCopyInfo {
+  value: string;
+  slotConfig: SlotConfigType[];
+  skill?: SkillType;
+  text: string;
+}
+interface SenderPasteInfo {
+  text: string;
+  slotConfig: SlotConfigType[];
+  skill?: SkillType;
+}
+```
 
 <demo src="./demo/_semantic.vue" simplify>Sender 语义结构</demo>
 

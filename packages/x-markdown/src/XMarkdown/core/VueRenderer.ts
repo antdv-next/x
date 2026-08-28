@@ -63,6 +63,7 @@ export class VueRenderer {
   constructor(options: RendererOptions = {}) {
     this.options = {
       components: options.components ?? {},
+      componentsProps: options.componentsProps ?? {},
       enableAnimation: options.enableAnimation ?? true,
       animationConfig: {
         fadeDuration:
@@ -267,13 +268,27 @@ export class VueRenderer {
   ): ComponentProps {
     const props: ComponentProps = {};
 
-    cidRef.tagIndexes[tagName] = (cidRef.tagIndexes[tagName] ?? 0) + 1;
-    const instanceId = getTagInstanceId(tagName, cidRef.tagIndexes[tagName]);
-    props.streamStatus = unclosedTags.has(instanceId) ? "loading" : "done";
-
+    // Parsed HTML attributes first.
     Array.from(element.attributes).forEach(attr => {
       props[attr.name] = attr.value;
     });
+    const htmlClass = typeof props.class === "string" ? props.class : "";
+
+    // componentsProps are merged over the parsed HTML attributes, so extra
+    // business props can be passed without wrapping components inline.
+    const extraProps = this.options.componentsProps[tagName] ?? {};
+    Object.assign(props, extraProps);
+
+    // Internally computed props are applied last so that neither parsed HTML
+    // attributes nor componentsProps can shadow them.
+    cidRef.tagIndexes[tagName] = (cidRef.tagIndexes[tagName] ?? 0) + 1;
+    const instanceId = getTagInstanceId(tagName, cidRef.tagIndexes[tagName]);
+    props.streamStatus = unclosedTags.has(instanceId) ? "loading" : "done";
+    props.domNode = element as HTMLElement;
+
+    // Children are always passed through the default slot; a `children` key
+    // from HTML attributes or componentsProps must not leak into props.
+    delete props.children;
 
     if (tagName === "code") {
       const blockAttr = element.getAttribute("data-block");
@@ -292,8 +307,22 @@ export class VueRenderer {
       const lang = langFromData || langFromClass;
       if (lang) {
         props.lang = lang;
+      } else {
+        // No language metadata: inline code and unlabeled fences must not inherit
+        // a `lang` from the HTML attributes or componentsProps.
+        delete props.lang;
       }
     }
+
+    // class/className merging: componentsProps' class name comes first and both
+    // sides are concatenated. Vue convention: the merged value goes to `class`.
+    const extraClass =
+      extraProps.className ?? extraProps.classname ?? extraProps.class;
+    if (typeof extraClass === "string") {
+      props.class = [extraClass, htmlClass].filter(Boolean).join(" ").trim();
+    }
+    delete props.className;
+    delete props.classname;
 
     return props;
   }
@@ -311,6 +340,12 @@ export class VueRenderer {
       this.options.components = {
         ...this.options.components,
         ...options.components,
+      };
+    }
+    if (options.componentsProps) {
+      this.options.componentsProps = {
+        ...this.options.componentsProps,
+        ...options.componentsProps,
       };
     }
     if (options.enableAnimation !== undefined) {

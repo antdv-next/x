@@ -22,12 +22,19 @@ const genSlotTextAreaStyle: GenerateStyle<SenderToken> = token => {
         cursor: "text",
         whiteSpace: "pre-wrap",
         width: "100%",
+        position: "relative",
         caretColor: token.colorPrimary,
         fontSize: token.fontSize,
         lineHeight: token.lineHeight,
-        [`&:empty::before`]: {
+        [`&[data-empty]::before`]: {
           content: "attr(data-placeholder)",
           color: token.colorTextPlaceholder,
+          position: "absolute",
+          insetInlineStart: 0,
+          top: 0,
+          pointerEvents: "none",
+          userSelect: "none",
+          whiteSpace: "pre-wrap",
         },
       },
       [`${slotCls}:not(${slotContentCls})`]: {

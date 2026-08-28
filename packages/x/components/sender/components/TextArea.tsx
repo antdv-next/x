@@ -1,7 +1,7 @@
 import { TextArea as ATextarea } from "antdv-next";
 import { defineComponent, ref } from "vue";
 
-import type { SenderFocusOptions } from "../interface";
+import type { SenderCopyInfo, SenderFocusOptions } from "../interface";
 
 import { useSenderContext } from "../context";
 
@@ -24,7 +24,13 @@ export default defineComponent({
     const isComposing = ref(false);
 
     const getNativeEl = (): HTMLTextAreaElement | null => {
-      return (inputRef.value as any)?.nativeElement ?? null;
+      return (
+        (
+          inputRef.value as unknown as {
+            nativeElement?: HTMLTextAreaElement | null;
+          }
+        )?.nativeElement ?? null
+      );
     };
 
     expose<TextAreaRef>({
@@ -101,13 +107,54 @@ export default defineComponent({
       const ctx = senderCtx.value;
       const files = e.clipboardData?.files;
       const text = e.clipboardData?.getData("text/plain");
-      if (!text && files?.length && ctx.onPasteFile) {
+      const info = { text: text ?? "", slotConfig: [], skill: undefined };
+      ctx.onPaste?.(e, info);
+      if (
+        !e.defaultPrevented &&
+        !ctx.disabled &&
+        !ctx.readOnly &&
+        !text &&
+        files?.length &&
+        ctx.onPasteFile
+      ) {
         ctx.onPasteFile(files);
         e.preventDefault();
       }
-      ctx.onPaste?.(e);
     };
 
+    const getSelectedText = (): string => {
+      const el = getNativeEl();
+      if (!el) return "";
+      const start = el.selectionStart ?? 0;
+      const end = el.selectionEnd ?? start;
+      return el.value.slice(start, end);
+    };
+
+    const onInternalCopy = (e: ClipboardEvent) => {
+      const ctx = senderCtx.value;
+      if (!ctx.onCopy) return;
+      const text = getSelectedText();
+      const info: SenderCopyInfo = {
+        value: text,
+        slotConfig: [],
+        skill: undefined,
+        text,
+      };
+      ctx.onCopy(e, info);
+    };
+
+    const onInternalCut = (e: ClipboardEvent) => {
+      const ctx = senderCtx.value;
+      if (!ctx.onCut) return;
+      const text = getSelectedText();
+      const info: SenderCopyInfo = {
+        value: text,
+        slotConfig: [],
+        skill: undefined,
+        text,
+      };
+      ctx.onCut(e, info);
+    };
     return () => {
       const ctx = senderCtx.value;
 
@@ -131,7 +178,11 @@ export default defineComponent({
             isComposing.value = false;
           }}
           onKeydown={onInternalKeyDown}
-          {...{ onPaste: onInternalPaste }}
+          {...{
+            onPaste: onInternalPaste,
+            onCopy: onInternalCopy,
+            onCut: onInternalCut,
+          }}
           variant="borderless"
           readonly={ctx.readOnly}
           placeholder={ctx.placeholder}

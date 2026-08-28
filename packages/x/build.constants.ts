@@ -1,4 +1,4 @@
-export const LIB_EXTERNALS = [
+export const UMD_EXTERNALS = [
   "vue",
   "antdv-next",
   /^antdv-next\/.*/,
@@ -15,6 +15,16 @@ export const LIB_EXTERNALS = [
   /^mermaid\/.*/,
   "shiki",
   /^shiki\/.*/,
+];
+
+export const LIB_EXTERNALS = [
+  ...UMD_EXTERNALS,
+  /^prosemirror-.*/,
+  "prosemirror-transform",
+  "orderedmap",
+  "w3c-keyname",
+  "rope-sequence",
+  "crelt",
 ];
 
 export const TEST_FILE_PATTERNS = [

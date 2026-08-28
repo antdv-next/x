@@ -1,21 +1,20 @@
+import type { CSSObject } from "@antdv-next/cssinjs";
+
 import { unit } from "@antdv-next/cssinjs";
 
 import type { FullToken, GenerateStyle } from "../../theme/interface";
 
 export interface ThoughtChainToken extends FullToken<"ThoughtChain"> {}
 
-const genThoughtChainStyle: GenerateStyle<ThoughtChainToken> = token => {
+const genThoughtChainStyle: GenerateStyle<ThoughtChainToken, CSSObject> = (
+  token,
+): CSSObject => {
   const { componentCls, calc } = token;
-  const iconSize = (token as any).iconSize ?? token.fontSize;
-
   return {
     [componentCls]: {
-      // Root box
       [`&${componentCls}-box`]: {
         display: "flex",
         flexDirection: "column",
-
-        // Last node: hide connector line
         [`& ${componentCls}-node:last-of-type`]: {
           [`> ${componentCls}-node-icon`]: {
             "&:after": {
@@ -24,15 +23,11 @@ const genThoughtChainStyle: GenerateStyle<ThoughtChainToken> = token => {
           },
         },
       },
-
-      // Node
       [`${componentCls}-node`]: {
         position: "relative",
         display: "flex",
         alignItems: "baseline",
         gap: token.marginSM,
-
-        // Status colors inside node
         [`${componentCls}-status-error`]: {
           color: token.colorError,
         },
@@ -43,90 +38,62 @@ const genThoughtChainStyle: GenerateStyle<ThoughtChainToken> = token => {
           color: token.colorPrimary,
         },
       },
-
-      // Header (column layout: title above description)
       [`${componentCls}-node-header`]: {
         display: "flex",
         flexDirection: "column",
       },
-
-      // Title
       [`${componentCls}-node-title`]: {
         fontWeight: 500,
         display: "flex",
         gap: token.marginXS,
       },
-
-      // Collapsible title
       [`${componentCls}-node-collapsible`]: {
         paddingInlineEnd: token.padding,
         cursor: "pointer",
       },
-
-      // Footer
       [`${componentCls}-node-footer`]: {
         marginBottom: token.margin,
       },
-
-      // Content box
       [`${componentCls}-node-content-box`]: {
         marginBottom: token.margin,
       },
-
-      // Collapse icon
       [`${componentCls}-node-collapse-icon`]: {
         "& svg": {
           transition: `transform ${token.motionDurationMid} ${token.motionEaseInOut}`,
         },
       },
-
-      // Description
       [`${componentCls}-node-description`]: {
         color: token.colorTextDescription,
         fontSize: token.fontSize,
         lineHeight: token.lineHeight,
         marginBlockEnd: token.margin,
       },
-
-      // Icon container with connector line
       [`${componentCls}-node-icon`]: {
         lineHeight: 1,
-        fontSize: iconSize,
-
+        fontSize: token.iconSize,
         "&:after": {
           content: '""',
           position: "absolute",
           height: unit(
-            calc("100%").sub(calc(iconSize).mul(token.lineHeight)).equal(),
+            calc("100%")
+              .sub(calc(token.iconSize).mul(token.lineHeight))
+              .equal(),
           ),
           borderInlineStart: `${unit(token.lineWidth)} solid ${token.colorFillContent}`,
-          insetInlineStart: unit(calc(iconSize).sub(1).div(2).equal()),
-          top: unit(calc(iconSize).mul(token.lineHeight).equal()),
+          insetInlineStart: unit(calc(token.iconSize).sub(1).div(2).equal()),
+          top: unit(calc(token.iconSize).mul(token.lineHeight).equal()),
         },
       },
-
-      // Hidden line
-      [`${componentCls}-node-icon-none`]: {
-        "&:after": {
-          display: "none",
-        },
-      },
-
-      // Dashed line
       [`${componentCls}-node-icon-dashed`]: {
         "&:after": {
           borderInlineStart: `${unit(token.lineWidth)} dashed ${token.colorFillContent}`,
         },
       },
-
-      // Dotted line
       [`${componentCls}-node-icon-dotted`]: {
         "&:after": {
           borderInlineStart: `${unit(token.lineWidth)} dotted ${token.colorFillContent}`,
         },
       },
-
-      // Default index icon (numbered circle)
       [`${componentCls}-node-index-icon`]: {
         display: "inline-flex",
         alignItems: "center",
@@ -134,37 +101,17 @@ const genThoughtChainStyle: GenerateStyle<ThoughtChainToken> = token => {
         lineHeight: 1,
         color: token.colorTextSecondary,
         fontSize: token.fontSizeSM,
-        width: iconSize,
-        height: iconSize,
+        width: token.iconSize,
+        height: token.iconSize,
         backgroundColor: token.colorFillContent,
-        borderRadius: unit(calc(iconSize).div(2).equal()),
+        borderRadius: unit(calc(token.iconSize).div(2).equal()),
       },
-
-      // Status
-      [`${componentCls}-status`]: {
-        display: "inline-flex",
-        alignItems: "center",
-        fontSize: iconSize,
-      },
-
-      [`${componentCls}-status-abort`]: {
-        color: token.colorTextQuaternary,
-      },
-
-      // Collapse transition
-      [`${componentCls}-collapse-enter-active, ${componentCls}-collapse-leave-active`]:
-        {
-          transition: `height ${token.motionDurationMid} ${token.motionEaseInOut}, opacity ${token.motionDurationMid} ${token.motionEaseInOut}`,
-          overflow: "hidden",
-        },
-
-      // RTL
       [`&${componentCls}-rtl`]: {
         direction: "rtl",
         [`${componentCls}-node-icon`]: {
           "&:after": {
             insetInlineStart: "unset",
-            insetInlineEnd: unit(calc(iconSize).sub(1).div(2).equal()),
+            insetInlineEnd: unit(calc(token.iconSize).sub(1).div(2).equal()),
           },
         },
       },

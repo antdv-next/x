@@ -105,19 +105,51 @@ import "@antdv-next/x-markdown/themes/light.css";
 
 ### Props
 
-| Property                 | Description                             | Type                        | Default         |
-| ------------------------ | --------------------------------------- | --------------------------- | --------------- |
-| content                  | Markdown content to render              | `string`                    | -               |
-| components               | Map HTML nodes to custom Vue components | `Record<string, Component>` | -               |
-| streaming                | Streaming behavior config               | `StreamingOption`           | -               |
-| config                   | Marked parse config                     | `MarkedConfig`              | `{ gfm: true }` |
-| className                | Extra CSS class for root container      | `string`                    | -               |
-| style                    | Inline styles for root container        | `Record<string, string>`    | -               |
-| paragraphTag             | HTML tag for paragraphs                 | `string`                    | `'p'`           |
-| openLinksInNewTab        | Add `target="_blank"` to all links      | `boolean`                   | `true`          |
-| protectCustomTagNewlines | Preserve newlines inside custom tags    | `boolean`                   | `true`          |
-| escapeRawHtml            | Escape raw HTML as plain text           | `boolean`                   | `false`         |
-| debug                    | Enable debug mode                       | `boolean`                   | `false`         |
+| Property                 | Description                                         | Type                                      | Default         |
+| ------------------------ | --------------------------------------------------- | ----------------------------------------- | --------------- |
+| content                  | Markdown content to render                          | `string`                                  | -               |
+| components               | Map HTML nodes to custom Vue components             | `Record<string, Component>`               | -               |
+| componentsProps          | Extra props passed to custom components by tag name | `Record<string, Record<string, unknown>>` | -               |
+| streaming                | Streaming behavior config                           | `StreamingOption`                         | -               |
+| config                   | Marked parse config                                 | `MarkedConfig`                            | `{ gfm: true }` |
+| className                | Extra CSS class for root container                  | `string`                                  | -               |
+| style                    | Inline styles for root container                    | `Record<string, string>`                  | -               |
+| paragraphTag             | HTML tag for paragraphs                             | `string`                                  | `'p'`           |
+| openLinksInNewTab        | Add `target="_blank"` to all links                  | `boolean`                                 | `true`          |
+| protectCustomTagNewlines | Preserve newlines inside custom tags                | `boolean`                                 | `true`          |
+| escapeRawHtml            | Escape raw HTML as plain text                       | `boolean`                                 | `false`         |
+| debug                    | Enable debug mode                                   | `boolean`                                 | `false`         |
+
+### Passing extra props to custom components
+
+Custom components often need business data (theme, callbacks, etc.). Passing it via an inline wrapper function creates a new component on every render and forces the subtree to be re-created, losing internal state and hurting performance in streaming scenarios. Use `componentsProps` to pass extra props while keeping component references stable:
+
+```vue
+<script setup>
+import { computed, ref } from "vue";
+import { XMarkdown } from "@antdv-next/x-markdown";
+
+const theme = ref("dark");
+const components = { "custom-chart": CustomChart };
+// Keep the reference stable — an inline object literal invalidates the render
+// cache and re-parses the whole tree on every render.
+const componentsProps = computed(() => ({
+  "custom-chart": { theme: theme.value, onSelect },
+}));
+</script>
+
+<template>
+  <XMarkdown :components="components" :componentsProps="componentsProps" />
+</template>
+```
+
+`componentsProps` is keyed by tag name. Its props are merged with the parsed HTML attributes and passed to the component:
+
+- On conflict `componentsProps` wins — a `title` in `componentsProps` overrides `title="..."` from the HTML.
+- `class` / `className` is the exception: both sides are concatenated, with the `componentsProps` class name first (merged into `class`).
+- Internally computed props — `streamStatus`, `domNode`, `children` (plus `lang` and `block` for `code`) — cannot be overridden and are ignored if present in `componentsProps`.
+
+When `componentsProps` changes, the component receives a normal props update without being remounted. Like `components`, it takes part in the render cache, so passing an inline object literal invalidates that cache on every render and re-parses the whole tree — keep the reference stable (e.g. with `computed`) as shown above.
 
 ### StreamingOption
 

@@ -49,6 +49,11 @@ export interface StreamingOption {
 export interface XMarkdownProps {
   content?: string;
   components?: Record<string, Component>;
+  /**
+   * 按标签名向 `components` 中的自定义组件传递额外的 props，使组件引用保持稳定，避免内联函数导致的重复挂载
+   * Extra props passed to custom components in `components` by tag name, keeping component references stable and avoiding remounts caused by inline functions
+   */
+  componentsProps?: Record<string, Record<string, unknown>>;
   streaming?: StreamingOption;
   config?: MarkedConfig;
   debug?: boolean;
@@ -102,6 +107,7 @@ export interface ParserOptions {
 
 export interface RendererOptions {
   components?: Record<string, Component>;
+  componentsProps?: Record<string, Record<string, unknown>>;
   enableAnimation?: boolean;
   animationConfig?: {
     fadeDuration?: number;
