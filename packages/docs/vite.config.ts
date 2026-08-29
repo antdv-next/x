@@ -12,24 +12,16 @@ import { tsxResolveTypes } from "vite-plugin-tsx-resolve-types";
 import vueResolveTypes from "vite-plugin-vue-resolve-types";
 import { defineConfig } from "vite-plus";
 
-import { createOxfmtJsFormatter } from "./plugins/js-formatter";
-
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
     mdPlugin({
       markdown: {
-        // demo 锚点统一挂到 `## Examples` / `## 代码演示 {#examples}` 标题下（与 antdv-next 约定一致）
-        demo: {
-          headerMode: "examples",
-        },
         externalLink: true,
       },
       demo: {
-        virtualMode: "registry",
         renderSourceHtml: true,
         sourceVersionOnHmr: true,
-        jsFormatter: createOxfmtJsFormatter(),
       },
     }),
     vueResolveTypes(),
