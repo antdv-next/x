@@ -49,7 +49,22 @@ export default defineConfig({
     modulePreload: false,
   },
   resolve: {
+    dedupe: [
+      "vue",
+      "vue-router",
+      "@vueuse/core",
+      "antdv-next",
+      "@antdv-next/icons",
+      "antdv-style",
+      "sandpack-vue3",
+      "@codesandbox/sandpack-themes",
+      "@vue/compiler-sfc",
+      "sucrase",
+    ],
     alias: {
+      "@antdv-next/docs-plugins/component": fileURLToPath(
+        new URL("../../../docs-plugins/src/components", import.meta.url),
+      ),
       "@": fileURLToPath(new URL("./src", import.meta.url)),
       "@antdv-next/x": fileURLToPath(
         new URL("../x/components/index.ts", import.meta.url),

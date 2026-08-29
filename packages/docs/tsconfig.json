@@ -4,6 +4,9 @@
     // Path mapping for cleaner imports.
     "paths": {
       "@/*": ["./src/*"],
+      "@antdv-next/docs-plugins/component/*": [
+        "../../../docs-plugins/src/components/*"
+      ],
       "@antdv-next/x": ["../x/components/index.ts"],
       "@antdv-next/x-sdk": ["../x-sdk/src/index.ts"],
       "@antdv-next/x-card": ["../x-card/src/index.tsx"],

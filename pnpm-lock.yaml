@@ -414,6 +414,9 @@ importers:
       '@vue/compiler-sfc':
         specifier: ^3.5.29
         version: 3.5.31
+      antdv-next:
+        specifier: catalog:prod
+        version: 1.2.0(vue@3.5.31(typescript@5.9.3))
       flexsearch:
         specifier: catalog:prod
         version: 0.8.212
