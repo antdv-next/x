@@ -8,7 +8,7 @@ description: 用于聊天消息展示的气泡组件。
 
 常用于聊天的时候。
 
-## 代码演示
+## 代码演示 {#examples}
 
 <demo src="./demo/basic.vue">基本</demo>
 <demo src="./demo/variant-and-shape.vue">变体与形状</demo>

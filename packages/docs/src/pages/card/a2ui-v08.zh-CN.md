@@ -7,7 +7,7 @@ order: 0.9
 packageName: x-card
 ---
 
-## 代码示例
+## 代码演示 {#examples}
 
 <!-- prettier-ignore -->
 <demo src="./demo/a2ui-v08-basic.vue">基础</demo>

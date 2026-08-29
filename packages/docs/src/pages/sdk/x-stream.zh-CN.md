@@ -33,7 +33,7 @@ async function request() {
 }
 ```
 
-## 代码演示
+## 代码演示 {#examples}
 
 <demo src="./demo/x-stream-default-protocol.vue">默认协议 - SSE</demo>
 <demo src="./demo/x-stream-custom-protocol.vue">自定义协议</demo>

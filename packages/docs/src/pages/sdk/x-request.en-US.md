@@ -14,7 +14,7 @@ packageName: x-sdk
 - You need to send streaming requests to model services (SSE / chunked response).
 - You need unified timeout, abort, retry, and incremental update callbacks.
 
-## Code Demo
+## Examples
 
 <demo src="./demo/x-request-basic.vue">Basic Usage</demo>
 <demo src="./demo/x-request-custom-params.vue">Custom Parameters</demo>

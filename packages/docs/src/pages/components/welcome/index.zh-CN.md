@@ -12,7 +12,7 @@ description: 用于展示欢迎语、能力说明和附加操作。
 
 - 用于应用首页、空态页或对话入口，帮助用户快速理解当前产品能力。
 
-## 代码演示
+## 代码演示 {#examples}
 
 <demo src="./demo/basic.vue">基础用法</demo>
 <demo src="./demo/variant.vue">变体</demo>

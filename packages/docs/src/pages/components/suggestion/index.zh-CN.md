@@ -13,7 +13,7 @@ description: 用于在输入场景中提供快捷指令建议的组件。
 - 需要在聊天输入场景中提供快捷指令建议。
 - 需要通过键盘快速浏览并选择多级建议项。
 
-## 代码演示
+## 代码演示 {#examples}
 
 <demo src="./demo/basic.vue">基本用法</demo>
 <demo src="./demo/block.vue">整行宽度</demo>

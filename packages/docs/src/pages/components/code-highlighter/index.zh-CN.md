@@ -40,7 +40,7 @@ setupCodeHighlighter({
 });
 ```
 
-## 代码演示
+## 代码演示 {#examples}
 
 <demo src="./demo/basic.vue">基本用法</demo>
 

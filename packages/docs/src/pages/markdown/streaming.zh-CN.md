@@ -5,7 +5,7 @@ order: 4
 
 处理 **LLM 流式返回的 Markdown**：语法补全和缓存、动画以及尾缀。
 
-## 代码示例
+## 代码演示 {#examples}
 
 <demo src="./demo/streaming-format.vue">语法处理</demo>
 <demo src="./demo/streaming-animation.vue">渲染控制</demo>

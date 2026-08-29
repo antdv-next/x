@@ -13,7 +13,7 @@ packageName: x-sdk
 
 If the built-in Chat Provider does not meet your needs, you can implement the abstract class `AbstractChatProvider` (which only contains three abstract methods) to convert data from different model providers or Agentic services into a unified format that `useXChat` can consume, enabling seamless integration and switching between different models and Agents.
 
-## Usage Example
+## Examples
 
 Instantiating `Chat Provider` requires passing an `XRequest` call and setting the parameter `manual=true` so that `useXChat` can control the initiation of requests.
 

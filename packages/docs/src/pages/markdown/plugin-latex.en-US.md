@@ -10,7 +10,7 @@ order: 2
 
 When you need to render formulas in Markdown.
 
-## Code Demo
+## Examples
 
 <demo src="./demo/latex-basic.vue">Latex Basic Demo</demo>
 

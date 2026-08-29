@@ -10,7 +10,7 @@ description: 用于切换多个智能体，更新对话轮次，对话历史切�
 - 需要对多个会话进行管理
 - 查看历史会话列表
 
-## 代码演示
+## 代码演示 {#examples}
 
 <demo src="./demo/basic.vue">基本</demo>
 <demo src="./demo/controlled-mode.vue">受控模式</demo>

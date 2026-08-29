@@ -17,7 +17,7 @@ description: 系统级别发送在页面外部显示的通知。
 - XNotification 通知样式与效果均已当前浏览器环境对Notification的支持为准，例如`dir`属性会被大部分浏览器忽略。
 - XNotification 仅对当前实例下的通知进行关闭管理，实例变更后（例：浏览器页面刷新）对已发送的通知无管理关闭能力。
 
-## 代码演示
+## 代码演示 {#examples}
 
 <demo src="./demo/hooks.vue">Hooks调用</demo>
 <demo src="./demo/duration.vue">自动关闭延迟</demo>

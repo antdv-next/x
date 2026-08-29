@@ -10,7 +10,7 @@ order: 5
 
 Use this when you need syntax extensions (for example `:::note` or `==highlight==`) and want to map them to domain-specific components.
 
-## Code Demo
+## Examples
 
 <!-- prettier-ignore -->
 <demo src="./demo/custom-plugin.vue">Custom Plugin</demo>

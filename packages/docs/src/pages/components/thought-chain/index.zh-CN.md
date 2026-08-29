@@ -9,7 +9,7 @@ description: 思维链组件用于可视化和追踪 Agent 对 Actions 和 Tools
 - 调试和跟踪复杂 Agent System 中的调用链
 - 类似的链式场景中使用
 
-## 代码演示
+## 代码演示 {#examples}
 
 <demo src="./demo/basic.vue">基本</demo>
 <demo src="./demo/status.vue">节点状态</demo>

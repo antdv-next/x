@@ -12,7 +12,7 @@ packageName: x-sdk
 
 `XModelParams` defines the request parameter types for `OpenAIChatProvider`, `XModelResponse` defines the response data types, and `XModelMessage` defines the complete message data types. These types can be directly used in the generics `ChatMessage`, `Input`, and `Output` of `useXChat`.
 
-## Usage Example
+## Examples
 
 <!-- prettier-ignore -->
 <demo src="./demo/chat-provider-openai.vue">Basic</demo>

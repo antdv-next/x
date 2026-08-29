@@ -12,7 +12,7 @@ order: 2
 
 `XModelParams` 定义了 `OpenAIChatProvider` 的请求参数类型，`XModelResponse` 定义了响应数据的类型，`XModelMessage` 定义了完整的消息数据类型。这些类型可以直接在 `useXChat` 的泛型 `ChatMessage`、`Input`、`Output` 中使用。
 
-## 使用示例
+## 代码演示 {#examples}
 
 <!-- prettier-ignore -->
 <demo src="./demo/chat-provider-openai.vue">基本</demo>

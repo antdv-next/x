@@ -8,7 +8,7 @@ description: 展示大模型深度思考过程。
 
 - 用于在对话时展示大模型的深度思考过程。
 
-## 代码演示
+## 代码演示 {#examples}
 
 <demo src="./demo/basic.vue">基础用法</demo>
 <demo src="./demo/status.vue">设置状态</demo>

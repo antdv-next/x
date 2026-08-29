@@ -5,7 +5,7 @@ order: 4
 
 Handle **LLM streamed Markdown** output: syntax completion and caching, animation, and tail suffix.
 
-## Code Examples
+## Examples
 
 <demo src="./demo/streaming-format.vue">Syntax Processing</demo>
 <demo src="./demo/streaming-animation.vue">Rendering Controls</demo>

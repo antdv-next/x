@@ -8,7 +8,7 @@ description: 展示引用的数据来源地址。
 
 - 在联网搜索模式下展示引用的数据来源地址。
 
-## 代码演示
+## 代码演示 {#examples}
 
 <!-- prettier-ignore -->
 <demo src="./demo/basic.vue">基础用法</demo>

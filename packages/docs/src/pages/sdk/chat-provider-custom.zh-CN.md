@@ -307,7 +307,7 @@ onRequest({
 - 建议提供文件大小信息，提升用户体验
 - 下载链接需要确保用户有权限访问
 
-## 代码演示
+## 代码演示 {#examples}
 
 <!-- prettier-ignore -->
 <demo src="./demo/chat-provider-custom.vue">基础</demo>
