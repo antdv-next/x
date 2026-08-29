@@ -393,6 +393,9 @@ importers:
       '@ant-design/fast-color':
         specifier: catalog:prod
         version: 3.0.1
+      '@antdv-next/docs-plugins':
+        specifier: link:../../../docs-plugins
+        version: link:../../../docs-plugins
       '@antdv-next/icons':
         specifier: catalog:prod
         version: 1.0.6(vue@3.5.31(typescript@5.9.3))
