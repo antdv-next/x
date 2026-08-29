@@ -19,7 +19,11 @@
     "@antdv-next/x-card": "workspace:*",
     "@antdv-next/x-markdown": "workspace:*",
     "@antv/infographic": "^0.2.16",
-    "flexsearch": "catalog:prod"
+    "@codesandbox/sandpack-themes": "^2.0.21",
+    "@vue/compiler-sfc": "^3.5.29",
+    "flexsearch": "catalog:prod",
+    "sandpack-vue3": "^3.1.12",
+    "sucrase": "^3.35.1"
   },
   "devDependencies": {
     "@antdv-next/auto-import-resolver": "catalog:dev",

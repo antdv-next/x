@@ -19,14 +19,11 @@ declare module "virtual:demos" {
     name: string;
     lang: string;
     code: string;
-    html: string;
   }
 
   export interface DemoSourceData {
     source: string;
     jsSource: string;
-    html: string;
-    jsHtml: string;
     extraFiles: DemoExtraFile[];
   }
 

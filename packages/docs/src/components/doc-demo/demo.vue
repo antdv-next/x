@@ -3,23 +3,29 @@ import type { DemoExtraFile, DemoModule, DemoSourceData } from "virtual:demos";
 import type { Component, CSSProperties } from "vue";
 
 import { CheckOutlined, CodeOutlined, CopyOutlined } from "@antdv-next/icons";
-import { useClipboard } from "@vueuse/core";
+import { aquaBlue, atomDark } from "@codesandbox/sandpack-themes";
+import { useClipboard, useDebounceFn } from "@vueuse/core";
 import { createStyles } from "antdv-style";
 import { loadDemo } from "virtual:demos";
 import {
   computed,
   defineAsyncComponent,
+  markRaw,
+  nextTick,
   onBeforeUnmount,
   shallowRef,
   watch,
 } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
+import { useDarkMode } from "@/composables/use-dark-mode";
 import { getDemoId } from "@/utils/get-demo-id";
 
+import CodeEditorBridge from "./code-editor-bridge.vue";
 import ExpandIcon from "./demo-expand-icon.vue";
 import DemoSkeleton from "./demo-skeleton.vue";
 import { loadPlaygroundUrl } from "./playground";
+import { compileSfcSource } from "./utils/compile-sfc";
 
 defineOptions({
   name: "Demo",
@@ -136,6 +142,15 @@ const useStyles = createStyles(({ token }) => ({
       justifyContent: "center",
       paddingBlock: token.paddingLG,
     },
+    "& .ant-doc-demo-box-compile-error": {
+      margin: 0,
+      padding: "8px 16px",
+      background: token.colorErrorBg,
+      color: token.colorError,
+      fontSize: 12,
+      lineHeight: 1.6,
+      whiteSpace: "pre-wrap",
+    },
     "& .ant-doc-demo-box-code-tabs": {
       borderTop: `1px dashed ${token.colorSplit}`,
     },
@@ -177,6 +192,7 @@ const useStyles = createStyles(({ token }) => ({
 
 const route = useRoute();
 const router = useRouter();
+const { isDark } = useDarkMode();
 const showCode = shallowRef(false);
 const codeType = shallowRef<string>("ts");
 const demo = shallowRef<DemoModule | null>(null);
@@ -184,9 +200,16 @@ const sourceData = shallowRef<DemoSourceData | null>(null);
 const sourceLoading = shallowRef(false);
 const sourceLoadError = shallowRef<Error | null>(null);
 const demoLoading = shallowRef(true);
+// 实时编辑状态：编辑器内容变更后浏览器端编译出 liveComponent 替换预览
+const liveComponent = shallowRef<any>(null);
+const compileError = shallowRef<string | null>(null);
+const currentCode = shallowRef<string | null>(null);
+const editorBridgeRef = shallowRef<{ resetCode: (code: string) => void }>();
 let demoLoadVersion = 0;
 let sourceLoadPromise: Promise<void> | null = null;
 let sourceAbortController: AbortController | null = null;
+// HMR 发生在编辑期间时标记过期，下次展开/收起编辑时重新加载
+let sourceStale = false;
 
 function releaseSource() {
   sourceAbortController?.abort();
@@ -198,6 +221,8 @@ function releaseSource() {
 }
 
 async function ensureSourceLoaded() {
+  // 如果源码已过期（HMR 发生在收起期间），先释放旧数据
+  if (sourceStale) releaseSource();
   if (sourceData.value || !demo.value) return;
   if (sourceLoadPromise) return sourceLoadPromise;
 
@@ -235,19 +260,27 @@ async function ensureSourceLoaded() {
 watch(demo, releaseSource, { flush: "sync" });
 
 watch([showCode, demo], ([visible, currentDemo]) => {
-  if (!visible) {
-    releaseSource();
-    return;
-  }
+  // 收起时不释放源码，保留以便快速重新展开
+  if (!visible) return;
   if (currentDemo) void ensureSourceLoaded().catch(() => {});
 });
 
 watch(
   () => demo.value?.sourceVersion,
   (version, previousVersion) => {
-    if (!showCode.value || version === previousVersion) return;
-    releaseSource();
-    void ensureSourceLoaded().catch(() => {});
+    if (version === previousVersion) return;
+    // 如果用户正在编辑，暂缓重载，避免覆盖编辑内容
+    if (currentCode.value !== null || liveComponent.value !== null) {
+      sourceStale = true;
+      return;
+    }
+    if (showCode.value) {
+      releaseSource();
+      void ensureSourceLoaded().catch(() => {});
+    } else if (sourceData.value) {
+      // HMR 发生在收起期间：标记过期，下次展开时重新加载
+      sourceStale = true;
+    }
   },
 );
 
@@ -327,15 +360,68 @@ const sourceCode = computed(() => {
     return sourceData.value?.jsSource || sourceData.value?.source || "";
   return sourceData.value?.source || "";
 });
-const sourceHtml = computed(() => {
-  if (activeExtraFile.value) return activeExtraFile.value.html;
+// 主 demo 源码（不含伴生文件），作为 Sandpack 的 App.vue 内容
+const mainSourceCode = computed(() => {
   if (activeCodeType.value === "js")
-    return sourceData.value?.jsHtml || sourceData.value?.html || "";
-  return sourceData.value?.html || "";
+    return sourceData.value?.jsSource || sourceData.value?.source || "";
+  return sourceData.value?.source || "";
 });
 
+/** 将 demo 相对导入路径映射为 sandpack 虚拟文件路径 */
+function extraFileToSandpackPath(name: string) {
+  return `/src/${name.replace(/^(\.\.?\/)+/, "")}`;
+}
+
+const sandpackFiles = computed(() => {
+  const files: Record<string, string> = {
+    "/src/App.vue": mainSourceCode.value,
+  };
+  for (const file of extraFiles.value) {
+    files[extraFileToSandpackPath(file.name)] = file.code;
+  }
+  return files;
+});
+
+// 当前激活的 sandpack 文件（多文件 tab 时切换）
+const sandpackActiveFile = computed(() => {
+  if (activeExtraFile.value)
+    return extraFileToSandpackPath(activeExtraFile.value.name);
+  return "/src/App.vue";
+});
+
+const sandpackOptions = computed(() => ({
+  autorun: false,
+  activeFile: sandpackActiveFile.value,
+}));
+
+const sandpackTheme = computed(() => (isDark.value ? atomDark : aquaBlue));
+
+// 伴生文件 tab 不参与主 demo 的实时编译
+const debouncedCompile = useDebounceFn(async (newCode: string) => {
+  if (activeExtraFile.value) return;
+  // Code matches original source (e.g. after tab switch reset), skip compilation
+  if (newCode === mainSourceCode.value) {
+    liveComponent.value = null;
+    compileError.value = null;
+    return;
+  }
+  const { component: comp, error } = await compileSfcSource(newCode);
+  if (comp) {
+    liveComponent.value = markRaw(comp);
+    compileError.value = null;
+  } else {
+    compileError.value = error;
+  }
+}, 300);
+
+function handleCodeChange(newCode: string) {
+  currentCode.value = newCode;
+  debouncedCompile(newCode);
+}
+
+const clipboardSource = computed(() => currentCode.value ?? sourceCode.value);
 const { copied, copy } = useClipboard({
-  source: sourceCode,
+  source: clipboardSource,
   legacy: true,
 });
 const styleState = useStyles();
@@ -354,7 +440,26 @@ const cls = computed(() => ({
 
 function toggleCode() {
   showCode.value = !showCode.value;
+  if (!showCode.value) {
+    // 收起时只重置实时编辑状态，保留源码以便快速重新展开
+    liveComponent.value = null;
+    compileError.value = null;
+    currentCode.value = null;
+  } else {
+    // 展开时按需加载源码（过期时 ensureSourceLoaded 内部会处理）
+    void ensureSourceLoaded().catch(() => {});
+  }
 }
+
+// 切换代码 tab 时重置实时编辑状态，等 sandpack 完成文件切换后再重置编辑器内容
+watch(activeCodeType, () => {
+  liveComponent.value = null;
+  compileError.value = null;
+  currentCode.value = null;
+  nextTick(() => {
+    editorBridgeRef.value?.resetCode(sourceCode.value);
+  });
+});
 
 function navigateToAnchor(event: MouseEvent) {
   event.preventDefault();
@@ -398,8 +503,8 @@ async function openPlayground() {
     <template v-if="simplify">
       <section class="vp-raw ant-doc-demo-box-demo" :style="demoStyle">
         <DemoSkeleton v-if="demoLoading" simplify />
-        <Suspense v-else-if="component">
-          <component :is="component" />
+        <Suspense v-else-if="liveComponent || component">
+          <component :is="liveComponent || component" />
           <template #fallback>
             <DemoSkeleton simplify />
           </template>
@@ -409,13 +514,20 @@ async function openPlayground() {
     <template v-else>
       <section class="vp-raw ant-doc-demo-box-demo" :style="demoStyle">
         <DemoSkeleton v-if="demoLoading" />
-        <Suspense v-else-if="component">
-          <component :is="component" />
+        <Suspense v-else-if="liveComponent || component">
+          <component :is="liveComponent || component" />
           <template #fallback>
             <DemoSkeleton />
           </template>
         </Suspense>
       </section>
+
+      <div
+        v-if="compileError && showCode"
+        class="ant-doc-demo-box-compile-error"
+      >
+        <pre>{{ compileError }}</pre>
+      </div>
 
       <section class="ant-doc-demo-box-meta markdown">
         <div class="ant-doc-demo-box-title">
@@ -503,7 +615,17 @@ async function openPlayground() {
               <CheckOutlined v-else />
             </button>
           </a-tooltip>
-          <div v-html="sourceHtml" />
+          <SandpackProvider
+            template="vite-vue-ts"
+            :files="sandpackFiles"
+            :theme="sandpackTheme"
+            :options="sandpackOptions"
+          >
+            <CodeEditorBridge
+              ref="editorBridgeRef"
+              @update:code="handleCodeChange"
+            />
+          </SandpackProvider>
         </div>
       </template>
     </template>
