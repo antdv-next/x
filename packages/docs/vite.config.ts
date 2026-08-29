@@ -15,15 +15,7 @@ import { defineConfig } from "vite-plus";
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
-    mdPlugin({
-      markdown: {
-        externalLink: true,
-      },
-      demo: {
-        renderSourceHtml: true,
-        sourceVersionOnHmr: true,
-      },
-    }),
+    mdPlugin(),
     vueResolveTypes(),
     vue({
       include: [/\.vue$/, /\.md$/],
