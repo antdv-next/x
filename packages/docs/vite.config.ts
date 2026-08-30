@@ -62,9 +62,6 @@ export default defineConfig({
       "sucrase",
     ],
     alias: {
-      "@antdv-next/docs-plugins/component": fileURLToPath(
-        new URL("../../../docs-plugins/src/components", import.meta.url),
-      ),
       "@": fileURLToPath(new URL("./src", import.meta.url)),
       "@antdv-next/x": fileURLToPath(
         new URL("../x/components/index.ts", import.meta.url),

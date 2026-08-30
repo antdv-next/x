@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@ant-design/fast-color": "catalog:prod",
-    "@antdv-next/docs-plugins": "link:../../../docs-plugins",
+    "@antdv-next/docs-plugins": "^0.0.1",
     "@antdv-next/icons": "catalog:prod",
     "@antdv-next/x-card": "workspace:*",
     "@antdv-next/x-markdown": "workspace:*",
