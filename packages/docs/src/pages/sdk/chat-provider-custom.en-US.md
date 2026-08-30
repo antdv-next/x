@@ -304,7 +304,7 @@ onRequest({
 - Providing file size information is recommended to improve user experience
 - Download links need to ensure users have access permissions
 
-## Usage Example
+## Examples
 
 <!-- prettier-ignore -->
 <demo src="./demo/chat-provider-custom.vue">Basic</demo>

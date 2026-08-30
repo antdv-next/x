@@ -10,7 +10,7 @@ order: 5
 
 当你需要扩展语法（例如 `:::note`、`==highlight==`）并将其映射为业务组件时使用。
 
-## 代码演示
+## 代码演示 {#examples}
 
 <!-- prettier-ignore -->
 <demo src="./demo/custom-plugin.vue">自定义插件</demo>

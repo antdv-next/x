@@ -39,7 +39,10 @@ catalogs:
     vitest: ^4.0.18
     vue-tsc: ^3.2.5
   docs:
+    "@antdv-next/docs-plugins": ^0.0.2
     "@antdv-next/unocss": ^1.0.2
+    "@antv/infographic": ^0.2.16
+    "@codesandbox/sandpack-themes": ^2.0.21
     "@mdit-vue/plugin-frontmatter": ^2.1.4
     "@mdit-vue/plugin-headers": ^2.1.4
     "@mdit-vue/plugin-title": ^2.1.4
@@ -50,6 +53,7 @@ catalogs:
     "@shikijs/markdown-it": ^3.13.0
     "@shikijs/themes": ^3.13.0
     "@shikijs/transformers": ^3.13.0
+    "@vue/compiler-sfc": ^3.5.29
     "antdv-style": ^0.1.0-alpha.1
     markdown-it: ^14.1.0
     markdown-it-anchor: ^9.2.0
@@ -59,7 +63,9 @@ catalogs:
     markdown-it-emoji: ^3.0.0
     oxfmt: ^0.41.0
     pinia: ^3.0.4
+    sandpack-vue3: ^3.1.12
     shiki: ^3.13.0
+    sucrase: ^3.35.1
     unocss: ^66.6.6
   prod:
     "@ant-design/fast-color": ^3.0.1

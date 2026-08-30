@@ -20,7 +20,7 @@ import "@antdv-next/x-markdown/themes/light.css";
 </template>
 ```
 
-## 代码示例
+## 代码演示 {#examples}
 
 <!-- prettier-ignore -->
 <demo src="./demo/themes-switch.vue">主题切换</demo>

@@ -9,36 +9,4 @@ declare module "*.md" {
   export default component;
 }
 
-declare module "virtual:demos" {
-  interface DemoLocale {
-    html?: string;
-    title?: string;
-  }
-
-  export interface DemoExtraFile {
-    name: string;
-    lang: string;
-    code: string;
-    html: string;
-  }
-
-  export interface DemoSourceData {
-    source: string;
-    jsSource: string;
-    html: string;
-    jsHtml: string;
-    extraFiles: DemoExtraFile[];
-  }
-
-  export interface DemoModule {
-    component?: () => Promise<unknown>;
-    locales?: Record<string, DemoLocale>;
-    sourceVersion: number;
-    loadSource: (signal?: AbortSignal) => Promise<DemoSourceData>;
-  }
-
-  export function loadDemo(id: string): Promise<DemoModule | null>;
-
-  const demos: Record<string, DemoModule>;
-  export default demos;
-}
+/// <reference path="../node_modules/@antdv-next/docs-plugins/src/components/code-demo/virtual.d.ts" />

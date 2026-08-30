@@ -23,7 +23,7 @@ description: 为组件提供统一的全局化配置。
   );
 ```
 
-## 代码演示
+## 代码演示 {#examples}
 
 <demo src="./demo/locale.vue">国际化</demo>
 <demo src="./demo/direction.vue">方向</demo>

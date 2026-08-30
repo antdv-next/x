@@ -10,7 +10,7 @@ order: 2
 
 Markdown 中需要渲染公式。
 
-## 代码演示
+## 代码演示 {#examples}
 
 <demo src="./demo/latex-basic.vue">LaTeX 基础示例</demo>
 

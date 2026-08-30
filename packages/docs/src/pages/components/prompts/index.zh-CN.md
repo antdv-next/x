@@ -10,7 +10,7 @@ description: 用于显示一组与当前上下文相关的预定义的问题或�
 - 需要引导用户快速进入特定话题或场景
 - 提供多个可选的提示项，降低用户输入门槛
 
-## 代码演示
+## 代码演示 {#examples}
 
 <demo src="./demo/basic.vue">基本</demo>
 <demo src="./demo/disabled.vue">不可用状态</demo>

@@ -8,7 +8,7 @@ description: 用卡片的形式展示文件。
 
 - 用于在对话或输入时展示文件。
 
-## 代码演示
+## 代码演示 {#examples}
 
 <demo src="./demo/basic.vue">基础用法</demo>
 <demo src="./demo/size.vue">卡片大小</demo>

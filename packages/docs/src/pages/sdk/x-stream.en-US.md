@@ -33,7 +33,7 @@ async function request() {
 }
 ```
 
-## Code Demo
+## Examples
 
 <demo src="./demo/x-stream-default-protocol.vue">Default Protocol - SSE</demo>
 <demo src="./demo/x-stream-custom-protocol.vue">Custom Protocol</demo>

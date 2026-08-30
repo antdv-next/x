@@ -10,7 +10,7 @@ tag: 1.1.0
 - 展示层级文件/文件夹结构。
 - 选中文件并预览内容。
 
-## 代码演示
+## 代码演示 {#examples}
 
 <demo src="./demo/basic.vue">基础用法</demo>
 <demo src="./demo/custom-service.vue">自定义文件服务</demo>

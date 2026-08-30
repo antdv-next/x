@@ -14,7 +14,7 @@ packageName: x-sdk
 
 - Use when you need to manage conversation lists, including operations like creating, deleting, and updating conversations.
 
-## Code Demo
+## Examples
 
 <!-- prettier-ignore -->
 <demo src="./demo/x-conversations-basic.vue">Basic Usage</demo>

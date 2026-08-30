@@ -7,7 +7,7 @@ order: 1
 packageName: x-card
 ---
 
-## Code Example
+## Examples
 
 <!-- prettier-ignore -->
 <demo src="./demo/a2ui-v09-basic.vue">Basic</demo>

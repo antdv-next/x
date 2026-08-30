@@ -7,7 +7,7 @@ order: 2
 
 用于快速接入 LLM 的 Markdown 输出渲染，并逐步扩展到流式、组件化和语法增强场景。
 
-## 代码演示
+## 代码演示 {#examples}
 
 <!-- prettier-ignore -->
 <demo src="./demo/basic.vue">基础渲染</demo>

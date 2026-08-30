@@ -8,7 +8,7 @@ description: 用于聊天的输入框组件。
 
 - 需要构建一个对话场景下的输入框
 
-## 代码演示
+## 代码演示 {#examples}
 
 <demo src="./demo/agent.vue">智能体输入</demo>
 <demo src="./demo/basic.vue">基本用法</demo>

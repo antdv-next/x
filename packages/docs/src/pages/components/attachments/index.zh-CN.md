@@ -13,7 +13,7 @@ description: 用于展示一组附件信息集合。
 - 需要展示、管理一组上传文件时。
 - 需要支持点击上传与拖拽上传时。
 
-## 代码演示
+## 代码演示 {#examples}
 
 <demo src="./demo/basic.vue">基础用法</demo>
 <demo src="./demo/placeholder.vue">占位内容</demo>

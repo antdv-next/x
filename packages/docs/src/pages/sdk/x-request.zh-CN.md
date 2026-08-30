@@ -14,7 +14,7 @@ packageName: x-sdk
 - 需要向后端模型服务发起流式请求（SSE / chunked response）。
 - 需要统一处理超时、中断、重试与回调更新。
 
-## 代码演示
+## 代码演示 {#examples}
 
 <demo src="./demo/x-request-basic.vue">基础用法</demo>
 <demo src="./demo/x-request-custom-params.vue">自定义参数</demo>

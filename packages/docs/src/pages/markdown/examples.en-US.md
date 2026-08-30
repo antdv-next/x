@@ -7,7 +7,7 @@ order: 2
 
 Use this page for a quick setup to render LLM Markdown output, then scale to streaming, component mapping, and syntax extension.
 
-## Code Examples
+## Examples
 
 <!-- prettier-ignore -->
 <demo src="./demo/basic.vue">Basic Rendering</demo>

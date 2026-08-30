@@ -14,11 +14,21 @@
   },
   "dependencies": {
     "@ant-design/fast-color": "catalog:prod",
+    "@antdv-next/docs-plugins": "catalog:docs",
     "@antdv-next/icons": "catalog:prod",
     "@antdv-next/x-card": "workspace:*",
     "@antdv-next/x-markdown": "workspace:*",
-    "@antv/infographic": "^0.2.16",
-    "flexsearch": "catalog:prod"
+    "@antv/infographic": "catalog:docs",
+    "@codesandbox/sandpack-themes": "catalog:docs",
+    "@vue/compiler-sfc": "catalog:docs",
+    "@vueuse/core": "catalog:prod",
+    "antdv-next": "catalog:prod",
+    "flexsearch": "catalog:prod",
+    "sandpack-vue3": "catalog:docs",
+    "sucrase": "catalog:docs",
+    "vue": "catalog:prod",
+    "vue-i18n": "catalog:prod",
+    "vue-router": "catalog:prod"
   },
   "devDependencies": {
     "@antdv-next/auto-import-resolver": "catalog:dev",

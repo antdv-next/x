@@ -8,7 +8,7 @@ description: 用于快速配置 AI 场景中常见的消息操作。
 
 Actions 组件用于快速配置一些 AI 场景下所需要的操作按钮/功能
 
-## 代码演示
+## 代码演示 {#examples}
 
 <demo src="./demo/basic.vue">基本</demo>
 <demo src="./demo/sub.vue">更多菜单项</demo>

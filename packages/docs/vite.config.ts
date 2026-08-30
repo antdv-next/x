@@ -1,5 +1,6 @@
 import { AntdvNextResolver } from "@antdv-next/auto-import-resolver";
 import { AntdvNextXResolver } from "@antdv-next/auto-import-resolver-x";
+import { mdPlugin } from "@antdv-next/docs-plugins";
 import vue from "@vitejs/plugin-vue";
 import vueJsx from "@vitejs/plugin-vue-jsx";
 import { fileURLToPath, URL } from "node:url";
@@ -10,8 +11,6 @@ import dayjs from "vite-plugin-dayjs";
 import { tsxResolveTypes } from "vite-plugin-tsx-resolve-types";
 import vueResolveTypes from "vite-plugin-vue-resolve-types";
 import { defineConfig } from "vite-plus";
-
-import { mdPlugin } from "./plugins/markdown";
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -50,6 +49,18 @@ export default defineConfig({
     modulePreload: false,
   },
   resolve: {
+    dedupe: [
+      "vue",
+      "vue-router",
+      "@vueuse/core",
+      "antdv-next",
+      "@antdv-next/icons",
+      "antdv-style",
+      "sandpack-vue3",
+      "@codesandbox/sandpack-themes",
+      "@vue/compiler-sfc",
+      "sucrase",
+    ],
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
       "@antdv-next/x": fileURLToPath(
