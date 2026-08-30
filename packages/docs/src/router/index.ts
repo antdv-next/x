@@ -4,6 +4,7 @@ import { createRouter, createWebHistory } from "vue-router";
 import { DOC_HEADER_CONTENT_OFFSET } from "@/layouts/docs/components/header-shared";
 import { i18n } from "@/locales";
 
+import demoRoutes from "./demos";
 import { docsRoutes, resolveDocRoutePath } from "./docs";
 
 const router = createRouter({
@@ -39,6 +40,7 @@ const router = createRouter({
       component: () => import("../layouts/docs/index.vue"),
       children: docsRoutes,
     },
+    ...demoRoutes,
   ],
 });
 

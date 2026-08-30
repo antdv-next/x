@@ -43,6 +43,7 @@ provideDemoContext({
     if (playgroundWindow) playgroundWindow.location.replace(url);
     else window.open(url, "_blank", "noopener,noreferrer");
   },
+  demoPageUrl: id => `/~demos/${id}`,
 });
 </script>
 

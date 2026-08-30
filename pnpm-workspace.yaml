@@ -39,7 +39,7 @@ catalogs:
     vitest: ^4.0.18
     vue-tsc: ^3.2.5
   docs:
-    "@antdv-next/docs-plugins": ^0.0.1
+    "@antdv-next/docs-plugins": ^0.0.2
     "@antdv-next/unocss": ^1.0.2
     "@antv/infographic": ^0.2.16
     "@codesandbox/sandpack-themes": ^2.0.21

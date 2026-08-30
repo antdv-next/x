@@ -93,8 +93,8 @@ catalogs:
       version: 3.2.6
   docs:
     '@antdv-next/docs-plugins':
-      specifier: ^0.0.1
-      version: 0.0.1
+      specifier: ^0.0.2
+      version: 0.0.2
     '@antdv-next/unocss':
       specifier: ^1.0.2
       version: 1.0.2
@@ -413,7 +413,7 @@ importers:
         version: 3.0.1
       '@antdv-next/docs-plugins':
         specifier: catalog:docs
-        version: 0.0.1(@types/markdown-it@14.1.2)(@types/node@24.12.0)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.9.0)
+        version: 0.0.2(@types/markdown-it@14.1.2)(@types/node@24.12.0)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.9.0)
       '@antdv-next/icons':
         specifier: catalog:prod
         version: 1.0.6(vue@3.5.31(typescript@5.9.3))
@@ -723,8 +723,8 @@ packages:
     peerDependencies:
       vue: '>=3.2.0'
 
-  '@antdv-next/docs-plugins@0.0.1':
-    resolution: {integrity: sha512-hujhpPBDukLbM1YZw2zKVRtD7iGYfGnWlHyahTMGf9fr77x2v6LLSYYnUwnY4dFWz1/IP4LpMl3RZJw7rPQevw==}
+  '@antdv-next/docs-plugins@0.0.2':
+    resolution: {integrity: sha512-pxlWccwfkYdGSsqNz1VC/qtjTHhzslUNvXUOFY+O7EbYQdxIPqlUDldP1rcWnhRBNCQ0nghtwmdxZCOO523pyg==}
 
   '@antdv-next/icons@1.0.6':
     resolution: {integrity: sha512-SCPe/otLTmOEVoAdrZ/fn5pr1wlA1Tbzhk908gWPDnjSLEPIcv4n0Feh416RKj1oe8PKbPIC95BH+HaBXybojg==}
@@ -5198,7 +5198,7 @@ snapshots:
       stylis: 4.3.6
       vue: 3.5.31(typescript@5.9.3)
 
-  '@antdv-next/docs-plugins@0.0.1(@types/markdown-it@14.1.2)(@types/node@24.12.0)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.9.0)':
+  '@antdv-next/docs-plugins@0.0.2(@types/markdown-it@14.1.2)(@types/node@24.12.0)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.9.0)':
     dependencies:
       '@mdit-vue/plugin-frontmatter': 3.0.2
       '@mdit-vue/plugin-headers': 3.0.2
