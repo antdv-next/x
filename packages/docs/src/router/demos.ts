@@ -3,6 +3,8 @@ import type { RouteRecordRaw } from "vue-router";
 
 import { getDemoId } from "@antdv-next/docs-plugins/dist/demo/get-demo-id";
 
+import DemoPage from "@/components/doc-demo/demo-page.vue";
+
 const pageDemos = import.meta.glob<Component>(
   "/src/pages/components/**/demo/*.vue",
 );
@@ -10,7 +12,8 @@ const pageDemos = import.meta.glob<Component>(
 export function generateDemoRoutes(): RouteRecordRaw[] {
   return Object.entries(pageDemos).map(([path, component]) => ({
     path: `/~demos/${getDemoId(path)}`,
-    component,
+    component: DemoPage,
+    props: { component },
   }));
 }
 
