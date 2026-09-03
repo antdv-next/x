@@ -24,7 +24,9 @@ const snippets = {
     label: "Go",
     code: `package main
 
-import "fmt"
+import (
+    "fmt"
+)
 
 func main() {
     names := []string{"Alice", "Bob"}

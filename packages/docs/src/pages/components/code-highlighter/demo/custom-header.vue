@@ -2,10 +2,12 @@
 import { App } from "antdv-next";
 import { ref } from "vue";
 
-const code = `import { createApp } from "vue";
-import App from "./App.vue";
-
-createApp(App).mount("#app");`;
+const code = [
+  'import { createApp } from "vue";',
+  'import App from "./App.vue";',
+  "",
+  'createApp(App).mount("#app");',
+].join("\n");
 
 const theme = ref<"light" | "dark">("light");
 

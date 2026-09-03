@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { ref } from "vue";
 
-const code = `import { createApp } from 'vue';
-import App from './App.vue';
-
-const app = createApp(App);
-app.mount('#app');`;
+const code = [
+  "import { createApp } from 'vue';",
+  "import App from './App.vue';",
+  "",
+  "const app = createApp(App);",
+  "app.mount('#app');",
+].join("\n");
 
 const theme = ref<"light" | "dark">("light");
 </script>

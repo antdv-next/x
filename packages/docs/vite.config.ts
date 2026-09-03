@@ -48,6 +48,12 @@ export default defineConfig({
     manifest: true,
     modulePreload: false,
   },
+  optimizeDeps: {
+    include: [
+      "escape-carriage",
+      "sandpack-vue3 > ansi-to-vue3 > escape-carriage",
+    ],
+  },
   resolve: {
     dedupe: [
       "vue",
@@ -74,6 +80,9 @@ export default defineConfig({
       ),
       "@antdv-next/x-markdown": fileURLToPath(
         new URL("../x-markdown/src", import.meta.url),
+      ),
+      "escape-carriage": fileURLToPath(
+        new URL("./src/compat/escape-carriage.ts", import.meta.url),
       ),
     },
   },
