@@ -35,6 +35,7 @@ html.dark {
 html.dark,
 html.dark body {
   background: var(--ant-color-bg-layout, #000);
+  color: var(--ant-color-text, rgba(255, 255, 255, 0.85));
 }
 
 .custom-carousel-item {

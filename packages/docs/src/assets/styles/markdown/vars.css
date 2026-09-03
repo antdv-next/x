@@ -157,6 +157,12 @@
   --vp-c-gutter: var(--ant-color-split, #e2e2e3);
 }
 
+.dark {
+  --vp-c-border: var(--ant-color-border-secondary, #303030);
+  --vp-c-divider: var(--ant-color-split, rgba(253, 253, 253, 0.12));
+  --vp-c-gutter: var(--ant-color-split, rgba(253, 253, 253, 0.12));
+}
+
 /**
  * Colors: Text
  *
@@ -171,6 +177,12 @@
   --vp-c-text-1: var(--ant-color-text, rgba(0, 0, 0, 0.88));
   --vp-c-text-2: var(--ant-color-text-secondary, rgba(0, 0, 0, 0.65));
   --vp-c-text-3: var(--ant-color-text-tertiary, rgba(0, 0, 0, 0.45));
+}
+
+.dark {
+  --vp-c-text-1: var(--ant-color-text, rgba(255, 255, 255, 0.85));
+  --vp-c-text-2: var(--ant-color-text-secondary, rgba(255, 255, 255, 0.65));
+  --vp-c-text-3: var(--ant-color-text-tertiary, rgba(255, 255, 255, 0.45));
 }
 
 /**
