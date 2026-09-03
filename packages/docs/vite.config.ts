@@ -15,7 +15,13 @@ import { defineConfig } from "vite-plus";
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
-    mdPlugin(),
+    mdPlugin({
+      markdown: {
+        demo: {
+          headerMode: "section",
+        },
+      },
+    }),
     vueResolveTypes(),
     vue({
       include: [/\.vue$/, /\.md$/],
