@@ -6,9 +6,11 @@ import ActionButton from "./ActionButton";
 export default defineComponent({
   name: "ClearButton",
   inheritAttrs: false,
-  setup(_, { attrs }) {
+  setup(_, { attrs, slots }) {
     return () => (
-      <ActionButton icon={<ClearOutlined />} {...attrs} action="onClear" />
+      <ActionButton icon={<ClearOutlined />} {...attrs} action="onClear">
+        {slots}
+      </ActionButton>
     );
   },
 });

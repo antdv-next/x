@@ -7,7 +7,7 @@ import StopLoadingIcon from "./StopLoading";
 export default defineComponent({
   name: "LoadingButton",
   inheritAttrs: false,
-  setup(_, { attrs }) {
+  setup(_, { attrs, slots }) {
     const context = useActionButtonContext();
 
     return () => {
@@ -25,7 +25,9 @@ export default defineComponent({
             `${prefixCls}-loading-button`,
           ])}
           action="onCancel"
-        />
+        >
+          {slots}
+        </ActionButton>
       );
     };
   },

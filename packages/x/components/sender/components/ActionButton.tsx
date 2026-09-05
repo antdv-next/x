@@ -66,7 +66,7 @@ const ActionButton = defineComponent({
       default: undefined,
     },
   },
-  setup(props, { attrs }) {
+  setup(props, { attrs, slots }) {
     const context = useActionButtonContext();
 
     const mergedDisabled = computed(() => {
@@ -102,7 +102,9 @@ const ActionButton = defineComponent({
             }
             (attrs.onClick as any)?.(e);
           }}
-        />
+        >
+          {slots}
+        </Button>
       );
     };
   },
