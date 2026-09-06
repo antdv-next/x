@@ -350,7 +350,7 @@ const XMermaid = defineComponent({
 
     function handleZoomIn() {
       if (mergedRenderType.value !== RenderType.Image) return;
-      scale.value = Math.min(scale.value + 0.2, 3);
+      scale.value = scale.value + 0.2;
     }
 
     function handleZoomOut() {
@@ -380,12 +380,30 @@ const XMermaid = defineComponent({
       ) as SVGSVGElement | null;
       if (!svgElement) return;
 
-      const svgString = new XMLSerializer().serializeToString(svgElement);
+      const exportSvg = svgElement.cloneNode(true) as SVGSVGElement;
+      exportSvg.style.removeProperty("transform");
+      exportSvg.style.removeProperty("transform-origin");
+      exportSvg.style.removeProperty("transition");
+      exportSvg.style.removeProperty("cursor");
+
+      const viewBox = svgElement.viewBox.baseVal;
+      let width = viewBox.width || svgElement.width.baseVal.value;
+      let height = viewBox.height || svgElement.height.baseVal.value;
+      if (!width || !height) {
+        const bounds = svgElement.getBoundingClientRect();
+        width ||= bounds.width / scale.value;
+        height ||= bounds.height / scale.value;
+      }
+      if (!width || !height) return;
+
+      exportSvg.setAttribute("width", `${width}`);
+      exportSvg.setAttribute("height", `${height}`);
+
+      const svgString = new XMLSerializer().serializeToString(exportSvg);
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
 
-      const { width, height } = svgElement.getBoundingClientRect();
       const dpr = globalThis.window?.devicePixelRatio || 1;
       canvas.width = width * dpr;
       canvas.height = height * dpr;
@@ -555,7 +573,7 @@ const XMermaid = defineComponent({
           lastTime = now;
 
           const delta = event.deltaY > 0 ? -0.1 : 0.1;
-          scale.value = Math.max(0.5, Math.min(3, scale.value + delta));
+          scale.value = Math.max(0.5, scale.value + delta);
         };
 
         graphEl.addEventListener("wheel", wheelHandler, { passive: false });
