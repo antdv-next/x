@@ -1,6 +1,6 @@
 {
   "name": "@antdv-next/x-skill",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "CLI tool for installing AI skills to development tools like Claude, Cursor, etc.",
   "homepage": "https://github.com/antdv-next/x",
   "bugs": {
