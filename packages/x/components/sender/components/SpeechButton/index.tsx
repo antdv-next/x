@@ -9,7 +9,7 @@ import RecordingIcon from "./RecordingIcon";
 export default defineComponent({
   name: "SpeechButton",
   inheritAttrs: false,
-  setup(_, { attrs }) {
+  setup(_, { attrs, slots }) {
     const context = useActionButtonContext();
 
     const mergedDisabled = computed(() => {
@@ -38,7 +38,9 @@ export default defineComponent({
         color="primary"
         {...attrs}
         action="onSpeech"
-      />
+      >
+        {slots}
+      </ActionButton>
     );
   },
 });

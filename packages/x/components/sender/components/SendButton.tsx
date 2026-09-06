@@ -6,7 +6,7 @@ import ActionButton from "./ActionButton";
 export default defineComponent({
   name: "SendButton",
   inheritAttrs: false,
-  setup(_, { attrs }) {
+  setup(_, { attrs, slots }) {
     return () => (
       <ActionButton
         icon={<ArrowUpOutlined />}
@@ -14,7 +14,9 @@ export default defineComponent({
         shape="circle"
         {...attrs}
         action="onSend"
-      />
+      >
+        {slots}
+      </ActionButton>
     );
   },
 });

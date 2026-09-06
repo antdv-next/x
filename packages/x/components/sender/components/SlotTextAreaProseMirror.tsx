@@ -472,13 +472,15 @@ export default defineComponent({
       handler?.(event, info);
       if (event.defaultPrevented) return true;
       if (type === "copy" && !slice && !payloadText) return false;
+      // A locked editor may still route onCut, but must not mutate the
+      // clipboard or delete content.
+      if (type === "cut" && isLocked()) return true;
       try {
         event.clipboardData?.setData("text/plain", payloadText);
       } catch {
         // Some browsers restrict clipboard writes. The consumer can take over
         // by preventing the event and writing its own payload in the callback.
       }
-      if (type === "cut" && isLocked()) return true;
       if (type === "cut" && slice) {
         flushDom();
         syncSelectionFromDom();
@@ -668,7 +670,10 @@ export default defineComponent({
                 const text = event.clipboardData?.getData("text/plain") ?? "";
                 const info = { text, slotConfig: [], skill: undefined };
                 senderCtx.value.onPaste?.(event, info);
-                if (!event.defaultPrevented) routePasteEvent(event);
+                if (!event.defaultPrevented) {
+                  if (isLocked()) event.preventDefault();
+                  else routePasteEvent(event);
+                }
               }}
               onCopy={(event: ClipboardEvent) => {
                 routeControlCopyOrCut(event, "copy");
@@ -1187,19 +1192,58 @@ export default defineComponent({
             contentNode.type === senderSchema.nodes.contentSlot
           ) {
             try {
-              // DOM offsets are relative to each text/container node. Map
-              // both endpoints through ProseMirror before deleting so line
-              // breaks and multiple text nodes retain their document offsets.
-              const from = editorView.posAtDOM(
+              const contentFrom = pos + 1;
+              const contentTo = pos + contentNode.nodeSize - 1;
+              // DOM offsets are local to the current text/container node.
+              // Accumulate preceding siblings so selections on later lines
+              // map to the correct content-slot document offsets.
+              const domNodeSize = (node: Node): number => {
+                if (node.nodeType === Node.TEXT_NODE) {
+                  return node.textContent?.length ?? 0;
+                }
+                if (
+                  node.nodeType === Node.ELEMENT_NODE &&
+                  (node as Element).tagName === "BR"
+                ) {
+                  return 1;
+                }
+                let size = 0;
+                node.childNodes.forEach(child => {
+                  size += domNodeSize(child);
+                });
+                return size;
+              };
+              const contentOffsetAt = (container: Node, offset: number) => {
+                let current: Node | null = container;
+                let result =
+                  container.nodeType === Node.TEXT_NODE
+                    ? offset
+                    : Array.from(container.childNodes)
+                        .slice(0, offset)
+                        .reduce((sum, child) => sum + domNodeSize(child), 0);
+                while (current && current !== startContent) {
+                  const parent: Node | null = current.parentNode;
+                  if (!parent) return null;
+                  let sibling = current.previousSibling;
+                  while (sibling) {
+                    result += domNodeSize(sibling);
+                    sibling = sibling.previousSibling;
+                  }
+                  current = parent;
+                }
+                return current === startContent ? result : null;
+              };
+              const startOffset = contentOffsetAt(
                 nativeRange.startContainer,
                 nativeRange.startOffset,
               );
-              const to = editorView.posAtDOM(
+              const endOffset = contentOffsetAt(
                 nativeRange.endContainer,
                 nativeRange.endOffset,
               );
-              const contentFrom = pos + 1;
-              const contentTo = pos + contentNode.nodeSize - 1;
+              if (startOffset === null || endOffset === null) return false;
+              const from = contentFrom + startOffset;
+              const to = contentFrom + endOffset;
               if (contentFrom <= from && from <= to && to <= contentTo) {
                 event.preventDefault();
                 const transaction = editorView.state.tr.delete(from, to);

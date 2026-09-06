@@ -97,14 +97,25 @@ type SpeechConfig = {
 };
 ```
 
-```typescript
+````typescript
 type ActionsComponents = {
   SendButton: DefineComponent<ButtonProps>;
   ClearButton: DefineComponent<ButtonProps>;
   LoadingButton: DefineComponent<ButtonProps>;
   SpeechButton: DefineComponent<ButtonProps>;
 };
-```
+
+All four button components above forward both the `icon` slot and the `icon` prop. The slot takes precedence over the prop; either overrides the built-in icon:
+
+```vue
+<template #suffix="{ components }">
+  <component :is="components.SendButton">
+    <template #icon>
+      <SomeOutlined />
+    </template>
+  </component>
+</template>
+````
 
 ### Slots
 
