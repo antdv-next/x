@@ -274,16 +274,19 @@ const XMermaid = defineComponent({
       svgEl.style.cursor = isDragging.value ? "grabbing" : "grab";
     }
 
+    // 每发起一次渲染自增，用于丢弃已被取代的渲染结果、以及切换视图/卸载时的在途渲染
+    let renderRequestId = 0;
+
     const renderDiagram = throttle(async () => {
-      if (mergedRenderType.value === RenderType.Code) {
-        if (graphRef.value) graphRef.value.innerHTML = "";
-        return;
-      }
+      if (mergedRenderType.value === RenderType.Code) return;
 
       if (!props.content?.trim()) return;
 
       const graphEl = graphRef.value;
       if (!graphEl) return;
+
+      renderRequestId += 1;
+      const requestId = renderRequestId;
 
       try {
         const parseResult = await parseMermaid(props.content, {
@@ -294,10 +297,15 @@ const XMermaid = defineComponent({
           throw new Error("Invalid Mermaid syntax");
         }
 
+        // 每次渲染都使用全新的 id：mermaid 通过 `[id="..."]` 在整个 document 中查找
+        // 渲染目标，复用 id 会让它命中已注入的 SVG，返回空图导致图表空白
         const { svg } = await renderMermaid(
           `${renderBaseId}-${idSeed++}-${props.content.length || 0}`,
           props.content,
         );
+
+        // 丢弃已被新请求取代的结果，避免旧内容覆盖最新图表
+        if (requestId !== renderRequestId) return;
 
         graphEl.innerHTML = svg;
         applySvgTransform();
@@ -542,6 +550,16 @@ const XMermaid = defineComponent({
       ],
       () => {
         if (!graphRef.value) return;
+
+        // 切到 code 视图：取消挂起的节流调用、使在途渲染失效并立即清空图表，
+        // 避免在途结果写回隐藏节点留下不一致状态
+        if (mergedRenderType.value === RenderType.Code) {
+          renderDiagram.cancel();
+          renderRequestId += 1;
+          graphRef.value.innerHTML = "";
+          return;
+        }
+
         void renderDiagram();
       },
       {
@@ -594,6 +612,7 @@ const XMermaid = defineComponent({
 
     onBeforeUnmount(() => {
       renderDiagram.cancel();
+      renderRequestId += 1;
     });
 
     expose<MermaidRef>({

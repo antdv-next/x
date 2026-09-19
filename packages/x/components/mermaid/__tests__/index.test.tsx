@@ -353,4 +353,114 @@ describe("Mermaid", () => {
 
     expect((wrapper.vm as any).nativeElement).toBeInstanceOf(HTMLElement);
   });
+
+  describe("Concurrent Render Safety", () => {
+    // https://github.com/ant-design/x/pull/2056
+    // 渲染结果只在新渲染真正开始后才被取代，而不是内容一变就失效——
+    // 否则流式场景下每次渲染耗时都长于 token 间隔，所有结果都会被丢弃，图表一直空白。
+    it("should keep applying completed renders while the content keeps changing", async () => {
+      let resolveFirst: (value: { svg: string }) => void = () => {};
+      mermaidMock.render
+        .mockImplementationOnce(
+          () =>
+            new Promise<{ svg: string }>(resolve => {
+              resolveFirst = resolve;
+            }),
+        )
+        .mockImplementation(() =>
+          Promise.resolve({ svg: '<svg data-pass="2" />' }),
+        );
+
+      const wrapper = mount(Mermaid, {
+        props: {
+          content,
+        },
+      });
+      await flushPromises();
+      expect(mermaidMock.render).toHaveBeenCalledTimes(1);
+
+      // 第一次渲染在途时新内容到达，第二次渲染被节流压住
+      await wrapper.setProps({ content: "graph TD; C-->D;" });
+      expect(mermaidMock.render).toHaveBeenCalledTimes(1);
+
+      // 第一次渲染先于第二次开始而完成：其结果仍是真实内容，必须照常上屏
+      resolveFirst({ svg: '<svg data-pass="1" />' });
+      await flushPromises();
+      const graph = wrapper.find(".antd-mermaid-graph");
+      expect(graph.find("svg").attributes("data-pass")).toBe("1");
+
+      // 节流渲染落地后接管
+      await flushPromises(150);
+      expect(mermaidMock.render).toHaveBeenCalledTimes(2);
+      await flushPromises();
+      expect(graph.find("svg").attributes("data-pass")).toBe("2");
+
+      // 每次渲染都使用独立 id
+      const ids = mermaidMock.render.mock.calls.map(call => call[0]);
+      expect(new Set(ids).size).toBe(ids.length);
+    });
+
+    it("should ignore a stale render result that resolves last", async () => {
+      let resolveFirst: (value: { svg: string }) => void = () => {};
+      mermaidMock.render
+        .mockImplementationOnce(
+          () =>
+            new Promise<{ svg: string }>(resolve => {
+              resolveFirst = resolve;
+            }),
+        )
+        .mockImplementation(() =>
+          Promise.resolve({ svg: '<svg data-pass="2" />' }),
+        );
+
+      const wrapper = mount(Mermaid, {
+        props: {
+          content,
+        },
+      });
+      await flushPromises();
+      expect(mermaidMock.render).toHaveBeenCalledTimes(1);
+
+      await wrapper.setProps({ content: "graph TD; C-->D;" });
+      await flushPromises(150);
+      expect(mermaidMock.render).toHaveBeenCalledTimes(2);
+
+      // 最新渲染先完成并写入
+      await flushPromises();
+      const graph = wrapper.find(".antd-mermaid-graph");
+      expect(graph.find("svg").attributes("data-pass")).toBe("2");
+
+      // 被取代的第一次渲染随后才完成，结果必须被丢弃
+      resolveFirst({ svg: '<svg data-pass="1" />' });
+      await flushPromises();
+      expect(graph.find("svg").attributes("data-pass")).toBe("2");
+    });
+
+    it("should not write back to the graph when switching to code view mid-render", async () => {
+      let resolveFirst: (value: { svg: string }) => void = () => {};
+      mermaidMock.render.mockImplementationOnce(
+        () =>
+          new Promise<{ svg: string }>(resolve => {
+            resolveFirst = resolve;
+          }),
+      );
+
+      const wrapper = mount(Mermaid, {
+        props: {
+          content,
+        },
+      });
+      await flushPromises();
+      expect(mermaidMock.render).toHaveBeenCalledTimes(1);
+
+      wrapper.findComponent({ name: "ASegmented" }).vm.$emit("change", "code");
+      await nextTick();
+      expect(wrapper.find(".antd-mermaid-code").exists()).toBe(true);
+
+      // 在途渲染完成后不得写回隐藏的 graph 节点
+      resolveFirst({ svg: '<svg data-pass="1" />' });
+      await flushPromises();
+      expect(wrapper.find(".antd-mermaid-graph svg").exists()).toBe(false);
+    });
+  });
 });
