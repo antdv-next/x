@@ -646,8 +646,8 @@ importers:
         specifier: ^0.16.25
         version: 0.16.44
       marked:
-        specifier: ^12.0.0
-        version: 12.0.2
+        specifier: ^16.2.1
+        version: 16.4.2
       vue:
         specifier: '>=3.5.0'
         version: 3.5.31(typescript@5.9.3)
@@ -655,6 +655,12 @@ importers:
       '@types/dompurify':
         specifier: ^3.0.5
         version: 3.2.0
+
+  packages/x-message-scroller:
+    dependencies:
+      vue:
+        specifier: '>=3.5.0'
+        version: 3.5.42(typescript@5.9.3)
 
   packages/x-sdk:
     dependencies:
@@ -4042,11 +4048,6 @@ packages:
     resolution: {integrity: sha512-4Ej49aYTDFIQ+uBkfX8GBvJGccoARxxPep+7aWTs55ozbjQJpW9M26Fe53vnGgvLeVzva/amzjQQaQu9w0vMhA==}
     hasBin: true
 
-  marked@12.0.2:
-    resolution: {integrity: sha512-qXUm7e/YKFoqFPYPa3Ukg9xlI5cyAtGmyEIzMfW//m6kXwCy2Ps9DYf5ioijFKQ8qyuscrHoY04iJGctu2Kg0Q==}
-    engines: {node: '>= 18'}
-    hasBin: true
-
   marked@16.4.2:
     resolution: {integrity: sha512-TI3V8YYWvkVf3KJe1dRkpnjs68JUPyEa5vjKrp1XEEJUAOaQc+Qj+L1qWbPd0SJuAdQkFU0h73sXXqwDYxsiDA==}
     engines: {node: '>= 20'}
@@ -6865,9 +6866,9 @@ snapshots:
   '@v-c/resolve-types@0.0.1(typescript@5.9.3)':
     dependencies:
       '@oxc-project/types': 0.115.0
-      '@vue/compiler-core': 3.5.31
-      '@vue/compiler-dom': 3.5.31
-      '@vue/shared': 3.5.31
+      '@vue/compiler-core': 3.5.42
+      '@vue/compiler-dom': 3.5.42
+      '@vue/shared': 3.5.42
       lru-cache: 11.2.7
       magic-string: 0.30.21
       minimatch: 10.2.4
@@ -7162,7 +7163,7 @@ snapshots:
       '@babel/types': 7.29.0
       '@vue/babel-helper-vue-transform-on': 1.5.0
       '@vue/babel-plugin-resolve-type': 1.5.0(@babel/core@7.29.0)
-      '@vue/shared': 3.5.31
+      '@vue/shared': 3.5.42
     optionalDependencies:
       '@babel/core': 7.29.0
     transitivePeerDependencies:
@@ -8581,8 +8582,6 @@ snapshots:
       punycode.js: 2.3.1
       uc.micro: 2.1.0
 
-  marked@12.0.2: {}
-
   marked@16.4.2: {}
 
   mdast-util-to-hast@13.2.1:
@@ -9600,7 +9599,7 @@ snapshots:
       '@babel/plugin-syntax-import-meta': 7.10.4(@babel/core@7.29.0)
       '@babel/plugin-transform-typescript': 7.28.6(@babel/core@7.29.0)
       '@vue/babel-plugin-jsx': 1.5.0(@babel/core@7.29.0)
-      '@vue/compiler-dom': 3.5.31
+      '@vue/compiler-dom': 3.5.42
       kolorist: 1.8.0
       magic-string: 0.30.21
       vite: '@voidzero-dev/vite-plus-core@0.2.7(@types/node@24.12.0)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.9.0)'

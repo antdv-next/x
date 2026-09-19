@@ -1,3 +1,5 @@
+import type { Tokens } from "marked";
+
 import { Marked } from "marked";
 
 import type { MarkedConfig, ParserOptions } from "../interface";
@@ -57,46 +59,57 @@ export class Parser {
   }
 
   private configureRenderers() {
+    const options = this.options;
+    const consumeCodeBlockState = (lang: string): "loading" | "done" =>
+      this.consumeCodeBlockState(lang);
+    // 自定义渲染器在解析时会被绑定到 marked 内部 Renderer 实例（其 `parser`
+    // 字段指向当前 marked Parser），行内 token 需通过该实例解析
+    const markedParseInline = (
+      renderer: unknown,
+      tokens: Tokens.Generic[] | undefined,
+    ): string => {
+      const parser = (
+        renderer as {
+          parser?: { parseInline: (t: Tokens.Generic[]) => string };
+        }
+      ).parser;
+      return parser ? parser.parseInline(tokens ?? []) : "";
+    };
+
     this.markdownInstance.use({
       renderer: {
-        html: (html: string): string => {
-          if (this.options.escapeRawHtml) {
-            return escapeHtml(html);
+        // marked v13 起渲染器统一改收 token 对象（v14 移除旧的多参签名）；
+        // 方法简写保证 `this` 指向 marked 内部 Renderer 实例
+        html(token: Tokens.HTML | Tokens.Tag): string {
+          if (options.escapeRawHtml) {
+            return escapeHtml(token.text);
           }
-          return html;
+          return token.text;
         },
 
-        link: (
-          href: string,
-          title: string | null | undefined,
-          text: string,
-        ): string => {
-          const titleAttr = title ? ` title="${title}"` : "";
-          const targetAttr = this.options.openLinksInNewTab
+        link(token: Tokens.Link): string {
+          const titleAttr = token.title ? ` title="${token.title}"` : "";
+          const targetAttr = options.openLinksInNewTab
             ? ` target="_blank" rel="noopener noreferrer"`
             : "";
-          return `<a href="${href}"${titleAttr}${targetAttr}>${text}</a>`;
+          return `<a href="${token.href}"${titleAttr}${targetAttr}>${markedParseInline(this, token.tokens)}</a>`;
         },
 
-        paragraph: (text: string): string => {
-          if (this.options.paragraphTag === "p") {
+        paragraph(token: Tokens.Paragraph): string {
+          const text = markedParseInline(this, token.tokens);
+          if (options.paragraphTag === "p") {
             return `<p>${text}</p>`;
           }
-          return `<${this.options.paragraphTag}>${text}</${this.options.paragraphTag}>`;
+          return `<${options.paragraphTag}>${text}</${options.paragraphTag}>`;
         },
 
-        code: (
-          code: string,
-          infostring: string | undefined,
-          escaped: boolean,
-        ): string => {
-          const lang = infostring || "";
+        code(token: Tokens.Code): string {
+          const lang = token.lang || "";
           const langAttr = lang ? ` data-lang="${lang}"` : "";
           const blockAttr = ' data-block="true"';
-          const state = this.consumeCodeBlockState(lang);
+          const state = consumeCodeBlockState(lang);
           const stateAttr = ` data-state="${state}"`;
-          const escapedCode = escaped ? code : escapeHtml(code);
-          return `<pre><code class="language-${lang}"${langAttr}${blockAttr}${stateAttr}>${escapedCode}</code></pre>`;
+          return `<pre><code class="language-${lang}"${langAttr}${blockAttr}${stateAttr}>${escapeHtml(token.text)}</code></pre>`;
         },
       },
     });
