@@ -230,6 +230,15 @@ const XMermaid = defineComponent({
       return props.renderType ?? internalRenderType.value;
     });
 
+    // 始终保存节流后实际渲染要使用的最新入参。
+    const latestRenderRef = ref({
+      content: props.content,
+      renderType: mergedRenderType.value,
+    });
+
+    // 每发起一次渲染自增，用于丢弃已过期的渲染结果。
+    let renderRequestId = 0;
+
     const mergedActions = computed<Required<MermaidActions>>(() => {
       return {
         enableZoom: props.actions?.enableZoom ?? true,
@@ -275,18 +284,15 @@ const XMermaid = defineComponent({
     }
 
     const renderDiagram = throttle(async () => {
-      if (mergedRenderType.value === RenderType.Code) {
-        if (graphRef.value) graphRef.value.innerHTML = "";
-        return;
-      }
-
-      if (!props.content?.trim()) return;
+      const { content, renderType } = latestRenderRef.value;
 
       const graphEl = graphRef.value;
-      if (!graphEl) return;
+      if (!graphEl || renderType === RenderType.Code || !content.trim()) return;
+
+      const requestId = ++renderRequestId;
 
       try {
-        const parseResult = await parseMermaid(props.content, {
+        const parseResult = await parseMermaid(content, {
           suppressErrors: true,
         } as any);
 
@@ -295,13 +301,23 @@ const XMermaid = defineComponent({
         }
 
         const { svg } = await renderMermaid(
-          `${renderBaseId}-${idSeed++}-${props.content.length || 0}`,
-          props.content,
+          `${renderBaseId}-${idSeed++}-${content.length || 0}`,
+          content,
         );
+
+        if (requestId !== renderRequestId) return;
 
         graphEl.innerHTML = svg;
         applySvgTransform();
       } catch (error) {
+        if (
+          requestId !== renderRequestId ||
+          latestRenderRef.value.content !== content ||
+          latestRenderRef.value.renderType !== renderType
+        ) {
+          return;
+        }
+
         warning(false, "Mermaid", `Render failed: ${String(error)}`);
       }
     }, 100);
@@ -541,7 +557,22 @@ const XMermaid = defineComponent({
         () => graphRef.value,
       ],
       () => {
-        if (!graphRef.value) return;
+        latestRenderRef.value = {
+          content: props.content,
+          renderType: mergedRenderType.value,
+        };
+
+        const graphEl = graphRef.value;
+        if (
+          mergedRenderType.value === RenderType.Code ||
+          !props.content.trim()
+        ) {
+          renderRequestId += 1;
+          renderDiagram.cancel();
+          if (graphEl) graphEl.innerHTML = "";
+          return;
+        }
+        if (!graphEl) return;
         void renderDiagram();
       },
       {
@@ -593,6 +624,7 @@ const XMermaid = defineComponent({
     );
 
     onBeforeUnmount(() => {
+      renderRequestId += 1;
       renderDiagram.cancel();
     });
 
