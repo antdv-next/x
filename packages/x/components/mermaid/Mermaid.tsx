@@ -230,15 +230,13 @@ const XMermaid = defineComponent({
       return props.renderType ?? internalRenderType.value;
     });
 
-    // 始终保存节流后实际渲染要使用的最新入参。
+    // Keep the latest input available to the throttled callback and to the
+    // stale-error guard without invalidating an in-flight render on every
+    // streaming update.
     const latestRenderRef = ref({
       content: props.content,
       renderType: mergedRenderType.value,
     });
-
-    // 每发起一次渲染自增，用于丢弃已过期的渲染结果。
-    let renderRequestId = 0;
-
     const mergedActions = computed<Required<MermaidActions>>(() => {
       return {
         enableZoom: props.actions?.enableZoom ?? true,
@@ -283,11 +281,17 @@ const XMermaid = defineComponent({
       svgEl.style.cursor = isDragging.value ? "grabbing" : "grab";
     }
 
+    let renderRequestId = 0;
+    // Advance only when a result commits or the graph is explicitly cleared,
+    // so slow renders can still provide progressive frames while streaming.
+    let latestCommittedRequestId = 0;
+
     const renderDiagram = throttle(async () => {
       const { content, renderType } = latestRenderRef.value;
 
       const graphEl = graphRef.value;
-      if (!graphEl || renderType === RenderType.Code || !content.trim()) return;
+      if (!graphEl || renderType === RenderType.Code || !content?.trim())
+        return;
 
       const requestId = ++renderRequestId;
 
@@ -300,14 +304,20 @@ const XMermaid = defineComponent({
           throw new Error("Invalid Mermaid syntax");
         }
 
+        // Use a fresh id per render: mermaid locates the render target via
+        // `[id="..."]` across the whole document, so reusing an id would hit
+        // the already-injected SVG and return an empty graph
         const { svg } = await renderMermaid(
           `${renderBaseId}-${idSeed++}-${content.length || 0}`,
           content,
         );
 
-        if (requestId !== renderRequestId) return;
+        // A newer request only supersedes this result after it commits. This
+        // keeps intermediate frames visible when rendering outlasts throttling.
+        if (requestId <= latestCommittedRequestId) return;
 
         graphEl.innerHTML = svg;
+        latestCommittedRequestId = requestId;
         applySvgTransform();
       } catch (error) {
         if (
@@ -321,6 +331,13 @@ const XMermaid = defineComponent({
         warning(false, "Mermaid", `Render failed: ${String(error)}`);
       }
     }, 100);
+
+    const invalidateRender = () => {
+      // Clearing the graph is itself a committed state: no earlier in-flight
+      // render may write back after this point.
+      latestCommittedRequestId = ++renderRequestId;
+      renderDiagram.cancel();
+    };
 
     function switchRenderType(nextType: MermaidRenderType) {
       if (props.renderType === undefined) {
@@ -563,15 +580,15 @@ const XMermaid = defineComponent({
         };
 
         const graphEl = graphRef.value;
-        if (
-          mergedRenderType.value === RenderType.Code ||
-          !props.content.trim()
-        ) {
-          renderRequestId += 1;
-          renderDiagram.cancel();
+        const shouldClearGraph =
+          mergedRenderType.value === RenderType.Code || !props.content?.trim();
+
+        if (shouldClearGraph) {
+          invalidateRender();
           if (graphEl) graphEl.innerHTML = "";
           return;
         }
+
         if (!graphEl) return;
         void renderDiagram();
       },
@@ -624,8 +641,7 @@ const XMermaid = defineComponent({
     );
 
     onBeforeUnmount(() => {
-      renderRequestId += 1;
-      renderDiagram.cancel();
+      invalidateRender();
     });
 
     expose<MermaidRef>({

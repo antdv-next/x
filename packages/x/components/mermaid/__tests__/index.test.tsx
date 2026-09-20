@@ -453,4 +453,257 @@ describe("Mermaid", () => {
 
     expect((wrapper.vm as any).nativeElement).toBeInstanceOf(HTMLElement);
   });
+
+  describe("Concurrent Render Safety", () => {
+    // https://github.com/ant-design/x/pull/2056
+    // An older result remains useful until a newer result actually commits.
+    // This preserves progressive frames without allowing late stale results
+    // to overwrite a diagram that is already newer.
+    it("commits completed renders while slower renders overlap during streaming", async () => {
+      const firstRender = deferred<{ svg: string }>();
+      const secondRender = deferred<{ svg: string }>();
+      const nextContent = "graph TD; B-->C;";
+      mermaidMock.render
+        .mockReturnValueOnce(firstRender.promise)
+        .mockReturnValueOnce(secondRender.promise);
+
+      const wrapper = mount(Mermaid, {
+        props: {
+          content,
+        },
+      });
+
+      await flushPromises();
+      await wrapper.setProps({ content: nextContent });
+      await flushPromises(150);
+      expect(mermaidMock.render).toHaveBeenCalledTimes(2);
+
+      firstRender.resolve({ svg: '<svg id="first"><rect /></svg>' });
+      await flushPromises();
+      expect(wrapper.find(".antd-mermaid-graph svg").attributes("id")).toBe(
+        "first",
+      );
+
+      secondRender.resolve({ svg: '<svg id="second"><rect /></svg>' });
+      await flushPromises();
+      expect(wrapper.find(".antd-mermaid-graph svg").attributes("id")).toBe(
+        "second",
+      );
+    });
+
+    it("keeps an older successful render when the latest render fails", async () => {
+      const firstRender = deferred<{ svg: string }>();
+      const secondRender = deferred<{ svg: string }>();
+      mermaidMock.render
+        .mockReturnValueOnce(firstRender.promise)
+        .mockReturnValueOnce(secondRender.promise);
+
+      const wrapper = mount(Mermaid, {
+        props: {
+          content,
+        },
+      });
+
+      await flushPromises();
+      await wrapper.setProps({ content: "graph TD; B-->C;" });
+      await flushPromises(150);
+      secondRender.reject(new Error("latest render failed"));
+      await flushPromises();
+
+      firstRender.resolve({ svg: '<svg id="fallback"><rect /></svg>' });
+      await flushPromises();
+
+      expect(wrapper.find(".antd-mermaid-graph svg").attributes("id")).toBe(
+        "fallback",
+      );
+      expect(warningMock).toHaveBeenCalledTimes(1);
+    });
+
+    it("should keep applying completed renders while the content keeps changing", async () => {
+      let resolveFirst: (value: { svg: string }) => void = () => {};
+      mermaidMock.render
+        .mockImplementationOnce(
+          () =>
+            new Promise<{ svg: string }>(resolve => {
+              resolveFirst = resolve;
+            }),
+        )
+        .mockImplementation(() =>
+          Promise.resolve({ svg: '<svg data-pass="2" />' }),
+        );
+
+      const wrapper = mount(Mermaid, {
+        props: {
+          content,
+        },
+      });
+      await flushPromises();
+      expect(mermaidMock.render).toHaveBeenCalledTimes(1);
+
+      // The second render is throttled while the first one is in flight
+      await wrapper.setProps({ content: "graph TD; C-->D;" });
+      expect(mermaidMock.render).toHaveBeenCalledTimes(1);
+
+      // The first render finishes before the second one starts: its result is
+      // still real content and must be applied
+      resolveFirst({ svg: '<svg data-pass="1" />' });
+      await flushPromises();
+      const graph = wrapper.find(".antd-mermaid-graph");
+      expect(graph.find("svg").attributes("data-pass")).toBe("1");
+
+      // The throttled render takes over once it lands
+      await flushPromises(150);
+      expect(mermaidMock.render).toHaveBeenCalledTimes(2);
+      await flushPromises();
+      expect(graph.find("svg").attributes("data-pass")).toBe("2");
+
+      // 每次渲染都使用独立 id
+      const ids = mermaidMock.render.mock.calls.map(call => call[0]);
+      expect(new Set(ids).size).toBe(ids.length);
+    });
+
+    it("should ignore a stale render result that resolves last", async () => {
+      let resolveFirst: (value: { svg: string }) => void = () => {};
+      mermaidMock.render
+        .mockImplementationOnce(
+          () =>
+            new Promise<{ svg: string }>(resolve => {
+              resolveFirst = resolve;
+            }),
+        )
+        .mockImplementation(() =>
+          Promise.resolve({ svg: '<svg data-pass="2" />' }),
+        );
+
+      const wrapper = mount(Mermaid, {
+        props: {
+          content,
+        },
+      });
+      await flushPromises();
+      expect(mermaidMock.render).toHaveBeenCalledTimes(1);
+
+      await wrapper.setProps({ content: "graph TD; C-->D;" });
+      await flushPromises(150);
+      expect(mermaidMock.render).toHaveBeenCalledTimes(2);
+
+      // The latest render finishes first and is written to the graph
+      await flushPromises();
+      const graph = wrapper.find(".antd-mermaid-graph");
+      expect(graph.find("svg").attributes("data-pass")).toBe("2");
+
+      // The superseded first render resolves later; its result must be dropped
+      resolveFirst({ svg: '<svg data-pass="1" />' });
+      await flushPromises();
+      expect(graph.find("svg").attributes("data-pass")).toBe("2");
+    });
+
+    it("should not write back to the graph when switching to code view mid-render", async () => {
+      let resolveFirst: (value: { svg: string }) => void = () => {};
+      mermaidMock.render.mockImplementationOnce(
+        () =>
+          new Promise<{ svg: string }>(resolve => {
+            resolveFirst = resolve;
+          }),
+      );
+
+      const wrapper = mount(Mermaid, {
+        props: {
+          content,
+        },
+      });
+      await flushPromises();
+      expect(mermaidMock.render).toHaveBeenCalledTimes(1);
+
+      wrapper.findComponent({ name: "ASegmented" }).vm.$emit("change", "code");
+      await nextTick();
+      expect(wrapper.find(".antd-mermaid-code").exists()).toBe(true);
+
+      // An in-flight render must not write back into the hidden graph node
+      resolveFirst({ svg: '<svg data-pass="1" />' });
+      await flushPromises();
+      expect(wrapper.find(".antd-mermaid-graph svg").exists()).toBe(false);
+    });
+
+    it("should invalidate the in-flight render when content is cleared", async () => {
+      let resolveFirst: (value: { svg: string }) => void = () => {};
+      mermaidMock.render.mockImplementationOnce(
+        () =>
+          new Promise<{ svg: string }>(resolve => {
+            resolveFirst = resolve;
+          }),
+      );
+
+      const wrapper = mount(Mermaid, {
+        props: {
+          content,
+        },
+      });
+      await flushPromises();
+      expect(mermaidMock.render).toHaveBeenCalledTimes(1);
+
+      // Clearing the content to whitespace must invalidate the in-flight
+      // render so the stale diagram is never written back
+      await wrapper.setProps({ content: " " });
+      resolveFirst({ svg: '<svg data-pass="1" />' });
+      await flushPromises();
+      expect(wrapper.find(".antd-mermaid-graph svg").exists()).toBe(false);
+    });
+
+    it("should not warn when an in-flight render is superseded", async () => {
+      const parseDeferred = deferred<boolean>();
+      const nextContent = "graph TD; B-->C;";
+      mermaidMock.parse.mockReturnValueOnce(parseDeferred.promise);
+
+      const wrapper = mount(Mermaid, {
+        props: {
+          content,
+        },
+      });
+
+      await flushPromises();
+      await wrapper.setProps({ content: nextContent });
+      parseDeferred.reject(new Error("stale parse failure"));
+      await flushPromises(150);
+
+      expect(warningMock).not.toHaveBeenCalled();
+    });
+
+    it("should not write back after the component is unmounted", async () => {
+      let resolveFirst: (value: { svg: string }) => void = () => {};
+      mermaidMock.render.mockImplementationOnce(
+        () =>
+          new Promise<{ svg: string }>(resolve => {
+            resolveFirst = resolve;
+          }),
+      );
+
+      const wrapper = mount(Mermaid, {
+        props: {
+          content,
+        },
+      });
+      await flushPromises();
+      expect(mermaidMock.render).toHaveBeenCalledTimes(1);
+
+      const graphEl = wrapper.find(".antd-mermaid-graph").element;
+      wrapper.unmount();
+
+      resolveFirst({ svg: '<svg data-pass="1" />' });
+      await flushPromises();
+      expect(graphEl.innerHTML).toBe("");
+    });
+
+    it("handles undefined or empty content safely without throwing", async () => {
+      const wrapper = mount(Mermaid, {
+        props: {
+          content: undefined as any,
+        },
+      });
+
+      await flushPromises();
+      expect(wrapper.find(".antd-mermaid-graph svg").exists()).toBe(false);
+      expect(warningMock).not.toHaveBeenCalled();
+    });
+  });
 });
