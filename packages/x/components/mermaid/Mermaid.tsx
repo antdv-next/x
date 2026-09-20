@@ -283,6 +283,9 @@ const XMermaid = defineComponent({
     }
 
     let renderRequestId = 0;
+    // Advance only when a result commits or the graph is explicitly cleared,
+    // so slow renders can still provide progressive frames while streaming.
+    let latestCommittedRequestId = 0;
 
     const renderDiagram = throttle(async () => {
       const { content, renderType } = latestRenderRef.value;
@@ -309,11 +312,12 @@ const XMermaid = defineComponent({
           content,
         );
 
-        // Discard results superseded by a newer request so stale content
-        // never overwrites the latest diagram
-        if (requestId !== renderRequestId) return;
+        // A newer request only supersedes this result after it commits. This
+        // keeps intermediate frames visible when rendering outlasts throttling.
+        if (requestId <= latestCommittedRequestId) return;
 
         graphEl.innerHTML = svg;
+        latestCommittedRequestId = requestId;
         applySvgTransform();
       } catch (error) {
         if (
@@ -329,7 +333,9 @@ const XMermaid = defineComponent({
     }, 100);
 
     const invalidateRender = () => {
-      renderRequestId += 1;
+      // Clearing the graph is itself a committed state: no earlier in-flight
+      // render may write back after this point.
+      latestCommittedRequestId = ++renderRequestId;
       renderDiagram.cancel();
     };
 

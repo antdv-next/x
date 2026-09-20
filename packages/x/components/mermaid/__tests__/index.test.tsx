@@ -370,10 +370,69 @@ describe("Mermaid", () => {
 
   describe("Concurrent Render Safety", () => {
     // https://github.com/ant-design/x/pull/2056
-    // A render result is only superseded once a newer render actually starts,
-    // not merely when the content changes — otherwise, in streaming scenarios
-    // where every render outlasts the token interval, all results would be
-    // discarded and the graph would stay blank.
+    // An older result remains useful until a newer result actually commits.
+    // This preserves progressive frames without allowing late stale results
+    // to overwrite a diagram that is already newer.
+    it("commits completed renders while slower renders overlap during streaming", async () => {
+      const firstRender = deferred<{ svg: string }>();
+      const secondRender = deferred<{ svg: string }>();
+      const nextContent = "graph TD; B-->C;";
+      mermaidMock.render
+        .mockReturnValueOnce(firstRender.promise)
+        .mockReturnValueOnce(secondRender.promise);
+
+      const wrapper = mount(Mermaid, {
+        props: {
+          content,
+        },
+      });
+
+      await flushPromises();
+      await wrapper.setProps({ content: nextContent });
+      await flushPromises(150);
+      expect(mermaidMock.render).toHaveBeenCalledTimes(2);
+
+      firstRender.resolve({ svg: '<svg id="first"><rect /></svg>' });
+      await flushPromises();
+      expect(wrapper.find(".antd-mermaid-graph svg").attributes("id")).toBe(
+        "first",
+      );
+
+      secondRender.resolve({ svg: '<svg id="second"><rect /></svg>' });
+      await flushPromises();
+      expect(wrapper.find(".antd-mermaid-graph svg").attributes("id")).toBe(
+        "second",
+      );
+    });
+
+    it("keeps an older successful render when the latest render fails", async () => {
+      const firstRender = deferred<{ svg: string }>();
+      const secondRender = deferred<{ svg: string }>();
+      mermaidMock.render
+        .mockReturnValueOnce(firstRender.promise)
+        .mockReturnValueOnce(secondRender.promise);
+
+      const wrapper = mount(Mermaid, {
+        props: {
+          content,
+        },
+      });
+
+      await flushPromises();
+      await wrapper.setProps({ content: "graph TD; B-->C;" });
+      await flushPromises(150);
+      secondRender.reject(new Error("latest render failed"));
+      await flushPromises();
+
+      firstRender.resolve({ svg: '<svg id="fallback"><rect /></svg>' });
+      await flushPromises();
+
+      expect(wrapper.find(".antd-mermaid-graph svg").attributes("id")).toBe(
+        "fallback",
+      );
+      expect(warningMock).toHaveBeenCalledTimes(1);
+    });
+
     it("should keep applying completed renders while the content keeps changing", async () => {
       let resolveFirst: (value: { svg: string }) => void = () => {};
       mermaidMock.render
