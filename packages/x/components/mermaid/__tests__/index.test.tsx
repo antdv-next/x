@@ -9,17 +9,30 @@ const mermaidMock = vi.hoisted(() => ({
   parse: vi.fn(),
   render: vi.fn(),
 }));
+const warningMock = vi.hoisted(() => vi.fn());
 
 vi.mock("../loader", () => ({
   initializeMermaid: (config: any) => mermaidMock.initialize(config),
   parseMermaid: (...args: any[]) => mermaidMock.parse(...args),
   renderMermaid: (...args: any[]) => mermaidMock.render(...args),
 }));
+vi.mock("../../_utils/warning", () => ({ default: warningMock }));
 
 const content = "graph TD; A-->B;";
 
 function flushPromises(wait = 0) {
   return new Promise(resolve => setTimeout(resolve, wait));
+}
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((promiseResolve, promiseReject) => {
+    resolve = promiseResolve;
+    reject = promiseReject;
+  });
+
+  return { promise, resolve, reject };
 }
 
 function readScale(transform: string) {
@@ -31,6 +44,7 @@ function readScale(transform: string) {
 describe("Mermaid", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    warningMock.mockClear();
     mermaidMock.parse.mockResolvedValue(true);
     mermaidMock.render.mockResolvedValue({
       svg: '<svg viewBox="0 0 100 100"><rect width="100" height="100"/></svg>',
@@ -489,6 +503,25 @@ describe("Mermaid", () => {
       resolveFirst({ svg: '<svg data-pass="1" />' });
       await flushPromises();
       expect(wrapper.find(".antd-mermaid-graph svg").exists()).toBe(false);
+    });
+
+    it("should not warn when an in-flight render is superseded", async () => {
+      const parseDeferred = deferred<boolean>();
+      const nextContent = "graph TD; B-->C;";
+      mermaidMock.parse.mockReturnValueOnce(parseDeferred.promise);
+
+      const wrapper = mount(Mermaid, {
+        props: {
+          content,
+        },
+      });
+
+      await flushPromises();
+      await wrapper.setProps({ content: nextContent });
+      parseDeferred.reject(new Error("stale parse failure"));
+      await flushPromises(150);
+
+      expect(warningMock).not.toHaveBeenCalled();
     });
 
     it("should not write back after the component is unmounted", async () => {

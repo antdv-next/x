@@ -230,6 +230,14 @@ const XMermaid = defineComponent({
       return props.renderType ?? internalRenderType.value;
     });
 
+    // Keep the latest input available to the throttled callback and to the
+    // stale-error guard without invalidating an in-flight render on every
+    // streaming update.
+    const latestRenderRef = ref({
+      content: props.content,
+      renderType: mergedRenderType.value,
+    });
+
     const mergedActions = computed<Required<MermaidActions>>(() => {
       return {
         enableZoom: props.actions?.enableZoom ?? true,
@@ -274,23 +282,15 @@ const XMermaid = defineComponent({
       svgEl.style.cursor = isDragging.value ? "grabbing" : "grab";
     }
 
-    // Incremented on every render attempt; used to discard superseded results
-    // and to invalidate in-flight renders on view switch/unmount/content clear
     let renderRequestId = 0;
 
     const renderDiagram = throttle(async () => {
-      renderRequestId += 1;
-      const requestId = renderRequestId;
-
-      // Snapshot the content so parse and render always work on the same text
-      const content = props.content;
-
-      if (mergedRenderType.value === RenderType.Code) return;
-
-      if (!content?.trim()) return;
+      const { content, renderType } = latestRenderRef.value;
 
       const graphEl = graphRef.value;
-      if (!graphEl) return;
+      if (!graphEl || renderType === RenderType.Code || !content.trim()) return;
+
+      const requestId = ++renderRequestId;
 
       try {
         const parseResult = await parseMermaid(content, {
@@ -316,12 +316,22 @@ const XMermaid = defineComponent({
         graphEl.innerHTML = svg;
         applySvgTransform();
       } catch (error) {
-        // Superseded renders reject with content that is no longer current;
-        // only surface errors for the latest request
-        if (requestId !== renderRequestId) return;
+        if (
+          requestId !== renderRequestId ||
+          latestRenderRef.value.content !== content ||
+          latestRenderRef.value.renderType !== renderType
+        ) {
+          return;
+        }
+
         warning(false, "Mermaid", `Render failed: ${String(error)}`);
       }
     }, 100);
+
+    const invalidateRender = () => {
+      renderRequestId += 1;
+      renderDiagram.cancel();
+    };
 
     function switchRenderType(nextType: MermaidRenderType) {
       if (props.renderType === undefined) {
@@ -558,29 +568,22 @@ const XMermaid = defineComponent({
         () => graphRef.value,
       ],
       () => {
-        if (!graphRef.value) return;
+        latestRenderRef.value = {
+          content: props.content,
+          renderType: mergedRenderType.value,
+        };
 
-        // Switching to code view: cancel the pending throttled call, invalidate
-        // in-flight renders and clear the graph immediately so a late result
-        // never writes back into the hidden node
-        if (mergedRenderType.value === RenderType.Code) {
-          renderDiagram.cancel();
-          renderRequestId += 1;
-          graphRef.value.innerHTML = "";
+        const graphEl = graphRef.value;
+        const shouldClearGraph =
+          mergedRenderType.value === RenderType.Code || !props.content.trim();
+
+        if (shouldClearGraph) {
+          invalidateRender();
+          if (graphEl) graphEl.innerHTML = "";
           return;
         }
 
-        // Content cleared: invalidate in-flight renders and clear the graph
-        // immediately so a late result never draws a stale diagram for
-        // blank content (throttling would otherwise delay the invalidation
-        // past the in-flight render's resolution)
-        if (!props.content?.trim()) {
-          renderDiagram.cancel();
-          renderRequestId += 1;
-          graphRef.value.innerHTML = "";
-          return;
-        }
-
+        if (!graphEl) return;
         void renderDiagram();
       },
       {
@@ -632,8 +635,7 @@ const XMermaid = defineComponent({
     );
 
     onBeforeUnmount(() => {
-      renderDiagram.cancel();
-      renderRequestId += 1;
+      invalidateRender();
     });
 
     expose<MermaidRef>({
