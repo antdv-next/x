@@ -106,6 +106,18 @@ type ActionsComponents = {
 };
 ```
 
+以上四个按钮组件均支持透传 `icon` 插槽与 `icon` 属性，插槽优先于属性，均会覆盖内置图标：
+
+```vue
+<template #suffix="{ components }">
+  <component :is="components.SendButton">
+    <template #icon>
+      <SomeOutlined />
+    </template>
+  </component>
+</template>
+```
+
 ### Slots
 
 | 插槽名   | 说明                 | 类型                                         |

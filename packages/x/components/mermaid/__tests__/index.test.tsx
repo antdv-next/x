@@ -181,7 +181,7 @@ describe("Mermaid", () => {
     expect(wrapper.find(".slot-download").exists()).toBe(true);
   });
 
-  it("clamps zoom scale between 0.5 and 3", async () => {
+  it("clamps zoom scale at 0.5 and allows zooming beyond 3", async () => {
     const wrapper = mount(Mermaid, {
       props: {
         content,
@@ -190,35 +190,143 @@ describe("Mermaid", () => {
 
     await flushPromises();
 
-    const graphEl = wrapper.find(".antd-mermaid-graph").element;
-    for (let i = 0; i < 40; i += 1) {
-      graphEl.dispatchEvent(
-        new WheelEvent("wheel", {
-          deltaY: -100,
-          bubbles: true,
-          cancelable: true,
-        }),
-      );
-    }
-    await nextTick();
-
     const svgEl = wrapper.find(".antd-mermaid-graph svg").element as SVGElement;
-    const upper = readScale(svgEl.style.transform);
-    expect(upper).toBeLessThanOrEqual(3);
+    const graphEl = wrapper.find(".antd-mermaid-graph").element;
 
-    for (let i = 0; i < 60; i += 1) {
-      graphEl.dispatchEvent(
-        new WheelEvent("wheel", {
-          deltaY: 100,
-          bubbles: true,
-          cancelable: true,
-        }),
-      );
+    graphEl.dispatchEvent(
+      new WheelEvent("wheel", {
+        deltaY: -100,
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+    await nextTick();
+    expect(readScale(svgEl.style.transform)).toBe(1.1);
+
+    const zoomInButton = wrapper.find(".anticon-zoom-in");
+    for (let i = 0; i < 11; i += 1) {
+      await zoomInButton.trigger("click");
     }
     await nextTick();
+    expect(readScale(svgEl.style.transform)).toBeGreaterThan(3);
 
-    const lower = readScale(svgEl.style.transform);
-    expect(lower).toBeGreaterThanOrEqual(0.5);
+    const zoomOutButton = wrapper.find(".anticon-zoom-out");
+    for (let i = 0; i < 20; i += 1) {
+      await zoomOutButton.trigger("click");
+    }
+    await nextTick();
+    expect(readScale(svgEl.style.transform)).toBe(0.5);
+  });
+
+  it("downloads the full diagram regardless of zoom state", async () => {
+    mermaidMock.render.mockResolvedValueOnce({
+      svg: '<svg viewBox="0 0 640 480"><rect width="640" height="480"/></svg>',
+    });
+
+    const serializeToString = vi.fn().mockReturnValue("<svg>test</svg>");
+    class XMLSerializerMock {
+      serializeToString = serializeToString;
+    }
+    vi.stubGlobal(
+      "XMLSerializer",
+      XMLSerializerMock as unknown as typeof XMLSerializer,
+    );
+
+    const drawImage = vi.fn();
+    const toDataURL = vi.fn().mockReturnValue("data:image/png;base64,test");
+    const mockCanvas = {
+      width: 0,
+      height: 0,
+      style: {} as Record<string, string>,
+      getContext: vi.fn().mockReturnValue({
+        scale: vi.fn(),
+        drawImage,
+      }),
+      toDataURL,
+    };
+
+    const imageInstances: Array<{
+      src: string;
+      onload: ((ev: Event) => any) | null;
+    }> = [];
+    class ImageMock {
+      src = "";
+      onload: ((this: HTMLImageElement, ev: Event) => any) | null = null;
+      constructor() {
+        imageInstances.push(
+          this as unknown as {
+            src: string;
+            onload: ((ev: Event) => any) | null;
+          },
+        );
+      }
+    }
+    vi.stubGlobal("Image", ImageMock as unknown as typeof Image);
+
+    const originalCreateElement = document.createElement.bind(document);
+    const createElementSpy = vi
+      .spyOn(document, "createElement")
+      .mockImplementation(((tagName: string) => {
+        if (tagName === "canvas")
+          return mockCanvas as unknown as HTMLCanvasElement;
+        if (tagName === "a") {
+          return {
+            click: vi.fn(),
+            download: "",
+            href: "",
+          } as unknown as HTMLAnchorElement;
+        }
+        return originalCreateElement(tagName);
+      }) as unknown as typeof document.createElement);
+
+    const originalDevicePixelRatio = window.devicePixelRatio;
+    Object.defineProperty(window, "devicePixelRatio", {
+      configurable: true,
+      value: 2,
+    });
+
+    const wrapper = mount(Mermaid, {
+      props: {
+        content,
+      },
+    });
+
+    await flushPromises();
+
+    const svgElement = wrapper.find(".antd-mermaid-graph svg")
+      .element as SVGSVGElement;
+    svgElement.style.transform = "scale(3) translate(20px, 10px)";
+    const getBoundingClientRectSpy = vi
+      .spyOn(svgElement, "getBoundingClientRect")
+      .mockReturnValue({ width: 1920, height: 1440 } as DOMRect);
+
+    await wrapper.find(".anticon-download").trigger("click");
+    await flushPromises();
+
+    expect(serializeToString).toHaveBeenCalled();
+    const serializedSvg = serializeToString.mock.calls[0]?.[0] as SVGSVGElement;
+    expect(serializedSvg).not.toBe(svgElement);
+    expect(serializedSvg.style.transform).toBe("");
+    expect(serializedSvg.getAttribute("width")).toBe("640");
+    expect(serializedSvg.getAttribute("height")).toBe("480");
+    expect(getBoundingClientRectSpy).not.toHaveBeenCalled();
+    expect(mockCanvas.width).toBe(1280);
+    expect(mockCanvas.height).toBe(960);
+    expect(mockCanvas.style.width).toBe("640px");
+    expect(mockCanvas.style.height).toBe("480px");
+
+    const imageInstance = imageInstances[0];
+    expect(imageInstance?.src).toContain("data:image/svg+xml");
+    imageInstance?.onload?.(new Event("load"));
+    expect(drawImage).toHaveBeenCalledWith(imageInstance, 0, 0, 640, 480);
+    expect(toDataURL).toHaveBeenCalledWith("image/png", 1.0);
+
+    vi.unstubAllGlobals();
+    createElementSpy.mockRestore();
+    Object.defineProperty(window, "devicePixelRatio", {
+      configurable: true,
+      value: originalDevicePixelRatio,
+    });
   });
 
   it("handles invalid syntax without crashing", async () => {

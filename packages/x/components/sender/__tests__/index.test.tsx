@@ -661,6 +661,42 @@ describe("Sender", () => {
     cleanup(host, wrapper);
   });
 
+  it("should translate offsets when deleting within a later line", async () => {
+    const host = createHost();
+    const wrapper = mount(Sender, {
+      attachTo: host,
+      props: {
+        slotConfig: [
+          {
+            type: "content",
+            key: "content",
+            props: { defaultValue: "AB\nCDEF" },
+          },
+        ],
+      },
+    });
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.$nextTick();
+
+    const contentSlot = wrapper.find<HTMLElement>(
+      ".antd-sender-slot-content",
+    ).element;
+    const secondLine = contentSlot.lastChild as Text;
+    const selection = window.getSelection();
+    const range = document.createRange();
+    range.setStart(secondLine, 1);
+    range.setEnd(secondLine, 3);
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+
+    await wrapper
+      .find(".antd-sender-input-slot")
+      .trigger("keydown", { key: "Delete" });
+
+    expect((wrapper.vm as any).getValue().value).toBe("AB\nCF");
+    cleanup(host, wrapper);
+  });
+
   it("should preserve native modified deletion shortcuts", async () => {
     const host = createHost();
     const wrapper = mount(Sender, {
@@ -1695,16 +1731,18 @@ describe("Sender", () => {
     expect((wrapper.vm as any).getValue().value).toBe("locked");
 
     await wrapper.setProps({ readOnly: false, disabled: true });
+    const setData = vi.fn();
     const cutEvent = new Event("cut", {
       bubbles: true,
       cancelable: true,
     });
     Object.defineProperty(cutEvent, "clipboardData", {
-      value: { setData: vi.fn() },
+      value: { setData },
     });
     editable.element.dispatchEvent(cutEvent);
 
     expect(cutEvent.defaultPrevented).toBe(true);
+    expect(setData).not.toHaveBeenCalled();
     expect((wrapper.vm as any).getValue().value).toBe("locked");
 
     wrapper.unmount();
@@ -5065,6 +5103,18 @@ describe("Sender", () => {
     input.element.dispatchEvent(pasteEvent);
     expect(onPasteFile).toHaveBeenCalledWith(files);
     expect(pasteEvent.defaultPrevented).toBe(true);
+
+    await wrapper.setProps({ readOnly: true });
+    const lockedPasteEvent = new Event("paste", {
+      bubbles: true,
+      cancelable: true,
+    });
+    Object.defineProperty(lockedPasteEvent, "clipboardData", {
+      value: { files, getData: () => "" },
+    });
+    input.element.dispatchEvent(lockedPasteEvent);
+    expect(onPasteFile).toHaveBeenCalledOnce();
+    expect(lockedPasteEvent.defaultPrevented).toBe(true);
     wrapper.unmount();
   });
 
