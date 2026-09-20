@@ -656,12 +656,6 @@ importers:
         specifier: ^3.0.5
         version: 3.2.0
 
-  packages/x-message-scroller:
-    dependencies:
-      vue:
-        specifier: '>=3.5.0'
-        version: 3.5.42(typescript@5.9.3)
-
   packages/x-sdk:
     dependencies:
       vue:
@@ -6866,9 +6860,9 @@ snapshots:
   '@v-c/resolve-types@0.0.1(typescript@5.9.3)':
     dependencies:
       '@oxc-project/types': 0.115.0
-      '@vue/compiler-core': 3.5.42
-      '@vue/compiler-dom': 3.5.42
-      '@vue/shared': 3.5.42
+      '@vue/compiler-core': 3.5.31
+      '@vue/compiler-dom': 3.5.31
+      '@vue/shared': 3.5.31
       lru-cache: 11.2.7
       magic-string: 0.30.21
       minimatch: 10.2.4
@@ -7163,7 +7157,7 @@ snapshots:
       '@babel/types': 7.29.0
       '@vue/babel-helper-vue-transform-on': 1.5.0
       '@vue/babel-plugin-resolve-type': 1.5.0(@babel/core@7.29.0)
-      '@vue/shared': 3.5.42
+      '@vue/shared': 3.5.31
     optionalDependencies:
       '@babel/core': 7.29.0
     transitivePeerDependencies:
@@ -9599,7 +9593,7 @@ snapshots:
       '@babel/plugin-syntax-import-meta': 7.10.4(@babel/core@7.29.0)
       '@babel/plugin-transform-typescript': 7.28.6(@babel/core@7.29.0)
       '@vue/babel-plugin-jsx': 1.5.0(@babel/core@7.29.0)
-      '@vue/compiler-dom': 3.5.42
+      '@vue/compiler-dom': 3.5.31
       kolorist: 1.8.0
       magic-string: 0.30.21
       vite: '@voidzero-dev/vite-plus-core@0.2.7(@types/node@24.12.0)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.9.0)'
