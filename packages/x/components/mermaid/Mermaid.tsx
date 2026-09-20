@@ -237,7 +237,6 @@ const XMermaid = defineComponent({
       content: props.content,
       renderType: mergedRenderType.value,
     });
-
     const mergedActions = computed<Required<MermaidActions>>(() => {
       return {
         enableZoom: props.actions?.enableZoom ?? true,
@@ -291,7 +290,8 @@ const XMermaid = defineComponent({
       const { content, renderType } = latestRenderRef.value;
 
       const graphEl = graphRef.value;
-      if (!graphEl || renderType === RenderType.Code || !content.trim()) return;
+      if (!graphEl || renderType === RenderType.Code || !content?.trim())
+        return;
 
       const requestId = ++renderRequestId;
 
@@ -581,7 +581,7 @@ const XMermaid = defineComponent({
 
         const graphEl = graphRef.value;
         const shouldClearGraph =
-          mergedRenderType.value === RenderType.Code || !props.content.trim();
+          mergedRenderType.value === RenderType.Code || !props.content?.trim();
 
         if (shouldClearGraph) {
           invalidateRender();
