@@ -53,6 +53,12 @@ export default defineConfig({
   build: {
     manifest: true,
     modulePreload: false,
+    rolldownOptions: {
+      // docs-plugins 的 demo formatter 会动态 import oxfmt；oxfmt 又声明了多个
+      // 未安装的 prettier 插件（@prettier/plugin-oxc、@prettier/plugin-hermes 等）。
+      // 这些只在服务端 demo 格式化时用到，client bundle 不需要，直接 external 掉。
+      external: [/^@prettier\/plugin-/, "oxfmt"],
+    },
   },
   optimizeDeps: {
     include: [
