@@ -32,12 +32,12 @@
     "publish:x-sdk": "vp run --filter @antdv-next/x-sdk build && node scripts/run-pm.mjs publish --filter @antdv-next/x-sdk --access public --no-git-checks",
     "publish:x-skill": "vp run --filter @antdv-next/x-skill build && node scripts/run-pm.mjs publish --filter @antdv-next/x-skill --access public --no-git-checks",
     "publish:x-card": "vp run --filter @antdv-next/x-card build && node scripts/run-pm.mjs publish --filter @antdv-next/x-card --access public --no-git-checks",
-    "bump:x": "vp exec bumpp packages/x/package.json --tag \"@antdv-next/x@\"",
-    "bump:x-markdown": "vp exec bumpp packages/x-markdown/package.json --tag \"@antdv-next/x-markdown@\"",
-    "bump:x-sdk": "vp exec bumpp packages/x-sdk/package.json --tag \"@antdv-next/x-sdk@\"",
-    "bump:x-skill": "vp exec bumpp packages/x-skill/package.json --tag \"@antdv-next/x-skill@\"",
-    "bump:x-card": "vp exec bumpp packages/x-card/package.json --tag \"@antdv-next/x-card@\"",
-    "bump:all": "vp exec bumpp --all",
+    "bump:x": "vp exec bumpp packages/x/package.json --tag \"@antdv-next/x@\" --commit \"chore(x): release v\"",
+    "bump:x-markdown": "vp exec bumpp packages/x-markdown/package.json --tag \"@antdv-next/x-markdown@\" --commit \"chore(x-markdown): release v\"",
+    "bump:x-sdk": "vp exec bumpp packages/x-sdk/package.json --tag \"@antdv-next/x-sdk@\" --commit \"chore(x-sdk): release v\"",
+    "bump:x-skill": "vp exec bumpp packages/x-skill/package.json --tag \"@antdv-next/x-skill@\" --commit \"chore(x-skill): release v\"",
+    "bump:x-card": "vp exec bumpp packages/x-card/package.json --tag \"@antdv-next/x-card@\" --commit \"chore(x-card): release v\"",
+    "bump:all": "vp exec bumpp --all --commit \"chore: release v\"",
     "prepare": "vp config"
   },
   "devDependencies": {
