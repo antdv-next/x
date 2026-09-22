@@ -79,6 +79,16 @@ jobs:
         if: matrix.task == 'test'
         run: vp run test:coverage
 
+      - name: Upload coverage to Codecov
+        if: matrix.task == 'test'
+        uses: codecov/codecov-action@v5
+        with:
+          files: coverage/clover.xml
+          token: ${{ secrets.CODECOV_TOKEN }}
+          # Coverage floors already fail the job in vitest.config.ts;
+          # Codecov is supplementary reporting, never a second gate.
+          fail_ci_if_error: false
+
       - name: Publish coverage summary
         if: matrix.task == 'test' && always()
         run: |
