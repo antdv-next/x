@@ -1,4 +1,7 @@
-import { createMirrorRedirect } from "@antdv-next/docs-plugins";
+// 必须从深路径导入：主入口会 re-export demo 插件模块，后者在顶层
+// import "vite"（normalizePath / transformWithOxc），打进 client bundle
+// 会在浏览器里炸（__vite-browser-external.createRequire is not a function）。
+import { createMirrorRedirect } from "@antdv-next/docs-plugins/dist/mirror-redirect/index";
 
 const mirror = createMirrorRedirect({
   mainHosts: ["x.antdv-next.com", "www.x.antdv-next.com"],
