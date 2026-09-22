@@ -1,0 +1,22 @@
+# Codecov supplements the CI coverage table (GITHUB_STEP_SUMMARY) with PR
+# comments, file-level diffs and trends. Statuses start informational so a
+# flaky upload or rounding never blocks a PR — the hard floors live in
+# vitest.config.ts thresholds, which fail the test job itself.
+
+coverage:
+  status:
+    project:
+      default:
+        informational: true
+    patch:
+      default:
+        informational: true
+
+# Belt and braces on top of the vitest `include` scoping: apps, build
+# output and test files never reach Codecov.
+ignore:
+  - "packages/docs"
+  - "packages/playground"
+  - "**/dist/**"
+  - "**/__tests__/**"
+  - "**/*.test.*"

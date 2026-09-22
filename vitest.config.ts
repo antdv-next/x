@@ -22,7 +22,9 @@ export default mergeConfig(
       root: fileURLToPath(new URL("./", import.meta.url)),
       coverage: {
         provider: "v8",
-        reporter: ["text-summary", "json-summary", "html"],
+        // clover.xml feeds Codecov; json-summary/html stay for the CI step
+        // summary and the downloadable artifact.
+        reporter: ["text-summary", "json-summary", "html", "clover"],
         reportsDirectory: "./coverage",
         // Scoped to the four packages that actually ship runtime code and have
         // tests. docs/playground are apps, and x-skill has no test suite —
