@@ -49,6 +49,13 @@ jobs:
       - name: Build packages
         run: vp run build:packages
 
+      # setup-vp manages pnpm through vp env, leaving no bare `pnpm` on PATH —
+      # pkg-pr-new's --pnpm mode spawns `pnpm` directly and dies with ENOENT
+      # without this. corepack reads the pinned version from the
+      # `packageManager` field.
+      - name: Expose pnpm for pkg-pr-new
+        run: corepack enable pnpm
+
       # --pnpm: the monorepo resolves deps through pnpm catalogs, which
       # pkg.pr.new needs to rewrite into real version ranges. The three
       # published packages have no workspace: internal deps (their
