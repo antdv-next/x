@@ -1,0 +1,58 @@
+name: pkg.pr.new
+
+# Publishes a preview npm package for every PR so reviewers and users can
+# install the change directly:
+#   pnpm add https://pkg.pr.new/antdv-next/x/@antdv-next/x@<pr>
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+
+concurrency:
+  group: pkg-pr-new-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    permissions:
+      # pkg.pr.new authenticates via OIDC and posts the install link as a PR
+      # comment itself.
+      id-token: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup Vite+
+        uses: voidzero-dev/setup-vp@v1
+        with:
+          cache: true
+
+      - name: Install dependencies
+        run: vp install --frozen-lockfile
+
+      # build:packages covers x / x-card / x-markdown / x-sdk (it excludes
+      # docs and x-skill, which are not published here). Skipped packages
+      # under packages/ never reach pkg-pr-new because only the three paths
+      # below are passed to it, mirroring each package's `files` field.
+      - name: Build packages
+        run: vp run build:packages
+
+      # --pnpm: the monorepo resolves deps through pnpm catalogs, which
+      # pkg.pr.new needs to rewrite into real version ranges. The three
+      # published packages have no workspace: internal deps (their
+      # @antdv-next/cssinjs / icons deps are external published versions),
+      # so nothing else needs rewriting.
+      - name: Publish preview packages
+        run: npx pkg-pr-new publish --pnpm ./packages/x ./packages/x-markdown ./packages/x-sdk
