@@ -40,7 +40,7 @@ const semantics = computed(() => [
       <ax-sender-switch
         checked-children="Deep Search: on"
         un-checked-children="Deep Search: off"
-        :class-names="classes"
+        :classes="classes"
       >
         <template #icon>
           <SearchOutlined />

@@ -82,6 +82,13 @@ export default defineComponent({
       >,
       default: () => ({ maxRows: 8 }),
     },
+    classes: {
+      type: Object as PropType<Record<string, string>>,
+      default: () => ({}),
+    },
+    /**
+     * @deprecated Use `classes` instead.
+     */
     classNames: {
       type: Object as PropType<Record<string, string>>,
       default: () => ({}),
@@ -314,6 +321,12 @@ export default defineComponent({
       },
     });
 
+    // Merge `classNames` (deprecated) with `classes`
+    const mergedClasses = computed(() => ({
+      ...props.classNames,
+      ...props.classes,
+    }));
+
     // Context
     provideSenderContext(
       computed(() => ({
@@ -330,7 +343,8 @@ export default defineComponent({
         submitType: props.submitType,
         prefixCls: prefixCls.value,
         styles: props.styles,
-        classNames: props.classNames,
+        classes: mergedClasses.value,
+        classNames: mergedClasses.value,
         autoSize: props.autoSize,
         triggerSend,
         placeholder: props.placeholder,
@@ -410,7 +424,7 @@ export default defineComponent({
             contextConfig.value.classes?.root,
             props.class,
             props.rootClass,
-            props.classNames.root,
+            mergedClasses.value.root,
             hashId.value,
             cssVarCls.value,
             `${cls}-main`,
@@ -432,7 +446,7 @@ export default defineComponent({
 
           {/* Content */}
           <div
-            class={[`${cls}-content`, props.classNames.content]}
+            class={[`${cls}-content`, mergedClasses.value.content]}
             style={props.styles.content}
             onMousedown={(e: MouseEvent) => {
               const inputNode = containerRef.value?.querySelector(
@@ -452,7 +466,7 @@ export default defineComponent({
                 class={[
                   `${cls}-prefix`,
                   contextConfig.value.classes?.prefix,
-                  props.classNames.prefix,
+                  mergedClasses.value.prefix,
                 ]}
                 style={[
                   contextConfig.value.styles?.prefix,
@@ -476,7 +490,7 @@ export default defineComponent({
                 class={[
                   actionListCls,
                   contextConfig.value.classes?.suffix,
-                  props.classNames.suffix,
+                  mergedClasses.value.suffix,
                 ]}
                 style={[
                   contextConfig.value.styles?.suffix,
@@ -494,7 +508,7 @@ export default defineComponent({
               class={[
                 `${cls}-footer`,
                 contextConfig.value.classes?.footer,
-                props.classNames.footer,
+                mergedClasses.value.footer,
               ]}
               style={[contextConfig.value.styles?.footer, props.styles.footer]}
             >

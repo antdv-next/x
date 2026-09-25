@@ -163,7 +163,10 @@ export default defineComponent({
           ref={inputRef}
           disabled={ctx.disabled}
           style={ctx.styles?.input}
-          class={[`${ctx.prefixCls}-input`, ctx.classNames?.input]}
+          class={[
+            `${ctx.prefixCls}-input`,
+            ctx.classes?.input ?? ctx.classNames?.input,
+          ]}
           autoSize={ctx.autoSize}
           value={ctx.value}
           onChange={(e: Event) => {

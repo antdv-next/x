@@ -1825,7 +1825,7 @@ export default defineComponent({
           class={classNames([
             inputCls,
             `${inputCls}-slot`,
-            senderCtx.value.classNames?.input,
+            senderCtx.value.classes?.input ?? senderCtx.value.classNames?.input,
           ])}
           style={mergeInputStyle.value}
           data-placeholder={senderCtx.value.placeholder}

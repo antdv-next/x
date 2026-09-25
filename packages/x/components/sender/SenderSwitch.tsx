@@ -38,6 +38,13 @@ export default defineComponent({
       type: Function as PropType<(checked: boolean) => void>,
       default: undefined,
     },
+    classes: {
+      type: Object as PropType<Partial<Record<SwitchSemanticType, string>>>,
+      default: () => ({}),
+    },
+    /**
+     * @deprecated Use `classes` instead.
+     */
     classNames: {
       type: Object as PropType<Partial<Record<SwitchSemanticType, string>>>,
       default: () => ({}),
@@ -84,6 +91,12 @@ export default defineComponent({
 
     const mergedChecked = computed(() => props.value ?? innerChecked.value);
 
+    // Merge `classNames` (deprecated) with `classes`
+    const mergedClasses = computed(() => ({
+      ...props.classNames,
+      ...props.classes,
+    }));
+
     expose({
       get nativeElement() {
         return containerRef.value;
@@ -107,8 +120,9 @@ export default defineComponent({
             props.class,
             props.rootClass,
             contextConfig.value.classes?.switch,
-            senderCtx.value.classNames?.switch,
-            props.classNames.root,
+            senderCtx.value.classes?.switch ??
+              senderCtx.value.classNames?.switch,
+            mergedClasses.value.root,
             {
               [`${cls}-checked`]: mergedChecked.value,
               [`${cls}-rtl`]: direction.value === "rtl",
@@ -125,12 +139,12 @@ export default defineComponent({
           <Button
             disabled={props.disabled}
             loading={props.loading}
-            class={[`${cls}-content`, props.classNames.content]}
+            class={[`${cls}-content`, mergedClasses.value.content]}
             style={props.styles.content as any}
             {...{
               classes: {
-                icon: props.classNames.icon,
-                content: props.classNames.title,
+                icon: mergedClasses.value.icon,
+                content: mergedClasses.value.title,
               },
               styles: {
                 icon: props.styles.icon,

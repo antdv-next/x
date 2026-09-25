@@ -26,6 +26,37 @@ describe("Sender", () => {
     expect(wrapper.find(".custom-sender").exists()).toBe(true);
   });
 
+  it("should apply semantic classes via classes prop", () => {
+    const wrapper = mount(Sender, {
+      props: {
+        classes: {
+          root: "custom-root",
+          content: "custom-content",
+          input: "custom-input",
+        },
+      },
+    });
+    expect(wrapper.find(".antd-sender").classes()).toContain("custom-root");
+    expect(wrapper.find(".antd-sender-content").classes()).toContain(
+      "custom-content",
+    );
+    expect(wrapper.find(".antd-sender-input").classes()).toContain(
+      "custom-input",
+    );
+  });
+
+  it("should still support deprecated classNames prop", () => {
+    const wrapper = mount(Sender, {
+      props: {
+        classNames: { root: "legacy-root", input: "legacy-input" },
+      },
+    });
+    expect(wrapper.find(".antd-sender").classes()).toContain("legacy-root");
+    expect(wrapper.find(".antd-sender-input").classes()).toContain(
+      "legacy-input",
+    );
+  });
+
   it("should render disabled state", () => {
     const wrapper = mount(Sender, {
       props: { disabled: true },

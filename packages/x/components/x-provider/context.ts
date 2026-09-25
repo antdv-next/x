@@ -44,9 +44,7 @@ export interface XComponentsConfig {
   folder?: Pick<FolderProps, "style" | "styles" | "classes">;
   mermaid?: Pick<MermaidProps, "style" | "styles" | "classes">;
   prompts?: Pick<PromptsProps, "style" | "styles" | "classes">;
-  sender?: Pick<SenderProps, "style" | "styles" | "classNames"> & {
-    classes?: SenderProps["classNames"];
-  };
+  sender?: Pick<SenderProps, "style" | "styles" | "classes" | "classNames">;
   suggestion?: Pick<SuggestionProps, "style" | "styles" | "classes">;
   think?: Pick<ThinkProps, "style" | "styles" | "classes">;
   thoughtChain?: Pick<ThoughtChainProps, "style" | "styles" | "classes">;

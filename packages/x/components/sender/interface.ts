@@ -177,6 +177,10 @@ export interface SenderProps {
   onCut?: (event: ClipboardEvent, info: SenderCopyInfo) => void;
   onFocus?: (event: FocusEvent) => void;
   onBlur?: (event: FocusEvent) => void;
+  classes?: Partial<Record<SemanticType, string>>;
+  /**
+   * @deprecated Use `classes` instead.
+   */
   classNames?: Partial<Record<SemanticType, string>>;
   styles?: Partial<Record<SemanticType, CSSProperties>>;
   rootClass?: string;
