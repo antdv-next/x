@@ -30,6 +30,13 @@ export default defineComponent({
       type: [String, Object] as PropType<string | CSSProperties>,
       default: undefined,
     },
+    classes: {
+      type: Object as PropType<Partial<Record<HeaderSemanticType, string>>>,
+      default: () => ({}),
+    },
+    /**
+     * @deprecated Use `classes` instead.
+     */
     classNames: {
       type: Object as PropType<Partial<Record<HeaderSemanticType, string>>>,
       default: () => ({}),
@@ -54,6 +61,12 @@ export default defineComponent({
 
     const direction = computed(() => configCtx.value.direction);
 
+    // Merge `classNames` (deprecated) with `classes`
+    const mergedClasses = computed(() => ({
+      ...props.classNames,
+      ...props.classes,
+    }));
+
     return () => {
       const headerCls = prefixCls.value;
       const contentNode = (
@@ -70,7 +83,7 @@ export default defineComponent({
           {/* Header bar */}
           {(props.closable || props.title) && (
             <div
-              class={[`${headerCls}-header`, props.classNames.header]}
+              class={[`${headerCls}-header`, mergedClasses.value.header]}
               style={props.styles.header}
             >
               <div class={`${headerCls}-title`}>
@@ -92,7 +105,7 @@ export default defineComponent({
           {/* Content */}
           {slots.default && (
             <div
-              class={[`${headerCls}-content`, props.classNames.content]}
+              class={[`${headerCls}-content`, mergedClasses.value.content]}
               style={props.styles.content}
             >
               {slots.default()}

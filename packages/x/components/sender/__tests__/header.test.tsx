@@ -78,4 +78,42 @@ describe("Sender.Header", () => {
     });
     expect(wrapper.find(".custom-content").exists()).toBe(true);
   });
+
+  it("should apply semantic classes via classes prop", () => {
+    const wrapper = mount(Sender.Header, {
+      props: {
+        open: true,
+        title: "Test",
+        classes: { header: "custom-header", content: "custom-content-cls" },
+      },
+      slots: {
+        default: () => <div>Content</div>,
+      },
+    });
+    expect(wrapper.find(".antd-sender-header-header").classes()).toContain(
+      "custom-header",
+    );
+    expect(wrapper.find(".antd-sender-header-content").classes()).toContain(
+      "custom-content-cls",
+    );
+  });
+
+  it("should still support deprecated classNames prop", () => {
+    const wrapper = mount(Sender.Header, {
+      props: {
+        open: true,
+        title: "Test",
+        classNames: { header: "legacy-header", content: "legacy-content" },
+      },
+      slots: {
+        default: () => <div>Content</div>,
+      },
+    });
+    expect(wrapper.find(".antd-sender-header-header").classes()).toContain(
+      "legacy-header",
+    );
+    expect(wrapper.find(".antd-sender-header-content").classes()).toContain(
+      "legacy-content",
+    );
+  });
 });

@@ -41,7 +41,8 @@ description: 用于聊天的输入框组件。
 | 属性         | 说明                                                                                              | 类型                                                                                       | 默认值           |
 | ------------ | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ---------------- |
 | allowSpeech  | 是否允许语音输入                                                                                  | `boolean \| SpeechConfig`                                                                  | `false`          |
-| classNames   | 样式类名                                                                                          | `Partial<Record<SemanticType, string>>`                                                    | -                |
+| classes      | 样式类名                                                                                          | `Partial<Record<SemanticType, string>>`                                                    | -                |
+| classNames   | 样式类名（已废弃，请使用 `classes`）                                                              | `Partial<Record<SemanticType, string>>`                                                    | -                |
 | defaultValue | 输入框默认值                                                                                      | `string`                                                                                   | -                |
 | disabled     | 是否禁用                                                                                          | `boolean`                                                                                  | `false`          |
 | loading      | 是否加载中                                                                                        | `boolean`                                                                                  | `false`          |
@@ -212,7 +213,8 @@ interface SenderFocusOptions extends FocusOptions {
 | open         | 是否展开                                    | `boolean`                                               | `false` |
 | closable     | 是否可关闭                                  | `boolean`                                               | `true`  |
 | forceRender  | 强制渲染，在初始化便需要 ref 内部元素时使用 | `boolean`                                               | `false` |
-| classNames   | 样式类名                                    | `Partial<Record<'header' \| 'content', string>>`        | -       |
+| classes      | 样式类名                                    | `Partial<Record<'header' \| 'content', string>>`        | -       |
+| classNames   | 样式类名（已废弃，请使用 `classes`）        | `Partial<Record<'header' \| 'content', string>>`        | -       |
 | styles       | 语义化定义样式                              | `Partial<Record<'header' \| 'content', CSSProperties>>` | -       |
 | onOpenChange | 展开状态改变的回调                          | `(open: boolean) => void`                               | -       |
 
@@ -227,19 +229,20 @@ interface SenderFocusOptions extends FocusOptions {
 
 ### Sender.Switch
 
-| 属性              | 说明             | 类型                                                                       | 默认值  |
-| ----------------- | ---------------- | -------------------------------------------------------------------------- | ------- |
-| checkedChildren   | 选中时的内容     | `VNodeChild`                                                               | -       |
-| unCheckedChildren | 非选中时的内容   | `VNodeChild`                                                               | -       |
-| icon              | 设置图标组件     | `VNodeChild`                                                               | -       |
-| disabled          | 是否禁用         | `boolean`                                                                  | `false` |
-| loading           | 加载中的开关     | `boolean`                                                                  | `false` |
-| defaultValue      | 默认选中状态     | `boolean`                                                                  | `false` |
-| value             | 开关的值         | `boolean`                                                                  | -       |
-| rootClass         | 根元素样式类     | `string`                                                                   | -       |
-| classNames        | 样式类名         | `Partial<Record<'root' \| 'content' \| 'icon' \| 'title', string>>`        | -       |
-| styles            | 语义化定义样式   | `Partial<Record<'root' \| 'content' \| 'icon' \| 'title', CSSProperties>>` | -       |
-| onChange          | 变化时的回调函数 | `(checked: boolean) => void`                                               | -       |
+| 属性              | 说明                                 | 类型                                                                       | 默认值  |
+| ----------------- | ------------------------------------ | -------------------------------------------------------------------------- | ------- |
+| checkedChildren   | 选中时的内容                         | `VNodeChild`                                                               | -       |
+| unCheckedChildren | 非选中时的内容                       | `VNodeChild`                                                               | -       |
+| icon              | 设置图标组件                         | `VNodeChild`                                                               | -       |
+| disabled          | 是否禁用                             | `boolean`                                                                  | `false` |
+| loading           | 加载中的开关                         | `boolean`                                                                  | `false` |
+| defaultValue      | 默认选中状态                         | `boolean`                                                                  | `false` |
+| value             | 开关的值                             | `boolean`                                                                  | -       |
+| rootClass         | 根元素样式类                         | `string`                                                                   | -       |
+| classes           | 样式类名                             | `Partial<Record<'root' \| 'content' \| 'icon' \| 'title', string>>`        | -       |
+| classNames        | 样式类名（已废弃，请使用 `classes`） | `Partial<Record<'root' \| 'content' \| 'icon' \| 'title', string>>`        | -       |
+| styles            | 语义化定义样式                       | `Partial<Record<'root' \| 'content' \| 'icon' \| 'title', CSSProperties>>` | -       |
+| onChange          | 变化时的回调函数                     | `(checked: boolean) => void`                                               | -       |
 
 #### Sender.Switch Slots
 

@@ -41,7 +41,8 @@ description: A chat input component for sending messages.
 | Property     | Description                                                                                                       | Type                                                                                       | Default                |
 | ------------ | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ---------------------- |
 | allowSpeech  | Whether to allow voice input                                                                                      | `boolean \| SpeechConfig`                                                                  | `false`                |
-| classNames   | Style class names                                                                                                 | `Partial<Record<SemanticType, string>>`                                                    | -                      |
+| classes      | Style class names                                                                                                 | `Partial<Record<SemanticType, string>>`                                                    | -                      |
+| classNames   | Style class names (deprecated, use `classes` instead)                                                             | `Partial<Record<SemanticType, string>>`                                                    | -                      |
 | defaultValue | Default value of the input box                                                                                    | `string`                                                                                   | -                      |
 | disabled     | Whether to disable                                                                                                | `boolean`                                                                                  | `false`                |
 | loading      | Whether in loading state                                                                                          | `boolean`                                                                                  | `false`                |
@@ -211,7 +212,8 @@ interface SenderFocusOptions extends FocusOptions {
 | open         | Whether to expand                                                                       | `boolean`                                               | `false` |
 | closable     | Whether it can be closed                                                                | `boolean`                                               | `true`  |
 | forceRender  | Force rendering. Use when you need to reference internal elements during initialization | `boolean`                                               | `false` |
-| classNames   | Style class names                                                                       | `Partial<Record<'header' \| 'content', string>>`        | -       |
+| classes      | Style class names                                                                       | `Partial<Record<'header' \| 'content', string>>`        | -       |
+| classNames   | Style class names (deprecated, use `classes` instead)                                   | `Partial<Record<'header' \| 'content', string>>`        | -       |
 | styles       | Semantic style definition                                                               | `Partial<Record<'header' \| 'content', CSSProperties>>` | -       |
 | onOpenChange | Callback for expansion state change                                                     | `(open: boolean) => void`                               | -       |
 
@@ -226,19 +228,20 @@ Render priority: corresponding slot > corresponding prop.
 
 ### Sender.Switch
 
-| Property          | Description               | Type                                                                       | Default |
-| ----------------- | ------------------------- | -------------------------------------------------------------------------- | ------- |
-| checkedChildren   | Content when checked      | `VNodeChild`                                                               | -       |
-| unCheckedChildren | Content when unchecked    | `VNodeChild`                                                               | -       |
-| icon              | Set icon component        | `VNodeChild`                                                               | -       |
-| disabled          | Whether disabled          | `boolean`                                                                  | `false` |
-| loading           | Loading switch            | `boolean`                                                                  | `false` |
-| defaultValue      | Default checked state     | `boolean`                                                                  | `false` |
-| value             | Switch value              | `boolean`                                                                  | -       |
-| rootClass         | Root element style class  | `string`                                                                   | -       |
-| classNames        | Style class names         | `Partial<Record<'root' \| 'content' \| 'icon' \| 'title', string>>`        | -       |
-| styles            | Semantic style definition | `Partial<Record<'root' \| 'content' \| 'icon' \| 'title', CSSProperties>>` | -       |
-| onChange          | Callback when changed     | `(checked: boolean) => void`                                               | -       |
+| Property          | Description                                           | Type                                                                       | Default |
+| ----------------- | ----------------------------------------------------- | -------------------------------------------------------------------------- | ------- |
+| checkedChildren   | Content when checked                                  | `VNodeChild`                                                               | -       |
+| unCheckedChildren | Content when unchecked                                | `VNodeChild`                                                               | -       |
+| icon              | Set icon component                                    | `VNodeChild`                                                               | -       |
+| disabled          | Whether disabled                                      | `boolean`                                                                  | `false` |
+| loading           | Loading switch                                        | `boolean`                                                                  | `false` |
+| defaultValue      | Default checked state                                 | `boolean`                                                                  | `false` |
+| value             | Switch value                                          | `boolean`                                                                  | -       |
+| rootClass         | Root element style class                              | `string`                                                                   | -       |
+| classes           | Style class names                                     | `Partial<Record<'root' \| 'content' \| 'icon' \| 'title', string>>`        | -       |
+| classNames        | Style class names (deprecated, use `classes` instead) | `Partial<Record<'root' \| 'content' \| 'icon' \| 'title', string>>`        | -       |
+| styles            | Semantic style definition                             | `Partial<Record<'root' \| 'content' \| 'icon' \| 'title', CSSProperties>>` | -       |
+| onChange          | Callback when changed                                 | `(checked: boolean) => void`                                               | -       |
 
 #### Sender.Switch Slots
 

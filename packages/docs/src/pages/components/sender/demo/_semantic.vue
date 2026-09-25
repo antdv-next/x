@@ -67,7 +67,7 @@ const headerSemantics = computed(() => [
   <a-flex vertical>
     <SemanticPreview component-name="Sender" :semantics="senderSemantics">
       <template #default="{ classes }">
-        <ax-sender :class-names="classes">
+        <ax-sender :classes="classes">
           <template #prefix>
             <a-button type="text">
               <template #icon>
@@ -94,11 +94,7 @@ const headerSemantics = computed(() => [
       <template #default="{ classes }">
         <ax-sender>
           <template #header>
-            <ax-sender-header
-              title="Header"
-              :open="true"
-              :class-names="classes"
-            >
+            <ax-sender-header title="Header" :open="true" :classes="classes">
               Content
             </ax-sender-header>
           </template>

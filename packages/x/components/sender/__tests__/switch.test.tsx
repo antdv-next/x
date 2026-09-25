@@ -95,4 +95,30 @@ describe("Sender.Switch", () => {
     });
     expect(wrapper.find("[class*='switch-checked']").exists()).toBe(true);
   });
+
+  it("should apply semantic classes via classes prop", () => {
+    const wrapper = mount(Sender.Switch, {
+      props: {
+        classes: {
+          root: "custom-switch-root",
+          content: "custom-switch-content",
+        },
+      },
+    });
+    expect(wrapper.find("[class*='sender-switch']").classes()).toContain(
+      "custom-switch-root",
+    );
+    expect(wrapper.find("button").classes()).toContain("custom-switch-content");
+  });
+
+  it("should still support deprecated classNames prop", () => {
+    const wrapper = mount(Sender.Switch, {
+      props: {
+        classNames: { root: "legacy-switch-root" },
+      },
+    });
+    expect(wrapper.find("[class*='sender-switch']").classes()).toContain(
+      "legacy-switch-root",
+    );
+  });
 });
