@@ -5,12 +5,67 @@ interface Props {
   text: string;
   fadeDuration?: number;
   easing?: string;
+  splitBy?: "chunk" | "sentence";
+  delimiters?: string[];
+  maxSentenceChars?: number;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   fadeDuration: 200,
   easing: "ease-in-out",
+  splitBy: "chunk",
+  delimiters: () => ["。", "！", "？", ".", "!", "?", "\n"],
+  maxSentenceChars: 120,
 });
+
+const endsWithDelimiter = (chunk: string, delimiters: string[]): boolean =>
+  chunk.length > 0 && delimiters.includes(chunk[chunk.length - 1]);
+
+/**
+ * Append `newText` sentence-wise: text that continues the current (unfinished)
+ * sentence is merged into its chunk so it does not fade in separately, and a
+ * new chunk starts only after a delimiter. Text that is already on screen is
+ * never moved to another chunk, so nothing that has faded in fades in again.
+ */
+const appendBySentence = (
+  chunks: string[],
+  newText: string,
+  delimiters: string[],
+  maxChars: number,
+): string[] => {
+  const next = chunks.slice();
+  let rest = newText;
+  const last = next[next.length - 1];
+  // Keep merging into the open sentence unless it is already at the cap.
+  if (
+    next.length > 0 &&
+    !endsWithDelimiter(last, delimiters) &&
+    last.length < maxChars
+  ) {
+    let cut = -1;
+    for (let i = 0; i < rest.length; i++) {
+      if (delimiters.includes(rest[i])) {
+        cut = i + 1;
+        break;
+      }
+    }
+    if (cut === -1) {
+      next[next.length - 1] += rest;
+      return next;
+    }
+    next[next.length - 1] += rest.slice(0, cut);
+    rest = rest.slice(cut);
+  }
+  let start = 0;
+  for (let i = 0; i < rest.length; i++) {
+    if (delimiters.includes(rest[i])) {
+      next.push(rest.slice(start, i + 1));
+      start = i + 1;
+    }
+  }
+  if (start < rest.length) next.push(rest.slice(start));
+  return next;
+};
 
 const chunks = ref<string[]>([]);
 const previousText = ref("");
@@ -30,7 +85,15 @@ function updateChunks(nextText: string) {
   const delta = nextText.slice(previousText.value.length);
   if (!delta) return;
 
-  chunks.value = [...chunks.value, delta];
+  chunks.value =
+    props.splitBy === "sentence"
+      ? appendBySentence(
+          chunks.value,
+          delta,
+          props.delimiters,
+          props.maxSentenceChars,
+        )
+      : [...chunks.value, delta];
   previousText.value = nextText;
 }
 

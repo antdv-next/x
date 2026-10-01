@@ -6,11 +6,14 @@ import { computed, defineComponent, h, ref, shallowRef, watch } from "vue";
 import type { XMarkdownProps } from "./interface";
 
 import DebugPanel from "./components/DebugPanel.vue";
+import Section from "./components/Section.vue";
 import TailIndicator from "./components/TailIndicator.vue";
-import { useStreaming } from "./composables/useStreaming";
+import { useStreamingCore } from "./composables/useStreaming";
 import { useTail } from "./composables/useTail";
+import { useTypewriter } from "./composables/useTypewriter";
 import { Parser } from "./core/Parser";
 import { VueRenderer } from "./core/VueRenderer";
+import { resolveStreaming } from "./utils/streaming";
 
 const props = withDefaults(defineProps<XMarkdownProps>(), {
   content: "",
@@ -24,16 +27,25 @@ const props = withDefaults(defineProps<XMarkdownProps>(), {
   paragraphTag: "p",
 });
 
+// `streaming={true|false}` expands to a frozen preset object, so everything
+// downstream keyed on the resolved option keeps a stable identity.
+const streamingResolved = computed(() => resolveStreaming(props.streaming));
+
 const contentRef = computed(() => props.content || "");
-const streamingRef = computed(() => props.streaming);
 const componentsRef = computed(() => props.components);
 
-const { processedContent } = useStreaming(
-  contentRef,
-  streamingRef,
+// The typewriter runs first so that what reaches the streaming cache is
+// always a prefix of the previous value.
+const typewriterRef = computed(() => streamingResolved.value?.typewriter);
+const hasNextChunkRef = computed(() => !!streamingResolved.value?.hasNextChunk);
+const pacedContent = useTypewriter(contentRef, typewriterRef, hasNextChunkRef);
+
+const { output: processedContent, sections } = useStreamingCore(
+  pacedContent,
+  streamingResolved,
   componentsRef,
 );
-const { tailContent, tailComponent, showTail } = useTail(streamingRef);
+const { tailContent, tailComponent, showTail } = useTail(streamingResolved);
 
 const mergedComponents = computed<Record<string, Component>>(() => {
   const baseComponents = { ...props.components };
@@ -85,8 +97,8 @@ const renderer = shallowRef(
   new VueRenderer({
     components: mergedComponents.value,
     componentsProps: props.componentsProps,
-    enableAnimation: props.streaming?.enableAnimation ?? true,
-    animationConfig: props.streaming?.animationConfig,
+    enableAnimation: streamingResolved.value?.enableAnimation ?? true,
+    animationConfig: streamingResolved.value?.animationConfig,
   }),
 );
 
@@ -98,6 +110,11 @@ const bumpOptionsVersion = () => {
 
 const htmlOutput = computed(() => {
   void optionsVersion.value;
+  // Sections are parsed one by one inside the Section components; the
+  // whole-document parse is skipped while they are active.
+  if (sections.value) {
+    return "";
+  }
   return parser.value.parse(processedContent.value, {
     injectTail: showTail.value,
   });
@@ -170,22 +187,40 @@ watch(
   { deep: true },
 );
 
+// The renderer only reads enableAnimation and animationConfig from
+// `streaming`, so watch those scalars rather than the object: an inline
+// `:streaming="{ hasNextChunk }"` literal (the documented usage) must not
+// rebuild the renderer options — and with it every memoised section — per
+// parent render.
 watch(
-  () => props.streaming,
-  newStreaming => {
+  [
+    () => streamingResolved.value?.enableAnimation,
+    () => streamingResolved.value?.animationConfig,
+  ],
+  ([enableAnimation, animationConfig]) => {
     renderer.value.setOptions({
-      enableAnimation: newStreaming?.enableAnimation ?? true,
-      animationConfig: newStreaming?.animationConfig,
+      enableAnimation: enableAnimation ?? true,
+      animationConfig,
     });
     bumpOptionsVersion();
   },
-  { deep: true },
 );
 </script>
 
 <template>
   <div :class="['x-markdown', className]" :style="style">
-    <VNodeRenderer :node="vNode" />
+    <template v-if="sections">
+      <Section
+        v-for="(section, index) in sections"
+        :key="index"
+        :content="section"
+        :parser="parser"
+        :renderer="renderer"
+        :inject-tail="!!showTail && index === sections.length - 1"
+        :options-version="optionsVersion"
+      />
+    </template>
+    <VNodeRenderer v-else :node="vNode" />
     <DebugPanel v-if="debug" />
   </div>
 </template>

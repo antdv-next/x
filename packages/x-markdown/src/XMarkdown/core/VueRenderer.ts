@@ -66,6 +66,9 @@ export class VueRenderer {
       componentsProps: options.componentsProps ?? {},
       enableAnimation: options.enableAnimation ?? true,
       animationConfig: {
+        // splitBy / delimiters / maxSentenceChars fall back to the
+        // AnimationText component defaults when left undefined.
+        ...options.animationConfig,
         fadeDuration:
           options.animationConfig?.fadeDuration ?? DEFAULT_ANIMATION_DURATION,
         easing: options.animationConfig?.easing ?? "ease-in-out",
@@ -156,13 +159,18 @@ export class VueRenderer {
   }
 
   private parseToVNodes(html: string, unclosedTags: Set<string>): VNode[] {
-    const template = `<div>${html}</div>`;
+    // The wrapper div only exists so the HTML string can be parsed with
+    // innerHTML; the rendered vnodes are its *children*. Returning the
+    // wrapper itself would nest the whole document in an extra div — and
+    // each incremental Section in its own one, which would make sectioned
+    // output diverge from the whole-document render.
     const container = document.createElement("div");
-    container.innerHTML = template;
+    container.innerHTML = `<div>${html}</div>`;
     const cidRef = { tagIndexes: {} as Record<string, number> };
 
     const nodes: VNode[] = [];
-    Array.from(container.childNodes).forEach(node => {
+    const contentParent = container.firstElementChild ?? container;
+    Array.from(contentParent.childNodes).forEach(node => {
       const vnode = this.convertNode(node, unclosedTags, cidRef);
       if (vnode) {
         nodes.push(vnode);
@@ -328,10 +336,15 @@ export class VueRenderer {
   }
 
   private wrapWithAnimation(text: string): VNode {
+    const { fadeDuration, easing, splitBy, delimiters, maxSentenceChars } =
+      this.options.animationConfig;
     return h(AnimationText, {
       text,
-      fadeDuration: this.options.animationConfig.fadeDuration,
-      easing: this.options.animationConfig.easing,
+      fadeDuration,
+      easing,
+      splitBy,
+      delimiters,
+      maxSentenceChars,
     });
   }
 
