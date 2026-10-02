@@ -184,7 +184,13 @@ interface BoundaryScan {
   lineIndent: number;
   lineFenceChar: string;
   lineFenceLen: number;
+  /** Whether only whitespace followed the leading fence run on this line */
+  lineTailBlank: boolean;
   inInlineCode: boolean;
+  /** Length of the run of backticks that opened the inline code span */
+  inlineCodeLen: number;
+  /** Length of the run of consecutive backticks currently being scanned */
+  backtickRun: number;
 }
 
 const initialScan = (): BoundaryScan => ({
@@ -197,8 +203,31 @@ const initialScan = (): BoundaryScan => ({
   lineIndent: 0,
   lineFenceChar: "",
   lineFenceLen: 0,
+  lineTailBlank: true,
   inInlineCode: false,
+  inlineCodeLen: 0,
+  backtickRun: 0,
 });
+
+/**
+ * Settle the run of backticks that just ended. Outside code a run opens a
+ * span that only a run of the same length closes again: a span opened with
+ * two backticks is not ended by a single backtick inside it.
+ */
+const settleBacktickRun = (scan: BoundaryScan): void => {
+  const run = scan.backtickRun;
+  scan.backtickRun = 0;
+  if (run === 0) return;
+  if (scan.inInlineCode) {
+    if (run === scan.inlineCodeLen) {
+      scan.inInlineCode = false;
+      scan.inlineCodeLen = 0;
+    }
+  } else {
+    scan.inInlineCode = true;
+    scan.inlineCodeLen = run;
+  }
+};
 
 /**
  * Extend the sentence-boundary scan to cover `text`. Delimiters inside fenced
@@ -220,16 +249,24 @@ const scanBoundaries = (
           scan.fenceLen = scan.lineFenceLen;
         } else if (
           scan.lineFenceChar === scan.fenceChar &&
-          scan.lineFenceLen >= scan.fenceLen
+          scan.lineFenceLen >= scan.fenceLen &&
+          // A closing fence must be followed by whitespace only; a line like
+          // "```js" inside the block is a body line, not the terminator.
+          scan.lineTailBlank
         ) {
           scan.inFence = false;
+          scan.fenceChar = "";
+          scan.fenceLen = 0;
         }
       }
       scan.lineFenceChar = "";
       scan.lineFenceLen = 0;
       scan.lineIndent = 0;
+      scan.lineTailBlank = true;
       scan.atLineStart = true;
       scan.inInlineCode = false;
+      scan.inlineCodeLen = 0;
+      scan.backtickRun = 0;
       // A line end is always a boundary, code included: revealing code line
       // by line is the natural typewriter rhythm, and a paragraph break is a
       // sentence boundary whatever `delimiters` says.
@@ -255,16 +292,23 @@ const scanBoundaries = (
         continue;
       }
       scan.atLineStart = false;
+      scan.lineTailBlank = /\s/.test(char);
       // One or two leading backticks were not a fence: they opened inline code.
       if (scan.lineFenceChar === "`" && scan.lineFenceLen < 3) {
-        scan.inInlineCode = scan.lineFenceLen % 2 === 1;
+        scan.inInlineCode = true;
+        scan.inlineCodeLen = scan.lineFenceLen;
       }
+    } else {
+      // Anything after the leading fence run: a closing fence's line must be
+      // whitespace-only there.
+      scan.lineTailBlank = scan.lineTailBlank && /\s/.test(char);
     }
     if (scan.inFence) continue;
     if (char === "`") {
-      scan.inInlineCode = !scan.inInlineCode;
+      scan.backtickRun += 1;
       continue;
     }
+    settleBacktickRun(scan);
     if (!scan.inInlineCode && delimiters.has(char)) {
       scan.boundaries.push(i + 1);
     }

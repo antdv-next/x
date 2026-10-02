@@ -187,20 +187,26 @@ watch(
   { deep: true },
 );
 
-// The renderer only reads enableAnimation and animationConfig from
-// `streaming`, so watch those scalars rather than the object: an inline
-// `:streaming="{ hasNextChunk }"` literal (the documented usage) must not
-// rebuild the renderer options — and with it every memoised section — per
-// parent render.
+// The renderer only reads enableAnimation and the animationConfig fields from
+// `streaming`, so watch those scalars rather than the objects: an inline
+// `:streaming="{ hasNextChunk, animationConfig: { ... } }"` literal (the
+// documented usage) must not rebuild the renderer options — and with it every
+// memoised section — per parent render. Watching the fields also picks up
+// in-place mutation of a reactive animationConfig.
 watch(
   [
     () => streamingResolved.value?.enableAnimation,
-    () => streamingResolved.value?.animationConfig,
+    () => streamingResolved.value?.animationConfig?.fadeDuration,
+    () => streamingResolved.value?.animationConfig?.easing,
+    () => streamingResolved.value?.animationConfig?.splitBy,
+    () => streamingResolved.value?.animationConfig?.delimiters?.join("\u0000"),
+    () => streamingResolved.value?.animationConfig?.maxSentenceChars,
   ],
-  ([enableAnimation, animationConfig]) => {
+  () => {
+    const animationConfig = streamingResolved.value?.animationConfig;
     renderer.value.setOptions({
-      enableAnimation: enableAnimation ?? true,
-      animationConfig,
+      enableAnimation: streamingResolved.value?.enableAnimation ?? true,
+      animationConfig: animationConfig ? { ...animationConfig } : undefined,
     });
     bumpOptionsVersion();
   },

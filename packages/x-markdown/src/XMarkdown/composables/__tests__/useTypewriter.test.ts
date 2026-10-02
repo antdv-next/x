@@ -339,6 +339,40 @@ describe("useTypewriter", () => {
       expect(outputs.some(o => o.endsWith("\nx."))).toBe(true);
       tw.scope.stop();
     });
+
+    it("keeps a fence open on a body line that starts with fence characters and an info string", async () => {
+      const config: TypewriterConfig = { unit: "sentence", delimiters: ["."] };
+      const tw = setup({ input: "", typewriter: config, active: true });
+      // A nested "```js" line does not close the fence (CommonMark: only a
+      // fence run followed by whitespace does), so it must not be treated as
+      // the end of the block and x.y() must not become a cut point.
+      const text = "```\n```js\nx.y();\nz.w();\n```\nDone.";
+      tw.input.value = text;
+      await nextTick();
+      const outputs = drain(() => tw.current);
+      expect(outputs[outputs.length - 1]).toBe(text);
+      for (const output of outputs.slice(1, -1)) {
+        expect(["\nx.", "\nz."].some(s => output.endsWith(s))).toBe(false);
+      }
+      // The reveal still walks the block line by line, "```js" included.
+      expect(outputs).toContain("```\n```js\n");
+      tw.scope.stop();
+    });
+
+    it("ignores delimiters inside multi-backtick inline code spans", async () => {
+      const config: TypewriterConfig = { unit: "sentence", delimiters: ["."] };
+      const tw = setup({ input: "", typewriter: config, active: true });
+      // A code span is delimited by a run of the same length, so the two
+      // backticks around "a.b" open one span rather than toggling twice.
+      const text = "Run ``a.b`` now. end.";
+      tw.input.value = text;
+      await nextTick();
+      const outputs = drain(() => tw.current);
+      expect(outputs[outputs.length - 1]).toBe(text);
+      expect(outputs.some(o => o.endsWith("``a."))).toBe(false);
+      expect(outputs).toContain("Run ``a.b`` now.");
+      tw.scope.stop();
+    });
   });
 
   it("falls back to character reveal after maxSentenceChars without a delimiter", async () => {
