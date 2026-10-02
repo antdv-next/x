@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { XMarkdown } from "@antdv-next/x-markdown";
 import { Button, Flex, Segmented, Space, Tag, theme } from "antdv-next";
-import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
+
+import { useChunkedStream } from "./use-chunked-stream";
 
 // A long answer: headings, inline markup, fenced code and tables — the mix
 // that made every chunk re-render the whole document before `incremental`.
@@ -40,45 +42,14 @@ const markdownClass = computed(() =>
 );
 
 const pace = ref<Pace>("normal");
-const index = ref(0);
-const isStreaming = ref(true);
-
-const content = computed(() => text.slice(0, index.value));
+const paceMs = computed(() => PACES[pace.value]);
+const {
+  content,
+  index,
+  isStreaming,
+  restart: runStream,
+} = useChunkedStream(text, CHUNK, paceMs);
 const chunksReceived = computed(() => Math.ceil(index.value / CHUNK));
-
-let timerRef: ReturnType<typeof setTimeout> | null = null;
-
-const clearTimer = () => {
-  if (timerRef !== null) {
-    clearTimeout(timerRef);
-    timerRef = null;
-  }
-};
-
-watch(
-  [index, pace],
-  () => {
-    clearTimer();
-
-    if (index.value >= text.length) {
-      isStreaming.value = false;
-      return;
-    }
-
-    timerRef = setTimeout(() => {
-      index.value = Math.min(index.value + CHUNK, text.length);
-    }, PACES[pace.value]);
-  },
-  { immediate: true },
-);
-
-onBeforeUnmount(clearTimer);
-
-const runStream = () => {
-  clearTimer();
-  index.value = 0;
-  isStreaming.value = true;
-};
 
 const leftPaneRef = ref<HTMLElement | null>(null);
 const rightPaneRef = ref<HTMLElement | null>(null);
