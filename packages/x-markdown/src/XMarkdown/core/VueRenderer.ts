@@ -66,6 +66,9 @@ export class VueRenderer {
       componentsProps: options.componentsProps ?? {},
       enableAnimation: options.enableAnimation ?? true,
       animationConfig: {
+        // splitBy / delimiters / maxSentenceChars fall back to the
+        // AnimationText component defaults when left undefined.
+        ...options.animationConfig,
         fadeDuration:
           options.animationConfig?.fadeDuration ?? DEFAULT_ANIMATION_DURATION,
         easing: options.animationConfig?.easing ?? "ease-in-out",
@@ -74,6 +77,11 @@ export class VueRenderer {
   }
 
   render(html: string): VNode {
+    if (!html) {
+      // Fast path to the zero-node branch below: empty input always
+      // sanitizes to nothing, so skip detect + sanitize + parse.
+      return h(Fragment);
+    }
     const unclosedTags = detectUnclosedComponentTags(
       html,
       Object.keys(this.options.components),
@@ -81,7 +89,13 @@ export class VueRenderer {
     const sanitized = this.sanitize(html);
     const nodes = this.parseToVNodes(sanitized, unclosedTags);
     if (nodes.length === 0) {
-      return h("span", "");
+      // Matches the upstream renderer, which returns nothing for content that
+      // sanitizes down to no nodes. A placeholder *element* here would make an
+      // empty incremental Section emit a node the whole-document render does
+      // not have, and would survive the end of the stream as a stray element.
+      // A childless Fragment contributes no DOM (only invisible anchor text
+      // nodes) and keeps the public return type a stable `VNode`.
+      return h(Fragment);
     }
     if (nodes.length === 1) {
       return nodes[0];
@@ -156,13 +170,18 @@ export class VueRenderer {
   }
 
   private parseToVNodes(html: string, unclosedTags: Set<string>): VNode[] {
-    const template = `<div>${html}</div>`;
+    // The wrapper div only exists so the HTML string can be parsed with
+    // innerHTML; the rendered vnodes are its *children*. Returning the
+    // wrapper itself would nest the whole document in an extra div — and
+    // each incremental Section in its own one, which would make sectioned
+    // output diverge from the whole-document render.
     const container = document.createElement("div");
-    container.innerHTML = template;
+    container.innerHTML = `<div>${html}</div>`;
     const cidRef = { tagIndexes: {} as Record<string, number> };
 
     const nodes: VNode[] = [];
-    Array.from(container.childNodes).forEach(node => {
+    const contentParent = container.firstElementChild ?? container;
+    Array.from(contentParent.childNodes).forEach(node => {
       const vnode = this.convertNode(node, unclosedTags, cidRef);
       if (vnode) {
         nodes.push(vnode);
@@ -328,10 +347,15 @@ export class VueRenderer {
   }
 
   private wrapWithAnimation(text: string): VNode {
+    const { fadeDuration, easing, splitBy, delimiters, maxSentenceChars } =
+      this.options.animationConfig;
     return h(AnimationText, {
       text,
-      fadeDuration: this.options.animationConfig.fadeDuration,
-      easing: this.options.animationConfig.easing,
+      fadeDuration,
+      easing,
+      splitBy,
+      delimiters,
+      maxSentenceChars,
     });
   }
 
@@ -351,10 +375,15 @@ export class VueRenderer {
     if (options.enableAnimation !== undefined) {
       this.options.enableAnimation = options.enableAnimation;
     }
-    if (options.animationConfig) {
+    if ("animationConfig" in options) {
+      // Replace, not merge: when the caller drops a field — or the whole
+      // config, e.g. the streaming preset (which carries splitBy: 'sentence')
+      // being switched off — the old value must not leak into later renders.
       this.options.animationConfig = {
-        ...this.options.animationConfig,
         ...options.animationConfig,
+        fadeDuration:
+          options.animationConfig?.fadeDuration ?? DEFAULT_ANIMATION_DURATION,
+        easing: options.animationConfig?.easing ?? "ease-in-out",
       };
     }
   }

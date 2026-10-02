@@ -1,0 +1,522 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { effectScope, nextTick, ref, watchEffect, type Ref } from "vue";
+
+import type { TypewriterConfig } from "../../interface";
+
+import {
+  alignToClusterFallback,
+  alignToGrapheme,
+  useTypewriter,
+} from "../useTypewriter";
+
+interface SetupOptions {
+  input: string;
+  typewriter?: boolean | TypewriterConfig;
+  active: boolean;
+}
+
+function setup(initial: SetupOptions) {
+  const scope = effectScope();
+  const input = ref(initial.input);
+  const typewriter = ref<boolean | TypewriterConfig | undefined>(
+    initial.typewriter,
+  );
+  const active = ref(initial.active);
+  let output!: Ref<string>;
+  scope.run(() => {
+    output = useTypewriter(input, typewriter, active);
+  });
+  return {
+    scope,
+    input,
+    typewriter,
+    active,
+    get current() {
+      return output.value;
+    },
+  };
+}
+
+/** Advance one animation frame (16ms). */
+function frame(ms = 16) {
+  vi.advanceTimersByTime(ms);
+}
+
+/**
+ * Run frames until the output has not changed for a while; returns every
+ * distinct output. The floor speed is 24 chars/s, so in sentence mode a long
+ * final sentence can take a couple of seconds of frames to be reached.
+ */
+function drain(getCurrent: () => string, maxFrames = 1500): string[] {
+  const seen: string[] = [getCurrent()];
+  let stableFrames = 0;
+  for (let i = 0; i < maxFrames; i++) {
+    frame();
+    const next = getCurrent();
+    if (next === seen[seen.length - 1]) {
+      stableFrames += 1;
+      if (stableFrames >= 250) break;
+      continue;
+    }
+    stableFrames = 0;
+    seen.push(next);
+  }
+  return seen;
+}
+
+describe("useTypewriter", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({
+      toFake: [
+        "setTimeout",
+        "clearTimeout",
+        "setInterval",
+        "clearInterval",
+        "Date",
+        "performance",
+        "requestAnimationFrame",
+        "cancelAnimationFrame",
+      ],
+    });
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("costs no extra evaluation per chunk while disabled, and shows everything present when enabled later", async () => {
+    const scope = effectScope();
+    const input = ref("a");
+    const typewriter = ref<boolean | TypewriterConfig | undefined>(true);
+    const active = ref(false);
+    let evaluations = 0;
+    let current = "";
+    scope.run(() => {
+      const output = useTypewriter(input, typewriter, active);
+      watchEffect(() => {
+        current = output.value;
+        evaluations += 1;
+      });
+    });
+    for (const text of ["ab", "abc", "abcd"]) {
+      input.value = text;
+      await nextTick();
+    }
+    frame(1000);
+    await nextTick();
+    // One evaluation per change: the disabled composable must not schedule
+    // state updates of its own.
+    expect(evaluations).toBe(4);
+    expect(current).toBe("abcd");
+
+    // Switching on later shows what is present at that moment at once…
+    active.value = true;
+    input.value = "abcd efgh";
+    await nextTick();
+    expect(current).toBe("abcd efgh");
+    // …and only types out what arrives afterwards.
+    input.value = "abcd efgh and a longer sentence follows here";
+    await nextTick();
+    frame();
+    await nextTick();
+    expect(current.length).toBeLessThan(
+      "abcd efgh and a longer sentence follows here".length,
+    );
+    scope.stop();
+  });
+
+  it("passes the input through when disabled or inactive", async () => {
+    const off = setup({ input: "Hello", typewriter: undefined, active: true });
+    expect(off.current).toBe("Hello");
+    off.scope.stop();
+
+    const inactive = setup({ input: "Hello", typewriter: true, active: false });
+    expect(inactive.current).toBe("Hello");
+    inactive.input.value = "Hello world";
+    await nextTick();
+    expect(inactive.current).toBe("Hello world");
+    inactive.scope.stop();
+  });
+
+  it("stops the reveal loop when its effect scope is disposed", async () => {
+    const tw = setup({ input: "", typewriter: true, active: true });
+    await nextTick();
+    tw.input.value =
+      "a long piece of text that would take many frames to reveal";
+    await nextTick();
+    frame();
+    await nextTick();
+    const partial = tw.current;
+    expect(partial.length).toBeLessThan(tw.input.value.length);
+    tw.scope.stop();
+    const frozen = tw.current;
+    frame(2000);
+    await nextTick();
+    expect(tw.current).toBe(frozen);
+  });
+
+  it("shows what is present at mount immediately and types out what arrives later", async () => {
+    const tw = setup({ input: "Hello", typewriter: true, active: true });
+    expect(tw.current).toBe("Hello");
+
+    const text =
+      "Hello, this is a fairly long sentence that should be revealed over several frames.";
+    tw.input.value = text;
+    await nextTick();
+    const outputs = drain(() => tw.current);
+
+    // Strictly growing prefixes of the input, ending with the full input.
+    expect(outputs.length).toBeGreaterThan(3);
+    for (let i = 1; i < outputs.length; i++) {
+      expect(outputs[i].length).toBeGreaterThan(outputs[i - 1].length);
+      expect(text.startsWith(outputs[i])).toBe(true);
+    }
+    expect(outputs[outputs.length - 1]).toBe(text);
+    tw.scope.stop();
+  });
+
+  it("reveals everything at once when the stream ends", async () => {
+    const tw = setup({ input: "", typewriter: true, active: true });
+    const text = "A sentence that has not finished typing yet.";
+    tw.input.value = text;
+    await nextTick();
+    frame();
+    expect(tw.current.length).toBeLessThan(text.length);
+    tw.active.value = false;
+    await nextTick();
+    expect(tw.current).toBe(text);
+    tw.scope.stop();
+  });
+
+  it("shows replaced content at once instead of typing it", async () => {
+    const tw = setup({ input: "", typewriter: true, active: true });
+    tw.input.value = "first answer being typed";
+    await nextTick();
+    frame();
+    tw.input.value = "a completely different answer";
+    await nextTick();
+    expect(tw.current).toBe("a completely different answer");
+    tw.scope.stop();
+  });
+
+  describe("never cuts inside an emoji or another grapheme cluster", () => {
+    // Surrogate pairs, ZWJ families, flags (regional-indicator pairs), skin
+    // tones, variation selectors, keycaps and combining accents, mixed with
+    // plain text so cuts land everywhere.
+    const text =
+      "😀 family 👨‍👩‍👧‍👦 flags 🇨🇳🇯🇵 tone 👍🏽 heart ❤️ key 1️⃣ accent é (é) " +
+      "🧑‍💻🧑🏿‍🚀 end 😀😁😂🤣😃😄😅😆😉😊😋😎😍😘🥰😗😙😚☺️🙂🤗🤩🤔🤨😐😑😶🙄😏😣😥😮🤐😯😪😫🥱😴😌😛";
+    // Intl.Segmenter is not in the package's TS lib target, but Node has it.
+    type SegmenterCtor = new (
+      locales?: string,
+      options?: { granularity: "grapheme" },
+    ) => { segment(input: string): Iterable<{ segment: string }> };
+    const intl = Intl as typeof Intl & { Segmenter?: SegmenterCtor };
+    const boundaries = new Set<number>([0]);
+    let pos = 0;
+    for (const { segment } of new (intl.Segmenter as SegmenterCtor)(undefined, {
+      granularity: "grapheme",
+    }).segment(text)) {
+      pos += segment.length;
+      boundaries.add(pos);
+    }
+
+    it("with Intl.Segmenter", async () => {
+      const tw = setup({ input: "", typewriter: true, active: true });
+      tw.input.value = text;
+      await nextTick();
+      const outputs = drain(() => tw.current);
+      for (const output of outputs) {
+        expect(text.startsWith(output)).toBe(true);
+        expect(boundaries.has(output.length)).toBe(true);
+      }
+      expect(outputs.length).toBeGreaterThan(5);
+      expect(tw.current).toBe(text);
+      tw.scope.stop();
+    });
+
+    // Exhaustive: every possible cut position must be moved forward to a
+    // cluster boundary, by the Intl.Segmenter path and by the fallback used
+    // where Intl.Segmenter is missing.
+    it("alignToGrapheme (Intl.Segmenter) lands on a boundary for every cut", () => {
+      for (let len = 0; len <= text.length; len++) {
+        const aligned = alignToGrapheme(text, len);
+        expect(aligned).toBeGreaterThanOrEqual(len);
+        expect(boundaries.has(aligned)).toBe(true);
+      }
+    });
+
+    it("alignToClusterFallback lands on a boundary for every cut", () => {
+      const wrong: string[] = [];
+      for (let len = 0; len <= text.length; len++) {
+        const aligned = alignToClusterFallback(text, len);
+        if (aligned < len || !boundaries.has(aligned))
+          wrong.push(
+            `${len}→${aligned} …${text.slice(Math.max(0, aligned - 6), aligned)}|`,
+          );
+      }
+      expect(wrong).toEqual([]);
+    });
+
+    it("does not split a flag when the alignment window starts inside a regional-indicator run", () => {
+      // Twelve flags occupy code units 2..50; true boundaries are 2 + 4k.
+      // A cut at 40 sits inside the flag spanning [38, 42). A window anchored
+      // at unit 8 would start mid-run with odd regional-indicator parity and
+      // report shifted boundaries, returning 40 — a cut inside the flag.
+      const flags = "xx" + "\u{1F1E6}\u{1F1FA}".repeat(12) + "tail";
+      expect(alignToGrapheme(flags, 40)).toBe(42);
+      expect(alignToGrapheme(flags, 41)).toBe(42);
+      expect(alignToGrapheme(flags, 38)).toBe(38);
+    });
+  });
+
+  describe("stream frontier", () => {
+    it("holds back a trailing half emoji while streaming, reveals it once completed", async () => {
+      const tw = setup({ input: "ok ", typewriter: true, active: true });
+      await nextTick();
+      tw.input.value = "ok \uD83D"; // high surrogate only: half of 😀
+      await nextTick();
+      const outputs = drain(() => tw.current, 300);
+      // The frontier must never sit on the lone surrogate (U+FFFD on screen).
+      expect(outputs.every(out => out === "ok " || out === "")).toBe(true);
+      expect(tw.current).toBe("ok ");
+      tw.input.value = "ok 😀";
+      await nextTick();
+      drain(() => tw.current, 300);
+      expect(tw.current).toBe("ok 😀");
+      tw.scope.stop();
+    });
+
+    it("holds back a dangling ZWJ until the joined emoji arrives", async () => {
+      const tw = setup({ input: "a ", typewriter: true, active: true });
+      await nextTick();
+      tw.input.value = "a \u{1F468}‍"; // "👨‍" — ZWJ with nothing joined yet
+      await nextTick();
+      drain(() => tw.current, 300);
+      expect(tw.current).toBe("a \u{1F468}");
+      tw.input.value = "a \u{1F468}‍\u{1F469}"; // 👨‍👩
+      await nextTick();
+      drain(() => tw.current, 300);
+      expect(tw.current).toBe("a \u{1F468}‍\u{1F469}");
+      tw.scope.stop();
+    });
+
+    it("shows everything at once when the stream ends, broken tail included", async () => {
+      const tw = setup({ input: "ok \uD83D", typewriter: true, active: true });
+      await nextTick();
+      tw.active.value = false;
+      await nextTick();
+      expect(tw.current).toBe("ok \uD83D");
+      tw.scope.stop();
+    });
+  });
+
+  describe("unit: 'sentence'", () => {
+    it("reveals up to a delimiter at a time", async () => {
+      const config: TypewriterConfig = {
+        unit: "sentence",
+        delimiters: [".", "!"],
+      };
+      const tw = setup({ input: "", typewriter: config, active: true });
+      const text =
+        "First one. Second one! Third one which is much longer than the others.";
+      tw.input.value = text;
+      await nextTick();
+      const outputs = drain(() => tw.current);
+      expect(outputs).toEqual([
+        "",
+        "First one.",
+        "First one. Second one!",
+        "First one. Second one! Third one which is much longer than the others.",
+      ]);
+      tw.scope.stop();
+    });
+
+    it("ignores delimiters inside fenced and inline code", async () => {
+      const config: TypewriterConfig = { unit: "sentence", delimiters: ["."] };
+      const tw = setup({ input: "", typewriter: config, active: true });
+      const text =
+        "Run `a.b.c` now.\n```\nx.y();\nz.w();\n```\nDone. `d.e` end.";
+      tw.input.value = text;
+      await nextTick();
+      const outputs = drain(() => tw.current);
+      expect(outputs[outputs.length - 1]).toBe(text);
+      // Every intermediate reveal stops at a sentence end or a line end,
+      // never at a `.` that sits inside inline or fenced code.
+      for (const output of outputs.slice(1, -1)) {
+        expect(output.endsWith(".") || output.endsWith("\n")).toBe(true);
+        expect(
+          ["`a.", "`a.b.", "\nx.", "\nz.", "`d."].some(s => output.endsWith(s)),
+        ).toBe(false);
+      }
+      // The first sentence is revealed on its own (with or without its line end).
+      expect(
+        outputs.some(
+          o => o === "Run `a.b.c` now." || o === "Run `a.b.c` now.\n",
+        ),
+      ).toBe(true);
+      tw.scope.stop();
+    });
+
+    it("treats a newline as a boundary even inside code and even if not listed as a delimiter", async () => {
+      const config: TypewriterConfig = { unit: "sentence", delimiters: ["."] };
+      const tw = setup({ input: "", typewriter: config, active: true });
+      const text = "```\nx.y();\nz.w();\n```\n";
+      tw.input.value = text;
+      await nextTick();
+      const outputs = drain(() => tw.current);
+      expect(outputs).toEqual([
+        "",
+        "```\n",
+        "```\nx.y();\n",
+        "```\nx.y();\nz.w();\n",
+        text,
+      ]);
+      tw.scope.stop();
+    });
+
+    it("ignores delimiters inside fences indented by up to three spaces, like feedFenceState", async () => {
+      const config: TypewriterConfig = { unit: "sentence", delimiters: ["."] };
+      // CommonMark allows fences indented 0-3 spaces; fenced code nested in a
+      // list item looks exactly like this in LLM output.
+      for (const indent of [" ", "  ", "   "]) {
+        const tw = setup({ input: "", typewriter: config, active: true });
+        const text = `${indent}\`\`\`\nx.y();\nz.w();\n${indent}\`\`\`\nDone. end.`;
+        tw.input.value = text;
+        await nextTick();
+        const outputs = drain(() => tw.current);
+        expect(outputs[outputs.length - 1]).toBe(text);
+        // The `.` inside the indented fenced code is never a cut point.
+        for (const output of outputs.slice(1, -1)) {
+          expect(["\nx.", "\nz."].some(s => output.endsWith(s))).toBe(false);
+        }
+        // The fence opens: the reveal before it still stops at the line end.
+        expect(outputs).toContain(`${indent}\`\`\`\n`);
+        tw.scope.stop();
+      }
+    });
+
+    it("does not treat a fence indented by four spaces as a fence", async () => {
+      const config: TypewriterConfig = { unit: "sentence", delimiters: ["."] };
+      const tw = setup({ input: "", typewriter: config, active: true });
+      // Four spaces make the line indented code, not a fence: the scanner
+      // must not enter fence state, so delimiters on the next lines count.
+      const text = "    ```\nx.y();\n";
+      tw.input.value = text;
+      await nextTick();
+      const outputs = drain(() => tw.current);
+      expect(outputs[outputs.length - 1]).toBe(text);
+      expect(outputs.some(o => o.endsWith("\nx."))).toBe(true);
+      tw.scope.stop();
+    });
+
+    it("keeps a fence open on a body line that starts with fence characters and an info string", async () => {
+      const config: TypewriterConfig = { unit: "sentence", delimiters: ["."] };
+      const tw = setup({ input: "", typewriter: config, active: true });
+      // A nested "```js" line does not close the fence (CommonMark: only a
+      // fence run followed by whitespace does), so it must not be treated as
+      // the end of the block and x.y() must not become a cut point.
+      const text = "```\n```js\nx.y();\nz.w();\n```\nDone.";
+      tw.input.value = text;
+      await nextTick();
+      const outputs = drain(() => tw.current);
+      expect(outputs[outputs.length - 1]).toBe(text);
+      for (const output of outputs.slice(1, -1)) {
+        expect(["\nx.", "\nz."].some(s => output.endsWith(s))).toBe(false);
+      }
+      // The reveal still walks the block line by line, "```js" included.
+      expect(outputs).toContain("```\n```js\n");
+      tw.scope.stop();
+    });
+
+    it("ignores delimiters inside multi-backtick inline code spans", async () => {
+      const config: TypewriterConfig = { unit: "sentence", delimiters: ["."] };
+      const tw = setup({ input: "", typewriter: config, active: true });
+      // A code span is delimited by a run of the same length, so the two
+      // backticks around "a.b" open one span rather than toggling twice.
+      const text = "Run ``a.b`` now. end.";
+      tw.input.value = text;
+      await nextTick();
+      const outputs = drain(() => tw.current);
+      expect(outputs[outputs.length - 1]).toBe(text);
+      expect(outputs.some(o => o.endsWith("``a."))).toBe(false);
+      expect(outputs).toContain("Run ``a.b`` now.");
+      tw.scope.stop();
+    });
+  });
+
+  it("falls back to character reveal after maxSentenceChars without a delimiter", async () => {
+    const config: TypewriterConfig = {
+      unit: "sentence",
+      delimiters: ["."],
+      maxSentenceChars: 40,
+    };
+    const tw = setup({ input: "", typewriter: config, active: true });
+    // No '.' anywhere in the run (a '.' in a URL is a delimiter like any other).
+    const longRun =
+      "https://example-com/a-very-long-path-without-any-punctuation-" +
+      "x".repeat(120);
+    const text = `${longRun} and then a sentence. done`;
+    tw.input.value = text;
+    await nextTick();
+    const outputs = drain(() => tw.current);
+    // Something shows before the delimiter arrives (not just '' and the whole run)…
+    const beforeDelimiter = outputs.filter(
+      o => o.length > 0 && o.length < longRun.length,
+    );
+    expect(beforeDelimiter.length).toBeGreaterThan(3);
+    // …and none of it before the cap was reached.
+    expect(beforeDelimiter.every(o => o.length > 40)).toBe(true);
+    // Once a delimiter shows up, sentence mode takes over again.
+    expect(outputs).toContain(`${longRun} and then a sentence.`);
+    expect(outputs[outputs.length - 1]).toBe(text);
+    tw.scope.stop();
+  });
+
+  it("treats one or two backticks at a line start as inline code, not a fence", async () => {
+    const config: TypewriterConfig = { unit: "sentence", delimiters: ["."] };
+    const tw = setup({ input: "", typewriter: config, active: true });
+    const text = "`a.b` first. second.";
+    tw.input.value = text;
+    await nextTick();
+    const outputs = drain(() => tw.current);
+    for (const output of outputs.slice(1, -1)) {
+      expect(output.endsWith("`a.")).toBe(false);
+    }
+    expect(outputs).toContain("`a.b` first.");
+    expect(outputs[outputs.length - 1]).toBe(text);
+    tw.scope.stop();
+  });
+
+  it("rescans boundaries when the not-yet-shown tail is rewritten", async () => {
+    const config: TypewriterConfig = { unit: "sentence", delimiters: ["."] };
+    const tw = setup({ input: "A. B.", typewriter: config, active: true });
+    expect(tw.current).toBe("A. B.");
+    // An unfinished fence arrives and is scanned (but not yet shown)…
+    tw.input.value = "A. B. ```\nx.y";
+    await nextTick();
+    // …then the caller rewrites that tail while the shown prefix survives.
+    tw.input.value = "A. B. done. And a longer tail after it";
+    await nextTick();
+    const outputs = drain(() => tw.current);
+    // Stale "inside a fence" state would have hidden the boundary after "done.".
+    expect(outputs).toContain("A. B. done.");
+    expect(outputs[outputs.length - 1]).toBe(
+      "A. B. done. And a longer tail after it",
+    );
+    tw.scope.stop();
+  });
+
+  it("pauses after a delimiter in char mode when pauseMs is set", async () => {
+    const config: TypewriterConfig = { pauseMs: 200, delimiters: ["."] };
+    const tw = setup({ input: "", typewriter: config, active: true });
+    const text = "Ab. Cd";
+    tw.input.value = text;
+    await nextTick();
+    const outputs = drain(() => tw.current);
+    // The pause shows up as repeated frames on 'Ab.'; drain collapses them,
+    // but the reveal must have stopped exactly at the delimiter.
+    expect(outputs).toContain("Ab.");
+    expect(outputs[outputs.length - 1]).toBe(text);
+    tw.scope.stop();
+  });
+});

@@ -53,10 +53,9 @@ const parseClosingTag = (
   let scanPos = pos + 2;
   let tagName = "";
 
-  while (scanPos < html.length && WHITESPACE_REGEX.test(html[scanPos])) {
-    scanPos++;
-  }
-
+  // No whitespace between '</' and the name: per the HTML spec '</' followed
+  // by a non-letter is a bogus comment that closes nothing, so '</ div>' must
+  // not pop a <div>.
   while (scanPos < html.length && TAG_NAME_CHAR_REGEX.test(html[scanPos])) {
     tagName += html[scanPos];
     scanPos++;
@@ -94,6 +93,19 @@ const parseOpeningTag = (
     return null;
   }
 
+  // After the name a real tag continues with whitespace, '>' or '/'. Anything
+  // else (':', '@', '=', …) means this was never a tag — an autolink like
+  // <https://example.com> or inline code like `a < b` must not be treated as
+  // one. CommonMark's inline-HTML production applies the same restriction.
+  if (
+    scanPos < html.length &&
+    html[scanPos] !== ">" &&
+    html[scanPos] !== "/" &&
+    !WHITESPACE_REGEX.test(html[scanPos])
+  ) {
+    return null;
+  }
+
   let foundEnd = false;
   let isSelfClosing = false;
 
@@ -108,12 +120,9 @@ const parseOpeningTag = (
       const quoteChar = html[scanPos];
       scanPos++;
 
+      // HTML attribute values have no escape mechanism: a backslash is a
+      // literal character, so `title="C:\"` ends at the quote right after it.
       while (scanPos < html.length) {
-        if (html[scanPos] === "\\" && scanPos + 1 < html.length) {
-          scanPos += 2;
-          continue;
-        }
-
         if (html[scanPos] === quoteChar) {
           scanPos++;
           break;
@@ -210,4 +219,210 @@ export function detectUnclosedComponentTags(
   }
 
   return unclosedTags;
+}
+
+/* ------------ Raw HTML container scan (section-split safety) ------------ */
+
+interface RawScanFenceState {
+  inFence: boolean;
+  fenceChar: string;
+  fenceLen: number;
+}
+
+/**
+ * Line-level fenced-code tracking with the same rules as feedFenceState in
+ * useStreaming: a fence is a run of >= 3 backticks or tildes indented by up
+ * to three spaces, and a closing run needs the same character, at least the
+ * opening run's length and a whitespace-only tail. Tags inside fenced code
+ * are code, not HTML — without this, a JSX snippet or `#include <vector>`
+ * would look like an open container and veto every later split.
+ */
+const classifyRawScanLine = (line: string, fence: RawScanFenceState): void => {
+  let pos = 0;
+  let indent = 0;
+  while (indent < 3 && line[pos] === " ") {
+    indent += 1;
+    pos += 1;
+  }
+  const marker = line[pos];
+  let runLen = 0;
+  if (marker === "`" || marker === "~") {
+    while (line[pos + runLen] === marker) runLen += 1;
+  }
+  if (runLen < 3) return;
+  if (!fence.inFence) {
+    fence.inFence = true;
+    fence.fenceChar = marker;
+    fence.fenceLen = runLen;
+    return;
+  }
+  if (
+    marker === fence.fenceChar &&
+    runLen >= fence.fenceLen &&
+    line.slice(pos + runLen).trim() === ""
+  ) {
+    fence.inFence = false;
+    fence.fenceChar = "";
+    fence.fenceLen = 0;
+  }
+};
+
+/**
+ * Index of the next run of exactly `len` backticks before the paragraph ends,
+ * or -1 when there is none. CommonMark: a code span ends at the next run of
+ * the *same* length, may contain line endings, and does not cross a blank
+ * line; a run with no such closer is literal text, not a span.
+ */
+const findClosingBacktickRun = (
+  text: string,
+  from: number,
+  len: number,
+): number => {
+  let pos = from;
+  while (pos < text.length) {
+    const char = text[pos];
+    if (char === "\n") {
+      let ahead = pos + 1;
+      while (text[ahead] === " " || text[ahead] === "\t") ahead += 1;
+      if (text[ahead] === "\n" || ahead >= text.length) return -1;
+      pos += 1;
+      continue;
+    }
+    if (char !== "`") {
+      pos += 1;
+      continue;
+    }
+    let run = 1;
+    while (text[pos + run] === "`") run += 1;
+    if (run === len) return pos;
+    // A run of another length is span content, not a closer.
+    pos += run;
+  }
+  return -1;
+};
+
+/**
+ * Scan one run of non-fence lines for raw HTML tags, maintaining the stack of
+ * open containers across runs. Returns true when the range ends inside an
+ * unterminated tag or comment (the browser would swallow whatever follows,
+ * so a split there is never safe).
+ */
+const scanRawTagRange = (text: string, openStack: string[]): boolean => {
+  let pos = 0;
+  while (pos < text.length) {
+    const char = text[pos];
+
+    if (char === "`") {
+      // `` `<div>` `` in prose is text, not an element. Resolving the span by
+      // lookahead (rather than assuming every run opens one) matters both
+      // ways: with a closer, the `<div>` inside is skipped; without one, the
+      // run is literal and a real `<div>` right after it must still be seen —
+      // assuming an open span there would let an unclosed container slip past
+      // this guard and break the section-split DOM.
+      let runLen = 1;
+      while (text[pos + runLen] === "`") runLen += 1;
+      const close = findClosingBacktickRun(text, pos + runLen, runLen);
+      pos = close === -1 ? pos + runLen : close + runLen;
+      continue;
+    }
+
+    if (char !== "<") {
+      pos += 1;
+      continue;
+    }
+
+    if (text.startsWith(COMMENT_START, pos)) {
+      const end = text.indexOf(COMMENT_END, pos + COMMENT_START.length);
+      if (end === -1) return true;
+      pos = end + COMMENT_END.length;
+      continue;
+    }
+    if (text.startsWith(CDATA_START, pos)) {
+      const end = text.indexOf(CDATA_END, pos + CDATA_START.length);
+      if (end === -1) return true;
+      pos = end + CDATA_END.length;
+      continue;
+    }
+
+    const closingTag = parseClosingTag(text, pos);
+    if (closingTag) {
+      // Pop the matching open tag and anything nested above it; the HTML
+      // parser auto-closes misnested content when a container closes. Stray
+      // closing tags are ignored.
+      for (let i = openStack.length - 1; i >= 0; i--) {
+        if (openStack[i] === closingTag.tagName) {
+          openStack.length = i;
+          break;
+        }
+      }
+      pos = closingTag.endPos;
+      continue;
+    }
+
+    const openingTag = parseOpeningTag(text, pos);
+    if (openingTag) {
+      // A tag cut off by the end of the range swallows whatever follows as
+      // attribute text in the whole-document parse.
+      if (!openingTag.foundEnd) return true;
+      if (!openingTag.isSelfClosing && !VOID_ELEMENTS.has(openingTag.tagName)) {
+        openStack.push(openingTag.tagName);
+      }
+      pos = openingTag.endPos;
+      continue;
+    }
+    pos += 1;
+  }
+  return false;
+};
+
+/**
+ * Whether `text` (a section's worth of Markdown source) leaves a raw HTML
+ * container open. CommonMark ends an HTML block at a blank line, but the
+ * browser keeps nesting into an unclosed `<div>`/`<details>`/`<table>`/…
+ * until its closing tag — so a section split placed before the next heading
+ * would auto-close the container at the section end and produce a different
+ * DOM from the whole-document render. An open `<p>` is the one exception:
+ * the HTML parser closes it when a heading starts, so both parses nest the
+ * heading identically. (Downstream-only guard; upstream ant-design/x#2061
+ * only checks registered custom component tags here.)
+ */
+export function hasUnclosedRawTags(text: string): boolean {
+  const openStack: string[] = [];
+  const fence: RawScanFenceState = {
+    inFence: false,
+    fenceChar: "",
+    fenceLen: 0,
+  };
+
+  let rangeStart = 0;
+  let rangeOpen = false;
+  const flushRange = (end: number): boolean => {
+    if (!rangeOpen) return false;
+    rangeOpen = false;
+    return end > rangeStart
+      ? scanRawTagRange(text.slice(rangeStart, end), openStack)
+      : false;
+  };
+
+  let lineStart = 0;
+  while (lineStart < text.length) {
+    const newline = text.indexOf("\n", lineStart);
+    const lineEnd = newline === -1 ? text.length : newline;
+    const wasInFence = fence.inFence;
+    classifyRawScanLine(text.slice(lineStart, lineEnd), fence);
+    // Fence marker and body lines carry no raw HTML; everything else is
+    // scanned as one continuous run so multi-line comments and attributes
+    // stay intact.
+    if (fence.inFence || wasInFence) {
+      if (flushRange(lineStart)) return true;
+    } else if (!rangeOpen) {
+      rangeStart = lineStart;
+      rangeOpen = true;
+    }
+    if (newline === -1) break;
+    lineStart = newline + 1;
+  }
+  if (flushRange(text.length)) return true;
+
+  return openStack.some(tagName => tagName !== "p");
 }

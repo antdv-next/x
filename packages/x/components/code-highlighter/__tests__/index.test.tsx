@@ -1,6 +1,6 @@
 import { mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
-import { nextTick } from "vue";
+import { defineComponent, h, nextTick, ref } from "vue";
 
 import CodeHighlighter from "../CodeHighlighter";
 
@@ -115,5 +115,54 @@ describe("CodeHighlighter", () => {
     await wrapper.find(".slot-theme").trigger("click");
 
     expect(wrapper.emitted("update:theme")?.[0]).toEqual(["dark"]);
+  });
+
+  it("does not re-highlight when only domNode changes (XMarkdown streaming case)", async () => {
+    // When CodeHighlighter is used as an XMarkdown `code` component, every
+    // parse passes a fresh `domNode`. Highlighting is driven solely by the
+    // `content`/`language`/`theme` watch, so a fresh domNode (or any other
+    // attr) must not re-tokenise the code — the Vue equivalent of the
+    // upstream `React.memo(CodeHighlighter, arePropsEqualIgnoringDomNode)`
+    // guard, which is unnecessary because tokenisation is not render-driven.
+    let setNode: (node: object) => void = () => {};
+    let setText: (text: string) => void = () => {};
+    mount(
+      defineComponent({
+        setup() {
+          const node = ref<object>({});
+          const text = ref(content);
+          setNode = (next: object) => {
+            node.value = next;
+          };
+          setText = (next: string) => {
+            text.value = next;
+          };
+          return () =>
+            h(CodeHighlighter, {
+              content: text.value,
+              language: "typescript",
+              domNode: node.value,
+            });
+        },
+      }),
+    );
+
+    await flushPromises();
+    const calls = shikiMock.codeToHtml.mock.calls.length;
+    expect(calls).toBeGreaterThan(0);
+
+    // A fresh domNode per render is what XMarkdown hands to `code` components.
+    setNode({});
+    await nextTick();
+    setNode({});
+    await nextTick();
+    await flushPromises();
+    expect(shikiMock.codeToHtml.mock.calls.length).toBe(calls);
+
+    // Control: an actual content change still re-highlights.
+    setText("const a = 2;");
+    await nextTick();
+    await flushPromises();
+    expect(shikiMock.codeToHtml.mock.calls.length).toBeGreaterThan(calls);
   });
 });

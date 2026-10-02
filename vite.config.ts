@@ -4,7 +4,11 @@ export default defineConfig({
   staged: {
     "*": "vp check --fix",
   },
-  lint: { options: { typeAware: true, typeCheck: true } },
+  lint: {
+    // Local Claude Code worktrees hold full repo copies; never lint them.
+    ignorePatterns: [".claude/**"],
+    options: { typeAware: true, typeCheck: true },
+  },
   fmt: {
     arrowParens: "avoid",
     printWidth: 80,
@@ -14,6 +18,8 @@ export default defineConfig({
       "**/types/auto-imports.d.ts",
       "**/types/components.d.ts",
       "**/*.html",
+      // Local Claude Code worktrees hold full repo copies.
+      ".claude/**",
     ],
     sortImports: {
       groups: [
