@@ -80,6 +80,15 @@ export interface SectionState {
    * `\[` math). No boundary is recorded until it closes.
    */
   rawBlock: { close: string; exact: boolean } | null;
+  /**
+   * A list marker line was seen in the current section. Together with
+   * `sawIndentedFence` this vetoes further boundaries: the line-level fence
+   * scanner and the block parser disagree about fences that live inside a
+   * list item (see trackSectionBoundary).
+   */
+  sawListMarker: boolean;
+  /** A fence run indented by 1–3 spaces was seen in the current section. */
+  sawIndentedFence: boolean;
 }
 
 export interface StreamCache {

@@ -230,6 +230,8 @@ const getInitialSectionState = (): SectionState => ({
   inHtmlBlock: false,
   noSplit: false,
   rawBlock: null,
+  sawListMarker: false,
+  sawIndentedFence: false,
 });
 
 const getInitialCache = (): StreamCache => ({
@@ -324,6 +326,17 @@ export const DEFAULT_MIN_SECTION_CHARS = 200;
 // quote/list markers are skipped before the `[label]:` test.
 const DEFINITION_LINE =
   /^ {0,3}(?:(?:>[ \t]*)|(?:[-+*]|\d{1,9}[.)])[ \t]+)*\[[^\]]*\]:/;
+// A list marker at the start of a line (bullet or ordered, indented up to 3
+// spaces). Blockquote-prefixed markers intentionally do not match: a fence
+// inside a blockquote needs a `>` prefix on every line, so the fence scanner
+// never sees it as a fence at all — only list items can make the block parser
+// disagree with the scanner about an indented fence.
+const LIST_MARKER_LINE = /^ {0,3}(?:[-+*]|\d{1,9}[.)])(?:[ \t]|$)/;
+// A fence run indented by 1–3 spaces. Mirrors feedFenceState's notion of a
+// fence line exactly (up to three leading spaces, then a `` ` ``/`~` run of
+// three or more), so a fence-shaped body line inside an open fence also
+// matches — flagging it only ever costs a split point, never correctness.
+const INDENTED_FENCE_LINE = /^ {1,3}(?:`{3,}|~{3,})/;
 // HTML blocks of CommonMark type 1 (end only at their closing tag) and type 2
 // (comments), plus the Latex plugin's block delimiters. All of them may
 // contain blank lines followed by a `#` line that is *not* a heading.
@@ -400,13 +413,33 @@ const trackSectionBoundary = (
   const blank = line.trim() === "";
   state.lineStart = newlineIndex + 1;
 
+  // Recorded before any early return: an indented fence line matters even
+  // when it is the opening or closing line of a fence (in which case the
+  // fence check below returns before the normal flow is reached).
+  if (INDENTED_FENCE_LINE.test(line)) state.sawIndentedFence = true;
+
   if (state.noSplit) return;
   if (state.rawBlock) {
     if (closesRawBlock(line, state.rawBlock)) state.rawBlock = null;
     return;
   }
   if (state.inHtmlBlock) {
-    if (blank) state.inHtmlBlock = false;
+    if (blank) {
+      state.inHtmlBlock = false;
+      return;
+    }
+    // A raw block opener (comment, PI, declaration, CDATA, pre/script/...)
+    // starting inside a type 6–7 HTML block still suppresses splitting until
+    // it closes, taking priority over the block's end-at-blank-line rule:
+    // the browser reads `<?` / `<!` as a bogus comment that runs to the
+    // next `>` across what CommonMark would call later blocks, so a heading
+    // split there would survive in the split render while being swallowed
+    // by the comment in the whole-document render.
+    const rawBlock = detectRawBlockOpen(line);
+    if (rawBlock) {
+      state.rawBlock = rawBlock;
+      state.inHtmlBlock = false;
+    }
     return;
   }
   // The fence state has already consumed this line's '\n': for a body line of
@@ -429,6 +462,9 @@ const trackSectionBoundary = (
     state.offsets = [];
     return;
   }
+  // Only list markers that reach the normal flow are flagged: a `- x` line
+  // inside a fence or raw block is code/text, not a list.
+  if (LIST_MARKER_LINE.test(line)) state.sawListMarker = true;
   // An ATX heading can interrupt a paragraph, a list, a blockquote and a GFM
   // table, so outside the constructs tracked above a column-0 heading line
   // always starts a new block — no blank line before it is required.
@@ -466,7 +502,24 @@ const trackSectionBoundary = (
   if (sectionText.includes("<") && hasUnclosedRawTags(sectionText)) {
     return;
   }
+  // A fence indented 1–3 spaces inside a list item is where this scanner and
+  // the block parser genuinely disagree: the scanner opens and closes the
+  // fence by line-level rules, but the block parser ends the list-internal
+  // fence as soon as a body line dedents below the item's content indent, so
+  // the indented "closing" line *opens* a new fence that swallows every
+  // later heading. There is no cheap way to tell that case apart from a
+  // harmless top-level indented fence without tracking list containers, so
+  // once a list marker and an indented fence have both appeared in the
+  // current section, no further boundary is recorded. The flags reset only
+  // at a recorded boundary — one that passed every veto and is therefore a
+  // point both parsers agree on — never at a vetoed heading, which might not
+  // be a heading in the block parser's reading at all.
+  if (state.sawListMarker && state.sawIndentedFence) {
+    return;
+  }
   state.offsets.push(lineStart);
+  state.sawListMarker = false;
+  state.sawIndentedFence = false;
 };
 
 /**

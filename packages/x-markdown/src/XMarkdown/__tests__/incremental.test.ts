@@ -209,6 +209,53 @@ const corpora: Record<string, string> = {
     "end",
   ].join("\n"),
 
+  // A fence indented 1–3 spaces *inside a list item*. The line-level fence
+  // scanner opens and closes it by indentation alone, but the block parser
+  // ends the list-internal fence when the body dedents below the item's
+  // content indent (`x.y();` at column 0), so the indented "closing" line
+  // actually *opens* a new fence that swallows "## after" and everything
+  // after it. Once a list marker and an indented fence have appeared in the
+  // same section, no further boundary is recorded — the "## after" boundary
+  // is vetoed here — while the earlier "## B" boundary keeps this corpus in
+  // the sawSections assertion and proves a safe earlier split still happens.
+  listIndentedFence: [
+    "# A",
+    "",
+    "lead",
+    "",
+    "## B",
+    "",
+    "- one",
+    "- two",
+    "",
+    "   ```ts",
+    "x.y();",
+    "   ```",
+    "",
+    "## after",
+    "",
+    "more",
+  ].join("\n"),
+
+  // A processing instruction starting inside a type-6 HTML block. The HTML
+  // block ends at the blank line per CommonMark, but the browser reads `<?`
+  // as a bogus comment running to the next `>` — across the would-be "# in
+  // pi" heading, swallowing its `<h1>` open tag in the whole-document
+  // render. The raw-block opener takes priority over the end-at-blank-line
+  // rule, so no boundary is recorded until the PI closes; "## after" splits.
+  piAfterHtmlBlock: [
+    "</div>",
+    "<?php",
+    "",
+    "# in pi",
+    "",
+    "?>",
+    "",
+    "## after",
+    "",
+    "more",
+  ].join("\n"),
+
   htmlBlocks: [
     "# A",
     "",
