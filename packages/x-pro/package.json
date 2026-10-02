@@ -1,0 +1,35 @@
+{
+  "name": "@antdv-next/x-pro",
+  "version": "0.0.0",
+  "description": "Community agent components for Antdv X (unofficial, not synced from Ant Design X upstream)",
+  "homepage": "https://github.com/antdv-next/x",
+  "bugs": {
+    "url": "https://github.com/antdv-next/x/issues"
+  },
+  "license": "MIT",
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "type-check": "vue-tsc --project tsconfig.build.json --noEmit",
+    "build": "vp build --config vite.build.config.ts"
+  },
+  "peerDependencies": {
+    "vue": ">=3.5.0"
+  }
+}
