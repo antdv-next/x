@@ -17,6 +17,24 @@ export interface FenceState {
   inFenced: boolean;
   fenceChar: string;
   fenceLen: number;
+  /**
+   * Content indent of the list item the open fence belongs to, or null for a
+   * top-level fence. A contained fence ends implicitly as soon as a non-blank
+   * line dedents below this indent (the item ends there and the fence with
+   * it), which the line-level scanner cannot see on its own — the section
+   * tracker re-reads each completed line against the list-container stack and
+   * applies such exits itself. The tracker likewise *opens* and *closes*
+   * fences the scanner is blind to (0–3 spaces past an item's content indent
+   * but 4+ spaces absolutely) by setting the scanner fields directly.
+   */
+  fenceCi: number | null;
+  /**
+   * The verdict the char-level scanner applied to the last completed line,
+   * consumed (and reset to null) by the section tracker. The scanner is blind
+   * to list containers and raw/HTML blocks, so some of its opens and closes
+   * are phantoms the tracker has to undo or re-interpret.
+   */
+  lastVerdict: "opened" | "closed" | null;
   /** Spaces before the fence run of the current line; a fence may be indented up to 3 */
   lineIndent: number;
   /** Leading `` ` ``/`~` run of the current (possibly incomplete) line */
@@ -81,14 +99,51 @@ export interface SectionState {
    */
   rawBlock: { close: string; exact: boolean } | null;
   /**
-   * A list marker line was seen in the current section. Together with
-   * `sawIndentedFence` this vetoes further boundaries: the line-level fence
-   * scanner and the block parser disagree about fences that live inside a
-   * list item (see trackSectionBoundary).
+   * Open list containers, innermost last. Maintained by the section tracker,
+   * which re-implements marked's list-item continuation algorithm: the block
+   * parser binds every line of a list item to the item's content indent,
+   * while the char-level fence scanner reads lines in isolation — a fence
+   * indented 1–3 spaces *inside a list item* is where the two would otherwise
+   * disagree.
    */
-  sawListMarker: boolean;
-  /** A fence run indented by 1–3 spaces was seen in the current section. */
-  sawIndentedFence: boolean;
+  listStack: ListContainer[];
+  /**
+   * Whether the innermost open leaf block is a paragraph. Drives top-level
+   * interruption rules (a fresh list may not interrupt a paragraph with a
+   * tab-delimited or non-1 ordered marker, a type-7 HTML tag cannot interrupt
+   * one, a blockquote attaches lazily). Inside a list item, continuation is
+   * governed by the entry's `blank`/`lineVeto` instead.
+   */
+  paragraphOpen: boolean;
+}
+
+/**
+ * One open list container; see SectionState.listStack. `blank` and `lineVeto`
+ * mirror the two flags marked's list tokenizer maintains while collecting an
+ * item's lines: a dedenting line ends the item when either is set, otherwise
+ * it joins the item as a lazy continuation — even inside an open fence.
+ */
+export interface ListContainer {
+  /** Absolute column the item's content starts at (the content indent) */
+  ci: number;
+  /** Absolute column of the list marker itself */
+  mIndent: number;
+  /**
+   * Bullet character (`-`/`+`/`*`) or ordered delimiter (`.`/`)`): two
+   * consecutive markers belong to the same list only when both match.
+   */
+  kind: string;
+  /**
+   * The item's first line was blank, or a blank line has been consumed into
+   * it (marked's `blankLine` flag).
+   */
+  blank: boolean;
+  /**
+   * The previous content line's slice matches one of marked's
+   * lazy-continuation vetoes: indented code, or a fence/heading/thematic-
+   * break begin.
+   */
+  lineVeto: boolean;
 }
 
 export interface StreamCache {
@@ -195,8 +250,8 @@ export interface StreamingOption {
    */
   hasNextChunk?: boolean;
   /**
-   * @description 流式期间按标题把正文切成若干段，只有正在增长的最后一段随每个 chunk 重新解析、消毒和渲染，前面的段直接复用。只在顶格的 ATX 标题（`# ` ～ `###### `）前切分；围栏代码、HTML 块（`<div>`、`<pre>`、`<script>`、注释等）、`$$` 公式内的 `#` 行不算标题。出现链接引用定义或脚注定义、或自定义组件标签跨越切点时不切分。传对象可调整：短于 `minSectionChars` 的段并入下一段；`keepSectionsOnEnd`（默认 true）表示流结束（`hasNextChunk` 变为 false）后各段保持不变、已挂载的自定义组件不重新挂载，设为 false 则流结束时回到整篇一次性渲染，用了带全局状态的 marked 扩展（如标题 id 去重）时应关掉。
-   * @description Splits the document into sections at headings while streaming so that only the last, still-growing section is re-parsed, sanitized and rendered per chunk; earlier sections are reused as-is. A boundary is only placed before a column-0 ATX heading (`# ` to `###### `); `#` lines inside fenced code, HTML blocks (`<div>`, `<pre>`, `<script>`, comments, …) and `$$` math are not headings. Splitting is disabled when a link reference or footnote definition appears, or when a custom component tag spans the boundary. Pass an object to tune it: sections shorter than `minSectionChars` are merged into the next one; `keepSectionsOnEnd` (default true) keeps the sections once the stream ends (`hasNextChunk` becomes false) so mounted custom components are not remounted, while false re-renders the whole document at once when the stream ends — turn it off when using marked extensions with document-wide state (e.g. heading id de-duplication).
+   * @description 流式期间按标题把正文切成若干段，只有正在增长的最后一段随每个 chunk 重新解析、消毒和渲染，前面的段直接复用。只在顶格的 ATX 标题（`# ` ～ `###### `）前切分；围栏代码（含列表项、引用块内部的围栏）、HTML 块（`<div>`、`<pre>`、`<script>`、注释等）、`$$` 公式内的 `#` 行不算标题——切分器复刻 marked 的列表项延续、段落中断与容器规则。出现链接引用定义或脚注定义、或自定义组件标签跨越切点时不切分。`$$` 公式以自带的 Latex 插件规则为准，未注册该插件时用 `$$` 包住代码围栏的内容请关闭本选项。传对象可调整：短于 `minSectionChars` 的段并入下一段；`keepSectionsOnEnd`（默认 true）表示流结束（`hasNextChunk` 变为 false）后各段保持不变、已挂载的自定义组件不重新挂载，设为 false 则流结束时回到整篇一次性渲染，用了带全局状态的 marked 扩展（如标题 id 去重）时应关掉。
+   * @description Splits the document into sections at headings while streaming so that only the last, still-growing section is re-parsed, sanitized and rendered per chunk; earlier sections are reused as-is. A boundary is only placed before a column-0 ATX heading (`# ` to `###### `); `#` lines inside fenced code (including fences nested in list items and blockquotes), HTML blocks (`<div>`, `<pre>`, `<script>`, comments, …) and `$$` math are not headings — the splitter mirrors marked's list-item continuation, paragraph-interruption and container rules. Splitting is disabled when a link reference or footnote definition appears, or when a custom component tag spans the boundary. The `$$` math model follows the bundled Latex plugin; without that plugin registered, turn this off for content that wraps code fences in `$$` delimiters. Pass an object to tune it: sections shorter than `minSectionChars` are merged into the next one; `keepSectionsOnEnd` (default true) keeps the sections once the stream ends (`hasNextChunk` becomes false) so mounted custom components are not remounted, while false re-renders the whole document at once when the stream ends — turn it off when using marked extensions with document-wide state (e.g. heading id de-duplication).
    * @default false
    */
   incremental?:

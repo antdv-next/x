@@ -172,6 +172,8 @@ const getInitialFenceState = (): FenceState => ({
   inFenced: false,
   fenceChar: "",
   fenceLen: 0,
+  fenceCi: null,
+  lastVerdict: null,
   lineIndent: 0,
   lineFenceChar: "",
   lineFenceLen: 0,
@@ -230,8 +232,8 @@ const getInitialSectionState = (): SectionState => ({
   inHtmlBlock: false,
   noSplit: false,
   rawBlock: null,
-  sawListMarker: false,
-  sawIndentedFence: false,
+  listStack: [],
+  paragraphOpen: false,
 });
 
 const getInitialCache = (): StreamCache => ({
@@ -262,11 +264,13 @@ const commitCache = (cache: StreamCache): void => {
 const feedFenceState = (fence: FenceState, char: string): void => {
   if (char === "\n") {
     // Line completed: apply it to the fence state, then reset per-line tracking.
+    fence.lastVerdict = null;
     if (fence.lineFenceLen >= 3) {
       if (!fence.inFenced) {
         fence.inFenced = true;
         fence.fenceChar = fence.lineFenceChar;
         fence.fenceLen = fence.lineFenceLen;
+        fence.lastVerdict = "opened";
       } else if (
         fence.lineFenceChar === fence.fenceChar &&
         fence.lineFenceLen >= fence.fenceLen &&
@@ -278,6 +282,7 @@ const feedFenceState = (fence: FenceState, char: string): void => {
         fence.inFenced = false;
         fence.fenceChar = "";
         fence.fenceLen = 0;
+        fence.lastVerdict = "closed";
       }
     }
     fence.lineIndent = 0;
@@ -326,17 +331,36 @@ export const DEFAULT_MIN_SECTION_CHARS = 200;
 // quote/list markers are skipped before the `[label]:` test.
 const DEFINITION_LINE =
   /^ {0,3}(?:(?:>[ \t]*)|(?:[-+*]|\d{1,9}[.)])[ \t]+)*\[[^\]]*\]:/;
-// A list marker at the start of a line (bullet or ordered, indented up to 3
-// spaces). Blockquote-prefixed markers intentionally do not match: a fence
-// inside a blockquote needs a `>` prefix on every line, so the fence scanner
-// never sees it as a fence at all — only list items can make the block parser
-// disagree with the scanner about an indented fence.
-const LIST_MARKER_LINE = /^ {0,3}(?:[-+*]|\d{1,9}[.)])(?:[ \t]|$)/;
-// A fence run indented by 1–3 spaces. Mirrors feedFenceState's notion of a
-// fence line exactly (up to three leading spaces, then a `` ` ``/`~` run of
-// three or more), so a fence-shaped body line inside an open fence also
-// matches — flagging it only ever costs a split point, never correctness.
-const INDENTED_FENCE_LINE = /^ {1,3}(?:`{3,}|~{3,})/;
+// Line classification for the list-container model: every construct that
+// starts a new block (and therefore closes the containers it dedents out of,
+// since none of them can be a lazy paragraph continuation). End anchors use
+// `[ \t]*\r?$` / `[\s\S]*` so CRLF line endings still match (`.` excludes \r).
+const ATX_LINE = /^ {0,3}#{1,6}(?:[ \t]|$)/;
+// marked's setext rule allows trailing spaces only (no tabs).
+const SETEXT_LINE = /^ {0,3}(?:=+|-+) *\r?$/;
+const THEMATIC_BREAK_LINE =
+  /^ {0,3}(?:(?:\*[ \t]*){3,}|(?:_[ \t]*){3,}|(?:-[ \t]*){3,})\r?$/;
+const BLOCKQUOTE_LINE = /^ {0,3}>/;
+// A list marker with its indent and kind captured, followed by a whitespace
+// delimiter or the end of the line. The text after the marker (delimiter +
+// content) is sliced off by the caller.
+const LIST_MARKER = /^( {0,3})(?:([-+*])|(\d{1,9})([.)]))(?=[ \t]|$)/;
+// Begin-tests for a dedenting line met with a list item open (marked's item
+// continuation): such a line ends the item *before* it starts. Each is read
+// from the line's own indent — a dedent is always within the item's 0–3
+// window. The fence test checks the run only: marked's fencesBegin ignores
+// the info string, so a `` ``` a`b `` line still ends the item (and is then
+// re-read as paragraph text at the outer level).
+const FENCE_BEGIN = /^(?:`{3,}|~{3,})/;
+// marked's hrBegin: space-separated markers only (no tabs), end-anchored.
+const HR_BEGIN = /^(?:(?:- *){3,}|(?:_ *){3,}|(?:\* *){3,})$/;
+// marked's htmlBegin: an opening tag letter with a `>` somewhere on the line,
+// or a comment opener. Closing tags do not end an item through this rule.
+const HTML_BEGIN = /^<(?:[a-zA-Z][\s\S]*>|!--)/;
+// A fence line the way feedFenceState sees it: up to three leading spaces,
+// then a `` ` ``/`~` run of three or more. Re-derived per completed line
+// because the char-level scanner resets its per-line fields at the newline.
+const FENCE_LINE = /^( {0,3})(`{3,}|~{3,})([\s\S]*)$/;
 // HTML blocks of CommonMark type 1 (end only at their closing tag) and type 2
 // (comments), plus the Latex plugin's block delimiters. All of them may
 // contain blank lines followed by a `#` line that is *not* a heading.
@@ -345,17 +369,27 @@ const HTML_COMMENT_OPEN = /^ {0,3}<!--/;
 // Type 3 (processing instruction, ends at `?>`), type 4 (declaration such as
 // `<!DOCTYPE html`, ends at the first `>`) and type 5 (CDATA, ends at `]]>`).
 // Unlike types 6–7 these do NOT end at a blank line, so they need the raw
-// block treatment just like type 1 and comments.
+// block treatment just like type 1 and comments. Unlike types 1–2 they cannot
+// interrupt a paragraph.
 const HTML_PI_OPEN = /^ {0,3}<\?/;
 const HTML_DECLARATION_OPEN = /^ {0,3}<![a-zA-Z]/;
 const HTML_CDATA_OPEN = /^ {0,3}<!\[CDATA\[/;
-const MATH_DOLLAR_LINE = /^(\${1,2})\s*$/;
+// The katex plugin's block math opener: the dollar run alone on its line (the
+// plugin's rule needs a newline immediately after the run, so not even
+// trailing whitespace is allowed).
+const MATH_DOLLAR_LINE = /^(\${1,2})$/;
 const MATH_BRACKET_OPEN = /^\\\[/;
-// Any other HTML block start (CommonMark types 6–7): a tag or closing tag at
-// the start of a line. Such a block runs to the next blank line; treating
-// every `<x` line this way is slightly conservative (type 7 cannot interrupt
-// a paragraph) but never wrong.
-const HTML_BLOCK_OPEN = /^ {0,3}<(?:[a-zA-Z]|\/[a-zA-Z])/;
+// HTML blocks of CommonMark types 6–7: a tag at the start of a line. Type 6
+// (the block-level tag list below, including marked's `meta`/`search`/`link`
+// additions and excluding the type-1 raw tags) interrupts a paragraph and
+// does not require its `>` on the line (the line break itself delimits the
+// tag); type 7 (any other tag) requires the `>` and a paragraph-free start.
+// A line that is only a closing `</pre|script|style|textarea>` matches none
+// of marked's HTML rules and is plain paragraph text.
+const HTML_TAG_OPEN = /^ {0,3}<(\/?)([a-zA-Z][a-zA-Z0-9-]*)/;
+const HTML_BLOCK_TAG6 =
+  /^(?:address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup|dd|details|dialog|dir|div|dl|dt|fieldset|figcaption|figure|footer|form|frame|frameset|h[1-6]|head|header|hr|html|iframe|legend|li|link|main|menu|menuitem|meta|nav|noframes|ol|optgroup|option|p|param|search|section|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul)$/i;
+const RAW4_CLOSE_LINE = /^ {0,3}<\/(?:pre|script|style|textarea)(?=[\s>]|$)/i;
 
 const detectRawBlockOpen = (line: string): SectionState["rawBlock"] => {
   const html = line.match(RAW_HTML_BLOCK_OPEN);
@@ -391,12 +425,82 @@ const closesRawBlock = (
   rawBlock: NonNullable<SectionState["rawBlock"]>,
 ): boolean =>
   rawBlock.exact
-    ? line.trim() === rawBlock.close
+    ? // Block math (`$$`): the plugin closes on the opening run alone at
+      // column 0 (`\n\1` in its rule), optionally followed by whitespace — an
+      // indented or longer run keeps the block open.
+      line.startsWith(rawBlock.close) &&
+      !line.startsWith(`${rawBlock.close}$`) &&
+      /^[ \t]*$/.test(line.slice(rawBlock.close.length))
     : line.toLowerCase().includes(rawBlock.close);
+
+/** Leading spaces of a line (tabs are not counted, mirroring feedFenceState). */
+const countIndent = (line: string): number =>
+  line.match(/^ */)?.[0].length ?? 0;
+
+/** marked expands tabs to four spaces before measuring a line's content. */
+const expandTabs = (line: string): string => line.replace(/\t/g, "    ");
+
+/**
+ * marked's lazy-continuation veto for the previous content slice of a list
+ * item: with the slice tab-expanded and cut at the item's content indent, the
+ * next dedenting line ends the item when the slice is indented code (first
+ * non-space character at column 4+ — a tab counts as a non-space character
+ * before expansion) or begins a fence, heading or thematic break within the
+ * item's 0–3 begin window.
+ */
+const sliceVeto = (slice: string, ci: number): boolean => {
+  if (slice.search(/[^ ]/) >= 4) return true;
+  const spaces = countIndent(slice);
+  if (spaces > Math.min(3, ci - 1)) return false;
+  const body = slice.slice(spaces);
+  return body.startsWith("#") || FENCE_BEGIN.test(body) || HR_BEGIN.test(body);
+};
+
+interface FenceLine {
+  indent: number;
+  char: string;
+  len: number;
+  tailBlank: boolean;
+  /**
+   * A backtick fence whose info string contains a backtick is not a fence at
+   * all (CommonMark), so the line is paragraph text. Tilde fences have no
+   * such restriction.
+   */
+  infoBacktick: boolean;
+}
+
+/** Re-derive the fence verdict of a completed line from its text. */
+const scanFenceLine = (line: string): FenceLine | null => {
+  const match = line.match(FENCE_LINE);
+  if (!match) return null;
+  const [, indent, run, tail] = match;
+  return {
+    indent: indent.length,
+    char: run[0],
+    len: run.length,
+    tailBlank: /^\s*$/.test(tail),
+    infoBacktick: run[0] === "`" && tail.includes("`"),
+  };
+};
 
 /**
  * Called once per completed line (right after its '\n' has been fed to the
- * fence state). Decides whether the line that just ended starts a new section.
+ * fence state). Two jobs:
+ *
+ * 1. Keep the scanner's block context in sync with the block parser. The
+ *    char-level fence scanner reads lines in isolation, but the parser binds
+ *    every line of a list item to the item's content indent, so constructs
+ *    living inside list items (fences indented 1–3 spaces, raw/HTML blocks)
+ *    can end earlier than the scanner thinks — and a dedenting "closing"
+ *    fence line then *opens* a new fence that swallows later headings. The
+ *    list-container stack (`listStack`/`paragraphOpen`) re-implements
+ *    marked's item-continuation algorithm (begin-tests, blank/veto lazy
+ *    rules, sibling markers) so contained blocks end exactly when the parser
+ *    ends them, phantom fence verdicts inside raw / HTML blocks are undone,
+ *    and a fence opened at indent 0–3 records the content indent of its
+ *    containing item (`fenceCi`).
+ * 2. Decide whether the line that just ended starts a new section.
+ *
  * O(line) per line, so O(N) over the whole stream.
  */
 const trackSectionBoundary = (
@@ -408,67 +512,428 @@ const trackSectionBoundary = (
   record: boolean,
 ): void => {
   const state = cache.sections;
+  const fence = cache.fence;
   const lineStart = state.lineStart;
-  const line = text.slice(lineStart, newlineIndex);
+  // Strip one trailing CR so the strict-`$` line classifiers (ATX, setext,
+  // thematic break, list marker, fence) work for CRLF documents; `lineStart`
+  // offsets are unaffected since the '\r' is never the first char of a line.
+  const raw = text.slice(lineStart, newlineIndex);
+  const line = raw.endsWith("\r") ? raw.slice(0, -1) : raw;
   const blank = line.trim() === "";
   state.lineStart = newlineIndex + 1;
 
-  // Recorded before any early return: an indented fence line matters even
-  // when it is the opening or closing line of a fence (in which case the
-  // fence check below returns before the normal flow is reached).
-  if (INDENTED_FENCE_LINE.test(line)) state.sawIndentedFence = true;
+  const stack = state.listStack;
+  const topCi = (): number => stack[stack.length - 1].ci;
+  // Close every container whose content indent exceeds `indent`. Used only
+  // for lines that cannot be lazy paragraph continuations: block starts and
+  // container exits.
+  const popBelow = (indent: number): void => {
+    while (stack.length && indent < stack[stack.length - 1].ci) stack.pop();
+  };
+  const indent = countIndent(line);
+  const fenceLine = scanFenceLine(line);
+  const verdict = fence.lastVerdict;
+  fence.lastVerdict = null;
+  const clearFence = (): void => {
+    fence.inFenced = false;
+    fence.fenceChar = "";
+    fence.fenceLen = 0;
+    fence.fenceCi = null;
+  };
 
-  if (state.noSplit) return;
-  if (state.rawBlock) {
-    if (closesRawBlock(line, state.rawBlock)) state.rawBlock = null;
-    return;
-  }
-  if (state.inHtmlBlock) {
+  // --- 1. Item continuation, mirroring marked's list-item loop. With an item
+  // open, a dedenting line ends the item *before* the line when it begins a
+  // construct (fence run, `#`, html with a `>`, list marker, thematic break)
+  // or when the item is blank-tailed / its previous content slice vetoes a
+  // lazy continuation; the ending item takes every leaf block it contains
+  // down with it, and the line is re-read at the outer level. Any other
+  // dedenting line joins the item as raw text — a lazy paragraph line, or the
+  // body of the item's open fence / raw / HTML block. ---
+  let exiting = false;
+  if (stack.length) {
+    const entry = stack[stack.length - 1];
     if (blank) {
+      // A blank line is consumed as item content and leaves the item
+      // blank-tailed: the next dedenting line ends it. It also ends a type
+      // 6–7 HTML block (fences and type 1–5 raw blocks span blanks).
+      entry.blank = true;
+      entry.lineVeto = false;
       state.inHtmlBlock = false;
       return;
     }
-    // A raw block opener (comment, PI, declaration, CDATA, pre/script/...)
-    // starting inside a type 6–7 HTML block still suppresses splitting until
-    // it closes, taking priority over the block's end-at-blank-line rule:
-    // the browser reads `<?` / `<!` as a bogus comment that runs to the
-    // next `>` across what CommonMark would call later blocks, so a heading
-    // split there would survive in the split render while being swallowed
-    // by the comment in the whole-document render.
-    const rawBlock = detectRawBlockOpen(line);
-    if (rawBlock) {
-      state.rawBlock = rawBlock;
-      state.inHtmlBlock = false;
+    if (indent < entry.ci) {
+      const beginLine = line.slice(indent);
+      const isMarker = LIST_MARKER.test(line);
+      const isHr = HR_BEGIN.test(beginLine);
+      if (
+        isMarker ||
+        beginLine[0] === "#" ||
+        FENCE_BEGIN.test(beginLine) ||
+        HTML_BEGIN.test(beginLine) ||
+        isHr ||
+        entry.blank ||
+        entry.lineVeto
+      ) {
+        if (fence.fenceCi != null) clearFence();
+        state.rawBlock = null;
+        state.inHtmlBlock = false;
+        // The item's inner paragraph died with it; the re-read line starts
+        // fresh (a `2. x` marker may open a list here even though the item's
+        // paragraph just ended).
+        state.paragraphOpen = false;
+        // A list marker keeps the container stack: a same-kind marker at the
+        // same column is a sibling item of the still-open list, resolved in
+        // the classification below. A marker-shaped line that is itself a
+        // thematic break (`- - -`) ends the list for good: marked's block
+        // lexer reads it as an hr, never as an item.
+        if (!isMarker || isHr) popBelow(indent);
+        exiting = true;
+      } else {
+        // Lazy continuation.
+        if (!fence.inFenced && !state.rawBlock && !state.inHtmlBlock) {
+          state.paragraphOpen = true;
+        }
+        entry.lineVeto = sliceVeto(expandTabs(line).slice(entry.ci), entry.ci);
+        return;
+      }
+    } else {
+      // Item content: refresh the lazy-veto flag from the line's slice, then
+      // consume the line as a leaf-block body or classify it below.
+      entry.lineVeto = sliceVeto(expandTabs(line).slice(entry.ci), entry.ci);
     }
-    return;
   }
-  // The fence state has already consumed this line's '\n': for a body line of
-  // a fence it is still open, for the opening line it has just opened, and for
-  // the closing line it has just closed. Neither an opening nor a closing
-  // fence line can match the patterns below, so checking after the feed is safe.
-  if (cache.fence.inFenced) return;
 
-  const rawBlock = detectRawBlockOpen(line);
+  if (!exiting) {
+    if (state.rawBlock) {
+      // Raw block content: a fence-shaped line here is never a fence, so any
+      // open the char scanner just applied is a phantom. (Blocks only start
+      // while the fence is closed, so it cannot predate this line.)
+      if (verdict === "opened") clearFence();
+      if (closesRawBlock(line, state.rawBlock)) state.rawBlock = null;
+      return;
+    }
+    if (state.inHtmlBlock) {
+      if (verdict === "opened") clearFence();
+      if (blank) {
+        state.inHtmlBlock = false;
+        return;
+      }
+      // A raw block opener (comment, PI, declaration, CDATA, pre/script/...)
+      // starting inside a type 6–7 HTML block still suppresses splitting until
+      // it closes, taking priority over the block's end-at-blank-line rule:
+      // the browser reads `<?` / `<!` as a bogus comment that runs to the
+      // next `>` across what CommonMark would call later blocks, so a heading
+      // split there would survive in the split render while being swallowed
+      // by the comment in the whole-document render. The opener is read
+      // relative to the innermost open item, like the classification below.
+      const inner =
+        stack.length && indent >= topCi() ? line.slice(topCi()) : line;
+      const rawBlock = detectRawBlockOpen(inner);
+      if (rawBlock) {
+        state.rawBlock = rawBlock;
+        state.inHtmlBlock = false;
+      }
+      return;
+    }
+    if (verdict === "closed") {
+      // A genuine closing line (a dedenting "closer" took the exit path
+      // above). The containing item outlives its fence: the stack stays.
+      fence.fenceCi = null;
+      return;
+    }
+    if (verdict === "opened") {
+      if (fenceLine && !fenceLine.infoBacktick) {
+        // A fence line outside every block. Fences interrupt paragraphs and
+        // are never lazy continuations, so a dedenting fence line closes the
+        // containers it dedents out of before opening at the outer level.
+        popBelow(fenceLine.indent);
+        fence.fenceCi = stack.length ? topCi() : null;
+        return;
+      }
+      // A backtick fence whose info string contains a backtick is not a
+      // fence: undo the phantom open and let the line be read as text below.
+      clearFence();
+    } else if (fence.inFenced) {
+      // A closing fence line 0–3 spaces past the containing item's content
+      // indent but 4+ absolutely is invisible to the char scanner: close the
+      // contained fence here. A top-level fence has no such window — four
+      // leading spaces there are just fence content.
+      if (fence.fenceCi != null) {
+        const closer = scanFenceLine(line.slice(fence.fenceCi));
+        if (
+          closer &&
+          closer.tailBlank &&
+          closer.char === fence.fenceChar &&
+          closer.len >= fence.fenceLen
+        ) {
+          clearFence();
+        }
+      }
+      return; // fence body line
+    }
+  } else if (fenceLine && !fenceLine.infoBacktick) {
+    // The line that ended the item is itself a fence line — typically a
+    // dedenting "closing" line: the parser reads it as a new opener.
+    popBelow(fenceLine.indent);
+    fence.inFenced = true;
+    fence.fenceChar = fenceLine.char;
+    fence.fenceLen = fenceLine.len;
+    fence.fenceCi = stack.length ? topCi() : null;
+    return;
+  } else if (verdict === "opened") {
+    // The scanner opened on a backtick fence with a backtick in its info
+    // string — not a fence (CommonMark): undo the phantom open and let the
+    // line be classified below.
+    clearFence();
+  }
+
+  // --- 3. Line classification: keep the container stack and the paragraph
+  // state current. Runs for every remaining line, even with `record` off, so
+  // switching `incremental` on mid-stream sees the correct context. ---
+  if (blank) {
+    state.paragraphOpen = false;
+    return;
+  }
+  // A line reaching the innermost open item's content indent belongs to that
+  // item: read its block start relative to the content indent, since the
+  // classification patterns only allow up to three *absolute* leading spaces
+  // while CommonMark allows three *container-relative* ones. Every `popBelow`
+  // below uses the absolute indent and is a no-op for such a line (dedenting
+  // lines were already joined or exited in the continuation above).
+  const rel = stack.length && indent >= topCi() ? line.slice(topCi()) : null;
+  const blockLine = rel ?? line;
+  // A list marker line, decomposed once for the setext guard (a marker with
+  // nothing but its one delimiter character is not a list), the sibling
+  // lookup and the marker branch below.
+  const marker = blockLine.match(LIST_MARKER);
+  let markerInfo: {
+    mIndent: number;
+    kind: string;
+    ordered: boolean;
+    digits: string | undefined;
+    rest: string;
+    contentBlank: boolean;
+    ci: number;
+  } | null = null;
+  if (marker) {
+    const mIndent = (rel ? topCi() : 0) + marker[1].length;
+    const bullet = marker[2];
+    const digits = marker[3];
+    const ordered = bullet === undefined;
+    const markerChars = bullet ? 1 : (digits ?? "").length + 1;
+    const rest = blockLine.slice(marker[1].length + markerChars);
+    const contentBlank = rest.trim() === "";
+    // CommonMark: content starts after the marker plus a 1–4 space gap; a
+    // tab is a non-space character here (`-\tx` starts content immediately,
+    // `- \tx` after one space). A wider gap or a blank first line falls back
+    // to one space after the marker.
+    const gap = contentBlank ? 1 : rest.search(/[^ ]/);
+    const ci = mIndent + markerChars + (gap > 4 ? 1 : gap);
+    markerInfo = {
+      mIndent,
+      kind: bullet ?? marker[4],
+      ordered,
+      digits,
+      rest,
+      contentBlank,
+      ci,
+    };
+  }
+  const rawBlock = detectRawBlockOpen(blockLine);
   if (rawBlock) {
-    state.rawBlock = rawBlock;
+    // PIs, declarations, CDATA (types 3–5) and the katex plugin's block math
+    // cannot interrupt a paragraph: the line is lazy paragraph text then,
+    // not a block start.
+    const interruptible =
+      !HTML_PI_OPEN.test(blockLine) &&
+      !HTML_DECLARATION_OPEN.test(blockLine) &&
+      !HTML_CDATA_OPEN.test(blockLine) &&
+      !MATH_DOLLAR_LINE.test(blockLine) &&
+      !MATH_BRACKET_OPEN.test(blockLine);
+    if (interruptible || !state.paragraphOpen) {
+      popBelow(indent);
+      state.rawBlock = rawBlock;
+      state.paragraphOpen = false;
+      return;
+    }
+  }
+  if (
+    !rawBlock &&
+    (RAW_HTML_BLOCK_OPEN.test(blockLine) || HTML_COMMENT_OPEN.test(blockLine))
+  ) {
+    // A type 1–2 opener closed on its own line (`<pre>x</pre>`, `<!-- x -->`)
+    // is still a block start: nothing stays open, but the paragraph ends.
+    popBelow(indent);
+    state.paragraphOpen = false;
     return;
   }
-  if (HTML_BLOCK_OPEN.test(line)) {
-    state.inHtmlBlock = true;
+  if (
+    !rawBlock &&
+    !state.paragraphOpen &&
+    (HTML_PI_OPEN.test(blockLine) ||
+      HTML_DECLARATION_OPEN.test(blockLine) ||
+      HTML_CDATA_OPEN.test(blockLine))
+  ) {
+    // Same for a type 3–5 opener closed on its own line — a block start only
+    // with no paragraph open.
+    popBelow(indent);
+    state.paragraphOpen = false;
     return;
   }
-  if (DEFINITION_LINE.test(line)) {
+  if (!RAW4_CLOSE_LINE.test(blockLine)) {
+    const htmlTag = blockLine.match(HTML_TAG_OPEN);
+    if (
+      htmlTag &&
+      (HTML_BLOCK_TAG6.test(htmlTag[2]) ||
+        (!state.paragraphOpen && blockLine.includes(">")))
+    ) {
+      popBelow(indent);
+      state.inHtmlBlock = true;
+      state.paragraphOpen = false;
+      return;
+    }
+  }
+  if (DEFINITION_LINE.test(blockLine)) {
     state.noSplit = true;
     state.offsets = [];
+    state.paragraphOpen = false;
     return;
   }
-  // Only list markers that reach the normal flow are flagged: a `- x` line
-  // inside a fence or raw block is code/text, not a list.
-  if (LIST_MARKER_LINE.test(line)) state.sawListMarker = true;
-  // An ATX heading can interrupt a paragraph, a list, a blockquote and a GFM
-  // table, so outside the constructs tracked above a column-0 heading line
-  // always starts a new block — no blank line before it is required.
-  if (!HEADING_LINE.test(line)) return;
+  if (markerInfo) {
+    // A marker that continues an already-open list (same marker column and
+    // kind) is a sibling item; it interrupts the item's paragraph regardless
+    // of start number or a blank body, and the list stays open. Checked
+    // before the block classification: a sibling line shaped like a thematic
+    // break (`- - -`) is still an item.
+    let sibling = -1;
+    for (
+      let i = stack.length - 1;
+      i >= 0 && stack[i].ci > markerInfo.mIndent;
+      i--
+    ) {
+      if (
+        stack[i].mIndent === markerInfo.mIndent &&
+        stack[i].kind === markerInfo.kind
+      ) {
+        sibling = i;
+        break;
+      }
+    }
+    if (sibling >= 0) {
+      stack.length = sibling + 1;
+      stack[sibling].ci = markerInfo.ci;
+      stack[sibling].blank = markerInfo.contentBlank;
+      stack[sibling].lineVeto = sliceVeto(
+        expandTabs(markerInfo.rest),
+        markerInfo.ci,
+      );
+      state.paragraphOpen = !markerInfo.contentBlank;
+      return;
+    }
+  }
+  if (ATX_LINE.test(blockLine)) {
+    // An ATX heading interrupts a paragraph and closes the containers it
+    // dedents out of; only a column-0 one is a boundary candidate.
+    popBelow(indent);
+    state.paragraphOpen = false;
+    if (indent > 0) return;
+    // fall through to the boundary logic below
+  } else if (
+    SETEXT_LINE.test(blockLine) ||
+    THEMATIC_BREAK_LINE.test(blockLine)
+  ) {
+    // A setext underline turns the open paragraph into a heading — but only
+    // at the paragraph's own container level. Dedenting below it ends the
+    // containers first, and with no paragraph left at the outer level the
+    // line is a thematic break (`- para\n---` parses as list + <hr>).
+    const setext =
+      !THEMATIC_BREAK_LINE.test(blockLine) &&
+      state.paragraphOpen &&
+      (!stack.length || indent >= topCi());
+    if (!setext) {
+      // A marker followed by nothing but its one delimiter character (`- `,
+      // `1.\t`) is not a list either: plain paragraph text.
+      if (markerInfo && markerInfo.rest.length === 1) {
+        state.paragraphOpen = true;
+        return;
+      }
+      popBelow(indent);
+    }
+    state.paragraphOpen = false;
+    return;
+  } else if (BLOCKQUOTE_LINE.test(blockLine)) {
+    // Only top-level or item-content quote lines reach here — a dedenting
+    // quote line already lazy-attached to the item in the continuation
+    // above. The quote's own paragraph state follows its content: `> # h`,
+    // `> ---` or `> ``` ` leave no paragraph open for later lazy lines,
+    // `> text` leaves one open.
+    if (!state.paragraphOpen) popBelow(indent);
+    let inner = blockLine;
+    while (BLOCKQUOTE_LINE.test(inner)) {
+      inner = inner.replace(/^ {0,3}>[ \t]?/, "");
+    }
+    state.paragraphOpen =
+      inner.trim() !== "" &&
+      !ATX_LINE.test(inner) &&
+      !SETEXT_LINE.test(inner) &&
+      !THEMATIC_BREAK_LINE.test(inner) &&
+      !scanFenceLine(inner);
+    return;
+  } else {
+    if (rel) {
+      const fenceOpen = scanFenceLine(rel);
+      if (fenceOpen && !fenceOpen.infoBacktick) {
+        // A fence 0–3 spaces past the item's content indent but 4+ spaces
+        // absolutely is invisible to the char scanner: open the contained
+        // fence here so the scanner tracks it (and its closing line) from the
+        // next line on, instead of mistaking its body for paragraph text.
+        fence.inFenced = true;
+        fence.fenceChar = fenceOpen.char;
+        fence.fenceLen = fenceOpen.len;
+        fence.fenceCi = topCi();
+        state.paragraphOpen = false;
+        return;
+      }
+    }
+    if (markerInfo) {
+      // A marker followed by nothing but its one delimiter character (`- `,
+      // `1.\t`) is not a list at all: plain paragraph text.
+      if (markerInfo.rest.length === 1) {
+        state.paragraphOpen = true;
+        return;
+      }
+      // A fresh list may not interrupt a paragraph unless the marker is a
+      // bullet or a `1.`/`1)` followed by a *space* — a tab delimiter and a
+      // non-1 ordered start make the line lazy paragraph text instead.
+      if (
+        state.paragraphOpen &&
+        (markerInfo.rest[0] !== " " ||
+          (markerInfo.ordered && Number(markerInfo.digits) !== 1))
+      ) {
+        return;
+      }
+      popBelow(markerInfo.mIndent);
+      stack.push({
+        ci: markerInfo.ci,
+        mIndent: markerInfo.mIndent,
+        kind: markerInfo.kind,
+        blank: markerInfo.contentBlank,
+        lineVeto: sliceVeto(expandTabs(markerInfo.rest), markerInfo.ci),
+      });
+      state.paragraphOpen = !markerInfo.contentBlank;
+      return;
+    }
+    // Plain text. The open paragraph simply continues (a dedenting line that
+    // would have ended it was handled by the continuation above).
+    if (state.paragraphOpen) return;
+    // An indented code block (4+ spaces relative to the container) is not a
+    // paragraph; every other plain line opens or continues one.
+    state.paragraphOpen = indent < (stack.length ? topCi() : 0) + 4;
+    return;
+  }
+
+  // --- Boundary logic: only column-0 ATX headings reach this point. ---
+  if (state.noSplit) return;
   // With `incremental` off the state above still advances (so switching it on
   // mid-stream sees correct definitions and raw blocks) but no boundary is
   // recorded: sections already built stay whole.
@@ -502,24 +967,7 @@ const trackSectionBoundary = (
   if (sectionText.includes("<") && hasUnclosedRawTags(sectionText)) {
     return;
   }
-  // A fence indented 1–3 spaces inside a list item is where this scanner and
-  // the block parser genuinely disagree: the scanner opens and closes the
-  // fence by line-level rules, but the block parser ends the list-internal
-  // fence as soon as a body line dedents below the item's content indent, so
-  // the indented "closing" line *opens* a new fence that swallows every
-  // later heading. There is no cheap way to tell that case apart from a
-  // harmless top-level indented fence without tracking list containers, so
-  // once a list marker and an indented fence have both appeared in the
-  // current section, no further boundary is recorded. The flags reset only
-  // at a recorded boundary — one that passed every veto and is therefore a
-  // point both parsers agree on — never at a vetoed heading, which might not
-  // be a heading in the block parser's reading at all.
-  if (state.sawListMarker && state.sawIndentedFence) {
-    return;
-  }
   state.offsets.push(lineStart);
-  state.sawListMarker = false;
-  state.sawIndentedFence = false;
 };
 
 /**

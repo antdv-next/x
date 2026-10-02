@@ -28,7 +28,7 @@ order: 4
 | animationConfig                | 动画参数                                                                                                                                                                                                                                                                                  | `AnimationConfig`                                                      | `{ fadeDuration: 200, easing: 'ease-in-out' }` |
 | tail                           | 是否启用尾部指示器                                                                                                                                                                                                                                                                        | `boolean \| TailConfig`                                                | `false`                                        |
 
-> `incremental` 只在顶格的 ATX 标题前切分；围栏代码、HTML 块（`<div>`、`<pre>`、`<script>`、注释等）、`$$` 公式里的 `#` 行不算标题。文档里出现链接引用定义或脚注定义、或自定义组件标签跨越切点时不切分。各段渲染在同一个根节点里，DOM 与整篇一次渲染完全一致。
+> `incremental` 只在顶格的 ATX 标题前切分；围栏代码（含列表项、引用块内部的围栏）、HTML 块（`<div>`、`<pre>`、`<script>`、注释等）、`$$` 公式里的 `#` 行不算标题——切分器跟踪的容器与段落中断规则和解析器完全一致。文档里出现链接引用定义或脚注定义、或自定义组件标签跨越切点时不切分。`$$` 公式的块规则以自带的 Latex 插件为准：若渲染时未注册该插件，`$$` 包裹的内容只是普通 Markdown，此类内容包住代码围栏时请关闭 `incremental`。各段渲染在同一个根节点里，DOM 与整篇一次渲染完全一致。
 
 ### TypewriterConfig
 

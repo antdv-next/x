@@ -209,15 +209,14 @@ const corpora: Record<string, string> = {
     "end",
   ].join("\n"),
 
-  // A fence indented 1–3 spaces *inside a list item*. The line-level fence
-  // scanner opens and closes it by indentation alone, but the block parser
-  // ends the list-internal fence when the body dedents below the item's
-  // content indent (`x.y();` at column 0), so the indented "closing" line
-  // actually *opens* a new fence that swallows "## after" and everything
-  // after it. Once a list marker and an indented fence have appeared in the
-  // same section, no further boundary is recorded — the "## after" boundary
-  // is vetoed here — while the earlier "## B" boundary keeps this corpus in
-  // the sawSections assertion and proves a safe earlier split still happens.
+  // A fence indented 1–3 spaces *inside a list item*. The block parser binds
+  // the fence to the item's content indent and ends it when the body dedents
+  // below that indent (`x.y();` at column 0), so the indented "closing" line
+  // actually *opens* a new top-level fence that swallows "## after" and
+  // everything after it. The tracker models the same container, so the
+  // "## after" boundary is vetoed — while the earlier "## B" boundary keeps
+  // this corpus in the sawSections assertion and proves a safe earlier split
+  // still happens.
   listIndentedFence: [
     "# A",
     "",
@@ -235,6 +234,270 @@ const corpora: Record<string, string> = {
     "## after",
     "",
     "more",
+  ].join("\n"),
+
+  // The safe counterpart: the fence and its body stay at the item's content
+  // indent, so the indented closing line really closes the fence and every
+  // later heading still splits. (The pre-container-model veto disabled all
+  // later splits once a list marker and an indented fence had been seen.)
+  safeListFenceSplitsAfter: [
+    "# A",
+    "",
+    "- one",
+    "- two",
+    "",
+    "  ```ts",
+    "  x.y();",
+    "  ```",
+    "",
+    "## B",
+    "",
+    "more",
+    "",
+    "## C",
+    "",
+    "end",
+  ].join("\n"),
+
+  // The list ends when a column-0 paragraph follows a blank line, so the
+  // indented fence is top-level and its column-0 body line is just content.
+  listClosedByParagraphThenIndentedFence: [
+    "# A",
+    "",
+    "- item",
+    "",
+    "para",
+    "",
+    "   ```ts",
+    "x",
+    "   ```",
+    "",
+    "## after",
+    "",
+    "end",
+  ].join("\n"),
+
+  // A `---` right after a list paragraph dedents out of the item; with no
+  // paragraph left at the outer level it is a thematic break, not a setext
+  // underline, so the list is over and "## after" splits.
+  hrAfterListPara: ["# A", "", "- para", "---", "", "## after", "", "end"].join(
+    "\n",
+  ),
+
+  // Two fences in one item, with an item paragraph in between.
+  twoFencesOneItem: [
+    "# A",
+    "",
+    "- item",
+    "",
+    "  ```ts",
+    "  one",
+    "  ```",
+    "",
+    "  text",
+    "",
+    "  ```js",
+    "  two",
+    "  ```",
+    "",
+    "## B",
+    "",
+    "end",
+  ].join("\n"),
+
+  // A nested list whose content indent reaches 4 is not tracked, but the
+  // fence inside it is still contained: every dedenting line ends it in both
+  // models.
+  nestedListFenceInOuterItem: [
+    "# A",
+    "",
+    "- outer",
+    "  - inner",
+    "",
+    "    ```ts",
+    "    code",
+    "    ```",
+    "",
+    "## B",
+    "",
+    "end",
+  ].join("\n"),
+
+  // A column-0 line lazily continues the item's paragraph (the list
+  // survives), and the fence after the blank line is still contained.
+  lazyThenFence: [
+    "# A",
+    "",
+    "- item with a long paragraph",
+    "that lazily continues",
+    "",
+    "  ```ts",
+    "  code",
+    "  ```",
+    "",
+    "## B",
+    "",
+    "end",
+  ].join("\n"),
+
+  // A fence can start on the list marker line itself. The char scanner never
+  // sees that opener (the line starts with `-`), so it mistakes the indented
+  // closing line for an opener — the container model resyncs at the next
+  // dedenting line.
+  fenceOnMarkerLine: [
+    "# A",
+    "",
+    "- ```ts",
+    "  code",
+    "  ```",
+    "",
+    "## B",
+    "",
+    "end",
+  ].join("\n"),
+
+  // marked counts a tab as a single column in the marker gap, so the item's
+  // content indent is 2 and the fence at two spaces is contained.
+  tabAfterMarker: [
+    "# A",
+    "",
+    "-\titem",
+    "",
+    "  ```ts",
+    "  code",
+    "  ```",
+    "",
+    "## B",
+    "",
+    "end",
+  ].join("\n"),
+
+  // A type-1 HTML block inside a list item, holding lines that look like
+  // fences and headings; the phantom fence opens the char scanner produces
+  // there are undone, and the fenced block after it is still contained.
+  htmlBlockInListWithFences: [
+    "# A",
+    "",
+    "- item",
+    "",
+    "  <pre>",
+    "  ```",
+    "  # still pre",
+    "  ```",
+    "  </pre>",
+    "",
+    "  ```ts",
+    "  # not a heading",
+    "  ```",
+    "",
+    "## B",
+    "",
+    "end",
+  ].join("\n"),
+
+  // A fence indented 4+ spaces *absolutely* but 0–3 spaces past the item's
+  // content indent is invisible to the char scanner: the tracker opens it
+  // itself, so its body (including a `#` line) is not mistaken for paragraph
+  // text and its equally deep closing line still closes it.
+  blindListFence: [
+    "# A",
+    "",
+    "- item",
+    "",
+    "    ```ts",
+    "    code",
+    "    # not a heading",
+    "    ```",
+    "",
+    "## B",
+    "",
+    "end",
+  ].join("\n"),
+
+  // The same blind fence, but ended early by a column-0 body line: item and
+  // fence die together there, so the later indented fence is top-level and
+  // "## B" is fence content while "## C" splits again.
+  blindListFenceEarlyExit: [
+    "# A",
+    "",
+    "- item",
+    "",
+    "    ```ts",
+    "    code",
+    "x",
+    "",
+    "   ```",
+    "## B",
+    "   ```",
+    "",
+    "## C",
+    "",
+    "end",
+  ].join("\n"),
+
+  // A backtick fence whose info string contains a backtick is not a fence at
+  // all — it is paragraph text. The char scanner opens it anyway, so the
+  // tracker undoes the phantom open and "## B" still splits.
+  backtickInfoString: ["# A", "", "``` a`b", "", "## B", "", "end"].join("\n"),
+
+  // A marker-shaped line that is itself a thematic break (`- - -`) ends the
+  // list — marked's block lexer reads it as an hr, never as a sibling item.
+  dashHrEndsList: ["# A", "", "- item", "- - -", "", "## B", "", "end"].join(
+    "\n",
+  ),
+
+  // A blank sibling item (`- ` with nothing after the marker is NOT a list,
+  // but bare `-` is): the list stays open across it and its content, and
+  // "## B" splits once the blank-tailed item ends.
+  blankSiblingItem: [
+    "# A",
+    "",
+    "- a",
+    "-",
+    "  code",
+    "",
+    "## B",
+    "",
+    "end",
+  ].join("\n"),
+
+  // An ordered marker two characters wide pushes the content indent to 4:
+  // the fence is invisible to the char scanner, so the tracker opens it
+  // itself (body `#` lines stay fenced) and closes it at the equally deep
+  // closing line; "## B" splits.
+  orderedWideMarkerFence: [
+    "# A",
+    "",
+    "10. item",
+    "    ```",
+    "    # fenced",
+    "    ```",
+    "",
+    "## B",
+    "",
+    "end",
+  ].join("\n"),
+
+  // A tab right after the marker counts as a non-space character, so the
+  // content indent collapses to 1 and the fence at one space is contained.
+  // The column-0 `x` meets the fence-opener veto and ends the item, which
+  // makes the second fence top-level: it swallows "## B" before closing,
+  // and "## C" splits again.
+  tabGapMarker: [
+    "# A",
+    "",
+    "+\tpara",
+    " ~~~js",
+    "x",
+    " ~~~",
+    "",
+    "## B",
+    "",
+    "~~~",
+    "",
+    "## C",
+    "",
+    "end",
   ].join("\n"),
 
   // A processing instruction starting inside a type-6 HTML block. The HTML
@@ -661,6 +924,81 @@ describe("streaming.incremental", () => {
       );
     });
 
+    it("splits every heading after a list-internal fence that closes inside its item", async () => {
+      // The P3-1 regression shape: a list marker plus a safe indented fence
+      // must not poison later splits.
+      const text = [
+        "# A",
+        "",
+        "- one",
+        "- two",
+        "",
+        "  ```ts",
+        "  x.y();",
+        "  ```",
+        "",
+        "## B",
+        "",
+        "b",
+        "",
+        "## C",
+        "",
+        "c",
+        "",
+        "## D",
+        "",
+        "d",
+        "",
+      ].join("\n");
+      expect(await sectionsFor(text)).toHaveLength(4);
+    });
+
+    it("does not split on a heading swallowed by the fence a dedenting list fence re-opens", async () => {
+      // The column-0 body line ends the item and its fence; the indented
+      // "closing" line re-opens at the top level and swallows the heading.
+      expect(
+        await sectionsFor(
+          "# A\n\n- one\n\n  ```ts\nx.y();\n  ```\n\n## after\n\nmore\n",
+        ),
+      ).toBeNull();
+      // …and the split resumes once that re-opened fence actually closes.
+      expect(
+        await sectionsFor(
+          "# A\n\n- one\n\n  ```ts\nx.y();\n  ```\n\n## after\n\n  ```\n\n## B\n",
+        ),
+      ).toHaveLength(2);
+    });
+
+    it("does not split inside a fence indented past the scanner's window but inside a list item", async () => {
+      // Four absolute spaces = two relative to the item's content indent: a
+      // contained fence the char scanner cannot see. Its `#` line stays
+      // fenced, and the split resumes after the equally deep closing line.
+      expect(
+        await sectionsFor(
+          "# A\n\n- item\n\n    ```ts\n    # fenced\n    ```\n\n",
+        ),
+      ).toBeNull();
+      expect(
+        await sectionsFor(
+          "# A\n\n- item\n\n    ```ts\n    # fenced\n    ```\n\n## B\n",
+        ),
+      ).toEqual([
+        "# A\n\n- item\n\n    ```ts\n    # fenced\n    ```\n\n",
+        "## B\n",
+      ]);
+      // …but a column-0 `#` line still ends item and fence together and is a
+      // heading, blind fence or not.
+      expect(
+        await sectionsFor("# A\n\n- item\n\n    ```ts\n# heading\n    ```\n\n"),
+      ).toHaveLength(2);
+    });
+
+    it("treats a backtick fence with a backtick in its info string as paragraph text", async () => {
+      expect(await sectionsFor("# A\n\n``` a`b\n\n## B\n\n")).toHaveLength(2);
+      // A tilde fence has no such restriction: the heading stays fenced.
+      expect(await sectionsFor("# A\n\n~~~ a`b\n\n## B\n\n")).toBeNull();
+    });
+
     it("does not split on # lines inside <pre>, <script>, comments and $$ math", async () => {
       expect(await sectionsFor("# A\n\n<pre>\n\n# x\n\n</pre>\n\n")).toBeNull();
       expect(
@@ -718,6 +1056,64 @@ describe("streaming.incremental", () => {
       expect(
         await sectionsFor("# A\n\n<pre>\n\n# x\n\n</pre>\n\n## B\n\n"),
       ).toHaveLength(2);
+    });
+
+    it("ends a list at a thematic-break-shaped marker line instead of treating it as a sibling", async () => {
+      // `- - -` after an item is an hr — marked's block lexer never reads it
+      // as a list item — so the list ends and the heading splits.
+      expect(await sectionsFor("- item\n- - -\n\n## B\n\ntail")).toEqual([
+        "- item\n- - -\n\n",
+        "## B\n\ntail",
+      ]);
+      // …and a definition after that hr is top-level and document-wide.
+      expect(
+        await sectionsFor("- item\n- - -\n[^1]: n\n# A\n\ntail"),
+      ).toBeNull();
+    });
+
+    it("starts a fresh ordered list at any number once the previous item ended", async () => {
+      // The `2. b` marker ends the bullet item (any marker does) and opens a
+      // new ordered list — the just-ended item's paragraph no longer blocks
+      // the non-1 start. Its fence dedents below the new item, so it is
+      // top-level and swallows "## B"; "## C" splits.
+      expect(
+        await sectionsFor("- a\n2. b\n  ```\n## B\n  ```\n\n## C\n\ntail"),
+      ).toEqual(["- a\n2. b\n  ```\n## B\n  ```\n\n", "## C\n\ntail"]);
+    });
+
+    it("tracks list items whose content indent is 4 or more", async () => {
+      // `-   ```ts` has content indent 4, and its marker line already vetoes
+      // lazy continuation (the content slice begins a fence), so the
+      // dedenting ` </my-card>` ends the item and opens a type-7 HTML block
+      // that swallows the fences and the headings as text.
+      expect(
+        await sectionsFor("-   ```ts\n </my-card>\n~~~\n~~~\n## B\n#"),
+      ).toBeNull();
+    });
+
+    it("closes $$ math only at a column-0 delimiter and splits after it", async () => {
+      expect(await sectionsFor("$$\nx\n$$\n\n## B\n\ntail")).toEqual([
+        "$$\nx\n$$\n\n",
+        "## B\n\ntail",
+      ]);
+      // An indented or longer run keeps the block open (the plugin's closer
+      // is the opening run alone, right after a newline).
+      expect(await sectionsFor("$$\nx\n  $$\n\n## B\n\ntail")).toBeNull();
+      expect(await sectionsFor("$$\nx\n$$$\n\n## B\n\ntail")).toBeNull();
+      // A bracket block closes at its `\]` line.
+      expect(await sectionsFor("\\[\nx\n\\]\n\n## B\n\ntail")).toEqual([
+        "\\[\nx\n\\]\n\n",
+        "## B\n\ntail",
+      ]);
+    });
+
+    it("does not open block math on top of an open paragraph", async () => {
+      // The katex block rule cannot interrupt a paragraph, so the `$$` lines
+      // here are lazy paragraph text and the heading splits normally.
+      expect(await sectionsFor("para\n$$\nx\n$$\n\n## B\n\ntail")).toEqual([
+        "para\n$$\nx\n$$\n\n",
+        "## B\n\ntail",
+      ]);
     });
 
     it("does not end processing instructions, declarations or CDATA at a blank line", async () => {
