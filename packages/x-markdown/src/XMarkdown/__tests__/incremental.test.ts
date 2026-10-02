@@ -14,7 +14,9 @@ import {
 
 import type { StreamingOption } from "../interface";
 
+import Section from "../components/Section.vue";
 import {
+  DEFAULT_MIN_SECTION_CHARS,
   useStreamingCore,
   type StreamingResult,
 } from "../composables/useStreaming";
@@ -37,9 +39,12 @@ const noMin = { minSectionChars: 0 };
  * attribute order without differing in meaning. Normalise by sorting every
  * element's attributes before comparing markup.
  */
-function normalizeHTML(html: string): string {
+function normalizeHTML(html: string | undefined): string {
   const container = document.createElement("div");
-  container.innerHTML = html;
+  // A comment-root render (an empty output under the root `v-if`) has no
+  // innerHTML; treat it as empty markup instead of letting `undefined`
+  // coerce to the literal string "undefined".
+  container.innerHTML = html ?? "";
   const walk = (el: Element) => {
     const attrs = Array.from(el.attributes).sort((a, b) =>
       a.name.localeCompare(b.name),
@@ -232,6 +237,15 @@ const corpora: Record<string, string> = {
     '# Doc\n\n<div align="center">\n\n' +
     "text ".repeat(60) +
     "\n\n# Centered Title\n\nmore\n\n</div>\n\n## After\n\nend\n",
+
+  // The document can start with text that sanitizes down to no nodes at all.
+  // The empty leading section must contribute nothing: emitting a placeholder
+  // would give the sectioned render a node the whole-document render lacks,
+  // and it would survive the end of the stream as a stray element. The blank
+  // lines clear the default minSectionChars floor with a small margin.
+  leadingWhitespaceSection: `${"\n".repeat(DEFAULT_MIN_SECTION_CHARS + 10)}# Heading\n\ntext\n`,
+
+  leadingCommentSection: `<!--\n${"comment ".repeat(30)}\n-->\n\n# Heading\n\ntext\n`,
 };
 
 /** Drive `useStreamingCore` inside an effect scope with controllable refs. */
@@ -398,6 +412,69 @@ describe("streaming.incremental", () => {
       const done = await update(text, false);
       expect(done.sectioned).toBe(done.whole);
     }, 60000);
+
+    it("renders an empty document with no element content at all", async () => {
+      // As upstream: an empty output skips the root wrapper entirely rather
+      // than leaving an empty `.x-markdown` (plus a placeholder element).
+      // Vue still anchors the root `v-if` with a comment node — `children`
+      // counts only elements, which is what "nothing" means here.
+      const host = mount(
+        defineComponent({
+          components: { XMarkdown },
+          props: { content: { type: String, default: "" } },
+          template: `<div class="host"><XMarkdown :content="content" /></div>`,
+        }),
+        { props: { content: "" } },
+      );
+      await nextTick();
+      const root = host.element as HTMLElement;
+      expect(root.querySelector(".x-markdown")).toBeNull();
+      expect(root.children.length).toBe(0);
+      expect(root.textContent).toBe("");
+
+      // A non-empty output that sanitizes down to nothing keeps the wrapper
+      // (upstream renders `<div class="x-markdown" />`) but gains no
+      // placeholder element inside it — only the childless Fragment's
+      // invisible anchor text nodes.
+      const blank = mount(XMarkdown, { props: { content: "\n\n" } });
+      await nextTick();
+      const blankRoot = blank.element as HTMLElement;
+      expect(blankRoot.className).toBe("x-markdown");
+      expect(blankRoot.querySelector("span")).toBeNull();
+      expect(blankRoot.children.length).toBe(0);
+    });
+
+    it("keeps an empty leading section out of the default minSectionChars split", async () => {
+      // The corpus's leading blank lines clear the default minSectionChars
+      // floor, so the first section is empty and must contribute no element
+      // at all.
+      const text = corpora.leadingWhitespaceSection;
+      const sectioned = mount(XMarkdown, {
+        props: {
+          content: text,
+          streaming: {
+            hasNextChunk: true,
+            incremental: true,
+            enableAnimation: false,
+          },
+        },
+      });
+      const plain = mount(XMarkdown, {
+        props: { content: text, streaming: { enableAnimation: false } },
+      });
+      await nextTick();
+      // Pin the precondition: the split must actually happen — without it
+      // the sectioned mount falls back to the whole-document render and the
+      // assertions below pass vacuously.
+      expect(sectioned.findAllComponents(Section).length).toBeGreaterThan(1);
+      expect(
+        (sectioned.element as HTMLElement).querySelector("span"),
+      ).toBeNull();
+      // …and the streamed output is identical to a one-shot render.
+      expect((sectioned.element as HTMLElement).innerHTML).toBe(
+        (plain.element as HTMLElement).innerHTML,
+      );
+    });
 
     it("with animation on, textContent still matches the whole-document render at every step", async () => {
       const text = corpora.headingsAndBlocks;

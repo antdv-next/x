@@ -40,6 +40,9 @@ const typewriterRef = computed(() => streamingResolved.value?.typewriter);
 const hasNextChunkRef = computed(() => !!streamingResolved.value?.hasNextChunk);
 const pacedContent = useTypewriter(contentRef, typewriterRef, hasNextChunkRef);
 
+// An empty output renders nothing at all (no root wrapper, no debug panel),
+// matching upstream's early `if (!output) return null`; the template guards
+// the wrapper with `v-if="processedContent"`.
 const { output: processedContent, sections } = useStreamingCore(
   pacedContent,
   streamingResolved,
@@ -219,7 +222,11 @@ watch(
 </script>
 
 <template>
-  <div :class="['x-markdown', className]" :style="style">
+  <div
+    v-if="processedContent"
+    :class="['x-markdown', className]"
+    :style="style"
+  >
     <template v-if="sections">
       <Section
         v-for="(section, index) in sections"

@@ -54,6 +54,8 @@ export default defineComponent({
       return props.renderer.render(html);
     });
 
+    // Empty sections (leading whitespace, DOMPurify-stripped markup) render
+    // nothing — see VueRenderer.render's zero-node branch.
     return () => node.value;
   },
 });

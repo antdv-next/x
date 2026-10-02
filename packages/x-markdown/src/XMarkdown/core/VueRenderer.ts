@@ -77,6 +77,11 @@ export class VueRenderer {
   }
 
   render(html: string): VNode {
+    if (!html) {
+      // Fast path to the zero-node branch below: empty input always
+      // sanitizes to nothing, so skip detect + sanitize + parse.
+      return h(Fragment);
+    }
     const unclosedTags = detectUnclosedComponentTags(
       html,
       Object.keys(this.options.components),
@@ -84,7 +89,13 @@ export class VueRenderer {
     const sanitized = this.sanitize(html);
     const nodes = this.parseToVNodes(sanitized, unclosedTags);
     if (nodes.length === 0) {
-      return h("span", "");
+      // Matches the upstream renderer, which returns nothing for content that
+      // sanitizes down to no nodes. A placeholder *element* here would make an
+      // empty incremental Section emit a node the whole-document render does
+      // not have, and would survive the end of the stream as a stray element.
+      // A childless Fragment contributes no DOM (only invisible anchor text
+      // nodes) and keeps the public return type a stable `VNode`.
+      return h(Fragment);
     }
     if (nodes.length === 1) {
       return nodes[0];

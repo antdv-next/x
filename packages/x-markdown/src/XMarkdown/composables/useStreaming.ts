@@ -442,7 +442,10 @@ const trackSectionBoundary = (
     ? state.offsets[state.offsets.length - 1]
     : 0;
   // A boundary at the very start of the document (or of the current section)
-  // would only produce an empty section.
+  // would only produce an empty section. Larger sections can still parse to
+  // zero nodes (all-whitespace or sanitize-stripped markup) — that case is
+  // handled by the renderer returning a childless Fragment, keeping this
+  // splitter a pure text scan with no marked/DOMPurify coupling.
   if (lineStart <= sectionStart || lineStart - sectionStart < minSectionChars)
     return;
   // A custom component opened in this section and closed in a later one would
