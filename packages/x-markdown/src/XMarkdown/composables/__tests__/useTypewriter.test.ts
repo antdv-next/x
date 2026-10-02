@@ -137,6 +137,23 @@ describe("useTypewriter", () => {
     inactive.scope.stop();
   });
 
+  it("stops the reveal loop when its effect scope is disposed", async () => {
+    const tw = setup({ input: "", typewriter: true, active: true });
+    await nextTick();
+    tw.input.value =
+      "a long piece of text that would take many frames to reveal";
+    await nextTick();
+    frame();
+    await nextTick();
+    const partial = tw.current;
+    expect(partial.length).toBeLessThan(tw.input.value.length);
+    tw.scope.stop();
+    const frozen = tw.current;
+    frame(2000);
+    await nextTick();
+    expect(tw.current).toBe(frozen);
+  });
+
   it("shows what is present at mount immediately and types out what arrives later", async () => {
     const tw = setup({ input: "Hello", typewriter: true, active: true });
     expect(tw.current).toBe("Hello");
@@ -238,6 +255,58 @@ describe("useTypewriter", () => {
           );
       }
       expect(wrong).toEqual([]);
+    });
+
+    it("does not split a flag when the alignment window starts inside a regional-indicator run", () => {
+      // Twelve flags occupy code units 2..50; true boundaries are 2 + 4k.
+      // A cut at 40 sits inside the flag spanning [38, 42). A window anchored
+      // at unit 8 would start mid-run with odd regional-indicator parity and
+      // report shifted boundaries, returning 40 — a cut inside the flag.
+      const flags = "xx" + "\u{1F1E6}\u{1F1FA}".repeat(12) + "tail";
+      expect(alignToGrapheme(flags, 40)).toBe(42);
+      expect(alignToGrapheme(flags, 41)).toBe(42);
+      expect(alignToGrapheme(flags, 38)).toBe(38);
+    });
+  });
+
+  describe("stream frontier", () => {
+    it("holds back a trailing half emoji while streaming, reveals it once completed", async () => {
+      const tw = setup({ input: "ok ", typewriter: true, active: true });
+      await nextTick();
+      tw.input.value = "ok \uD83D"; // high surrogate only: half of 😀
+      await nextTick();
+      const outputs = drain(() => tw.current, 300);
+      // The frontier must never sit on the lone surrogate (U+FFFD on screen).
+      expect(outputs.every(out => out === "ok " || out === "")).toBe(true);
+      expect(tw.current).toBe("ok ");
+      tw.input.value = "ok 😀";
+      await nextTick();
+      drain(() => tw.current, 300);
+      expect(tw.current).toBe("ok 😀");
+      tw.scope.stop();
+    });
+
+    it("holds back a dangling ZWJ until the joined emoji arrives", async () => {
+      const tw = setup({ input: "a ", typewriter: true, active: true });
+      await nextTick();
+      tw.input.value = "a \u{1F468}‍"; // "👨‍" — ZWJ with nothing joined yet
+      await nextTick();
+      drain(() => tw.current, 300);
+      expect(tw.current).toBe("a \u{1F468}");
+      tw.input.value = "a \u{1F468}‍\u{1F469}"; // 👨‍👩
+      await nextTick();
+      drain(() => tw.current, 300);
+      expect(tw.current).toBe("a \u{1F468}‍\u{1F469}");
+      tw.scope.stop();
+    });
+
+    it("shows everything at once when the stream ends, broken tail included", async () => {
+      const tw = setup({ input: "ok \uD83D", typewriter: true, active: true });
+      await nextTick();
+      tw.active.value = false;
+      await nextTick();
+      expect(tw.current).toBe("ok \uD83D");
+      tw.scope.stop();
     });
   });
 

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { defineComponent, effectScope, h, nextTick, onMounted, ref } from "vue";
 
 import { useStreaming } from "../composables/useStreaming";
+import { VueRenderer } from "../core/VueRenderer";
 import XMarkdown from "../index.vue";
 import { resolveStreaming } from "../utils/streaming";
 
@@ -139,5 +140,34 @@ describe("resolveStreaming", () => {
       hasNextChunk: true,
     });
     expect(resolveStreaming(undefined)).toBeUndefined();
+  });
+});
+
+describe("VueRenderer.setOptions", () => {
+  it("replaces animationConfig instead of merging, so a dropped config resets to defaults", () => {
+    interface RendererInternals {
+      options: { animationConfig: Record<string, unknown> };
+    }
+    const internals = (r: VueRenderer) => r as unknown as RendererInternals;
+    const renderer = new VueRenderer({
+      animationConfig: { splitBy: "sentence", delimiters: ["。"] },
+    });
+    // A later options bag without those fields must not inherit them…
+    renderer.setOptions({ animationConfig: { fadeDuration: 500 } });
+    expect(internals(renderer).options.animationConfig.splitBy).toBeUndefined();
+    expect(internals(renderer).options.animationConfig.fadeDuration).toBe(500);
+    // …and a bag that drops the config entirely (the streaming preset being
+    // switched off) resets it, instead of leaking splitBy: 'sentence' into
+    // every later render.
+    renderer.setOptions({ animationConfig: undefined });
+    expect(internals(renderer).options.animationConfig.splitBy).toBeUndefined();
+    expect(internals(renderer).options.animationConfig.easing).toBe(
+      "ease-in-out",
+    );
+    // Callers that never mention the key keep the current config.
+    renderer.setOptions({ enableAnimation: false });
+    expect(internals(renderer).options.animationConfig.easing).toBe(
+      "ease-in-out",
+    );
   });
 });

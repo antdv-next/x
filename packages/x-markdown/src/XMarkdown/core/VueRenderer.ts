@@ -364,10 +364,15 @@ export class VueRenderer {
     if (options.enableAnimation !== undefined) {
       this.options.enableAnimation = options.enableAnimation;
     }
-    if (options.animationConfig) {
+    if ("animationConfig" in options) {
+      // Replace, not merge: when the caller drops a field — or the whole
+      // config, e.g. the streaming preset (which carries splitBy: 'sentence')
+      // being switched off — the old value must not leak into later renders.
       this.options.animationConfig = {
-        ...this.options.animationConfig,
         ...options.animationConfig,
+        fadeDuration:
+          options.animationConfig?.fadeDuration ?? DEFAULT_ANIMATION_DURATION,
+        easing: options.animationConfig?.easing ?? "ease-in-out",
       };
     }
   }

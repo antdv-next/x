@@ -27,12 +27,21 @@ const endsWithDelimiter = (chunk: string, delimiters: string[]): boolean =>
  * new chunk starts only after a delimiter. Text that is already on screen is
  * never moved to another chunk, so nothing that has faded in fades in again.
  */
+/** Push `text` as units of at most `maxChars`, so a long delimiter-less run
+ * still fades in piece by piece. */
+const pushCapped = (chunks: string[], text: string, maxChars: number): void => {
+  for (let start = 0; start < text.length; start += maxChars) {
+    chunks.push(text.slice(start, start + maxChars));
+  }
+};
+
 const appendBySentence = (
   chunks: string[],
   newText: string,
   delimiters: string[],
   maxChars: number,
 ): string[] => {
+  const cap = Math.max(1, maxChars);
   const next = chunks.slice();
   let rest = newText;
   const last = next[next.length - 1];
@@ -40,7 +49,7 @@ const appendBySentence = (
   if (
     next.length > 0 &&
     !endsWithDelimiter(last, delimiters) &&
-    last.length < maxChars
+    last.length < cap
   ) {
     let cut = -1;
     for (let i = 0; i < rest.length; i++) {
@@ -50,7 +59,18 @@ const appendBySentence = (
       }
     }
     if (cut === -1) {
-      next[next.length - 1] += rest;
+      // No delimiter in the delta: merge only up to the cap and split the
+      // overflow into cap-sized units, instead of letting one fade-in unit
+      // grow without bound (a long URL or base64 chunk would otherwise fade
+      // in as a single ever-growing block).
+      const room = cap - last.length;
+      if (rest.length <= room) {
+        next[next.length - 1] += rest;
+        return next;
+      }
+      next[next.length - 1] += rest.slice(0, room);
+      rest = rest.slice(room);
+      pushCapped(next, rest, cap);
       return next;
     }
     next[next.length - 1] += rest.slice(0, cut);
@@ -63,7 +83,7 @@ const appendBySentence = (
       start = i + 1;
     }
   }
-  if (start < rest.length) next.push(rest.slice(start));
+  if (start < rest.length) pushCapped(next, rest.slice(start), cap);
   return next;
 };
 

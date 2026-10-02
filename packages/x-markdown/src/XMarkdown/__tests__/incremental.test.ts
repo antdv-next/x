@@ -1,6 +1,7 @@
 import { mount } from "@vue/test-utils";
 import { describe, expect, it } from "vitest";
 import {
+  computed,
   defineComponent,
   effectScope,
   h,
@@ -564,6 +565,56 @@ describe("streaming.incremental", () => {
       scope.stop();
     });
 
+    it("drops all boundaries for definitions nested in blockquotes or list items", async () => {
+      // A definition applies document-wide even when it lives inside a quote
+      // or a list, so it must disable splitting just like a top-level one.
+      expect(
+        await sectionsFor("# A\n\n[docs]\n\n## B\n\n> [docs]: https://x\n"),
+      ).toBeNull();
+      expect(
+        await sectionsFor("# A\n\n[docs]\n\n## B\n\n- [docs]: https://x\n"),
+      ).toBeNull();
+      expect(
+        await sectionsFor(
+          "# A\n\n[docs]\n\n## B\n\n> - [docs]: https://x\n\n## C\n",
+        ),
+      ).toBeNull();
+    });
+
+    it("does not end a raw block at a mere closing-tag prefix like </prefix>", async () => {
+      // CommonMark's type-1 end condition is the literal `</pre>`: `</prefix>`
+      // is pre content, and the `#` after it is still inside the block.
+      expect(
+        await sectionsFor("# A\n\n<pre>\n\n</prefix>\n\n# x\n\n</pre>\n\n"),
+      ).toBeNull();
+      expect(
+        await sectionsFor("# A\n\n<script>\n</scripts>\n# x\n</script>\n\n"),
+      ).toBeNull();
+      // …and the block still ends at the real closing tag.
+      expect(
+        await sectionsFor("# A\n\n<pre>\n\n# x\n\n</pre>\n\n## B\n\n"),
+      ).toHaveLength(2);
+    });
+
+    it("does not end processing instructions, declarations or CDATA at a blank line", async () => {
+      // CommonMark types 3–5 end only at their terminator, so `#` lines after
+      // a blank line are still inside the block.
+      expect(
+        await sectionsFor("# A\n\n<?php\n\necho 1;\n\n# x\n\n?>\n\n"),
+      ).toBeNull();
+      expect(
+        await sectionsFor("# A\n\n<![CDATA[\n\n# x\n\n]]>\n\n"),
+      ).toBeNull();
+      expect(await sectionsFor("# A\n\n<!ENTITY\n\n# x\n\n>\n\n")).toBeNull();
+      // …and splitting resumes once the terminator has streamed.
+      expect(
+        await sectionsFor("# A\n\n<?php\n\n# x\n\n?>\n\n## B\n\n"),
+      ).toHaveLength(2);
+      expect(
+        await sectionsFor("# A\n\n<![CDATA[\n\n# x\n\n]]>\n\n## B\n\n"),
+      ).toHaveLength(2);
+    });
+
     it("does not split while a custom component tag is still open", async () => {
       const components = { "my-card": defineComponent(() => () => null) };
       expect(
@@ -631,6 +682,50 @@ describe("streaming.incremental", () => {
       await nextTick();
       expect(core.output.value).toBe("");
       expect(core.sections.value).toBeNull();
+      scope.stop();
+    });
+
+    it("sees definitions that streamed while incremental was off once it is switched on", async () => {
+      const { scope, content, streamingRef, core } = createCore({
+        hasNextChunk: true,
+        incremental: false,
+      });
+      content.value = "# A\n\n[docs]\n\n## B\n\n[docs]: https://x\n\n";
+      await nextTick();
+      expect(core.sections.value).toBeNull();
+      streamingRef.value = {
+        hasNextChunk: true,
+        incremental: { minSectionChars: 0 },
+      };
+      await nextTick();
+      content.value += "## C\n\nend\n\n";
+      await nextTick();
+      // The definition streamed before the switch; a boundary after it would
+      // orphan the reference, so no boundary may exist at all.
+      expect(core.sections.value).toBeNull();
+      scope.stop();
+    });
+
+    it("records boundaries from where incremental was switched on, not retroactively", async () => {
+      const { scope, content, streamingRef, core } = createCore({
+        hasNextChunk: true,
+        incremental: false,
+      });
+      content.value = "# A\n\npara\n\n## B\n\nmore\n\n";
+      await nextTick();
+      streamingRef.value = {
+        hasNextChunk: true,
+        incremental: { minSectionChars: 0 },
+      };
+      await nextTick();
+      content.value += "## C\n\nend\n\n";
+      await nextTick();
+      // ## B streamed while off, so only the ## C boundary exists: the first
+      // section is bigger, but still a valid lossless split.
+      expect(core.sections.value).toEqual([
+        "# A\n\npara\n\n## B\n\nmore\n\n",
+        "## C\n\nend\n\n",
+      ]);
       scope.stop();
     });
   });
@@ -825,6 +920,75 @@ describe("streaming.incremental", () => {
   });
 });
 
+describe("streaming option identity", () => {
+  it("does not re-run the pipeline when an inline streaming literal is rebuilt with equal values", async () => {
+    const scope = effectScope();
+    const content = ref("# A\n\npara\n\n## B\n\nmore\n\n");
+    const rebuild = ref(0);
+    // Mimics an inline `:streaming="{ hasNextChunk, incremental: {...} }"`:
+    // every parent render produces a fresh object holding the same values.
+    const streamingRef = computed<StreamingOption>(() => {
+      void rebuild.value;
+      return { hasNextChunk: true, incremental: { minSectionChars: 0 } };
+    });
+    let core!: StreamingResult;
+    scope.run(() => {
+      core = useStreamingCore(content, streamingRef);
+    });
+    await nextTick();
+    const before = core.sections.value;
+    expect(before).toHaveLength(2);
+    rebuild.value++;
+    await nextTick();
+    // A re-run would rebuild the sections array; identical values must not
+    // trigger one (each run is O(N) over the whole stream).
+    expect(core.sections.value).toBe(before);
+    scope.stop();
+  });
+});
+
+describe("streaming tail", () => {
+  it("does not remount the tail component when inline literals rebuild around it", async () => {
+    let mounts = 0;
+    const Tail = defineComponent({
+      name: "TailCounter",
+      setup() {
+        onMounted(() => {
+          mounts += 1;
+        });
+        return () => h("span", { class: "my-tail" }, "…");
+      },
+    });
+    const content = ref("");
+    const wrapper = mount(
+      defineComponent({
+        setup() {
+          // Inline literals: both objects are recreated on every render, like
+          // a template written as `:streaming="{...}" :components="{}"`.
+          return () =>
+            h(XMarkdown, {
+              content: content.value,
+              streaming: { hasNextChunk: true, tail: { component: Tail } },
+              components: {},
+            });
+        },
+      }),
+    );
+    for (const chunk of [
+      "# A\n\nhello ",
+      "world ",
+      "again ",
+      "and again\n\n",
+    ]) {
+      content.value += chunk;
+      await nextTick();
+    }
+    expect(wrapper.find(".my-tail").exists()).toBe(true);
+    expect(mounts).toBe(1);
+    wrapper.unmount();
+  });
+});
+
 describe("hasUnclosedRawTags", () => {
   it("detects an unclosed container and accepts a closed one", () => {
     expect(hasUnclosedRawTags('<div align="center">\n\ntext')).toBe(true);
@@ -867,5 +1031,42 @@ describe("hasUnclosedRawTags", () => {
     expect(hasUnclosedRawTags("<!-- open")).toBe(true);
     expect(hasUnclosedRawTags("<!--\n\n# x\n\n-->")).toBe(false);
     expect(hasUnclosedRawTags("<!-- a --> b <!--")).toBe(true);
+  });
+
+  it("does not treat '</ div>' (whitespace after the slash) as a closing tag", () => {
+    // Per the HTML spec '</' followed by a non-letter is a bogus comment that
+    // closes nothing, so the <div> is still open.
+    expect(hasUnclosedRawTags("<div>\n\n</ div>\n\ntext")).toBe(true);
+    // …while whitespace between the name and '>' is allowed.
+    expect(hasUnclosedRawTags("<div>\n\n</div >\n\ntext")).toBe(false);
+  });
+
+  it("does not treat a backslash as an escape inside quoted attribute values", () => {
+    // HTML has no escape mechanism: the value ends at the quote right after
+    // the backslash, so the tag is complete and the container closes later.
+    expect(hasUnclosedRawTags('<div title="C:\\">text</div>')).toBe(false);
+    expect(hasUnclosedRawTags('<div title="C:\\">text')).toBe(true);
+  });
+
+  it("keeps an inline code span across a newline, so a </tag> inside it closes nothing", () => {
+    // CommonMark code spans may contain line endings within one paragraph:
+    // the </span> below is code content, so the real <span> is still open.
+    expect(hasUnclosedRawTags("<span>\n\npara `code\n</span>\ncode` end")).toBe(
+      true,
+    );
+    // …but a blank line ends the paragraph and with it the span.
+    expect(hasUnclosedRawTags("<span>\n\npara `code\n\n</span>\n")).toBe(false);
+  });
+
+  it("treats a backtick run with no equal-length closer as literal text", () => {
+    // The fuzz-found case: a bare ``` line has no closing run, so it is
+    // literal, and the <div> right after it is a real element — assuming the
+    // run opened a span would hide the container from this guard.
+    expect(hasUnclosedRawTags("para\n    ```\n<div>\n")).toBe(true);
+    expect(hasUnclosedRawTags("para ``` and <div>")).toBe(true);
+    expect(hasUnclosedRawTags("para `code` and <div>")).toBe(true);
+    // A run that does have an equal-length closer hides only what is between.
+    expect(hasUnclosedRawTags("para ``` <div> ``` end")).toBe(false);
+    expect(hasUnclosedRawTags("para ``` <div> `` end")).toBe(true);
   });
 });

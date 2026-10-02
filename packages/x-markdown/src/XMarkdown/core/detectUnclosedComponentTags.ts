@@ -53,10 +53,9 @@ const parseClosingTag = (
   let scanPos = pos + 2;
   let tagName = "";
 
-  while (scanPos < html.length && WHITESPACE_REGEX.test(html[scanPos])) {
-    scanPos++;
-  }
-
+  // No whitespace between '</' and the name: per the HTML spec '</' followed
+  // by a non-letter is a bogus comment that closes nothing, so '</ div>' must
+  // not pop a <div>.
   while (scanPos < html.length && TAG_NAME_CHAR_REGEX.test(html[scanPos])) {
     tagName += html[scanPos];
     scanPos++;
@@ -121,12 +120,9 @@ const parseOpeningTag = (
       const quoteChar = html[scanPos];
       scanPos++;
 
+      // HTML attribute values have no escape mechanism: a backslash is a
+      // literal character, so `title="C:\"` ends at the quote right after it.
       while (scanPos < html.length) {
-        if (html[scanPos] === "\\" && scanPos + 1 < html.length) {
-          scanPos += 2;
-          continue;
-        }
-
         if (html[scanPos] === quoteChar) {
           scanPos++;
           break;
@@ -272,51 +268,65 @@ const classifyRawScanLine = (line: string, fence: RawScanFenceState): void => {
 };
 
 /**
+ * Index of the next run of exactly `len` backticks before the paragraph ends,
+ * or -1 when there is none. CommonMark: a code span ends at the next run of
+ * the *same* length, may contain line endings, and does not cross a blank
+ * line; a run with no such closer is literal text, not a span.
+ */
+const findClosingBacktickRun = (
+  text: string,
+  from: number,
+  len: number,
+): number => {
+  let pos = from;
+  while (pos < text.length) {
+    const char = text[pos];
+    if (char === "\n") {
+      let ahead = pos + 1;
+      while (text[ahead] === " " || text[ahead] === "\t") ahead += 1;
+      if (text[ahead] === "\n" || ahead >= text.length) return -1;
+      pos += 1;
+      continue;
+    }
+    if (char !== "`") {
+      pos += 1;
+      continue;
+    }
+    let run = 1;
+    while (text[pos + run] === "`") run += 1;
+    if (run === len) return pos;
+    // A run of another length is span content, not a closer.
+    pos += run;
+  }
+  return -1;
+};
+
+/**
  * Scan one run of non-fence lines for raw HTML tags, maintaining the stack of
  * open containers across runs. Returns true when the range ends inside an
  * unterminated tag or comment (the browser would swallow whatever follows,
  * so a split there is never safe).
  */
 const scanRawTagRange = (text: string, openStack: string[]): boolean => {
-  // Multi-backtick inline code spans: `` `<div>` `` in prose is text, not an
-  // element. A span opens with a run and only an equal-length run closes it.
-  // The span state resets per line, the same approximation the typewriter's
-  // scanBoundaries makes.
-  let inInlineCode = false;
-  let inlineCodeLen = 0;
-  let backtickRun = 0;
-  const settleBacktickRun = (): void => {
-    const run = backtickRun;
-    backtickRun = 0;
-    if (run === 0) return;
-    if (inInlineCode) {
-      if (run === inlineCodeLen) {
-        inInlineCode = false;
-        inlineCodeLen = 0;
-      }
-    } else {
-      inInlineCode = true;
-      inlineCodeLen = run;
-    }
-  };
-
   let pos = 0;
   while (pos < text.length) {
     const char = text[pos];
-    if (char === "\n") {
-      inInlineCode = false;
-      inlineCodeLen = 0;
-      backtickRun = 0;
-      pos += 1;
-      continue;
-    }
+
     if (char === "`") {
-      backtickRun += 1;
-      pos += 1;
+      // `` `<div>` `` in prose is text, not an element. Resolving the span by
+      // lookahead (rather than assuming every run opens one) matters both
+      // ways: with a closer, the `<div>` inside is skipped; without one, the
+      // run is literal and a real `<div>` right after it must still be seen —
+      // assuming an open span there would let an unclosed container slip past
+      // this guard and break the section-split DOM.
+      let runLen = 1;
+      while (text[pos + runLen] === "`") runLen += 1;
+      const close = findClosingBacktickRun(text, pos + runLen, runLen);
+      pos = close === -1 ? pos + runLen : close + runLen;
       continue;
     }
-    settleBacktickRun();
-    if (inInlineCode || char !== "<") {
+
+    if (char !== "<") {
       pos += 1;
       continue;
     }

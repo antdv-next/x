@@ -319,29 +319,51 @@ export const DEFAULT_MIN_SECTION_CHARS = 200;
 // one to three spaces; those are rare in generated text and simply not split on.
 // Link reference definition or footnote definition. Either can be referenced
 // from any other block of the document, so once one is seen the document is
-// no longer splittable.
-const DEFINITION_LINE = /^ {0,3}\[[^\]]*\]:/;
+// no longer splittable. Definitions may also live inside blockquotes and list
+// items (`> [a]: /x`, `- [a]: /x`) and still apply document-wide, so leading
+// quote/list markers are skipped before the `[label]:` test.
+const DEFINITION_LINE =
+  /^ {0,3}(?:(?:>[ \t]*)|(?:[-+*]|\d{1,9}[.)])[ \t]+)*\[[^\]]*\]:/;
 // HTML blocks of CommonMark type 1 (end only at their closing tag) and type 2
 // (comments), plus the Latex plugin's block delimiters. All of them may
 // contain blank lines followed by a `#` line that is *not* a heading.
 const RAW_HTML_BLOCK_OPEN = /^ {0,3}<(pre|script|style|textarea)(?=[\s>]|$)/i;
 const HTML_COMMENT_OPEN = /^ {0,3}<!--/;
+// Type 3 (processing instruction, ends at `?>`), type 4 (declaration such as
+// `<!DOCTYPE html`, ends at the first `>`) and type 5 (CDATA, ends at `]]>`).
+// Unlike types 6–7 these do NOT end at a blank line, so they need the raw
+// block treatment just like type 1 and comments.
+const HTML_PI_OPEN = /^ {0,3}<\?/;
+const HTML_DECLARATION_OPEN = /^ {0,3}<![a-zA-Z]/;
+const HTML_CDATA_OPEN = /^ {0,3}<!\[CDATA\[/;
 const MATH_DOLLAR_LINE = /^(\${1,2})\s*$/;
 const MATH_BRACKET_OPEN = /^\\\[/;
-// Any other HTML block start (CommonMark types 3–7): a tag, closing tag,
-// declaration or processing instruction at the start of a line. Such a block
-// runs to the next blank line; treating every `<x` line this way is slightly
-// conservative (type 7 cannot interrupt a paragraph) but never wrong.
-const HTML_BLOCK_OPEN = /^ {0,3}<(?:[a-zA-Z]|\/[a-zA-Z]|!|\?)/;
+// Any other HTML block start (CommonMark types 6–7): a tag or closing tag at
+// the start of a line. Such a block runs to the next blank line; treating
+// every `<x` line this way is slightly conservative (type 7 cannot interrupt
+// a paragraph) but never wrong.
+const HTML_BLOCK_OPEN = /^ {0,3}<(?:[a-zA-Z]|\/[a-zA-Z])/;
 
 const detectRawBlockOpen = (line: string): SectionState["rawBlock"] => {
   const html = line.match(RAW_HTML_BLOCK_OPEN);
   if (html) {
-    const close = `</${html[1].toLowerCase()}`;
+    // The end condition is the closing tag with its `>`: `</prefix>` or
+    // `</pre ` must not end a <pre> block (CommonMark type 1 requires the
+    // literal `</pre>`, case-insensitive).
+    const close = `</${html[1].toLowerCase()}>`;
     return line.toLowerCase().includes(close) ? null : { close, exact: false };
   }
   if (HTML_COMMENT_OPEN.test(line)) {
     return line.includes("-->") ? null : { close: "-->", exact: false };
+  }
+  if (HTML_PI_OPEN.test(line)) {
+    return line.includes("?>") ? null : { close: "?>", exact: false };
+  }
+  if (HTML_CDATA_OPEN.test(line)) {
+    return line.includes("]]>") ? null : { close: "]]>", exact: false };
+  }
+  if (HTML_DECLARATION_OPEN.test(line)) {
+    return line.includes(">") ? null : { close: ">", exact: false };
   }
   const dollar = line.match(MATH_DOLLAR_LINE);
   if (dollar) return { close: dollar[1], exact: true };
@@ -370,6 +392,7 @@ const trackSectionBoundary = (
   newlineIndex: number,
   componentNames: string[],
   minSectionChars: number,
+  record: boolean,
 ): void => {
   const state = cache.sections;
   const lineStart = state.lineStart;
@@ -410,6 +433,10 @@ const trackSectionBoundary = (
   // table, so outside the constructs tracked above a column-0 heading line
   // always starts a new block — no blank line before it is required.
   if (!HEADING_LINE.test(line)) return;
+  // With `incremental` off the state above still advances (so switching it on
+  // mid-stream sees correct definitions and raw blocks) but no boundary is
+  // recorded: sections already built stay whole.
+  if (!record) return;
 
   const sectionStart = state.offsets.length
     ? state.offsets[state.offsets.length - 1]
@@ -502,8 +529,11 @@ const completePending = (
       return pending.length > marker.length ? `${pending}${marker}` : undefined;
     }
     case TokenType.Link: {
-      // `[text](https://x` and `[tex` both show their text; the link itself
-      // appears once the token completes.
+      // `[tex` shows `tex`; once `]` has arrived, everything after it is the
+      // in-progress destination / reference (`[docs] (https://x`), which the
+      // recognizer keeps pending until it becomes a link or the line ends.
+      // Only the label is shown meanwhile — text that had been committed as
+      // Text can never come back here, so nothing the reader saw disappears.
       const close = pending.indexOf("]");
       const text = close === -1 ? pending.slice(1) : pending.slice(1, close);
       return text || undefined;
@@ -691,13 +721,18 @@ export function useStreamingCore(
 
       feedFenceState(cache.fence, char);
       feedTableState(cache.table, char);
-      if (trackSections && char === "\n") {
+      // Section state advances even with `incremental` off — it is cheap
+      // (O(line) per line) and keeps definitions, raw blocks and line starts
+      // correct when incremental is switched on mid-stream; only recording
+      // boundaries is gated.
+      if (char === "\n") {
         trackSectionBoundary(
           cache,
           text,
           offset,
           componentNames,
           minSectionChars,
+          trackSections,
         );
       }
       offset += char.length;
@@ -746,9 +781,16 @@ export function useStreamingCore(
   watch(
     [
       content,
-      resolvedStreaming,
+      // Scalar getters only: watching the resolvedStreaming object itself
+      // would re-run the O(N) pipeline on every parent re-render that passes
+      // an inline `:streaming="{ ... }"` literal, because the literal is a
+      // fresh object each time. The getters below cover every field the
+      // callback reads; the two record identities (component map, components)
+      // are documented as "keep a stable reference".
       () => resolvedStreaming.value?.hasNextChunk,
-      () => resolvedStreaming.value?.incremental,
+      () => !!resolvedStreaming.value?.incremental,
+      () => resolveMinSectionChars(resolvedStreaming.value?.incremental),
+      () => resolveKeepSectionsOnEnd(resolvedStreaming.value?.incremental),
       () => resolvedStreaming.value?.incompleteMarkdown,
       () => resolvedStreaming.value?.incompleteMarkdownComponentMap,
       () => components?.value,
@@ -761,20 +803,24 @@ export function useStreamingCore(
 
       if (!enableCache) {
         const cache = streamCache;
-        const keepSectionsOnEnd = resolveKeepSectionsOnEnd(opts?.incremental);
+        // `keepSectionsOnEnd: false` asks for a from-scratch render once the
+        // stream ends; only then is a continuing stream's cache dropped.
+        const dropsCache =
+          trackSections && !resolveKeepSectionsOnEnd(opts?.incremental);
         const continuesStream =
-          trackSections &&
-          keepSectionsOnEnd &&
+          !dropsCache &&
           cache.processedLength > 0 &&
           newContent.startsWith(cache.completeMarkdown + cache.pending);
         if (continuesStream) {
-          // The stream just ended (or the caller re-rendered after it ended).
-          // Keep the sections so already-mounted custom components are not
-          // remounted; only the last section re-parses. The output is the raw
-          // input: nothing is pending any more.
+          // The stream just ended or paused (or the caller re-rendered after
+          // it did). Keep the cache — sections stay mounted and a later
+          // resume feeds only the new text instead of re-scanning everything;
+          // the output is the raw input: nothing is pending any more.
           processStreaming(newContent, opts);
           processedContent.value = newContent;
-          sections.value = buildSections(cache, newContent, newContent.length);
+          sections.value = trackSections
+            ? buildSections(cache, newContent, newContent.length)
+            : null;
           return;
         }
         // Non-streaming (or keepSectionsOnEnd: false): render the whole input

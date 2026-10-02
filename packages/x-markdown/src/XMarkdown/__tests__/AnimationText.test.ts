@@ -59,4 +59,33 @@ describe("AnimationText splitBy", () => {
       " Thi",
     ]);
   });
+
+  it("caps a delimiter-less multi-character delta at maxSentenceChars", async () => {
+    // A long delta with no delimiter (a base64 blob, a URL) must not grow one
+    // fade-in unit without bound: it merges up to the cap and the overflow
+    // becomes cap-sized units of its own.
+    const wrapper = mount(AnimationText, {
+      props: {
+        text: "abc",
+        splitBy: "sentence",
+        delimiters: ["."],
+        maxSentenceChars: 5,
+      },
+    });
+    await wrapper.setProps({ text: "abcdefghijkl" });
+    await nextTick();
+    expect(wrapper.findAll("span").map(s => s.element.textContent)).toEqual([
+      "abcde",
+      "fghij",
+      "kl",
+    ]);
+    // The open unit still takes following text up to the cap.
+    await wrapper.setProps({ text: "abcdefghijklmno" });
+    await nextTick();
+    expect(wrapper.findAll("span").map(s => s.element.textContent)).toEqual([
+      "abcde",
+      "fghij",
+      "klmno",
+    ]);
+  });
 });

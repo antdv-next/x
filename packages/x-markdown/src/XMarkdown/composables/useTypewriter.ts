@@ -1,11 +1,4 @@
-import {
-  computed,
-  getCurrentInstance,
-  onBeforeUnmount,
-  ref,
-  watch,
-  type Ref,
-} from "vue";
+import { computed, onScopeDispose, ref, watch, type Ref } from "vue";
 
 import type { TypewriterConfig } from "../interface";
 
@@ -147,6 +140,37 @@ const getSegmenter = (): GraphemeSegmenter | null => {
 // Clusters are short; segmenting a small window around the cut is enough.
 const CLUSTER_WINDOW = 32;
 
+// A code point the segmenter could glue to the text *before* the window:
+// grapheme extenders (combining marks, variation selectors, skin tones, tag
+// characters), ZWJ itself, and regional indicators (flag pairs — their
+// break/no-break rule depends on the parity of the whole preceding run).
+const CLUSTER_CONTINUER = /^(?:\p{Grapheme_Extend}|\p{Regional_Indicator}|‍)$/u;
+
+/** Index of the code point that ends at `pos`. */
+const prevCodePointStart = (text: string, pos: number): number => {
+  const code = text.charCodeAt(pos - 1);
+  return code >= 0xdc00 && code <= 0xdfff && pos > 1 ? pos - 2 : pos - 1;
+};
+
+/**
+ * Move the window start back to a position the segmenter can treat as a real
+ * cluster start. Starting the window mid-cluster (e.g. between the two
+ * regional indicators of a flag, or before a combining mark) would make the
+ * segmenter report a boundary that does not exist in the full string.
+ */
+const safeWindowStart = (text: string, from: number): number => {
+  let pos = Math.max(0, alignToCodePoint(text, from));
+  while (pos > 0) {
+    const prevStart = prevCodePointStart(text, pos);
+    const prev = text.codePointAt(prevStart) as number;
+    const current = text.codePointAt(pos) as number;
+    if (prev !== ZWJ && !CLUSTER_CONTINUER.test(String.fromCodePoint(current)))
+      break;
+    pos = prevStart;
+  }
+  return pos;
+};
+
 /**
  * Never cut inside a user-perceived character: a cut is moved forward to the
  * next grapheme-cluster boundary so an emoji, a flag or an accented letter
@@ -156,7 +180,7 @@ export const alignToGrapheme = (text: string, length: number): number => {
   if (length <= 0 || length >= text.length) return length;
   const seg = getSegmenter();
   if (!seg) return alignToClusterFallback(text, length);
-  const start = Math.max(0, alignToCodePoint(text, length - CLUSTER_WINDOW));
+  const start = safeWindowStart(text, length - CLUSTER_WINDOW);
   const windowEnd = Math.min(
     text.length,
     alignToCodePoint(text, length + CLUSTER_WINDOW),
@@ -168,6 +192,21 @@ export const alignToGrapheme = (text: string, length: number): number => {
     if (clusterEnd >= length) return clusterEnd;
   }
   return windowEnd;
+};
+
+/**
+ * The furthest position that may be revealed while the stream is still going:
+ * a trailing high surrogate would render as U+FFFD until its other half
+ * arrives, and a trailing ZWJ leaves a half-joined cluster on screen, so both
+ * are held back by one code unit. At stream end `enabled` is false and the
+ * full text is shown as-is.
+ */
+const streamSafeEnd = (text: string): number => {
+  const length = text.length;
+  if (length === 0) return 0;
+  const last = text.charCodeAt(length - 1);
+  if (isHighSurrogate(text, length - 1) || last === ZWJ) return length - 1;
+  return length;
 };
 
 interface BoundaryScan {
@@ -392,7 +431,9 @@ export function useTypewriter(
   const tick = (now: number) => {
     raf = null;
     const text = input.value;
-    const target = text.length;
+    // While streaming, hold back a trailing half cluster (lone high
+    // surrogate, dangling ZWJ) so the visible frontier never shows U+FFFD.
+    const target = enabled.value ? streamSafeEnd(text) : text.length;
     if (!enabled.value || displayLength.value >= target) {
       stop();
       return;
@@ -452,7 +493,7 @@ export function useTypewriter(
       commit(next);
     }
 
-    if (displayLength.value < input.value.length) {
+    if (displayLength.value < target) {
       raf = window.requestAnimationFrame(tick);
     } else {
       stop();
@@ -520,9 +561,10 @@ export function useTypewriter(
     schedule();
   });
 
-  if (getCurrentInstance()) {
-    onBeforeUnmount(stop);
-  }
+  // onScopeDispose covers both component unmount and a bare effectScope, so
+  // the rAF loop never outlives its owner (getCurrentInstance()+onBeforeUnmount
+  // would leak it when the composable runs in a plain scope).
+  onScopeDispose(stop);
 
   return computed(() => {
     const text = input.value;

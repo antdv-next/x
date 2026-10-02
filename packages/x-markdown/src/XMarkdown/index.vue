@@ -47,21 +47,26 @@ const { output: processedContent, sections } = useStreamingCore(
 );
 const { tailContent, tailComponent, showTail } = useTail(streamingResolved);
 
+// One stable bridge component: its render reads the current tail config, so
+// the `xmd-tail` node is patched in place when the tail content or component
+// changes. Creating the bridge inside the `mergedComponents` computed would
+// produce a fresh component type per recompute — and Vue remounts on type
+// identity change — remounting the tail on every chunk for callers with an
+// inline `:components` literal.
+const TailBridge = defineComponent({
+  name: "XmdTailBridge",
+  setup() {
+    return () =>
+      h(tailComponent.value || TailIndicator, { content: tailContent.value });
+  },
+});
+
 const mergedComponents = computed<Record<string, Component>>(() => {
   const baseComponents = { ...props.components };
 
   if (!showTail.value || !tailContent.value) {
     return baseComponents;
   }
-
-  const resolvedTailComponent = tailComponent.value || TailIndicator;
-  const content = tailContent.value;
-  const TailBridge = defineComponent({
-    name: "XmdTailBridge",
-    setup() {
-      return () => h(resolvedTailComponent, { content });
-    },
-  });
 
   return {
     ...baseComponents,

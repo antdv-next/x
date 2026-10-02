@@ -169,6 +169,59 @@ describe("useStreaming non-streaming passthrough", () => {
   });
 });
 
+describe("useStreaming pause and resume", () => {
+  it("shows the raw text on pause and continues the stream on resume", async () => {
+    const scope = effectScope();
+    const content = ref("");
+    const streaming = ref({ hasNextChunk: true });
+    let processedContent!: ReturnType<typeof useStreaming>["processedContent"];
+    scope.run(() => {
+      ({ processedContent } = useStreaming(content, streaming));
+    });
+    await nextTick();
+
+    content.value = "hello **bo";
+    await nextTick();
+    // Mid-token: the unfinished emphasis stays hidden (placeholder mode).
+    expect(processedContent.value).toBe("hello ");
+
+    // Pause: the whole input renders raw, exactly like a final render.
+    streaming.value = { hasNextChunk: false };
+    await nextTick();
+    expect(processedContent.value).toBe("hello **bo");
+
+    // Resume with more text: the stream continues from the paused state and
+    // the emphasis completes normally.
+    streaming.value = { hasNextChunk: true };
+    await nextTick();
+    content.value = "hello **bold** world";
+    await nextTick();
+    expect(processedContent.value).toBe("hello **bold** world");
+    scope.stop();
+  });
+
+  it("starts fresh when the paused content is replaced rather than continued", async () => {
+    const scope = effectScope();
+    const content = ref("first **bo");
+    const streaming = ref({ hasNextChunk: true });
+    let processedContent!: ReturnType<typeof useStreaming>["processedContent"];
+    scope.run(() => {
+      ({ processedContent } = useStreaming(content, streaming));
+    });
+    await nextTick();
+    streaming.value = { hasNextChunk: false };
+    await nextTick();
+    expect(processedContent.value).toBe("first **bo");
+
+    // A different document resumes streaming: no state may carry over.
+    streaming.value = { hasNextChunk: true };
+    content.value = "second **st";
+    await nextTick();
+    expect(processedContent.value).toBe("second ");
+    scope.stop();
+  });
+});
+
 describe("useStreaming incremental table state", () => {
   /** Feed one character at a time, staying in streaming mode, and keep every output. */
   async function streamOutputs(text: string): Promise<{
