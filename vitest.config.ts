@@ -41,6 +41,7 @@ export default mergeConfig(
           "packages/x-markdown/src/**/*.{ts,tsx,vue}",
           "packages/x-sdk/src/**/*.{ts,tsx,vue}",
           "packages/x-card/src/**/*.{ts,tsx,vue}",
+          "packages/x-pro/src/**/*.{ts,tsx,vue}",
         ],
         exclude: [
           "**/__tests__/**",
