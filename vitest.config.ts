@@ -18,7 +18,14 @@ export default mergeConfig(
     },
     test: {
       environment: "jsdom",
-      exclude: [...configDefaults.exclude, "**/dist/**", "e2e/**"],
+      exclude: [
+        ...configDefaults.exclude,
+        "**/dist/**",
+        "e2e/**",
+        // Local Claude Code worktrees hold full repo copies; never run their
+        // tests as part of this repo's suite.
+        ".claude/**",
+      ],
       root: fileURLToPath(new URL("./", import.meta.url)),
       coverage: {
         provider: "v8",
