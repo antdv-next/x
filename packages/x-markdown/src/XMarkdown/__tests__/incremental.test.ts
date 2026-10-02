@@ -17,6 +17,7 @@ import {
   useStreamingCore,
   type StreamingResult,
 } from "../composables/useStreaming";
+import { hasUnclosedRawTags } from "../core/detectUnclosedComponentTags";
 import XMarkdown from "../index.vue";
 
 /**
@@ -221,6 +222,15 @@ const corpora: Record<string, string> = {
     "",
     "end",
   ].join("\n"),
+
+  // CommonMark ends the HTML block at the blank line, but the browser keeps
+  // nesting into the unclosed <div> until </div>: splitting before
+  // "# Centered Title" would un-nest the heading. The only boundary is the
+  // one after the container has closed.
+  unclosedHtmlContainer:
+    '# Doc\n\n<div align="center">\n\n' +
+    "text ".repeat(60) +
+    "\n\n# Centered Title\n\nmore\n\n</div>\n\n## After\n\nend\n",
 };
 
 /** Drive `useStreamingCore` inside an effect scope with controllable refs. */
@@ -472,8 +482,44 @@ describe("streaming.incremental", () => {
       expect(
         await sectionsFor("# A\n\n<div>\n## B\n</div>\n\n## C\n\n"),
       ).toEqual(["# A\n\n<div>\n## B\n</div>\n\n", "## C\n\n"]);
+      // The HTML block ends at the blank line, but the <div> is still open in
+      // the browser's eyes: splitting before ## B would auto-close the div at
+      // the section end and un-nest the heading. The split resumes once the
+      // container has closed.
       expect(
         await sectionsFor("# A\n\n<div>\n\n## B\n\n</div>\n\n"),
+      ).toBeNull();
+      expect(
+        await sectionsFor("# A\n\n<div>\n\n## B\n\n</div>\n\n## C\n\n"),
+      ).toEqual(["# A\n\n<div>\n\n## B\n\n</div>\n\n", "## C\n\n"]);
+    });
+
+    it("does not split while a raw HTML container is open, but angle brackets in code do not veto", async () => {
+      // The review repro: an unclosed centered container around a heading.
+      expect(
+        await sectionsFor(
+          '# Doc\n\n<div align="center">\n\n' +
+            "text ".repeat(60) +
+            "\n\n# Centered Title\n\nmore\n\n</div>\n\n## After\n\nend\n",
+        ),
+      ).toEqual([
+        '# Doc\n\n<div align="center">\n\n' +
+          "text ".repeat(60) +
+          "\n\n# Centered Title\n\nmore\n\n</div>\n\n",
+        "## After\n\nend\n",
+      ]);
+      // Fenced code, inline code and autolinks full of angle brackets must
+      // not be mistaken for open containers.
+      expect(
+        await sectionsFor(
+          "# A\n\n```cpp\n#include <vector>\nauto xs = std::vector<int>{};\n```\n\n" +
+            "Inline `<div>` and <https://x.ant.design>.\n\n## B\n\nend\n",
+        ),
+      ).toHaveLength(2);
+      // An open <p> is safe: the HTML parser closes it before a heading in
+      // both parse modes.
+      expect(
+        await sectionsFor("# A\n\n<p>\n\npara text\n\n## B\n\nend\n"),
       ).toHaveLength(2);
     });
 
@@ -534,9 +580,15 @@ describe("streaming.incremental", () => {
           components,
         ),
       ).toEqual(["# A\n\n<my-card>\n\n## B\n\n</my-card>\n\n", "## C\n\n"]);
-      // The same text without the component registered is plain HTML and splits.
+      // The same text without the component registered still does not split:
+      // the browser nests the heading inside the unknown element just the
+      // same, so the raw-HTML guard applies to it too.
       expect(
         await sectionsFor("# A\n\n<my-card>\n\n## B\n\n</my-card>\n\n"),
+      ).toBeNull();
+      // …and splits again once the tag has closed, registered or not.
+      expect(
+        await sectionsFor("# A\n\n<my-card>\n\n## B\n\n</my-card>\n\n## C\n\n"),
       ).toHaveLength(2);
     });
 
@@ -665,6 +717,45 @@ describe("streaming.incremental", () => {
       expect(total(sectioned) * 3).toBeLessThan(total(whole));
     }, 30000);
 
+    it("does not re-render finished sections when a fresh inline streaming literal carries animationConfig", async () => {
+      // An inline `:streaming="{ hasNextChunk, animationConfig: { ... } }"`
+      // literal is a new object on every parent render. Only a change to the
+      // options the renderer actually reads may invalidate the sections.
+      const streamingOf = (): StreamingOption => ({
+        hasNextChunk: true,
+        incremental: noMin,
+        animationConfig: { splitBy: "sentence" },
+      });
+      const renders: Record<string, number> = {};
+      const code = defineComponent({
+        name: "CodeCounter",
+        inheritAttrs: false,
+        setup(_, { slots }) {
+          return () => {
+            const text = extractText(slots.default?.() ?? []);
+            renders[text] = (renders[text] ?? 0) + 1;
+            return h("code", {}, text);
+          };
+        },
+      });
+      const wrapper = mount(XMarkdown, {
+        props: { content: "", streaming: streamingOf(), components: { code } },
+      });
+      for (let i = 10; i < doc.length; i += 10) {
+        await wrapper.setProps({
+          content: doc.slice(0, i),
+          streaming: streamingOf(),
+        });
+        await nextTick();
+      }
+      await wrapper.setProps({ content: doc, streaming: streamingOf() });
+      await nextTick();
+      // The first section closed early; re-parsing it per parent render would
+      // show up here as its code block re-rendering with every later chunk.
+      const finalText = "const s0 = 0;";
+      expect(renders[finalText]).toBeLessThan(9);
+    }, 30000);
+
     it("re-renders the whole document at the end with keepSectionsOnEnd: false", async () => {
       const streaming = {
         hasNextChunk: true,
@@ -731,5 +822,50 @@ describe("streaming.incremental", () => {
         (plain.element as HTMLElement).innerHTML,
       );
     });
+  });
+});
+
+describe("hasUnclosedRawTags", () => {
+  it("detects an unclosed container and accepts a closed one", () => {
+    expect(hasUnclosedRawTags('<div align="center">\n\ntext')).toBe(true);
+    expect(hasUnclosedRawTags("<div>\n\ntext\n\n</div>")).toBe(false);
+    expect(hasUnclosedRawTags("<details>\n\n<summary>s</summary>")).toBe(true);
+    expect(hasUnclosedRawTags("<table>\n\n<tr>\n\n<td>x</td>")).toBe(true);
+  });
+
+  it("ignores an open <p>: the HTML parser closes it when a heading starts", () => {
+    expect(hasUnclosedRawTags("<p>\n\ntext")).toBe(false);
+    expect(hasUnclosedRawTags("<p>\n\n<div>")).toBe(true);
+  });
+
+  it("ignores tags inside fenced and inline code", () => {
+    expect(hasUnclosedRawTags("```\n<div>\n```")).toBe(false);
+    expect(hasUnclosedRawTags("  ```jsx\nconst x = <div>\n  ```")).toBe(false);
+    expect(hasUnclosedRawTags("```cpp\n#include <vector>\n```")).toBe(false);
+    expect(hasUnclosedRawTags("wrap it in a `<div>` here")).toBe(false);
+    // …but the container stays tracked across the fenced block.
+    expect(hasUnclosedRawTags("<div>\n\n```\ncode\n```\n\ntext")).toBe(true);
+    expect(hasUnclosedRawTags("<div>\n\n```\n</div>\n```")).toBe(true);
+    expect(hasUnclosedRawTags("<div>\n\n```\ncode\n```\n\n</div>")).toBe(false);
+  });
+
+  it("does not mistake autolinks, stray closers, void or self-closing tags for containers", () => {
+    expect(hasUnclosedRawTags("see <https://x.ant.design> now")).toBe(false);
+    expect(hasUnclosedRawTags("</div>")).toBe(false);
+    expect(hasUnclosedRawTags('<br> and <img src="x"> and <hr>')).toBe(false);
+    expect(hasUnclosedRawTags("<div/>")).toBe(false);
+  });
+
+  it("handles misnesting like the HTML parser: closing a container closes what is inside it", () => {
+    expect(hasUnclosedRawTags("<div><span></div>")).toBe(false);
+    expect(hasUnclosedRawTags("<div><span>text")).toBe(true);
+    expect(hasUnclosedRawTags("<div><div></div>")).toBe(true);
+  });
+
+  it("vetoes on an unterminated tag or comment (the browser swallows what follows)", () => {
+    expect(hasUnclosedRawTags('<div class="')).toBe(true);
+    expect(hasUnclosedRawTags("<!-- open")).toBe(true);
+    expect(hasUnclosedRawTags("<!--\n\n# x\n\n-->")).toBe(false);
+    expect(hasUnclosedRawTags("<!-- a --> b <!--")).toBe(true);
   });
 });

@@ -196,7 +196,7 @@ export interface StreamingOption {
   /**
    * @description 为块级元素（p、li、h1、h2、h3、h4）启用文字淡入动画
    * @description Enables text fade-in animation for block elements (p, li, h1, h2, h3, h4)
-   * @default false
+   * @default true
    */
   enableAnimation?: boolean;
   /**

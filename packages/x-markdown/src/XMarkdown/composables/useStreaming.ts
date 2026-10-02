@@ -11,7 +11,10 @@ import type {
   TableState,
 } from "../interface";
 
-import { detectUnclosedComponentTags } from "../core/detectUnclosedComponentTags";
+import {
+  detectUnclosedComponentTags,
+  hasUnclosedRawTags,
+} from "../core/detectUnclosedComponentTags";
 import { StreamCacheTokenType as TokenType } from "../interface";
 import { resolveStreaming } from "../utils/streaming";
 
@@ -418,13 +421,19 @@ const trackSectionBoundary = (
   // A custom component opened in this section and closed in a later one would
   // be reported as unclosed (and auto-closed by DOMPurify) if the section were
   // parsed on its own.
+  const sectionText = text.slice(sectionStart, lineStart);
   if (
     componentNames.length > 0 &&
-    detectUnclosedComponentTags(
-      text.slice(sectionStart, lineStart),
-      componentNames,
-    ).size > 0
+    detectUnclosedComponentTags(sectionText, componentNames).size > 0
   ) {
+    return;
+  }
+  // Same veto for raw HTML containers: CommonMark ends an HTML block at a
+  // blank line, but the browser keeps nesting into an unclosed <div> (or any
+  // non-void element) until its closing tag — auto-closing it at the section
+  // end would give the split DOM a different shape from the whole-document
+  // DOM.
+  if (sectionText.includes("<") && hasUnclosedRawTags(sectionText)) {
     return;
   }
   state.offsets.push(lineStart);
