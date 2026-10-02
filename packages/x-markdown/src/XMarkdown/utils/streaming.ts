@@ -10,6 +10,12 @@ const PRESET: Omit<StreamingOption, "hasNextChunk"> = {
   incremental: true,
   incompleteMarkdown: "complete",
   typewriter: true,
+  // Sentence fade-in units: the typewriter reveals a few characters per
+  // frame, and `splitBy: 'chunk'` would wrap each frame's reveal in its own
+  // fade-in node, accumulating thousands of them over a long answer. This
+  // follows the advice on `AnimationConfig.splitBy` itself. (Ahead of
+  // upstream ant-design/x#2061, whose preset leaves the default 'chunk'.)
+  animationConfig: Object.freeze({ splitBy: "sentence" as const }),
   // No tail cursor: it is a visual choice for the app to make (`tail: true`
   // in the object form), not part of "streams well by default".
 };

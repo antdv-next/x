@@ -109,8 +109,12 @@ describe("resolveStreaming", () => {
       incremental: true,
       incompleteMarkdown: "complete",
       typewriter: true,
+      // Sentence fade-in units, so the per-frame typewriter reveal does not
+      // accumulate one fade-in node per frame.
+      animationConfig: { splitBy: "sentence" },
     });
     expect(Object.isFrozen(on1)).toBe(true);
+    expect(Object.isFrozen(on1?.animationConfig)).toBe(true);
 
     const off1 = resolveStreaming(false);
     const off2 = resolveStreaming(false);
@@ -120,6 +124,7 @@ describe("resolveStreaming", () => {
       incremental: true,
       incompleteMarkdown: "complete",
       typewriter: true,
+      animationConfig: { splitBy: "sentence" },
     });
     expect(Object.isFrozen(off1)).toBe(true);
     // The preset deliberately has no tail cursor.
@@ -130,6 +135,9 @@ describe("resolveStreaming", () => {
   it("passes objects and undefined through untouched", () => {
     const opts = { hasNextChunk: true, tail: true };
     expect(resolveStreaming(opts)).toBe(opts);
+    expect(resolveStreaming({ hasNextChunk: true })).toEqual({
+      hasNextChunk: true,
+    });
     expect(resolveStreaming(undefined)).toBeUndefined();
   });
 });

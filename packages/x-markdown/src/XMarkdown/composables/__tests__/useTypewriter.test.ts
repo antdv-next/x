@@ -304,6 +304,41 @@ describe("useTypewriter", () => {
       ]);
       tw.scope.stop();
     });
+
+    it("ignores delimiters inside fences indented by up to three spaces, like feedFenceState", async () => {
+      const config: TypewriterConfig = { unit: "sentence", delimiters: ["."] };
+      // CommonMark allows fences indented 0-3 spaces; fenced code nested in a
+      // list item looks exactly like this in LLM output.
+      for (const indent of [" ", "  ", "   "]) {
+        const tw = setup({ input: "", typewriter: config, active: true });
+        const text = `${indent}\`\`\`\nx.y();\nz.w();\n${indent}\`\`\`\nDone. end.`;
+        tw.input.value = text;
+        await nextTick();
+        const outputs = drain(() => tw.current);
+        expect(outputs[outputs.length - 1]).toBe(text);
+        // The `.` inside the indented fenced code is never a cut point.
+        for (const output of outputs.slice(1, -1)) {
+          expect(["\nx.", "\nz."].some(s => output.endsWith(s))).toBe(false);
+        }
+        // The fence opens: the reveal before it still stops at the line end.
+        expect(outputs).toContain(`${indent}\`\`\`\n`);
+        tw.scope.stop();
+      }
+    });
+
+    it("does not treat a fence indented by four spaces as a fence", async () => {
+      const config: TypewriterConfig = { unit: "sentence", delimiters: ["."] };
+      const tw = setup({ input: "", typewriter: config, active: true });
+      // Four spaces make the line indented code, not a fence: the scanner
+      // must not enter fence state, so delimiters on the next lines count.
+      const text = "    ```\nx.y();\n";
+      tw.input.value = text;
+      await nextTick();
+      const outputs = drain(() => tw.current);
+      expect(outputs[outputs.length - 1]).toBe(text);
+      expect(outputs.some(o => o.endsWith("\nx."))).toBe(true);
+      tw.scope.stop();
+    });
   });
 
   it("falls back to character reveal after maxSentenceChars without a delimiter", async () => {

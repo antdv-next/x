@@ -180,6 +180,8 @@ interface BoundaryScan {
   fenceLen: number;
   /** Leading `/~ run of the current line, while still at the line start */
   atLineStart: boolean;
+  /** Leading spaces of the current line before any fence character */
+  lineIndent: number;
   lineFenceChar: string;
   lineFenceLen: number;
   inInlineCode: boolean;
@@ -192,6 +194,7 @@ const initialScan = (): BoundaryScan => ({
   fenceChar: "",
   fenceLen: 0,
   atLineStart: true,
+  lineIndent: 0,
   lineFenceChar: "",
   lineFenceLen: 0,
   inInlineCode: false,
@@ -224,6 +227,7 @@ const scanBoundaries = (
       }
       scan.lineFenceChar = "";
       scan.lineFenceLen = 0;
+      scan.lineIndent = 0;
       scan.atLineStart = true;
       scan.inInlineCode = false;
       // A line end is always a boundary, code included: revealing code line
@@ -233,6 +237,15 @@ const scanBoundaries = (
       continue;
     }
     if (scan.atLineStart) {
+      // CommonMark allows an opening or closing fence to be indented by up
+      // to three spaces; four makes the line indented code instead. Same
+      // rule as feedFenceState in useStreaming so both scanners agree on
+      // what counts as a fence. (Ahead of upstream ant-design/x#2061, whose
+      // scanner only recognises column-0 fences.)
+      if (char === " " && scan.lineFenceLen === 0 && scan.lineIndent < 3) {
+        scan.lineIndent += 1;
+        continue;
+      }
       if (
         (char === "`" || char === "~") &&
         (scan.lineFenceLen === 0 || scan.lineFenceChar === char)
