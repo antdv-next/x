@@ -90,6 +90,9 @@ export default defineConfig({
       "@antdv-next/x-card": fileURLToPath(
         new URL("../x-card/src/index.tsx", import.meta.url),
       ),
+      "@antdv-next/x-pro": fileURLToPath(
+        new URL("../x-pro/src/index.ts", import.meta.url),
+      ),
       "@antdv-next/x-markdown": fileURLToPath(
         new URL("../x-markdown/src", import.meta.url),
       ),
