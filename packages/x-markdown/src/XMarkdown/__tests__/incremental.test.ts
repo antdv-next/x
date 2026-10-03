@@ -28,6 +28,15 @@ import XMarkdown from "../index.vue";
  * point of the stream, rendering the sections must produce exactly the markup
  * that rendering the whole output at once produces. The corpora below are
  * built around the constructs that could break that promise.
+ *
+ * How a boundary is decided is documented in the `DESIGN CONTRACT` comment
+ * above `trackSectionBoundary`. Two things matter when reading a failure here:
+ * a boundary is only placed where the renderer's own marked instance starts a
+ * new top-level block, and **a test asserting that nothing splits is the
+ * specification, not a bug** — refusing a boundary only costs incremental
+ * reuse, while an over-eager boundary would change the rendered DOM. See
+ * `memory/x-markdown-streaming-sections.md` for the history behind the
+ * deliberate refusals.
  */
 
 const noMin = { minSectionChars: 0 };
@@ -213,10 +222,9 @@ const corpora: Record<string, string> = {
   // the fence to the item's content indent and ends it when the body dedents
   // below that indent (`x.y();` at column 0), so the indented "closing" line
   // actually *opens* a new top-level fence that swallows "## after" and
-  // everything after it. The tracker models the same container, so the
-  // "## after" boundary is vetoed — while the earlier "## B" boundary keeps
-  // this corpus in the sawSections assertion and proves a safe earlier split
-  // still happens.
+  // everything after it, so no boundary is placed there — while the earlier
+  // "## B" boundary keeps this corpus in the sawSections assertion and proves
+  // a safe earlier split still happens.
   listIndentedFence: [
     "# A",
     "",
@@ -238,8 +246,7 @@ const corpora: Record<string, string> = {
 
   // The safe counterpart: the fence and its body stay at the item's content
   // indent, so the indented closing line really closes the fence and every
-  // later heading still splits. (The pre-container-model veto disabled all
-  // later splits once a list marker and an indented fence had been seen.)
+  // later heading still splits.
   safeListFenceSplitsAfter: [
     "# A",
     "",
@@ -305,9 +312,8 @@ const corpora: Record<string, string> = {
     "end",
   ].join("\n"),
 
-  // A nested list whose content indent reaches 4 is not tracked, but the
-  // fence inside it is still contained: every dedenting line ends it in both
-  // models.
+  // A nested list whose content indent reaches 4 still contains the fence:
+  // every dedenting line ends it.
   nestedListFenceInOuterItem: [
     "# A",
     "",
@@ -340,10 +346,10 @@ const corpora: Record<string, string> = {
     "end",
   ].join("\n"),
 
-  // A fence can start on the list marker line itself. The char scanner never
-  // sees that opener (the line starts with `-`), so it mistakes the indented
-  // closing line for an opener — the container model resyncs at the next
-  // dedenting line.
+  // A fence can start on the list marker line itself. The line-level fence
+  // scanner never sees that opener (the line starts with `-`), so it would
+  // mistake the indented closing line for an opener — but the parser ends the
+  // item, and the split decision comes from marked.
   fenceOnMarkerLine: [
     "# A",
     "",
@@ -522,8 +528,7 @@ const corpora: Record<string, string> = {
   // The blank line arrives BEFORE the nested item exists: it leaves only the
   // outer item blank-tailed, so the column-0 `x` ends both items (the outer
   // item's continuation runs first in marked) and the fence is top-level,
-  // swallowing "## B"; "## C" splits. The continuation walk must consult
-  // every open container, not just the innermost.
+  // swallowing "## B"; "## C" splits.
   nestedListBlankBeforeInner: [
     "# A",
     "",
@@ -775,9 +780,12 @@ const corpora: Record<string, string> = {
     "\\]",
   ].join("\n"),
 
-  // A `$$` line right after a blockquote joins the quote instead of opening
-  // a math block, so the heading after the quote's text splits.
-  bqLazyMathStaysInQuote: ["> # h", "$$", "x", "# H", "", "end"].join("\n"),
+  // A column-0 `$$` opens the bundled Latex plugin's math block, which
+  // swallows heading-looking lines until its closing run; the split resumes
+  // after it. (The raw-block state tracks `$$` conservatively: the plugin's
+  // block rule needs its closing delimiter to match at all, so a prefix-based
+  // marked check cannot see the block.)
+  bqThenMathBlock: ["> # h", "$$", "x", "$$", "", "## B", "", "end"].join("\n"),
 
   // A raw block (here `<pre>`) opening inside a type-6 HTML block takes over
   // until it closes — and the HTML block stays open underneath, so the whole
@@ -797,8 +805,7 @@ const corpora: Record<string, string> = {
   ].join("\n"),
 
   // A fence interrupts the open paragraph, so the closing-tag line after it
-  // starts a type-7 HTML block that swallows "# H"; "## B" splits. The
-  // tracker must drop paragraphOpen when the fence opens.
+  // starts a type-7 HTML block that swallows "# H"; "## B" splits.
   fenceEndsParagraph: [
     "para",
     "```",
@@ -1234,6 +1241,19 @@ describe("streaming.incremental", () => {
       );
     });
 
+    it("reads tab-indented lines as indented code, not paragraphs", async () => {
+      // A leading tab is four columns to the block parser, so `\tcode` is an
+      // indented code block: the raw/HTML opener after it is a block start,
+      // and the `#` line that follows is swallowed by that block instead of
+      // becoming a top-level heading boundary.
+      expect(await sectionsFor("# A\n\n\tcode\n<?\n#\n")).toBeNull();
+      expect(await sectionsFor("# A\n\n\tcode\n</span>\n#\n")).toBeNull();
+      // A tab-indented `#` is code, not a heading.
+      expect(
+        await sectionsFor("# A\n\n\tcode\n\n\t# not a heading\n"),
+      ).toBeNull();
+    });
+
     it("splits every heading after a list-internal fence that closes inside its item", async () => {
       // The P3-1 regression shape: a list marker plus a safe indented fence
       // must not poison later splits.
@@ -1436,21 +1456,20 @@ describe("streaming.incremental", () => {
       ]);
     });
 
-    it("activates a paragraph-blocked opener only on a table delimiter row", async () => {
-      // The `<?php` after a paragraph cannot interrupt it — but marked's
-      // paragraph rule stops before it when the next line is a gfm delimiter
-      // row, so the PI opens after all and swallows up to `?>`.
+    it("treats a raw opener as a raw block wherever it appears", async () => {
+      // A raw opener (`<?php`) starts a raw block even though CommonMark lets
+      // it continue a paragraph: the tracker keeps such lines out of any
+      // section split because the browser and DOMPurify re-interpret them (a
+      // `<?` opens a bogus comment that can swallow a following `<h1>`). The
+      // block ends at `?>` and the heading after it splits.
       expect(await sectionsFor("para\n<?php\n- \n?>\n# H\n\ntail")).toEqual([
         "para\n<?php\n- \n?>\n",
         "# H\n\ntail",
       ]);
       expect(await sectionsFor("x\n<?php\n---\n# H\n\ntail")).toBeNull();
-      // Any other next line discards the held-back opener and the heading
-      // interrupts the paragraph normally.
-      expect(await sectionsFor("para\n<?php\ny\n# H\n\ntail")).toEqual([
-        "para\n<?php\ny\n",
-        "# H\n\ntail",
-      ]);
+      // Without a `?>` the raw block never closes, so nothing splits — a
+      // conservative refusal, never a wrong boundary.
+      expect(await sectionsFor("para\n<?php\ny\n# H\n\ntail")).toBeNull();
     });
 
     it("reads a whitespace-only marker as an empty sibling item of an open list", async () => {
@@ -1490,12 +1509,9 @@ describe("streaming.incremental", () => {
       expect(
         await sectionsFor("> # h\n$$$\n-  \n  y\n\\[\n# H\n\\]\n\ntail"),
       ).toBeNull();
-      // A `$$` line joins the quote instead of opening a math block, so the
-      // heading after the quote's text splits.
-      expect(await sectionsFor("> # h\n$$\nx\n# H\n\ntail")).toEqual([
-        "> # h\n$$\nx\n",
-        "# H\n\ntail",
-      ]);
+      // A column-0 `$$` always opens the conservative math raw block, even
+      // when it lazily continues a quote: a missed split, never a wrong one.
+      expect(await sectionsFor("> # h\n$$\nx\n# H\n\ntail")).toBeNull();
       // A bullet marker followed by a space ends the quote; a non-1 ordered
       // marker or a tab-delimited one joins it.
       expect(await sectionsFor("> x\n2. y\n# H\n\ntail")).toEqual([

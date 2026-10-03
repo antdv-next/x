@@ -181,6 +181,17 @@ export class Parser {
     return this.options.codeBlockStatus[lang] ?? this.options.streamStatus;
   }
 
+  /**
+   * Block-lex `markdown` with the same marked configuration this parser
+   * renders with. The streaming section splitter uses it to decide whether a
+   * `#` line really starts a new top-level block, so the splitter and the
+   * renderer can never disagree — including `config.extensions` such as the
+   * bundled LaTeX plugin's `$$` rule.
+   */
+  lex(markdown: string): readonly unknown[] {
+    return this.markdownInstance.lexer(markdown) as unknown[];
+  }
+
   parse(markdown: string, parseOptions?: { injectTail?: boolean }): string {
     this.injectTail = parseOptions?.injectTail ?? false;
     let processed = markdown;
