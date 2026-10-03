@@ -209,15 +209,14 @@ const corpora: Record<string, string> = {
     "end",
   ].join("\n"),
 
-  // A fence indented 1–3 spaces *inside a list item*. The line-level fence
-  // scanner opens and closes it by indentation alone, but the block parser
-  // ends the list-internal fence when the body dedents below the item's
-  // content indent (`x.y();` at column 0), so the indented "closing" line
-  // actually *opens* a new fence that swallows "## after" and everything
-  // after it. Once a list marker and an indented fence have appeared in the
-  // same section, no further boundary is recorded — the "## after" boundary
-  // is vetoed here — while the earlier "## B" boundary keeps this corpus in
-  // the sawSections assertion and proves a safe earlier split still happens.
+  // A fence indented 1–3 spaces *inside a list item*. The block parser binds
+  // the fence to the item's content indent and ends it when the body dedents
+  // below that indent (`x.y();` at column 0), so the indented "closing" line
+  // actually *opens* a new top-level fence that swallows "## after" and
+  // everything after it. The tracker models the same container, so the
+  // "## after" boundary is vetoed — while the earlier "## B" boundary keeps
+  // this corpus in the sawSections assertion and proves a safe earlier split
+  // still happens.
   listIndentedFence: [
     "# A",
     "",
@@ -237,6 +236,270 @@ const corpora: Record<string, string> = {
     "more",
   ].join("\n"),
 
+  // The safe counterpart: the fence and its body stay at the item's content
+  // indent, so the indented closing line really closes the fence and every
+  // later heading still splits. (The pre-container-model veto disabled all
+  // later splits once a list marker and an indented fence had been seen.)
+  safeListFenceSplitsAfter: [
+    "# A",
+    "",
+    "- one",
+    "- two",
+    "",
+    "  ```ts",
+    "  x.y();",
+    "  ```",
+    "",
+    "## B",
+    "",
+    "more",
+    "",
+    "## C",
+    "",
+    "end",
+  ].join("\n"),
+
+  // The list ends when a column-0 paragraph follows a blank line, so the
+  // indented fence is top-level and its column-0 body line is just content.
+  listClosedByParagraphThenIndentedFence: [
+    "# A",
+    "",
+    "- item",
+    "",
+    "para",
+    "",
+    "   ```ts",
+    "x",
+    "   ```",
+    "",
+    "## after",
+    "",
+    "end",
+  ].join("\n"),
+
+  // A `---` right after a list paragraph dedents out of the item; with no
+  // paragraph left at the outer level it is a thematic break, not a setext
+  // underline, so the list is over and "## after" splits.
+  hrAfterListPara: ["# A", "", "- para", "---", "", "## after", "", "end"].join(
+    "\n",
+  ),
+
+  // Two fences in one item, with an item paragraph in between.
+  twoFencesOneItem: [
+    "# A",
+    "",
+    "- item",
+    "",
+    "  ```ts",
+    "  one",
+    "  ```",
+    "",
+    "  text",
+    "",
+    "  ```js",
+    "  two",
+    "  ```",
+    "",
+    "## B",
+    "",
+    "end",
+  ].join("\n"),
+
+  // A nested list whose content indent reaches 4 is not tracked, but the
+  // fence inside it is still contained: every dedenting line ends it in both
+  // models.
+  nestedListFenceInOuterItem: [
+    "# A",
+    "",
+    "- outer",
+    "  - inner",
+    "",
+    "    ```ts",
+    "    code",
+    "    ```",
+    "",
+    "## B",
+    "",
+    "end",
+  ].join("\n"),
+
+  // A column-0 line lazily continues the item's paragraph (the list
+  // survives), and the fence after the blank line is still contained.
+  lazyThenFence: [
+    "# A",
+    "",
+    "- item with a long paragraph",
+    "that lazily continues",
+    "",
+    "  ```ts",
+    "  code",
+    "  ```",
+    "",
+    "## B",
+    "",
+    "end",
+  ].join("\n"),
+
+  // A fence can start on the list marker line itself. The char scanner never
+  // sees that opener (the line starts with `-`), so it mistakes the indented
+  // closing line for an opener — the container model resyncs at the next
+  // dedenting line.
+  fenceOnMarkerLine: [
+    "# A",
+    "",
+    "- ```ts",
+    "  code",
+    "  ```",
+    "",
+    "## B",
+    "",
+    "end",
+  ].join("\n"),
+
+  // marked counts a tab as a single column in the marker gap, so the item's
+  // content indent is 2 and the fence at two spaces is contained.
+  tabAfterMarker: [
+    "# A",
+    "",
+    "-\titem",
+    "",
+    "  ```ts",
+    "  code",
+    "  ```",
+    "",
+    "## B",
+    "",
+    "end",
+  ].join("\n"),
+
+  // A type-1 HTML block inside a list item, holding lines that look like
+  // fences and headings; the phantom fence opens the char scanner produces
+  // there are undone, and the fenced block after it is still contained.
+  htmlBlockInListWithFences: [
+    "# A",
+    "",
+    "- item",
+    "",
+    "  <pre>",
+    "  ```",
+    "  # still pre",
+    "  ```",
+    "  </pre>",
+    "",
+    "  ```ts",
+    "  # not a heading",
+    "  ```",
+    "",
+    "## B",
+    "",
+    "end",
+  ].join("\n"),
+
+  // A fence indented 4+ spaces *absolutely* but 0–3 spaces past the item's
+  // content indent is invisible to the char scanner: the tracker opens it
+  // itself, so its body (including a `#` line) is not mistaken for paragraph
+  // text and its equally deep closing line still closes it.
+  blindListFence: [
+    "# A",
+    "",
+    "- item",
+    "",
+    "    ```ts",
+    "    code",
+    "    # not a heading",
+    "    ```",
+    "",
+    "## B",
+    "",
+    "end",
+  ].join("\n"),
+
+  // The same blind fence, but ended early by a column-0 body line: item and
+  // fence die together there, so the later indented fence is top-level and
+  // "## B" is fence content while "## C" splits again.
+  blindListFenceEarlyExit: [
+    "# A",
+    "",
+    "- item",
+    "",
+    "    ```ts",
+    "    code",
+    "x",
+    "",
+    "   ```",
+    "## B",
+    "   ```",
+    "",
+    "## C",
+    "",
+    "end",
+  ].join("\n"),
+
+  // A backtick fence whose info string contains a backtick is not a fence at
+  // all — it is paragraph text. The char scanner opens it anyway, so the
+  // tracker undoes the phantom open and "## B" still splits.
+  backtickInfoString: ["# A", "", "``` a`b", "", "## B", "", "end"].join("\n"),
+
+  // A marker-shaped line that is itself a thematic break (`- - -`) ends the
+  // list — marked's block lexer reads it as an hr, never as a sibling item.
+  dashHrEndsList: ["# A", "", "- item", "- - -", "", "## B", "", "end"].join(
+    "\n",
+  ),
+
+  // A blank sibling item (`- ` with nothing after the marker is NOT a list,
+  // but bare `-` is): the list stays open across it and its content, and
+  // "## B" splits once the blank-tailed item ends.
+  blankSiblingItem: [
+    "# A",
+    "",
+    "- a",
+    "-",
+    "  code",
+    "",
+    "## B",
+    "",
+    "end",
+  ].join("\n"),
+
+  // An ordered marker two characters wide pushes the content indent to 4:
+  // the fence is invisible to the char scanner, so the tracker opens it
+  // itself (body `#` lines stay fenced) and closes it at the equally deep
+  // closing line; "## B" splits.
+  orderedWideMarkerFence: [
+    "# A",
+    "",
+    "10. item",
+    "    ```",
+    "    # fenced",
+    "    ```",
+    "",
+    "## B",
+    "",
+    "end",
+  ].join("\n"),
+
+  // A tab right after the marker counts as a non-space character, so the
+  // content indent collapses to 1 and the fence at one space is contained.
+  // The column-0 `x` meets the fence-opener veto and ends the item, which
+  // makes the second fence top-level: it swallows "## B" before closing,
+  // and "## C" splits again.
+  tabGapMarker: [
+    "# A",
+    "",
+    "+\tpara",
+    " ~~~js",
+    "x",
+    " ~~~",
+    "",
+    "## B",
+    "",
+    "~~~",
+    "",
+    "## C",
+    "",
+    "end",
+  ].join("\n"),
+
   // A processing instruction starting inside a type-6 HTML block. The HTML
   // block ends at the blank line per CommonMark, but the browser reads `<?`
   // as a bogus comment running to the next `>` — across the would-be "# in
@@ -254,6 +517,316 @@ const corpora: Record<string, string> = {
     "## after",
     "",
     "more",
+  ].join("\n"),
+
+  // The blank line arrives BEFORE the nested item exists: it leaves only the
+  // outer item blank-tailed, so the column-0 `x` ends both items (the outer
+  // item's continuation runs first in marked) and the fence is top-level,
+  // swallowing "## B"; "## C" splits. The continuation walk must consult
+  // every open container, not just the innermost.
+  nestedListBlankBeforeInner: [
+    "# A",
+    "",
+    "- a",
+    "",
+    "  - b",
+    "x",
+    "  ```",
+    "## B",
+    "  ```",
+    "",
+    "## C",
+    "",
+    "end",
+  ].join("\n"),
+
+  // A whitespace-only marker below the list's column (` - `) breaks the
+  // current item and continues the list as a new, *empty* item (marked's
+  // sibling rule matches markers with no content). The column-0 `x` then ends
+  // the blank-tailed item and the list, so the fence is top-level and swallows
+  // "## B"; "## C" splits.
+  wsOnlyMarkerEndsList: [
+    "# A",
+    "",
+    "- a",
+    " - ",
+    "x",
+    "  ```",
+    "## B",
+    "  ```",
+    "",
+    "## C",
+    "",
+    "end",
+  ].join("\n"),
+
+  // The same whitespace-only sibling keeps the list alive across an HTML
+  // begin: the empty item is blank-tailed, so `</my-card>` ends the list and
+  // opens a type-7 HTML block that swallows "# H"; "## B" splits.
+  wsOnlySiblingKeepsList: [
+    "- a",
+    " - ",
+    "</my-card>",
+    "# H",
+    "",
+    "## B",
+    "",
+    "end",
+  ].join("\n"),
+
+  // Ordered flavour of the empty sibling item.
+  wsOnlyOrderedSibling: [
+    "1. a",
+    " 1. ",
+    "</my-card>",
+    "# H",
+    "",
+    "## B",
+    "",
+    "end",
+  ].join("\n"),
+
+  // A whitespace-only marker of a *different* kind cannot continue the list:
+  // the list ends and the line is plain paragraph text, which the type-7 tag
+  // then joins (it cannot interrupt a paragraph), so "# H" splits.
+  wsOnlyDifferentKindParagraph: [
+    "- a",
+    " + ",
+    "</my-card>",
+    "# H",
+    "",
+    "end",
+  ].join("\n"),
+
+  // A setext underline swallows the whole run above it — including the
+  // indented marker line the tracker provisionally opened a list for — into
+  // one heading, so `</my-card>` starts a type-7 block with no paragraph in
+  // the way and swallows "# H"; "## B" splits.
+  setextSwallowsIndentedList: [
+    "x",
+    "  - nested",
+    "- ",
+    "</my-card>",
+    "# H",
+    "",
+    "## B",
+    "",
+    "end",
+  ].join("\n"),
+
+  // A paragraph run containing a column-0 marker line can never become a
+  // setext heading (marked's content pattern rejects it), so the `- ` line is
+  // plain text, `</div>` starts a type-6 block and swallows "# H"; "## B"
+  // splits.
+  setextContentRunWithMarker: [
+    "?>",
+    "1. ",
+    " - ",
+    "10. item",
+    "<!DOCTYPE html>",
+    "</div>",
+    "# H",
+    "",
+    "## B",
+    "",
+    "end",
+  ].join("\n"),
+
+  // An `=` run on its own line is paragraph text (and valid setext content):
+  // here the following indented marker underlines it into a heading, after
+  // which the processing instruction runs to its terminator across the
+  // heading-looking lines; "# H" splits.
+  equalsRunIsParagraph: [
+    "===",
+    "  - ",
+    "<?php",
+    "",
+    "===",
+    "  - ",
+    "?>",
+    "# H",
+    "",
+    "end",
+  ].join("\n"),
+
+  // A fence inside a blockquote is invisible to the char scanner: the
+  // `> quote` line is fence body, not a paragraph, so the PI after the quote
+  // opens a raw block that swallows "# H"; "## B" splits.
+  blockquoteInnerFence: [
+    "> ```",
+    "> quote",
+    "<?php",
+    "# H",
+    "?>",
+    "",
+    "## B",
+    "",
+    "end",
+  ].join("\n"),
+
+  // marked neutralizes setext underlines inside blockquotes, and the quote
+  // lazily absorbs the `===` and the tag line: everything is one quote until
+  // the heading, which splits.
+  bqSetextNeutralized: ["> x", "===", "</my-card>", "# H", "", "end"].join(
+    "\n",
+  ),
+
+  // A marker-shaped line does not lazy-join a blockquote: the quote ends, the
+  // whitespace-only marker becomes a paragraph the tag line joins, and the
+  // heading splits.
+  bqMarkerEndsQuote: ["> x", "- ", "</my-card>", "# H", "", "end"].join("\n"),
+
+  // A marker followed by *two* spaces does start a list (its content is the
+  // second space): the fenced block belongs to the empty item, the type-6 tag
+  // ends the list and swallows "# H"; "## B" splits.
+  twoSpaceWsOnlyStartsList: [
+    "-  ",
+    "  ```ts",
+    "</div>",
+    "# H",
+    "",
+    "## B",
+    "",
+    "end",
+  ].join("\n"),
+
+  // But with a paragraph open, `-  ` is the setext underline of that
+  // paragraph, not a list: the heading is `x` and the fence swallows "## H2"
+  // (the "## B" boundary keeps the corpus in the sawSections assertion).
+  dashDashUnderlineFiresSetext: [
+    "# A",
+    "",
+    "## B",
+    "",
+    "x",
+    "-  ",
+    "  ~~~",
+    "## H2",
+    "",
+    "end",
+  ].join("\n"),
+
+  // A tab-delimited marker is valid setext content (marked's exclusion needs
+  // a literal space): the run `-\t` is underlined by `- ` into one heading,
+  // and the tag line swallows "# H"; "## B" splits.
+  tabMarkerKeepsSetextEligible: [
+    "-\t",
+    "- ",
+    "</my-card>",
+    "# H",
+    "",
+    "## B",
+    "",
+    "end",
+  ].join("\n"),
+
+  // An empty-first-line item dies at the immediately following blank line
+  // (marked's `R && blankLine` rule), so the fence is top-level and swallows
+  // the `===` and the `#` line.
+  emptyItemBlankEndsItem: [
+    "# A",
+    "",
+    "## B",
+    "",
+    "-  ",
+    "   ",
+    "  ~~~",
+    "===",
+    "#",
+  ].join("\n"),
+
+  // A setext underline fires whenever the run's *last* line is valid content
+  // — marked's paragraph rule stops at the first line the setext rule can
+  // start from, so the earlier tag-only and indented lines belong to a
+  // separate paragraph and the underline turns `x` into a heading. The PI
+  // then swallows everything else.
+  setextFiresOnLastEligibleLine: [
+    "# A",
+    "",
+    "## B",
+    "",
+    "</pre>",
+    "  code",
+    "x",
+    "- ",
+    "<?php",
+    "===",
+    "#",
+  ].join("\n"),
+
+  // A blockquote lazily absorbs plain lines even when its inner content was
+  // a heading: `$$$` joins the quote, `-  ` ends it (list exclusion) and
+  // starts a list, and the `\[` math block — opened with no paragraph in the
+  // way — swallows the heading and the ordered list.
+  bqLazyAbsorbsPlainLines: [
+    "# A",
+    "",
+    "## B",
+    "",
+    "> # h",
+    "$$$",
+    "-  ",
+    "  y",
+    "\\[",
+    "# H",
+    "10. item",
+    "    ```",
+    " - ",
+    "\\]",
+  ].join("\n"),
+
+  // A `$$` line right after a blockquote joins the quote instead of opening
+  // a math block, so the heading after the quote's text splits.
+  bqLazyMathStaysInQuote: ["> # h", "$$", "x", "# H", "", "end"].join("\n"),
+
+  // A raw block (here `<pre>`) opening inside a type-6 HTML block takes over
+  // until it closes — and the HTML block stays open underneath, so the whole
+  // run up to the blank line is one block to the parser and "# H" never
+  // becomes a heading; "## B" splits.
+  rawBlockStackedInHtmlBlock: [
+    "</div>",
+    "?>",
+    "-   item",
+    "<pre>",
+    "</pre>",
+    "# H",
+    "",
+    "## B",
+    "",
+    "end",
+  ].join("\n"),
+
+  // A fence interrupts the open paragraph, so the closing-tag line after it
+  // starts a type-7 HTML block that swallows "# H"; "## B" splits. The
+  // tracker must drop paragraphOpen when the fence opens.
+  fenceEndsParagraph: [
+    "para",
+    "```",
+    "x",
+    "```",
+    "</my-card>",
+    "# H",
+    "",
+    "## B",
+    "",
+    "end",
+  ].join("\n"),
+
+  // The PI after the whitespace-only marker cannot interrupt its paragraph —
+  // until the next line turns out to be a table delimiter row, which stops
+  // the paragraph before the PI in marked's grammar and lets the PI open
+  // after all. The held-back opener activates on the delimiter row, swallows
+  // up to `?>`, and "# H" splits.
+  tableDelimiterActivatesOpener: [
+    "- ",
+    "<?php",
+    "- ",
+    "?>",
+    "# H",
+    "",
+    "## B",
+    "",
+    "end",
   ].join("\n"),
 
   htmlBlocks: [
@@ -661,6 +1234,81 @@ describe("streaming.incremental", () => {
       );
     });
 
+    it("splits every heading after a list-internal fence that closes inside its item", async () => {
+      // The P3-1 regression shape: a list marker plus a safe indented fence
+      // must not poison later splits.
+      const text = [
+        "# A",
+        "",
+        "- one",
+        "- two",
+        "",
+        "  ```ts",
+        "  x.y();",
+        "  ```",
+        "",
+        "## B",
+        "",
+        "b",
+        "",
+        "## C",
+        "",
+        "c",
+        "",
+        "## D",
+        "",
+        "d",
+        "",
+      ].join("\n");
+      expect(await sectionsFor(text)).toHaveLength(4);
+    });
+
+    it("does not split on a heading swallowed by the fence a dedenting list fence re-opens", async () => {
+      // The column-0 body line ends the item and its fence; the indented
+      // "closing" line re-opens at the top level and swallows the heading.
+      expect(
+        await sectionsFor(
+          "# A\n\n- one\n\n  ```ts\nx.y();\n  ```\n\n## after\n\nmore\n",
+        ),
+      ).toBeNull();
+      // …and the split resumes once that re-opened fence actually closes.
+      expect(
+        await sectionsFor(
+          "# A\n\n- one\n\n  ```ts\nx.y();\n  ```\n\n## after\n\n  ```\n\n## B\n",
+        ),
+      ).toHaveLength(2);
+    });
+
+    it("does not split inside a fence indented past the scanner's window but inside a list item", async () => {
+      // Four absolute spaces = two relative to the item's content indent: a
+      // contained fence the char scanner cannot see. Its `#` line stays
+      // fenced, and the split resumes after the equally deep closing line.
+      expect(
+        await sectionsFor(
+          "# A\n\n- item\n\n    ```ts\n    # fenced\n    ```\n\n",
+        ),
+      ).toBeNull();
+      expect(
+        await sectionsFor(
+          "# A\n\n- item\n\n    ```ts\n    # fenced\n    ```\n\n## B\n",
+        ),
+      ).toEqual([
+        "# A\n\n- item\n\n    ```ts\n    # fenced\n    ```\n\n",
+        "## B\n",
+      ]);
+      // …but a column-0 `#` line still ends item and fence together and is a
+      // heading, blind fence or not.
+      expect(
+        await sectionsFor("# A\n\n- item\n\n    ```ts\n# heading\n    ```\n\n"),
+      ).toHaveLength(2);
+    });
+
+    it("treats a backtick fence with a backtick in its info string as paragraph text", async () => {
+      expect(await sectionsFor("# A\n\n``` a`b\n\n## B\n\n")).toHaveLength(2);
+      // A tilde fence has no such restriction: the heading stays fenced.
+      expect(await sectionsFor("# A\n\n~~~ a`b\n\n## B\n\n")).toBeNull();
+    });
+
     it("does not split on # lines inside <pre>, <script>, comments and $$ math", async () => {
       expect(await sectionsFor("# A\n\n<pre>\n\n# x\n\n</pre>\n\n")).toBeNull();
       expect(
@@ -718,6 +1366,172 @@ describe("streaming.incremental", () => {
       expect(
         await sectionsFor("# A\n\n<pre>\n\n# x\n\n</pre>\n\n## B\n\n"),
       ).toHaveLength(2);
+    });
+
+    it("ends a list at a thematic-break-shaped marker line instead of treating it as a sibling", async () => {
+      // `- - -` after an item is an hr — marked's block lexer never reads it
+      // as a list item — so the list ends and the heading splits.
+      expect(await sectionsFor("- item\n- - -\n\n## B\n\ntail")).toEqual([
+        "- item\n- - -\n\n",
+        "## B\n\ntail",
+      ]);
+      // …and a definition after that hr is top-level and document-wide.
+      expect(
+        await sectionsFor("- item\n- - -\n[^1]: n\n# A\n\ntail"),
+      ).toBeNull();
+    });
+
+    it("starts a fresh ordered list at any number once the previous item ended", async () => {
+      // The `2. b` marker ends the bullet item (any marker does) and opens a
+      // new ordered list — the just-ended item's paragraph no longer blocks
+      // the non-1 start. Its fence dedents below the new item, so it is
+      // top-level and swallows "## B"; "## C" splits.
+      expect(
+        await sectionsFor("- a\n2. b\n  ```\n## B\n  ```\n\n## C\n\ntail"),
+      ).toEqual(["- a\n2. b\n  ```\n## B\n  ```\n\n", "## C\n\ntail"]);
+    });
+
+    it("tracks list items whose content indent is 4 or more", async () => {
+      // `-   ```ts` has content indent 4, and its marker line already vetoes
+      // lazy continuation (the content slice begins a fence), so the
+      // dedenting ` </my-card>` ends the item and opens a type-7 HTML block
+      // that swallows the fences and the headings as text.
+      expect(
+        await sectionsFor("-   ```ts\n </my-card>\n~~~\n~~~\n## B\n#"),
+      ).toBeNull();
+    });
+
+    it("closes $$ math only at a column-0 delimiter and splits after it", async () => {
+      expect(await sectionsFor("$$\nx\n$$\n\n## B\n\ntail")).toEqual([
+        "$$\nx\n$$\n\n",
+        "## B\n\ntail",
+      ]);
+      // An indented or longer run keeps the block open (the plugin's closer
+      // is the opening run alone, right after a newline).
+      expect(await sectionsFor("$$\nx\n  $$\n\n## B\n\ntail")).toBeNull();
+      expect(await sectionsFor("$$\nx\n$$$\n\n## B\n\ntail")).toBeNull();
+      // A bracket block closes at its `\]` line.
+      expect(await sectionsFor("\\[\nx\n\\]\n\n## B\n\ntail")).toEqual([
+        "\\[\nx\n\\]\n\n",
+        "## B\n\ntail",
+      ]);
+    });
+
+    it("does not open block math on top of an open paragraph", async () => {
+      // The katex block rule cannot interrupt a paragraph, so the `$$` lines
+      // here are lazy paragraph text and the heading splits normally.
+      expect(await sectionsFor("para\n$$\nx\n$$\n\n## B\n\ntail")).toEqual([
+        "para\n$$\nx\n$$\n\n",
+        "## B\n\ntail",
+      ]);
+    });
+
+    it("does not close $$ math on the line right after the opener", async () => {
+      // The plugin's block rule needs at least one body line between the
+      // fences, so the second `$$` is body text and "# H" stays inside the
+      // math; the run closes at the third `$$` and "## B" splits.
+      expect(await sectionsFor("$$\n$$\n# H\n$$\n\n## B\n\ntail")).toEqual([
+        "$$\n$$\n# H\n$$\n\n",
+        "## B\n\ntail",
+      ]);
+    });
+
+    it("activates a paragraph-blocked opener only on a table delimiter row", async () => {
+      // The `<?php` after a paragraph cannot interrupt it — but marked's
+      // paragraph rule stops before it when the next line is a gfm delimiter
+      // row, so the PI opens after all and swallows up to `?>`.
+      expect(await sectionsFor("para\n<?php\n- \n?>\n# H\n\ntail")).toEqual([
+        "para\n<?php\n- \n?>\n",
+        "# H\n\ntail",
+      ]);
+      expect(await sectionsFor("x\n<?php\n---\n# H\n\ntail")).toBeNull();
+      // Any other next line discards the held-back opener and the heading
+      // interrupts the paragraph normally.
+      expect(await sectionsFor("para\n<?php\ny\n# H\n\ntail")).toEqual([
+        "para\n<?php\ny\n",
+        "# H\n\ntail",
+      ]);
+    });
+
+    it("reads a whitespace-only marker as an empty sibling item of an open list", async () => {
+      // The empty item is blank-tailed, so the tag line ends the list and
+      // opens a type-7 HTML block that swallows the heading.
+      expect(await sectionsFor("- a\n - \n</my-card>\n# H\n\ntail")).toBeNull();
+      // A marker of a different kind cannot continue the list: it becomes a
+      // paragraph, the tag joins it, and the heading splits.
+      expect(await sectionsFor("- a\n + \n</my-card>\n# H\n\ntail")).toEqual([
+        "- a\n + \n</my-card>\n",
+        "# H\n\ntail",
+      ]);
+      // Inside a nested different-kind list the whitespace-only marker is
+      // outer item content and the tag line lazy-joins the item, so only the
+      // final heading splits.
+      expect(await sectionsFor("- + a\n  - \n</my-card>\n# H\n")).toEqual([
+        "- + a\n  - \n</my-card>\n",
+        "# H\n",
+      ]);
+    });
+
+    it("treats `-  ` as a setext underline when a paragraph is open", async () => {
+      // The paragraph `x` becomes a heading and the fence swallows "## H2".
+      expect(await sectionsFor("x\n-  \n  ~~~\n## H2\n\ntail")).toBeNull();
+      // With no paragraph open `-  ` is a real (empty) list item: the fence
+      // belongs to the item, the heading dedents out and splits.
+      expect(await sectionsFor("\n-  \n  ~~~\n## H2\n\ntail")).toEqual([
+        "\n-  \n  ~~~\n",
+        "## H2\n\ntail",
+      ]);
+    });
+
+    it("lets a blockquote lazily absorb plain lines until an exclusion", async () => {
+      // `$$$` joins the quote even though the quote's inner content is a
+      // heading; `-  ` ends the quote and starts a list whose item ends at
+      // the dedenting `\[`; the math block swallows "# H".
+      expect(
+        await sectionsFor("> # h\n$$$\n-  \n  y\n\\[\n# H\n\\]\n\ntail"),
+      ).toBeNull();
+      // A `$$` line joins the quote instead of opening a math block, so the
+      // heading after the quote's text splits.
+      expect(await sectionsFor("> # h\n$$\nx\n# H\n\ntail")).toEqual([
+        "> # h\n$$\nx\n",
+        "# H\n\ntail",
+      ]);
+      // A bullet marker followed by a space ends the quote; a non-1 ordered
+      // marker or a tab-delimited one joins it.
+      expect(await sectionsFor("> x\n2. y\n# H\n\ntail")).toEqual([
+        "> x\n2. y\n",
+        "# H\n\ntail",
+      ]);
+      expect(await sectionsFor("> x\n- y\n# H\n\ntail")).toEqual([
+        "> x\n- y\n",
+        "# H\n\ntail",
+      ]);
+    });
+
+    it("fires a setext underline whenever the run's last line is eligible", async () => {
+      // The tag-only and indented lines form their own paragraph; the
+      // underline fires on `x` alone, and the PI swallows the rest.
+      expect(
+        await sectionsFor("</pre>\n  code\nx\n- \n<?php\n===\n#\n\ntail"),
+      ).toBeNull();
+      // A column-0 marker followed by a space is not eligible: no underline,
+      // the tag line joins the paragraph and the heading splits.
+      expect(await sectionsFor("x\n1. \n- \n</my-card>\n# H\n\ntail")).toEqual([
+        "x\n1. \n- \n</my-card>\n",
+        "# H\n\ntail",
+      ]);
+    });
+
+    it("ends an empty-first-line item at the immediately following blank line", async () => {
+      // The item dies at the blank, so the fence is top-level and swallows
+      // the `===` and the `#` line.
+      expect(await sectionsFor("-  \n   \n  ~~~\n===\n#\n\ntail")).toBeNull();
+      // Without the blank the item lives: the fence belongs to it, and the
+      // dedenting heading ends the blank-tailed item and splits.
+      expect(await sectionsFor("-  \n  ~~~\n===\n#\n\ntail")).toEqual([
+        "-  \n  ~~~\n===\n",
+        "#\n\ntail",
+      ]);
     });
 
     it("does not end processing instructions, declarations or CDATA at a blank line", async () => {
