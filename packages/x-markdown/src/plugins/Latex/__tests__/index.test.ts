@@ -76,4 +76,19 @@ describe("LaTeX Plugin", () => {
     const wrapper = renderHtml("$$\nE=mc^2\n$$");
     expect(wrapper.find(".katex").exists()).toBe(true);
   });
+
+  // `\[...\]` that spans a newline is a block-level formula inside inline
+  // flow, so it gets the block wrapper (`display: block` in the theme) rather
+  // than the inline one.
+  it("should render multi-line \\[..\\] as a block-level formula", () => {
+    const wrapper = renderHtml("content\n\\[\\frac{a}{b}\n\\]\ncontent");
+    expect(wrapper.find(".block-katex").exists()).toBe(true);
+    expect(wrapper.find(".inline-katex").exists()).toBe(false);
+  });
+
+  it("should still render single-line \\[..\\] as an inline formula", () => {
+    const wrapper = renderHtml("hello \\[E=mc^2\\] world");
+    expect(wrapper.find(".inline-katex").exists()).toBe(true);
+    expect(wrapper.find(".block-katex").exists()).toBe(false);
+  });
 });
