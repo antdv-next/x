@@ -232,8 +232,12 @@ const getInitialSectionState = (): SectionState => ({
   inHtmlBlock: false,
   noSplit: false,
   rawBlock: null,
+  blockedOpener: null,
   listStack: [],
   paragraphOpen: false,
+  paragraphEligible: true,
+  bqLazy: false,
+  bqFence: null,
 });
 
 const getInitialCache = (): StreamCache => ({
@@ -341,6 +345,10 @@ const SETEXT_LINE = /^ {0,3}(?:=+|-+) *\r?$/;
 const THEMATIC_BREAK_LINE =
   /^ {0,3}(?:(?:\*[ \t]*){3,}|(?:_[ \t]*){3,}|(?:-[ \t]*){3,})\r?$/;
 const BLOCKQUOTE_LINE = /^ {0,3}>/;
+// marked's blockquote lazy-continuation exclusions: a bullet or a `1.`/`1)`
+// marker followed by a literal space ends the quote (any other marker shape
+// joins it).
+const BQ_LAZY_LIST = /^ {0,3}(?:[*+-]|1[.)]) /;
 // A list marker with its indent and kind captured, followed by a whitespace
 // delimiter or the end of the line. The text after the marker (delimiter +
 // content) is sliced off by the caller.
@@ -390,8 +398,16 @@ const HTML_TAG_OPEN = /^ {0,3}<(\/?)([a-zA-Z][a-zA-Z0-9-]*)/;
 const HTML_BLOCK_TAG6 =
   /^(?:address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup|dd|details|dialog|dir|div|dl|dt|fieldset|figcaption|figure|footer|form|frame|frameset|h[1-6]|head|header|hr|html|iframe|legend|li|link|main|menu|menuitem|meta|nav|noframes|ol|optgroup|option|p|param|search|section|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul)$/i;
 const RAW4_CLOSE_LINE = /^ {0,3}<\/(?:pre|script|style|textarea)(?=[\s>]|$)/i;
+// A gfm table delimiter row (`- `, `---`, `| - | :-: |`, …) — the shape
+// marked's table rule needs right after a header line. marked's paragraph
+// rule stops before any line that heads such a pair, which retroactively
+// lets a held-back "cannot interrupt a paragraph" opener start its block.
+const DELIMITER_ROW = /^ {0,3}(?:\| *)?:?-+:? *(?:\| *:?-+:? *)*\|?[ \t]*$/;
 
-const detectRawBlockOpen = (line: string): SectionState["rawBlock"] => {
+const detectRawBlockOpen = (
+  line: string,
+  math = true,
+): SectionState["rawBlock"] => {
   const html = line.match(RAW_HTML_BLOCK_OPEN);
   if (html) {
     // The end condition is the closing tag with its `>`: `</prefix>` or
@@ -412,8 +428,9 @@ const detectRawBlockOpen = (line: string): SectionState["rawBlock"] => {
   if (HTML_DECLARATION_OPEN.test(line)) {
     return line.includes(">") ? null : { close: ">", exact: false };
   }
+  if (!math) return null;
   const dollar = line.match(MATH_DOLLAR_LINE);
-  if (dollar) return { close: dollar[1], exact: true };
+  if (dollar) return { close: dollar[1], exact: true, bodyChars: 0 };
   if (MATH_BRACKET_OPEN.test(line)) {
     return line.includes("\\]") ? null : { close: "\\]", exact: false };
   }
@@ -455,6 +472,26 @@ const sliceVeto = (slice: string, ci: number): boolean => {
   const body = slice.slice(spaces);
   return body.startsWith("#") || FENCE_BEGIN.test(body) || HR_BEGIN.test(body);
 };
+
+/**
+ * marked's setext-heading content pattern, tested at a line's own container
+ * level: a heading's content run cannot start with — and cannot continue
+ * across — a bullet marker followed by a space, an indented-code line (four
+ * spaces or a leading tab), a fence, a blockquote, a heading or a line that
+ * is a single HTML tag. A paragraph run containing such a line never becomes
+ * a setext heading: the underline-shaped line after it is plain text.
+ */
+const SETEXT_INELIGIBLE = new RegExp(
+  "^(?:" +
+    "(?:[*+-]|\\d{1,9}[.)]) |" + // bullet or ordered marker + literal space
+    " {4}| {0,3}\\t|" + // indented code
+    " {0,3}(?:`{3,}|~{3,})|" + // fence
+    " {0,3}>|" + // blockquote
+    " {0,3}#{1,6}|" + // heading
+    " {0,3}<[^\n>]+>$" + // tag-only HTML line
+    ")",
+);
+const setextEligible = (line: string): boolean => !SETEXT_INELIGIBLE.test(line);
 
 interface FenceLine {
   indent: number;
@@ -521,6 +558,11 @@ const trackSectionBoundary = (
   const line = raw.endsWith("\r") ? raw.slice(0, -1) : raw;
   const blank = line.trim() === "";
   state.lineStart = newlineIndex + 1;
+  // A held-back opener lives exactly one line: only the delimiter row that
+  // turns its line into a table header (handled in the classification below)
+  // may activate it; every other line — including a blank one — discards it.
+  const blocked = state.blockedOpener;
+  state.blockedOpener = null;
 
   const stack = state.listStack;
   const topCi = (): number => stack[stack.length - 1].ci;
@@ -541,65 +583,108 @@ const trackSectionBoundary = (
     fence.fenceCi = null;
   };
 
-  // --- 1. Item continuation, mirroring marked's list-item loop. With an item
-  // open, a dedenting line ends the item *before* the line when it begins a
-  // construct (fence run, `#`, html with a `>`, list marker, thematic break)
-  // or when the item is blank-tailed / its previous content slice vetoes a
-  // lazy continuation; the ending item takes every leaf block it contains
-  // down with it, and the line is re-read at the outer level. Any other
-  // dedenting line joins the item as raw text — a lazy paragraph line, or the
-  // body of the item's open fence / raw / HTML block. ---
+  // --- 1. Item continuation, mirroring marked's list-item loop. The open
+  // containers are walked from the outermost inward, the way marked's nested
+  // list lexers each run their own continuation on the line as that level
+  // sees it: a line content to a level is re-sliced at its content indent for
+  // the next one, while a line dedenting below a level ends the item there
+  // *before* the line when it begins a construct (fence run, `#`, html with a
+  // `>`, list marker, thematic break) or when the item is blank-tailed / its
+  // previous content slice vetoes a lazy continuation. The ending item takes
+  // every container and leaf block inside it down, and the line is re-read at
+  // the outer level. Any other dedenting line joins the item as raw text — a
+  // lazy paragraph line, or the body of the item's open fence / raw / HTML
+  // block — and reaches the next level unchanged. ---
   let exiting = false;
   if (stack.length) {
-    const entry = stack[stack.length - 1];
     if (blank) {
-      // A blank line is consumed as item content and leaves the item
-      // blank-tailed: the next dedenting line ends it. It also ends a type
-      // 6–7 HTML block (fences and type 1–5 raw blocks span blanks).
-      entry.blank = true;
-      entry.lineVeto = false;
+      // A blank line is consumed as item content at every nesting level and
+      // leaves every open item blank-tailed: the next line that dedents below
+      // an item ends it. It also ends a type 6–7 HTML block (fences and type
+      // 1–5 raw blocks span blanks). Exception: an item whose first line was
+      // blank dies right here — marked consumes the blank and closes the item
+      // before its content loop ever runs (`R && blankLine.test(h)`), so the
+      // container is dropped instead of blank-tailed. Such an item is always
+      // innermost (any content line would have cleared the flag).
+      const top = stack[stack.length - 1];
+      if (top.empty) stack.pop();
+      for (const entry of stack) {
+        entry.blank = true;
+        entry.lineVeto = false;
+      }
       state.inHtmlBlock = false;
+      state.bqFence = null;
       return;
     }
-    if (indent < entry.ci) {
+    let lazy = false;
+    // The current level's view of the line: `offset` is where the view starts
+    // (content lines are re-sliced level by level, lazy lines stay raw) and
+    // `levelIndent` its leading indent. `offset + levelIndent == indent`.
+    let offset = 0;
+    let levelIndent = indent;
+    for (let k = 0; k < stack.length; k++) {
+      const entry = stack[k];
+      const relCi = entry.ci - (k > 0 ? stack[k - 1].ci : 0);
+      if (levelIndent >= relCi) {
+        // Item content at this level: refresh the lazy-veto flag from the
+        // slice this level records (`g = A.slice(f)` in marked), then descend.
+        entry.lineVeto = sliceVeto(
+          expandTabs(line).slice(offset + relCi),
+          relCi,
+        );
+        entry.empty = false;
+        levelIndent -= relCi;
+        offset += relCi;
+        continue;
+      }
+      const levelLine = line.slice(offset);
       const beginLine = line.slice(indent);
-      const isMarker = LIST_MARKER.test(line);
+      const isMarker = LIST_MARKER.test(levelLine);
       const isHr = HR_BEGIN.test(beginLine);
       if (
-        isMarker ||
-        beginLine[0] === "#" ||
-        FENCE_BEGIN.test(beginLine) ||
-        HTML_BEGIN.test(beginLine) ||
-        isHr ||
-        entry.blank ||
-        entry.lineVeto
+        !isMarker &&
+        beginLine[0] !== "#" &&
+        !FENCE_BEGIN.test(beginLine) &&
+        !HTML_BEGIN.test(beginLine) &&
+        !isHr &&
+        !entry.blank &&
+        !entry.lineVeto
       ) {
-        if (fence.fenceCi != null) clearFence();
-        state.rawBlock = null;
-        state.inHtmlBlock = false;
-        // The item's inner paragraph died with it; the re-read line starts
-        // fresh (a `2. x` marker may open a list here even though the item's
-        // paragraph just ended).
-        state.paragraphOpen = false;
-        // A list marker keeps the container stack: a same-kind marker at the
-        // same column is a sibling item of the still-open list, resolved in
-        // the classification below. A marker-shaped line that is itself a
-        // thematic break (`- - -`) ends the list for good: marked's block
-        // lexer reads it as an hr, never as an item.
-        if (!isMarker || isHr) popBelow(indent);
-        exiting = true;
-      } else {
-        // Lazy continuation.
-        if (!fence.inFenced && !state.rawBlock && !state.inHtmlBlock) {
-          state.paragraphOpen = true;
-        }
-        entry.lineVeto = sliceVeto(expandTabs(line).slice(entry.ci), entry.ci);
-        return;
+        // Lazy continuation at this level: refresh the veto flag from the raw
+        // view's slice and keep the line raw for the next level.
+        entry.lineVeto = sliceVeto(
+          expandTabs(line).slice(offset + relCi),
+          relCi,
+        );
+        entry.empty = false;
+        lazy = true;
+        continue;
       }
-    } else {
-      // Item content: refresh the lazy-veto flag from the line's slice, then
-      // consume the line as a leaf-block body or classify it below.
-      entry.lineVeto = sliceVeto(expandTabs(line).slice(entry.ci), entry.ci);
+      if (fence.fenceCi != null) clearFence();
+      state.rawBlock = null;
+      state.inHtmlBlock = false;
+      state.bqFence = null;
+      // The item's inner paragraph died with it; the re-read line starts
+      // fresh (a `2. x` marker may open a list here even though the item's
+      // paragraph just ended).
+      state.paragraphOpen = false;
+      // A list marker keeps the container stack: a same-kind marker at the
+      // list's column is a sibling item of the still-open list, resolved in
+      // the classification below, which also drops the dead containers that
+      // were nested inside the ended one. A marker-shaped line that is itself
+      // a thematic break (`- - -`) ends the list for good: marked's block
+      // lexer reads it as an hr, never as an item.
+      if (!isMarker || isHr) popBelow(indent);
+      exiting = true;
+      break;
+    }
+    if (!exiting && lazy) {
+      // Lazy lines are raw item text, never block starts.
+      if (!fence.inFenced && !state.rawBlock && !state.inHtmlBlock) {
+        state.paragraphOpen = true;
+        state.paragraphEligible = setextEligible(line);
+      }
+      return;
     }
   }
 
@@ -609,6 +694,19 @@ const trackSectionBoundary = (
       // open the char scanner just applied is a phantom. (Blocks only start
       // while the fence is closed, so it cannot predate this line.)
       if (verdict === "opened") clearFence();
+      // A type 6–7 HTML block underneath the raw block still ends at a blank
+      // line; the raw block itself spans blanks.
+      if (blank) state.inHtmlBlock = false;
+      // `$$` math closes only once at least one body character has streamed:
+      // the plugin's rule is `opener\n body \n closer` with a non-empty body,
+      // so a closing run whose would-be body is still empty (the line right
+      // after the opener, or after nothing but blank lines) is body text —
+      // even when it is itself a `$$` run.
+      if (state.rawBlock.exact && (state.rawBlock.bodyChars ?? 0) < 2) {
+        state.rawBlock.bodyChars =
+          (state.rawBlock.bodyChars ?? 0) + line.length + 1;
+        return;
+      }
       if (closesRawBlock(line, state.rawBlock)) state.rawBlock = null;
       return;
     }
@@ -624,14 +722,17 @@ const trackSectionBoundary = (
       // the browser reads `<?` / `<!` as a bogus comment that runs to the
       // next `>` across what CommonMark would call later blocks, so a heading
       // split there would survive in the split render while being swallowed
-      // by the comment in the whole-document render. The opener is read
-      // relative to the innermost open item, like the classification below.
+      // by the comment in the whole-document render. The HTML block stays open
+      // underneath: once the raw block closes, its own end-at-blank-line rule
+      // keeps applying. Math delimiters are excluded: inside the HTML block
+      // they are plain text to both the parser and the browser, so there is
+      // nothing to protect. The opener is read relative to the innermost open
+      // item, like the classification below.
       const inner =
         stack.length && indent >= topCi() ? line.slice(topCi()) : line;
-      const rawBlock = detectRawBlockOpen(inner);
+      const rawBlock = detectRawBlockOpen(inner, false);
       if (rawBlock) {
         state.rawBlock = rawBlock;
-        state.inHtmlBlock = false;
       }
       return;
     }
@@ -648,6 +749,8 @@ const trackSectionBoundary = (
         // containers it dedents out of before opening at the outer level.
         popBelow(fenceLine.indent);
         fence.fenceCi = stack.length ? topCi() : null;
+        state.paragraphOpen = false;
+        state.bqLazy = false;
         return;
       }
       // A backtick fence whose info string contains a backtick is not a
@@ -673,12 +776,14 @@ const trackSectionBoundary = (
     }
   } else if (fenceLine && !fenceLine.infoBacktick) {
     // The line that ended the item is itself a fence line — typically a
-    // dedenting "closing" line: the parser reads it as a new opener.
+    // dedenting "closing" line: the parser reads it as a new opener. Fences
+    // interrupt paragraphs, so no paragraph survives the open.
     popBelow(fenceLine.indent);
     fence.inFenced = true;
     fence.fenceChar = fenceLine.char;
     fence.fenceLen = fenceLine.len;
     fence.fenceCi = stack.length ? topCi() : null;
+    state.paragraphOpen = false;
     return;
   } else if (verdict === "opened") {
     // The scanner opened on a backtick fence with a backtick in its info
@@ -692,6 +797,8 @@ const trackSectionBoundary = (
   // switching `incremental` on mid-stream sees the correct context. ---
   if (blank) {
     state.paragraphOpen = false;
+    state.bqFence = null;
+    state.bqLazy = false;
     return;
   }
   // A line reaching the innermost open item's content indent belongs to that
@@ -702,6 +809,44 @@ const trackSectionBoundary = (
   // lines were already joined or exited in the continuation above).
   const rel = stack.length && indent >= topCi() ? line.slice(topCi()) : null;
   const blockLine = rel ?? line;
+  // A non-blockquote line ends a blockquote whose inner fence is still open:
+  // unlike a paragraph, a fence cannot be lazily continued, so the blockquote
+  // died at its last `>` line and left no paragraph behind.
+  if (state.bqFence && !BLOCKQUOTE_LINE.test(blockLine)) {
+    state.bqFence = null;
+    state.paragraphOpen = false;
+  }
+  // A top-level blockquote whose last `>` line had non-empty content lazily
+  // absorbs this line — marked's blockquote rule bakes the paragraph
+  // continuation into its regex — unless the line matches one of its
+  // continuation exclusions: a thematic break, an ATX heading, a fence, a
+  // quote line, a bullet/`1.` marker followed by a space, or a block-tag
+  // HTML line (comments included; PIs, declarations, CDATA and type-7 tags
+  // join the quote). An absorbed line starts no block of its own; an
+  // excluding line ends the quote and is classified fresh, with no
+  // top-level paragraph left behind.
+  if (state.bqLazy) {
+    const bqTag = blockLine.match(HTML_TAG_OPEN);
+    if (
+      !THEMATIC_BREAK_LINE.test(blockLine) &&
+      !ATX_LINE.test(blockLine) &&
+      !(
+        countIndent(blockLine) <= 3 &&
+        FENCE_BEGIN.test(blockLine.slice(countIndent(blockLine)))
+      ) &&
+      !BLOCKQUOTE_LINE.test(blockLine) &&
+      !BQ_LAZY_LIST.test(blockLine) &&
+      !HTML_COMMENT_OPEN.test(blockLine) &&
+      !RAW_HTML_BLOCK_OPEN.test(blockLine) &&
+      !(bqTag && HTML_BLOCK_TAG6.test(bqTag[2]))
+    ) {
+      return; // the line joins the blockquote, which stays lazy-open
+    }
+    // An excluding line ends the quote and is classified fresh, with no
+    // top-level paragraph left behind.
+    state.bqLazy = false;
+    state.paragraphOpen = false;
+  }
   // A list marker line, decomposed once for the setext guard (a marker with
   // nothing but its one delimiter character is not a list), the sibling
   // lookup and the marker branch below.
@@ -713,6 +858,7 @@ const trackSectionBoundary = (
     digits: string | undefined;
     rest: string;
     contentBlank: boolean;
+    content: string;
     ci: number;
   } | null = null;
   if (marker) {
@@ -736,14 +882,101 @@ const trackSectionBoundary = (
       digits,
       rest,
       contentBlank,
+      content: rest.slice(gap),
       ci,
     };
+  }
+  // A marker followed by nothing but its one delimiter character (`- `,
+  // `1.\t`) can never *start* a list — marked's list-start rule needs content
+  // after the delimiter — but it can *continue* one: the item loop breaks the
+  // current item on any marker-shaped line, and the sibling rule (0–3 spaces
+  // at the level's view, same marker kind, content optional) then reads the
+  // line as a new, empty item, so the list survives with a blank-tailed item
+  // that the next dedenting line ends. With no same-kind list to continue,
+  // the line is plain paragraph text: a bullet/`1.` marker followed by a
+  // space breaks the paragraph first (marked's paragraph lookahead excludes
+  // it), while a tab-delimited or non-1 ordered marker lazily joins it.
+  const wsOnlyMarker = (info: {
+    mIndent: number;
+    kind: string;
+    ordered: boolean;
+    digits: string | undefined;
+    rest: string;
+    ci: number;
+  }): void => {
+    let level = 0;
+    while (level < stack.length && indent >= stack[level].ci) level++;
+    const container = level < stack.length ? stack[level] : null;
+    if (
+      container &&
+      container.kind === info.kind &&
+      indent - (level > 0 ? stack[level - 1].ci : 0) <= 3
+    ) {
+      stack.length = level + 1;
+      stack[level] = {
+        ci: info.ci,
+        mIndent: info.mIndent,
+        kind: info.kind,
+        blank: true,
+        empty: true,
+        lineVeto: false,
+      };
+      state.paragraphOpen = false;
+      return;
+    }
+    popBelow(indent);
+    // The line is the run's last line, so it alone decides a later setext
+    // underline: a column-0 marker followed by a space forfeits it, a
+    // tab-delimited or indented one keeps it.
+    state.paragraphEligible = setextEligible(blockLine);
+    state.paragraphOpen = true;
+  };
+  // A marker with content after its one delimiter character (or with nothing
+  // at all — a bare `-` starts a list of one empty item in marked): a fresh
+  // list opens, unless an open paragraph vetoes the interruption — only a
+  // bullet or a `1.`/`1)` followed by a *space* may interrupt one, so a tab
+  // delimiter or a non-1 ordered start makes the line lazy paragraph text.
+  const openList = (info: NonNullable<typeof markerInfo>): void => {
+    if (state.paragraphOpen) {
+      if (info.rest[0] !== " " || (info.ordered && Number(info.digits) !== 1)) {
+        // The line joins the paragraph; as its last line it alone decides a
+        // later setext underline.
+        state.paragraphEligible = setextEligible(blockLine);
+        return;
+      }
+    }
+    popBelow(info.mIndent);
+    stack.push({
+      ci: info.ci,
+      mIndent: info.mIndent,
+      kind: info.kind,
+      blank: info.contentBlank,
+      empty: info.contentBlank,
+      lineVeto: sliceVeto(expandTabs(info.rest), info.ci),
+    });
+    state.paragraphOpen = !info.contentBlank;
+    if (state.paragraphOpen) {
+      state.paragraphEligible = setextEligible(info.content);
+    }
+  };
+  // A held-back opener activates on a delimiter row: marked's paragraph rule
+  // stops before the opener's line whenever this pair heads a gfm table, so
+  // the paragraph was never there to block it. (A delimiter row is never a
+  // heading or fence; this must run before the setext/hr branch, since `---`
+  // is a delimiter row too.)
+  if (blocked && DELIMITER_ROW.test(blockLine)) {
+    popBelow(indent);
+    if (blocked.inHtmlBlock) state.inHtmlBlock = true;
+    if (blocked.rawBlock) state.rawBlock = blocked.rawBlock;
+    state.paragraphOpen = false;
+    return;
   }
   const rawBlock = detectRawBlockOpen(blockLine);
   if (rawBlock) {
     // PIs, declarations, CDATA (types 3–5) and the katex plugin's block math
-    // cannot interrupt a paragraph: the line is lazy paragraph text then,
-    // not a block start.
+    // cannot interrupt a paragraph: the line is lazy paragraph text then, not
+    // a block start — unless the next line turns out to be a table delimiter
+    // row, which is what `blockedOpener` records for.
     const interruptible =
       !HTML_PI_OPEN.test(blockLine) &&
       !HTML_DECLARATION_OPEN.test(blockLine) &&
@@ -756,6 +989,7 @@ const trackSectionBoundary = (
       state.paragraphOpen = false;
       return;
     }
+    state.blockedOpener = { rawBlock };
   }
   if (
     !rawBlock &&
@@ -792,6 +1026,11 @@ const trackSectionBoundary = (
       state.paragraphOpen = false;
       return;
     }
+    // A type-7 tag held back by an open paragraph activates the same way a
+    // held-back raw block opener does (see above).
+    if (htmlTag && state.paragraphOpen && blockLine.includes(">")) {
+      state.blockedOpener = { rawBlock: null, inHtmlBlock: true };
+    }
   }
   if (DEFINITION_LINE.test(blockLine)) {
     state.noSplit = true;
@@ -823,11 +1062,15 @@ const trackSectionBoundary = (
       stack.length = sibling + 1;
       stack[sibling].ci = markerInfo.ci;
       stack[sibling].blank = markerInfo.contentBlank;
+      stack[sibling].empty = markerInfo.contentBlank;
       stack[sibling].lineVeto = sliceVeto(
         expandTabs(markerInfo.rest),
         markerInfo.ci,
       );
       state.paragraphOpen = !markerInfo.contentBlank;
+      if (state.paragraphOpen) {
+        state.paragraphEligible = setextEligible(markerInfo.content);
+      }
       return;
     }
   }
@@ -843,17 +1086,38 @@ const trackSectionBoundary = (
     THEMATIC_BREAK_LINE.test(blockLine)
   ) {
     // A setext underline turns the open paragraph into a heading — but only
-    // at the paragraph's own container level. Dedenting below it ends the
+    // at the paragraph's own container level, and only when the paragraph's
+    // last line is legal setext content (marked matches the paragraph and
+    // its underline atomically, and its paragraph rule stops at the first
+    // line the setext rule can start matching from, so the content can be
+    // that last line alone). Dedenting below the paragraph ends the
     // containers first, and with no paragraph left at the outer level the
     // line is a thematic break (`- para\n---` parses as list + <hr>).
     const setext =
       !THEMATIC_BREAK_LINE.test(blockLine) &&
       state.paragraphOpen &&
+      state.paragraphEligible &&
       (!stack.length || indent >= topCi());
     if (!setext) {
       // A marker followed by nothing but its one delimiter character (`- `,
-      // `1.\t`) is not a list either: plain paragraph text.
+      // `1.\t`): an empty sibling item when it continues an open list, plain
+      // paragraph text otherwise.
       if (markerInfo && markerInfo.rest.length === 1) {
+        wsOnlyMarker(markerInfo);
+        return;
+      }
+      // With no underline firing, any other marker line (`-  `, a bare `-`)
+      // is a real empty list item: marked's list-start rule only needs one
+      // more character after the delimiter, or none at all.
+      if (markerInfo && !THEMATIC_BREAK_LINE.test(blockLine)) {
+        openList(markerInfo);
+        return;
+      }
+      if (!THEMATIC_BREAK_LINE.test(blockLine)) {
+        // Any other line that only looked like an underline — an `=` run, a
+        // `--` — is plain paragraph text: it opens or continues a paragraph
+        // instead of ending one.
+        state.paragraphEligible = setextEligible(blockLine);
         state.paragraphOpen = true;
         return;
       }
@@ -866,18 +1130,60 @@ const trackSectionBoundary = (
     // quote line already lazy-attached to the item in the continuation
     // above. The quote's own paragraph state follows its content: `> # h`,
     // `> ---` or `> ``` ` leave no paragraph open for later lazy lines,
-    // `> text` leaves one open.
+    // `> text` leaves one open. While a fence inside the quote is open the
+    // lines are fence body, not paragraph content. Either way the quote's
+    // paragraph is never setext content at this level: marked neutralizes
+    // underline lines inside quotes, and a non-quote line that looks like an
+    // underline starts a fresh top-level paragraph instead. A top-level
+    // quote also keeps absorbing following plain lines (see `bqLazy`): no
+    // top-level paragraph survives it, so interruption rules below must not
+    // see one.
     if (!state.paragraphOpen) popBelow(indent);
+    state.paragraphEligible = false;
     let inner = blockLine;
     while (BLOCKQUOTE_LINE.test(inner)) {
       inner = inner.replace(/^ {0,3}>[ \t]?/, "");
+    }
+    if (state.bqFence) {
+      const closer = scanFenceLine(inner);
+      if (
+        closer &&
+        closer.tailBlank &&
+        closer.char === state.bqFence.char &&
+        closer.len >= state.bqFence.len
+      ) {
+        state.bqFence = null;
+      }
+      // A fence as the quote's last inner token voids the lazy continuation
+      // (marked's blockquote tokenizer breaks on a trailing code token) —
+      // whether it just closed or is still open.
+      state.bqLazy = false;
+      state.paragraphOpen = false;
+      return;
+    }
+    const fenceOpen = scanFenceLine(inner);
+    if (fenceOpen && !fenceOpen.infoBacktick) {
+      state.bqFence = { char: fenceOpen.char, len: fenceOpen.len };
+      state.bqLazy = false;
+      state.paragraphOpen = false;
+      return;
     }
     state.paragraphOpen =
       inner.trim() !== "" &&
       !ATX_LINE.test(inner) &&
       !SETEXT_LINE.test(inner) &&
-      !THEMATIC_BREAK_LINE.test(inner) &&
-      !scanFenceLine(inner);
+      !THEMATIC_BREAK_LINE.test(inner);
+    if (!rel) {
+      // Top-level quote: the line's content decides whether the quote may
+      // lazily absorb the next line. Empty content may not, and neither may
+      // content that tokenizes as a nested quote (marked's tokenizer breaks
+      // on a trailing blockquote token) or as indented code.
+      state.bqLazy =
+        inner.trim() !== "" &&
+        !BLOCKQUOTE_LINE.test(inner) &&
+        expandTabs(inner).search(/[^ ]/) < 4;
+      state.paragraphOpen = false;
+    }
     return;
   } else {
     if (rel) {
@@ -897,38 +1203,28 @@ const trackSectionBoundary = (
     }
     if (markerInfo) {
       // A marker followed by nothing but its one delimiter character (`- `,
-      // `1.\t`) is not a list at all: plain paragraph text.
+      // `1.\t`): an empty sibling item when it continues an open list, plain
+      // paragraph text otherwise.
       if (markerInfo.rest.length === 1) {
-        state.paragraphOpen = true;
+        wsOnlyMarker(markerInfo);
         return;
       }
-      // A fresh list may not interrupt a paragraph unless the marker is a
-      // bullet or a `1.`/`1)` followed by a *space* — a tab delimiter and a
-      // non-1 ordered start make the line lazy paragraph text instead.
-      if (
-        state.paragraphOpen &&
-        (markerInfo.rest[0] !== " " ||
-          (markerInfo.ordered && Number(markerInfo.digits) !== 1))
-      ) {
-        return;
-      }
-      popBelow(markerInfo.mIndent);
-      stack.push({
-        ci: markerInfo.ci,
-        mIndent: markerInfo.mIndent,
-        kind: markerInfo.kind,
-        blank: markerInfo.contentBlank,
-        lineVeto: sliceVeto(expandTabs(markerInfo.rest), markerInfo.ci),
-      });
-      state.paragraphOpen = !markerInfo.contentBlank;
+      openList(markerInfo);
       return;
     }
     // Plain text. The open paragraph simply continues (a dedenting line that
-    // would have ended it was handled by the continuation above).
-    if (state.paragraphOpen) return;
+    // would have ended it was handled by the continuation above); as its
+    // last line, this line alone decides a later setext underline.
+    if (state.paragraphOpen) {
+      state.paragraphEligible = setextEligible(blockLine);
+      return;
+    }
     // An indented code block (4+ spaces relative to the container) is not a
     // paragraph; every other plain line opens or continues one.
     state.paragraphOpen = indent < (stack.length ? topCi() : 0) + 4;
+    if (state.paragraphOpen) {
+      state.paragraphEligible = setextEligible(blockLine);
+    }
     return;
   }
 

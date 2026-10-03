@@ -95,9 +95,25 @@ export interface SectionState {
   /**
    * An open block whose body may contain blank lines and heading-looking lines
    * (`<pre>`, `<script>`, `<style>`, `<textarea>`, HTML comments, `$$` math,
-   * `\[` math). No boundary is recorded until it closes.
+   * `\[` math). No boundary is recorded until it closes. `bodyChars` matters
+   * only for `exact` (`$$` math): the plugin's rule needs a non-empty body
+   * between opener and closing run, so a closing run is body text while the
+   * accumulated body (each consumed line plus its newline) is shorter than
+   * two characters.
    */
-  rawBlock: { close: string; exact: boolean } | null;
+  rawBlock: { close: string; exact: boolean; bodyChars?: number } | null;
+  /**
+   * A block opener the previous line held back because a paragraph was open
+   * (a type 3–5 raw block, block math, or a type-7 HTML tag). marked's
+   * paragraph rule stops *before* such a line whenever it heads a gfm table —
+   * the table lookahead only needs this line plus a delimiter row — so the
+   * opener actually interrupts the paragraph in that case. The delimiter row
+   * activates the recorded state; any other next line discards it.
+   */
+  blockedOpener: {
+    rawBlock: SectionState["rawBlock"];
+    inHtmlBlock?: boolean;
+  } | null;
   /**
    * Open list containers, innermost last. Maintained by the section tracker,
    * which re-implements marked's list-item continuation algorithm: the block
@@ -115,6 +131,36 @@ export interface SectionState {
    * governed by the entry's `blank`/`lineVeto` instead.
    */
   paragraphOpen: boolean;
+  /**
+   * Whether the line that last joined the open paragraph is legal setext
+   * content. marked matches a paragraph and its setext underline atomically,
+   * and its paragraph rule stops at the first line the setext rule can start
+   * matching from — so a pending underline fires exactly when the line right
+   * before it is valid content (no column-0 marker followed by a space, no
+   * 4-space/tab indent, no fence, no quote, no heading, no tag-only HTML
+   * line); earlier lines of the run are irrelevant.
+   */
+  paragraphEligible: boolean;
+  /**
+   * The last line belonged to a top-level blockquote whose last `>` line had
+   * non-empty content: marked's blockquote rule bakes the paragraph
+   * continuation into its regex, so the quote lazily absorbs following lines
+   * until a blank, a thematic break, an ATX heading, a fence, a quote line, a
+   * bullet/`1.` marker followed by a space, or a block-tag HTML line ends it.
+   * Absorbed lines start no block of their own (no raw block, no list, no
+   * paragraph). Fences and nested quotes as the quote's last inner token void
+   * the continuation (marked's tokenizer breaks there), as does an indented
+   * code token.
+   */
+  bqLazy: boolean;
+  /**
+   * A fence opened inside a blockquote (the char-level scanner only sees the
+   * `>`-prefixed lines, never the fence itself). While set, `>`-prefixed
+   * lines are fence body (no paragraph state is derived from them), and the
+   * first non-blockquote line ends the blockquote with no paragraph left
+   * open — a fence cannot be lazily continued the way a paragraph can.
+   */
+  bqFence: { char: string; len: number } | null;
 }
 
 /**
@@ -138,6 +184,12 @@ export interface ListContainer {
    * it (marked's `blankLine` flag).
    */
   blank: boolean;
+  /**
+   * The item's first line was blank and no line has been consumed into it
+   * since (marked's `R` at its pre-loop check): an immediately following
+   * blank line ends the item there instead of only blank-tailing it.
+   */
+  empty: boolean;
   /**
    * The previous content line's slice matches one of marked's
    * lazy-continuation vetoes: indented code, or a fence/heading/thematic-
