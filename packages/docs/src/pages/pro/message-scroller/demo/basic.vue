@@ -1,14 +1,16 @@
 <docs lang="zh-CN">
-基础用法：视口承载会话内容，流式推入时自动贴底；点击「发送」可以看到内容逐字流入。
+基础用法：视口承载会话内容，流式推入时自动贴底，右侧导轨随消息增长同步生成刻度；点击「发送」可以看到内容逐字流入。
 </docs>
 
 <docs lang="en-US">
-Basic usage: the viewport hosts the transcript and pins itself to the bottom while content streams in. Click "Send" to see a reply stream in.
+Basic usage: the viewport hosts the transcript and pins itself to the bottom while content streams in, and the rail grows with every new message. Click "Send" to see a reply stream in.
 </docs>
 
 <script setup lang="ts">
+import type { MessageScrollerItem } from "@antdv-next/x-pro";
+
 import { MessageScroller } from "@antdv-next/x-pro";
-import { ref } from "vue";
+import { computed, ref } from "vue";
 
 interface DemoMessage {
   id: string;
@@ -60,6 +62,13 @@ let seed = messages.value.length;
 let replyIndex = 0;
 let timer: number | undefined;
 
+const items = computed<MessageScrollerItem[]>(() =>
+  messages.value.map(message => ({
+    id: message.id,
+    title: message.content || "…",
+  })),
+);
+
 function send() {
   if (timer !== undefined) {
     window.clearInterval(timer);
@@ -109,6 +118,8 @@ function send() {
     </a-flex>
 
     <MessageScroller
+      navigation="rail"
+      :items="items"
       :busy="busy"
       back-to-bottom
       :style="{

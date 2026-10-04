@@ -1,12 +1,14 @@
 <docs lang="zh-CN">
-跟随状态：通过 `v-model:follow` 受控，宿主可据此构建「回到最新」提示或未读计数；`followChange` 实时上报状态变化。
+跟随状态：通过 `v-model:follow` 受控，宿主可据此构建「回到最新」提示或未读计数；`followChange` 实时上报状态变化，导轨刻度同步反映阅读位置。
 </docs>
 
 <docs lang="en-US">
-Following state: control it through `v-model:follow` and build "back to latest" hints or unread counters on top of it. `followChange` reports every transition.
+Following state: control it through `v-model:follow` and build "back to latest" hints or unread counters on top of it. `followChange` reports every transition and the rail reflects the reading position.
 </docs>
 
 <script setup lang="ts">
+import type { MessageScrollerItem } from "@antdv-next/x-pro";
+
 import { MessageScroller } from "@antdv-next/x-pro";
 import { ref } from "vue";
 
@@ -16,6 +18,12 @@ const messages = Array.from({ length: 14 }, (_, index) => ({
   id: `message-${index + 1}`,
   from: (index % 2 === 0 ? "user" : "assistant") as "user" | "assistant",
   content: `Turn ${index + 1}: scroll away from the bottom and the viewport stops following this transcript.`,
+}));
+
+const items: MessageScrollerItem[] = messages.map((message, index) => ({
+  id: message.id,
+  title: `Turn ${index + 1}`,
+  description: message.content,
 }));
 
 function handleFollowChange(value: boolean) {
@@ -40,6 +48,8 @@ function handleFollowChange(value: boolean) {
 
     <MessageScroller
       v-model:follow="following"
+      navigation="rail"
+      :items="items"
       back-to-bottom
       :follow-threshold="56"
       :style="{
