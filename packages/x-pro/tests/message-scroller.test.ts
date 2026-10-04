@@ -338,6 +338,51 @@ describe("MessageScroller", () => {
     expect(lastPayload(wrapper, "followChange")).toEqual([true]);
   });
 
+  it("holds the reader detach until the viewport moves back towards the live edge", async () => {
+    const wrapper = mountScroller({ followThreshold: 80 });
+    const viewport = find(wrapper.element, VIEWPORT_SELECTOR);
+    mockMetrics(viewport, {
+      scrollTop: 600,
+      scrollHeight: 1000,
+      clientHeight: 400,
+    });
+
+    await wrapper.find(VIEWPORT_SELECTOR).trigger("wheel", { deltaY: -1 });
+    expect(lastPayload(wrapper, "followChange")).toEqual([false]);
+
+    // 触控板手势里滚动事件与滚轮事件交替到达，此时位置仍在阈值带内。
+    mockMetrics(viewport, { scrollTop: 560 });
+    await wrapper.find(VIEWPORT_SELECTOR).trigger("scroll");
+    mockMetrics(viewport, { scrollTop: 520 });
+    await wrapper.find(VIEWPORT_SELECTOR).trigger("scroll");
+
+    expect(wrapper.emitted("followChange")).toEqual([[false]]);
+
+    // 视口重新朝最新方向移动，位置判定立刻接管。
+    mockMetrics(viewport, { scrollTop: 580 });
+    await wrapper.find(VIEWPORT_SELECTOR).trigger("scroll");
+
+    expect(lastPayload(wrapper, "followChange")).toEqual([true]);
+  });
+
+  it("emits a single transition while the reader scrolls away from the live edge", async () => {
+    const wrapper = mountScroller();
+    const viewport = find(wrapper.element, VIEWPORT_SELECTOR);
+    mockMetrics(viewport, {
+      scrollTop: 600,
+      scrollHeight: 1000,
+      clientHeight: 400,
+    });
+
+    for (let distance = 4; distance <= 44; distance += 4) {
+      await wrapper.find(VIEWPORT_SELECTOR).trigger("wheel", { deltaY: -20 });
+      mockMetrics(viewport, { scrollTop: 600 - distance });
+      await wrapper.find(VIEWPORT_SELECTOR).trigger("scroll");
+    }
+
+    expect(wrapper.emitted("followChange")).toEqual([[false]]);
+  });
+
   it("stays detached after a controlled follow prop turns false", async () => {
     const dispose = installResizeObserverMock();
 
@@ -598,6 +643,35 @@ describe("MessageScroller", () => {
 
       expect(writes).toEqual([300 - (400 - 40) / 2]);
       expect(wrapper.emitted("followChange")).toBeUndefined();
+    } finally {
+      dispose();
+    }
+  });
+
+  it("keeps the clicked rail item active while its scroll settles", async () => {
+    const dispose = installResizeObserverMock();
+
+    try {
+      const wrapper = mountScroller({ navigation: "rail", follow: false });
+      const { viewport } = setupOverflowingRail(wrapper);
+      await flushFrames();
+
+      // 视口停在顶部时点击第二项：居中目标被夹回 0，位置判定会把激活项算回首项。
+      mockMetrics(viewport, { scrollTop: 0 });
+      const target = find(wrapper.element, '[data-message-id="message-2"]');
+      mockRect(viewport, { top: 0, height: 400 });
+      mockRect(target, { top: 100, height: 40 });
+      await wrapper.find(VIEWPORT_SELECTOR).trigger("scroll");
+      expect(railItem(wrapper, 0).attributes("data-active")).toBeDefined();
+
+      await railItem(wrapper, 1).trigger("click");
+      expect(railItem(wrapper, 1).attributes("data-active")).toBeDefined();
+      expect(railItem(wrapper, 0).attributes("data-active")).toBeUndefined();
+
+      // 落位窗口内视口仍在发出滚动事件，激活项必须留在显式选中的刻度上。
+      await wrapper.find(VIEWPORT_SELECTOR).trigger("scroll");
+      expect(railItem(wrapper, 1).attributes("data-active")).toBeDefined();
+      expect(railItem(wrapper, 0).attributes("data-active")).toBeUndefined();
     } finally {
       dispose();
     }

@@ -27,9 +27,12 @@ packageName: x-pro
 
 - The viewport is a native `overflow-y: auto` container, so `wheel`, `touchstart`, arrow keys, and scroll events all feed the same state machine.
 - Being within `followThreshold` of the bottom re-enters following; moving past it leaves following.
+- A reader gesture that leaves the live edge — an upward wheel or `ArrowUp` / `PageUp` / `Home` — detaches at once, without waiting for the scroll event, and the position check only takes over again once the viewport is observed moving back towards the bottom. That is what keeps one gesture from entering and leaving following over and over, which would make the back-to-latest button blink.
 - **While detached, growing streamed content never moves the viewport**, so reading history is never interrupted.
 - Dragging the native scrollbar, touch inertia, and keyboard scrolling are all recognized because they surface as the same scroll events.
 - State changes are reported through the `followChange` event and the `v-model:follow` binding.
+
+Following and the rail are two independent capabilities of the same viewport and are best enabled together, as in the basic demo. Following on its own is equally valid: the viewport still pins to the bottom, and `backToBottom` becomes the only way back to the live edge.
 
 ## Message Navigation Rail {#navigation-rail}
 
@@ -40,7 +43,12 @@ With `navigation="rail"`:
 - The preview card is a singleton that slides between active items with `translateY` instead of duplicating DOM per message.
 - Active item priority is `hovered ?? pinned ?? focused ?? active`: ticks follow that priority, while the preview card appears only for hover, touch pin, or keyboard focus.
 - A touch tap pins the preview until the reader taps outside the rail.
+- Clicking any tick but the last one detaches follow and centers that entry; clicking the last one is equivalent to going back to latest.
+- The clicked tick becomes the active entry immediately and holds it until that smooth scroll lands: near either end the centering target is clamped to the boundary, so the entry derived from scroll position is not the one the reader picked.
+- The rail is rendered only when there are at least two messages and the content overflows the viewport, so a short transcript never grows an empty rail.
 - While the rail is enabled, the viewport hides its native scrollbar and reserves space on the inline end; tick height shrinks automatically when the ticks outgrow the viewport.
+
+`itemSelector` may point at any node level: one tick per message is the default shape, and one tick per turn or per tool call works just as well as long as the node carries the matching `id` from `items`.
 
 ## API {#api}
 

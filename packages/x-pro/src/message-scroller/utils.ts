@@ -2,6 +2,14 @@ export const DEFAULT_ITEM_SELECTOR = "[data-message-id]";
 export const DEFAULT_FOLLOW_THRESHOLD = 56;
 export const DEFAULT_SMOOTH = true;
 
+/**
+ * 平滑滚动的落位窗口，单位毫秒。
+ *
+ * 程序化滚动期间视口会连续发出滚动事件：贴底跟随用它屏蔽自身触发的事件，导轨用它把显式
+ * 选中的刻度钉住——两者等的是同一件事，即这次平滑滚动落位。
+ */
+export const PROGRAMMATIC_SCROLL_WINDOW = 320;
+
 const PREVIEW_TITLE_LENGTH = 56;
 const PREVIEW_DESCRIPTION_LENGTH = 88;
 /** 邻近衰减：Δi = 0 → 1，Δi = 1 → 0.68，Δi = 2 → 0.44，其余 0.25。 */
