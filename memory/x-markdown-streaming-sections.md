@@ -199,6 +199,34 @@ Found while reviewing the entry above; same date, supersedes its trigger.
   `definitionIndentedInList` (per-character whole-vs-sectioned DOM
   equivalence).
 
+### 2026-10-04: the raw-container veto must not pair a line-leading backtick run
+
+Found by the 1000-document differential fuzz (1 failure); unrelated to the
+definition work — that input contains no `]:`, so `trackDefinition` is inert.
+
+- **Repro:** `    ```\n<pre>\n    ```\n<pre>\n```sh\n  ```\n</pre>\n# B\n~~~`.
+- **Ground truth:** the browser keeps the outer `<pre>` open — line 4 opens a
+  second `<pre>` and line 7's `</pre>` closes only that inner one — so the
+  whole-document render nests `<h1>B</h1>` inside the still-open `<pre>`, while
+  a split before `# B` puts it outside. A boundary there is a wrong boundary.
+- **Our behaviour (before this fix):** `hasUnclosedRawTags`
+  (`core/detectUnclosedComponentTags.ts`) resolves backtick runs as inline code
+  spans with lookahead. The two `    ``` ` lines are an _indented code block_,
+  not a paragraph's span, but the span resolution paired them across the
+  `<pre>` between them and skipped it: only one `<pre>` was counted, the
+  `</pre>` emptied the stack, and the veto passed. The tracker's raw-block
+  state is single-level, so it cannot see the nesting either — this veto is the
+  only guard, and it failed.
+- **Decision:** a run of three or more backticks that _begins its line_ is
+  block-level code, never an inline-span opener, so only the run itself is
+  skipped and the lines after it stay visible to the tag scan. The change is
+  one-directional — it can only make more text visible, so it can only add
+  vetoes (refusals), never remove them. Cross-line spans inside a paragraph
+  still pair, as the existing code-span test requires.
+- **Covering test:** `hasUnclosedRawTags` "does not pair a line-leading
+  backtick run into a span across blocks" and the boundary guard "does not
+  split out of a nested raw container the tag scan must see".
+
 ## How it is verified
 
 - `packages/x-markdown/src/XMarkdown/__tests__/incremental.test.ts`: per

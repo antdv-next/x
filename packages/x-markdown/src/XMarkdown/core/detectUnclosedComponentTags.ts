@@ -321,6 +321,19 @@ const scanRawTagRange = (text: string, openStack: string[]): boolean => {
       // this guard and break the section-split DOM.
       let runLen = 1;
       while (text[pos + runLen] === "`") runLen += 1;
+      // A run of three or more backticks that *begins its line* is block-level
+      // code (an indented code block, or a fence the line classifier did not
+      // treat as one), never the opener of a paragraph's inline span. Pairing
+      // it with a later run would skip every line between and hide a real tag —
+      // e.g. `    ```\n<pre>\n    ``` ` would swallow the `<pre>` and let an
+      // unclosed container slip past this guard. Skipping only the run is the
+      // safe direction: it can only make more text visible to the tag scan.
+      let lineStart = pos;
+      while (lineStart > 0 && text[lineStart - 1] !== "\n") lineStart -= 1;
+      if (runLen >= 3 && /^[ \t]*$/.test(text.slice(lineStart, pos))) {
+        pos += runLen;
+        continue;
+      }
       const close = findClosingBacktickRun(text, pos + runLen, runLen);
       pos = close === -1 ? pos + runLen : close + runLen;
       continue;

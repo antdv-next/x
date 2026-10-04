@@ -1284,6 +1284,18 @@ describe("streaming.incremental", () => {
       ).toHaveLength(2);
     });
 
+    it("does not split out of a nested raw container the tag scan must see", async () => {
+      // Two <pre> opens with one </pre>: marked ends its HTML block at the
+      // </pre> line, but the browser keeps the outer <pre> open and nests the
+      // heading into it. The veto must count the second <pre> — a line-leading
+      // ``` run paired into an inline span would hide it.
+      expect(
+        await sectionsFor(
+          "    ```\n<pre>\n    ```\n<pre>\n```sh\n  ```\n</pre>\n# B\n~~~",
+        ),
+      ).toBeNull();
+    });
+
     it("does not split on # lines inside fenced code, indented fences included", async () => {
       expect(await sectionsFor("# A\n\n```\n\n# fenced\n\n```\n\n")).toBeNull();
       expect(await sectionsFor("# A\n\n~~~\n\n# fenced\n\n~~~\n\n")).toBeNull();
@@ -2179,5 +2191,19 @@ describe("hasUnclosedRawTags", () => {
     // A run that does have an equal-length closer hides only what is between.
     expect(hasUnclosedRawTags("para ``` <div> ``` end")).toBe(false);
     expect(hasUnclosedRawTags("para ``` <div> `` end")).toBe(true);
+  });
+
+  it("does not pair a line-leading backtick run into a span across blocks", () => {
+    // `    ``` ` is an indented code block, not the opener of a paragraph's
+    // inline span: pairing the two runs would skip the lines between and hide
+    // the <pre> and the fact that a second <pre> is never closed.
+    expect(
+      hasUnclosedRawTags(
+        "    ```\n<pre>\n    ```\n<pre>\n```sh\n  ```\n</pre>\n",
+      ),
+    ).toBe(true);
+    // A run that merely *starts* a paragraph line still pairs, as before — the
+    // rule only rejects a run that begins its line with three or more ticks.
+    expect(hasUnclosedRawTags("para\n`<pre>`\n")).toBe(false);
   });
 });
