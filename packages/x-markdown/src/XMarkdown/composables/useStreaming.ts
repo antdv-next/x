@@ -450,12 +450,16 @@ const startsNewTopLevelBlock = (
 ): boolean => lex(prefix + PROBE_HEADING).length > lex(prefix).length;
 
 /**
- * How many lines after its `[label]:` line a definition may still complete.
- * CommonMark allows the destination and the title each to start on the next
- * line, so three lines is the most one definition spans; the window is only a
- * bound on re-probing, never a correctness limit (a definition that somehow
- * needed longer would simply be missed, and a missed definition is a lost
- * split, not a wrong boundary).
+ * How many lines after its last `]:` line the tracker keeps asking marked
+ * whether a definition has appeared. This is a *correctness* bound, not merely
+ * a bound on re-probing: a definition the tracker misses is never refused, so a
+ * heading before it can still be split away, and the earlier section then fails
+ * to resolve a reference the whole-document render resolves — a wrong boundary,
+ * not a lost split. CommonMark allows a label to contain one line ending and
+ * the destination and title each to start on the following line, so a
+ * definition completes within three lines of its last `]:`; a 400k-case brute
+ * force of multi-line definition shapes against marked found a worst case of
+ * one, so three leaves a margin.
  */
 const DEFINITION_LOOKAHEAD = 3;
 
