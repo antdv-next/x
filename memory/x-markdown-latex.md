@@ -46,7 +46,7 @@ formula").
   content, "content without LaTeX", `throwOnError: true`. Verify each on the
   next sync instead of assuming coverage.
 - Only upstream commits up to `8b76d6a` are visible in the local clone
-  (`.sync-upstream.json` cursor is `7bd48aa`, tag 2.9.0). Anything newer about
+  (`.sync-upstream.json` cursor is `8b76d6a`, tag 2.9.0). Anything newer about
   `$` / LaTeX needs a fetch before it can be compared.
 
 ## Do not
