@@ -2,12 +2,12 @@ import type { ComputedRef, Ref, ShallowRef } from "vue";
 
 import { onBeforeUnmount, onMounted, watch } from "vue";
 
-import { prefersReducedMotion, resolveItemId } from "../utils";
+import {
+  prefersReducedMotion,
+  PROGRAMMATIC_SCROLL_WINDOW,
+  resolveItemId,
+} from "../utils";
 
-/**
- * 平滑滚动期间忽略自身触发的滚动事件所需的窗口长度，单位毫秒。
- */
-const PROGRAMMATIC_SCROLL_WINDOW = 320;
 /** 会让视口离开底部的内容区手势与按键。 */
 const DETACH_KEYS = ["ArrowUp", "PageUp", "Home"];
 
@@ -39,6 +39,15 @@ export function useMessageScrollerFollow(
 
   let programmatic = false;
   let programmaticTimer: number | undefined;
+
+  /**
+   * 意图脱离之后，位置判定必须先观察到视口朝最新方向回移，才有资格按阈值恢复跟随。
+   *
+   * 一次触控板手势里滚轮事件与滚动事件交替到达：意图事件先把状态切成脱离，紧随其后的滚动
+   * 事件仍落在阈值带内。若当场按位置恢复跟随，按钮与未读计数会在同一手势里反复进出。
+   */
+  let detachIntent = false;
+  let lastDistance: number | undefined;
 
   function clearProgrammaticTimer() {
     if (programmaticTimer !== undefined) {
@@ -148,15 +157,43 @@ export function useMessageScrollerFollow(
     }
   }
 
+  /**
+   * 读者主动脱离：滚轮上滑与脱离按键共用同一条路径。
+   *
+   * 进入脱离时记下位置基准，后续滚动事件必须越过它才算往回走；同一次手势里连续的滚轮事件
+   * 不再重复读取布局，方向由读者自己的滚动事件维持。
+   */
+  function detachByIntent() {
+    releaseLiveEdge();
+    if (!detachIntent) {
+      const element = viewport.value;
+      detachIntent = true;
+      lastDistance = element
+        ? element.scrollHeight - element.scrollTop - element.clientHeight
+        : undefined;
+    }
+
+    setFollowing(false);
+  }
+
   function syncFollowing() {
     const element = viewport.value;
     if (!element) {
       return;
     }
 
-    const distanceFromEnd =
+    const distance =
       element.scrollHeight - element.scrollTop - element.clientHeight;
-    setFollowing(distanceFromEnd <= threshold.value);
+    const approaching = lastDistance !== undefined && distance < lastDistance;
+    lastDistance = distance;
+
+    if (distance > threshold.value || (detachIntent && !approaching)) {
+      setFollowing(false);
+      return;
+    }
+
+    detachIntent = false;
+    setFollowing(true);
   }
 
   function handleScroll() {
@@ -171,17 +208,21 @@ export function useMessageScrollerFollow(
    * 滚轮向上即认为读者要回看历史，先发制人脱离跟随，无需等待滚动事件。
    */
   function handleWheel(event: WheelEvent) {
-    releaseLiveEdge();
     if (event.deltaY < 0) {
-      setFollowing(false);
+      detachByIntent();
+      return;
     }
+
+    releaseLiveEdge();
   }
 
   function handleKeyDown(event: KeyboardEvent) {
     if (DETACH_KEYS.includes(event.key)) {
-      releaseLiveEdge();
-      setFollowing(false);
+      detachByIntent();
+      return;
     }
+
+    releaseLiveEdge();
   }
 
   /**
@@ -228,7 +269,12 @@ export function useMessageScrollerFollow(
   watch(following, value => {
     if (!value) {
       releaseLiveEdge();
+      return;
     }
+
+    // 回到跟随后意图基准作废：下一次脱离由新的手势或新的位置重新判定。
+    detachIntent = false;
+    lastDistance = undefined;
   });
 
   onBeforeUnmount(() => {

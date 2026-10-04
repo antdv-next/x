@@ -16,7 +16,11 @@ import {
   MIN_RAIL_ITEM_HEIGHT,
   RAIL_INSET,
 } from "../style/token";
-import { resolveElementPreview, resolveItemId } from "../utils";
+import {
+  PROGRAMMATIC_SCROLL_WINDOW,
+  resolveElementPreview,
+  resolveItemId,
+} from "../utils";
 
 export interface MessageScrollerRailEntry {
   id: string;
@@ -67,6 +71,11 @@ export function useMessageScrollerRail(options: MessageScrollerRailOptions) {
   const focusedId = ref<string>();
   const overflowing = ref(false);
   const viewportHeight = ref(0);
+
+  /**
+   * 显式选中的刻度的占位窗口：点击已经发出平滑滚动，位置判定要等它落位再接管。
+   */
+  let selectionLockUntil = 0;
 
   /**
    * 预览卡片的激活优先级：`hovered ?? pinned ?? focused`。
@@ -137,6 +146,8 @@ export function useMessageScrollerRail(options: MessageScrollerRailOptions) {
 
   /**
    * 当前项判定：贴近首尾时直接取首尾，否则取视口中心最近的消息。
+   *
+   * 显式选中后的落位窗口内不改写激活项：此时滚动位置由点击发出，位置判定尚未代表读者意图。
    */
   function updateActive() {
     const viewportElement = viewport.value;
@@ -145,6 +156,10 @@ export function useMessageScrollerRail(options: MessageScrollerRailOptions) {
     const last = list[list.length - 1];
     if (!viewportElement || !first || !last) {
       activeId.value = "";
+      return;
+    }
+
+    if (performance.now() < selectionLockUntil) {
       return;
     }
 
@@ -239,7 +254,15 @@ export function useMessageScrollerRail(options: MessageScrollerRailOptions) {
     hoveredId.value = id;
   }
 
+  /**
+   * 点击刻度：先把激活项切到目标并锁住位置判定，直到这次平滑滚动落位。
+   *
+   * 视口贴近首尾时居中目标会被夹回边界，纯位置判定会把激活项算回首项；显式选中优先。
+   */
   function handleItemClick(id: string) {
+    selectionLockUntil = performance.now() + PROGRAMMATIC_SCROLL_WINDOW;
+    activeId.value = id;
+
     if (activePointerType !== undefined && activePointerType !== "mouse") {
       pinnedId.value = id;
     }
