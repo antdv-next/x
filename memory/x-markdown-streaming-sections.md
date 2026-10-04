@@ -172,6 +172,33 @@ ignored).
   document has a definition" and corpus `definitionAfterUnclosedMath`
   (per-character whole-vs-sectioned DOM equivalence).
 
+### 2026-10-04: the definition trigger must be a sound over-approximation
+
+Found while reviewing the entry above; same date, supersedes its trigger.
+
+- **Repro:** `# A\n\nsee [a]\n\n# B\n\n- item\n\n    [a]: /x\n` (also with a
+  `1.` marker and five spaces, or a tab instead of four spaces).
+- **Ground truth:** marked collects the definition — the label line is
+  indented into the list item's content, not four spaces of code — so
+  `see [a]` resolves in the whole-document render.
+- **Our behaviour (before this fix):** the marked probe was gated on the old
+  `DEFINITION_LINE = /^ {0,3}.../` test, which only allows the leading
+  whitespace of a _top-level_ definition. A definition indented past three
+  columns inside a list item never triggered the probe, so the definition was
+  missed and the sectioned render emitted `[a]` where the whole render emitted
+  `<a href="/x">a</a>` — a wrong boundary. (Upstream has the same pattern, and
+  an earlier revision used `DEFINITION_LINE` as the _decider_, so this hole is
+  older than the marked probe.)
+- **Decision:** the trigger is a _sound over-approximation_ whose only job is
+  to keep the `lex` off the per-line path — the label terminator `]:`, which
+  every definition's label line contains. A false positive costs one marked
+  `lex`; a false negative would be a wrong boundary, so it must not be made
+  more specific than that. The decider stays marked.
+- **Covering test:** guard "asks marked, not the line position, whether the
+  document has a definition" (indented cases) and corpus
+  `definitionIndentedInList` (per-character whole-vs-sectioned DOM
+  equivalence).
+
 ## How it is verified
 
 - `packages/x-markdown/src/XMarkdown/__tests__/incremental.test.ts`: per

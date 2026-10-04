@@ -319,13 +319,17 @@ export const DEFAULT_MIN_SECTION_CHARS = 200;
 // Section boundaries are placed before column-0 ATX headings only (see
 // HEADING_LINE above). CommonMark also allows a heading to be indented by
 // one to three spaces; those are rare in generated text and simply not split on.
-// Link reference definition or footnote definition. Either can be referenced
-// from any other block of the document, so once one is seen the document is
-// no longer splittable. Definitions may also live inside blockquotes and list
-// items (`> [a]: /x`, `- [a]: /x`) and still apply document-wide, so leading
-// quote/list markers are skipped before the `[label]:` test.
-const DEFINITION_LINE =
-  /^ {0,3}(?:(?:>[ \t]*)|(?:[-+*]|\d{1,9}[.)])[ \t]+)*\[[^\]]*\]:/;
+/*
+ * Sound, deliberately loose trigger for "this line may start a link reference /
+ * footnote definition". It only decides whether to ask marked
+ * (`hasDefinition`); the answer is marked's. It must have no false negatives —
+ * a definition's label line always contains `]:`, whereas the stricter
+ * `^ {0,3}...` pattern this replaced misses a definition indented into a list
+ * item's content (four-plus spaces, or a tab, after the marker) — so the
+ * trigger is just the label terminator. A false positive costs one `lex`; a
+ * false negative would be a wrong boundary.
+ */
+const DEFINITION_TRIGGER = /\]:/;
 /* ------------ Section boundaries ------------ */
 
 /*
@@ -497,15 +501,15 @@ const trackDefinition = (
   const raw = text.slice(lineStart, lineEnd);
   const line = raw.endsWith("\r") ? raw.slice(0, -1) : raw;
   const blank = line.trim() === "";
-  const definitionShaped = DEFINITION_LINE.test(line);
-  const watch = definitionShaped || state.definitionLookahead > 0;
+  const definitionTriggered = DEFINITION_TRIGGER.test(line);
+  const watch = definitionTriggered || state.definitionLookahead > 0;
   if (complete) {
     // A definition never spans a blank line, so a blank ends the window; a
-    // definition-shaped line (re)arms it and any other watched line spends one
-    // step of it.
+    // triggered line (re)arms it and any other watched line spends one step of
+    // it.
     state.definitionLookahead = blank
       ? 0
-      : definitionShaped
+      : definitionTriggered
         ? DEFINITION_LOOKAHEAD
         : Math.max(0, state.definitionLookahead - 1);
   }

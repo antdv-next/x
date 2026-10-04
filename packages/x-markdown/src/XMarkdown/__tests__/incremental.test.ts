@@ -402,6 +402,22 @@ const corpora: Record<string, string> = {
     "[a]: /x",
   ].join("\n"),
 
+  // A definition applies document-wide even when its label line is indented
+  // into a list item's content — four-plus spaces (or a tab) after the marker,
+  // which a "≤3 leading spaces" trigger would miss even though marked collects
+  // it. The reference in the first section must not be split away from it.
+  definitionIndentedInList: [
+    "# A",
+    "",
+    "see [a]",
+    "",
+    "# B",
+    "",
+    "- item",
+    "",
+    "    [a]: /x",
+  ].join("\n"),
+
   // marked counts a tab as a single column in the marker gap, so the item's
   // content indent is 2 and the fence at two spaces is contained.
   tabAfterMarker: [
@@ -1470,6 +1486,18 @@ describe("streaming.incremental", () => {
           "# A\n\npara\n\n# B\n\n<!--\n[a]: /x\n-->\n\n# C\n\ntail\n",
         ),
       ).toHaveLength(3);
+      // The trigger must have no false negatives: a definition whose label
+      // line is indented into a list item's content (four-plus spaces, or a
+      // tab) is still document-global, and marked collects it.
+      expect(
+        await sectionsFor("# A\n\nsee [a]\n\n# B\n\n- item\n\n    [a]: /x\n"),
+      ).toBeNull();
+      expect(
+        await sectionsFor("# A\n\nsee [a]\n\n# B\n\n1. item\n\n     [a]: /x\n"),
+      ).toBeNull();
+      expect(
+        await sectionsFor("# A\n\nsee [a]\n\n# B\n\n- item\n\n\t[a]: /x\n"),
+      ).toBeNull();
     });
 
     it("drops all boundaries once a reference or footnote definition appears", async () => {
