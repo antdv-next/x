@@ -46,7 +46,7 @@ rules, marker widths, tab gaps. It reached ~950 extra lines of interacting
 state, and every review round found another input where the model and marked
 disagreed. It also meant fixing one case routinely broke another.
 
-That model was **deleted** on 2026-10-03. `startsNewTopLevelBlock` now lexes
+That model was **deleted** on 2026-10-03. `probeBoundary` now lexes
 the current section with the _renderer's own_ marked instance
 (`Parser.lex`, wired in `index.vue`) and answers the only question that
 matters: does `prefix + "# x\n"` parse into strictly more top-level blocks
@@ -60,7 +60,7 @@ shape, plus:
 
 | #   | Divergence                                                                                                                                                                                                                   | Why                                                                                                                                                                                         |
 | --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | Boundaries are verified by lexing the section with the renderer's marked (`startsNewTopLevelBlock` + `openBlock` memo + `Parser.lex`)                                                                                        | Upstream's char-level fence scanner is blind to containers, so it splits wrongly when a fence is reopened at top level after a list item ends (upstream bug #1 below)                       |
+| 1   | Boundaries are verified by lexing the section with the renderer's marked (`probeBoundary` + `openBlock` memo + `Parser.lex`)                                                                                                 | Upstream's char-level fence scanner is blind to containers, so it splits wrongly when a fence is reopened at top level after a list item ends (upstream bug #1 below)                       |
 | 2   | No `HTML_BLOCK_OPEN` catch-all; HTML blocks are decided by marked                                                                                                                                                            | Upstream's "any `<x` line opens an HTML block until a blank line" is a superset approximation that also _misses_ correct splits (e.g. a PI that closes at `?>` before any blank line)       |
 | 3   | Raw-block set extended with `<?` (PI), `<!` (declaration) and `<![CDATA[`                                                                                                                                                    | Their raw text is re-interpreted by the browser/DOMPurify - `<?php` opens a bogus comment that can swallow a following `<h1>` open tag (upstream bug #2)                                    |
 | 4   | `$$` math: opener must be exactly `$`/`$$` (no trailing whitespace); closer must sit at column 0 with the same run length, only after a non-empty body                                                                       | Matches the bundled LaTeX plugin's rule `^(\${1,2})\n` / `\n\1`; upstream uses `\s*$` and `line.trim() === close`, which close on indented / longer / trailing-space runs (upstream bug #3) |
@@ -68,6 +68,7 @@ shape, plus:
 | 6   | `hasUnclosedRawTags` veto (upstream only has `detectUnclosedComponentTags`)                                                                                                                                                  | An unclosed `<div>` is auto-closed by DOMPurify at the section end, which changes the DOM shape                                                                                             |
 | 7   | The tracker state machine runs even when `incremental` is off (`record` gates only the recording); upstream skips it entirely                                                                                                | Keeps definitions / raw-block state / line starts correct when `incremental` is switched on mid-stream                                                                                      |
 | 8   | One trailing `\r` is stripped before the line classifiers                                                                                                                                                                    | CRLF documents                                                                                                                                                                              |
+| 9   | Definitions are decided from marked's `links` map (sticky `]:` gate + a whole-text probe on every pass that has recorded a boundary)                                                                                         | Upstream's `DEFINITION_LINE` latch misses a definition indented into a list item and stops all reuse for the rest of the stream (see the follow-up entries)                                 |
 
 ### Upstream bugs we deliberately fix
 
@@ -95,6 +96,23 @@ covering tests fail on purpose.
   document-wide state. If this bites, extend the same way math is handled.
 - Refusals are memoised for up to `OPEN_BLOCK_MEMO_CHARS` (4096) bytes, so a
   split may be lost right after an open block closes. Losing a split is safe.
+  The memo is dropped by the lines that can end the block that caused it (a
+  blank line, a line containing `</`) and by a change in the fence scanner's
+  verdict; only a refusal caused by an unclosed _fenced code block_ survives
+  blank lines (see the memo entry below).
+- A raw-opener-shaped line (`$$`, `$`, `\[`, `<pre|script|style|textarea`,
+  `<?`, `<!`, `<!--`) outside an open raw block costs two whole-prefix lexes
+  (`lineIsCodeContent`), because the char-level fence scanner cannot see a
+  fence nested inside a list item and a mis-detected fence there would hide a
+  real `$$` block. A document whose code body is full of such lines therefore
+  pays O(prefix) per line, with `incremental` off as well. The fix is to derive
+  "is this line code body" from one token walk of the current prefix (marked's
+  tokens carry `raw`), not to relax the question.
+- The definition probe costs one whole-text lex per pass that has recorded a
+  boundary, while the `]:` gate is armed and no definition has been found yet
+  (a document with `]:` lines but no real definition, streamed in many chunks,
+  is the worst case). It cannot be bounded by a line count — see the entry
+  below — and a real definition latches `noSplit`, after which it is free.
 
 ### Review follow-ups
 
@@ -243,6 +261,141 @@ definition work — that input contains no `]:`, so `trackDefinition` is inert.
 - **Covering test:** `hasUnclosedRawTags` "does not pair a line-leading
   backtick run into a span across blocks" and the boundary guard "does not
   split out of a nested raw container the tag scan must see".
+
+#### 2026-10-04: the definition probe must not be bounded by a line count
+
+Supersedes the `definitionLookahead` window (3 lines, cleared by a blank line)
+in "the definition decision is asked of marked, not of the line's position",
+and that entry's premise that a definition never spans a blank line.
+
+- **Repro:** `# A\n\nsee [a]\n\n# B\n\n[a]:\n/url "t1\nt2\nt3\nt4\nt5"\n`, and
+  the same with a blank line inside the title
+  (`'# A\n\nsee [a]\n\n# B\n\n[a]:\n/url "t1\n\nt2"\n'`).
+- **Ground truth:** marked (16.4.2, verified) accepts a link-reference title
+  spanning any number of lines — blank lines included — and only adds the
+  definition to its `links` map once the closing quote has arrived. The
+  definition completes on a line the window had already left.
+- **Upstream behaviour:** upstream latches on `DEFINITION_LINE` for the rest of
+  the stream (sound but lossy: any `]:` line kills incremental reuse).
+- **Our behaviour (before this fix):** the window expired before the title
+  closed, `noSplit` was never set, and the boundary before `# B` survived:
+  section 1 rendered `see [a]` where the whole render emitted a link — a wrong
+  boundary, and a regression against upstream's latch.
+- **Decision:** no window at all. The sticky `]:` gate (sound
+  over-approximation, entry above) decides only whether to ask; the question is
+  asked of marked on the whole accumulated text, once per pass, and `noSplit`
+  discards any offsets already recorded, so a late yes still collapses the
+  sections. The probe is deferred further, to passes that have recorded a
+  boundary: with no boundary `sections` is null whatever the answer, and by the
+  end of the pass the offsets include every boundary recorded in it, so a
+  boundary that is about to be used was always covered by a probe on the text
+  that contains it.
+- **Covering test:** guard "keeps asking marked while a definition can still
+  complete"; its last assertion pins that a title that never closes is _not_ a
+  definition, so the boundaries stay.
+
+#### 2026-10-04: the raw-container veto's backtick guard is not one-directional
+
+Supersedes "the raw-container veto must not pair a line-leading backtick run",
+whose claim "it can only make more text visible, so it can only add vetoes,
+never remove them" is false: the guard skipped text that upstream's scanner
+still scanned, so on `<div>`-shaped inputs upstream vetoed and the branch split.
+
+- **Repro:** `hasUnclosedRawTags("<div>\n\n    ```\n    </div>\n    ```\n")` —
+  upstream `true`, branch `false` (a branch regression); and
+  `hasUnclosedRawTags("```foo``` <div> ```\n")` — upstream `false`, branch
+  `true` before the line classifier learned the info-string rule. In both, the
+  whole-document render nests a later `<h1>` inside the still-open `<div>`, so
+  a boundary there changes the DOM.
+- **Ground truth (all verified against marked, not from memory):** a run of
+  three or more backticks indented four columns is an _indented code block_,
+  whose body the browser never sees; a line-leading backtick run whose info
+  string contains a backtick is not a fence at all (` ```foo``` ` is a
+  paragraph with an inline code span, and the `<div>` after it is real HTML); a
+  line beginning with a type-6 tag interrupts a paragraph, so a paragraph's
+  opening backtick run cannot pair with a backtick after such a tag; the
+  self-closing slash is ignored on non-void HTML elements, so `<div/>` opens a
+  `<div>` nothing closes; and an uppercase-spelled tag is deleted wholesale by
+  `protectCustomTags` before the renderer parses.
+- **Our behaviour (before this fix):** the guard skipped every line-leading
+  run — including the second of two runs on one line, making the _third_ pair —
+  so the veto missed containers, and the self-closing/uppercase shapes were not
+  containers at all. The self-closing and type-6-interruption holes are
+  pre-existing (upstream has them); the indented-run and info-string holes came
+  with this branch.
+- **Decision:** classify a line-leading run the way the tracker's fence scanner
+  does (`classifyRawScanLine`: at least three markers, at most three spaces of
+  indent, no backtick in a backtick fence's info string). A run indented four
+  columns starts an indented code block, and the block is skipped (first line
+  plus blank-or-indented ones); a tilde run is always skipped (it has no span
+  semantics); otherwise the ordinary span pairing applies, and its lookahead
+  stops only at a blank line or at a line beginning with a tag from CommonMark's
+  type-6 list (plus `pre`/`script`/`style`/`textarea` as openers) — derived by
+  asking marked, not at every `<`. The container stack pushes uppercase tags and
+  non-void self-closing ones.
+- **Covering test:** `hasUnclosedRawTags` cases for the indented run, the
+  info-string backtick, type-6 interruption, the self-closing slash and
+  uppercase tags; corpora `indentedCodeBlockHoldsCloser`,
+  `backtickInfoStringWithTag`, `backtickSpanAcrossHtmlBlock`,
+  `selfClosingNonVoidTag` (per-character whole-vs-sectioned DOM equivalence).
+
+#### 2026-10-04: the splitter's oracle lexes the text the renderer parses
+
+- **Repro:** with `escapeRawHtml: true`,
+  `# A\n\nsee [a]\n\n<filler>\n\n# B\n\n<pre>\n\n[a]: /x\n\n</pre>\n\n# C\n\ntail\n`
+  (the escaped `<pre>` is text, so the definition is live); and with
+  `protectCustomTags` (the default) a `#` line inside a `<BR>…</BR>` region
+  (the renderer deletes the region, so the line is not a heading).
+- **Ground truth:** `parse()` runs `protectCustomTags` and then
+  `escapeRawHtml` before marked sees the source, so a lex of the raw source asks
+  marked about a different document — the two answers can disagree, which is the
+  one thing the oracle must never do.
+- **Our behaviour (before this fix):** `Parser.lex` lexed the raw source, so
+  with `escapeRawHtml` the definition stayed hidden inside an HTML block, the
+  boundary was placed, and section 1 rendered `see [a]` where the whole render
+  emitted a link (a branch regression: upstream's line-regex rule latched on the
+  `]:` line regardless). The `protectCustomTags` direction was pre-existing.
+- **Decision:** one `preprocess` shared by `parse` and `lex`. Each section is
+  still preprocessed on its own before it is rendered — the corpora compare that
+  against the whole-document render, and the region can only be deleted when it
+  is complete.
+- **Covering test:** guard "asks marked about the same preprocessed text the
+  renderer parses" (both option sets), the DOM test "matches with a definition
+  that only escapeRawHtml makes live", and corpus `protectedCustomTagRegion`.
+
+#### 2026-10-04: the refusal memo is bounded by what can end the block
+
+Found by review: one cost regression and one lost split, both in the heading
+memo (`state.openBlock`).
+
+- **Repro (cost):** a fenced block of 300 column-0 `#` lines separated by blank
+  lines (a shell/YAML snippet) re-lexed the whole prefix twice per line — 570
+  lexes for 4.4 KB, quadratic in the block, because every blank line dropped the
+  memo. Upstream's char-fence gate made this case free.
+- **Repro (lost split):** `# A\n\n<pre>\n\n</pre >\n# x\n</pre>\n## B\n\n` — the
+  raw-block tracker's close check is deliberately loose (`</pre…` counts as the
+  closer), so the tracker is already outside the block when `# x` arrives, the
+  oracle refusal there is memoised, and the memo then swallowed `## B` although
+  `</pre>` had ended the block. Upstream (whose close check requires `>`) kept
+  the split.
+- **Ground truth:** a fenced code block's body may contain blank lines and
+  closing-tag-shaped text; an HTML block and a table end at a blank line; a
+  type-1 raw block ends at its closing tag.
+- **Decision:** the memo records whether the refusal was caused by an unclosed
+  fenced code block (`probeBoundary` reads marked's last top-level token — a
+  fenced `code` token — which is also where the probe's two lexes are now
+  interpreted). Only such a memo survives a blank line; any memo is dropped by a
+  blank line, by a line containing `</`, and by a change in the fence scanner's
+  verdict. `memo.sectionStart` is gone: `offsets` only changes together with
+  clearing the memo, so a live memo always belongs to the current section. The
+  scanner's `inFenced` cannot stand in for `fenceCause`: it is over-eager for a
+  fence inside a list item, where the block marked really swallowed the heading
+  with is not the fence at all.
+- **Covering test:** guard "memoises a refused heading across the blank lines
+  inside a fence" (asserts the lex count; red at 122 calls without
+  `fenceCause`), guard "keeps a closing-tag lookalike from ending a raw block
+  early or losing a later split" (the `</pre >` case), and corpus
+  `twoSpaceWsOnlyStartsList`, whose fence lives in a list item.
 
 ### How it is verified
 
