@@ -34,8 +34,9 @@ decisions settled.
 
 ## Index
 
-| File                                                                     | Covers                                                                                                                                              |
-| ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`x-markdown-streaming-sections.md`](./x-markdown-streaming-sections.md) | `streaming.incremental` section boundaries: the contract, our divergences from `ant-design/x`, upstream bugs we fix, remaining limits               |
-| [`x-markdown-latex.md`](./x-markdown-latex.md)                           | The bundled LaTeX plugin and `$` / `$$` / `\[` handling: which upstream fixes are synced, which were missed, how the splitter treats math           |
-| [`upstream-sync.md`](./upstream-sync.md)                                 | Sync state: the `.sync-upstream.json` cursor, every ported upstream PR and where it landed, open `sync/*` branches, and what to record after a sync |
+| File                                                                     | Covers                                                                                                                                                                            |
+| ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`x-markdown-streaming-sections.md`](./x-markdown-streaming-sections.md) | `streaming.incremental` section boundaries: the contract, our divergences from `ant-design/x`, upstream bugs we fix, remaining limits                                             |
+| [`x-markdown-latex.md`](./x-markdown-latex.md)                           | The bundled LaTeX plugin and `$` / `$$` / `\[` handling: which upstream fixes are synced, which were missed, how the splitter treats math                                         |
+| [`upstream-sync.md`](./upstream-sync.md)                                 | Sync state: the `.sync-upstream.json` cursor, every ported upstream PR and where it landed, open `sync/*` branches, and what to record after a sync                               |
+| [`x-markdown-streaming-preset.md`](./x-markdown-streaming-preset.md)     | Streaming preset + typewriter + AnimationText/Section/memo: the downstream-only fixes (fade-in units, indented fences, inline-code runs, grapheme window) and the Vue API mapping |

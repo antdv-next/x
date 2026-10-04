@@ -44,8 +44,9 @@ Rules:
 
 - **Every task: read `memory/README.md` first** (it is short and lists what is
   covered). **Before** changing an area a memory file covers — currently
-  `packages/x-markdown` streaming / `incremental` behaviour and the LaTeX
-  plugin / `$` / math handling — read that file too.
+  `packages/x-markdown` streaming (`incremental` boundaries, the boolean
+  preset, the typewriter), the LaTeX plugin / `$` / math handling, and upstream
+  sync state — read that file too.
 - **After** a review, bug report or sync surfaces a new divergence, append it
   to the matching `memory/` file: date, repro, ground truth, upstream
   behaviour, our behaviour, covering test, and the decision. Supersede entries
