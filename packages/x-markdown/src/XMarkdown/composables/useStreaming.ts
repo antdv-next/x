@@ -1,5 +1,7 @@
+import type { Links, Token, Tokens } from "marked";
 import type { Component } from "vue";
 
+import { Marked, walkTokens } from "marked";
 import { computed, ref, watch, type Ref } from "vue";
 
 import type {
@@ -227,9 +229,11 @@ const rebuildTableState = (table: TableState, pending: string): void => {
 const getInitialSectionState = (): SectionState => ({
   offsets: [],
   lineStart: 0,
-  inHtmlBlock: false,
   noSplit: false,
+  sawDefinitionTrigger: false,
+  definitionCheckedLength: -1,
   rawBlock: null,
+  openBlock: null,
 });
 
 const getInitialCache = (): StreamCache => ({
@@ -317,40 +321,84 @@ export const DEFAULT_MIN_SECTION_CHARS = 200;
 // Section boundaries are placed before column-0 ATX headings only (see
 // HEADING_LINE above). CommonMark also allows a heading to be indented by
 // one to three spaces; those are rare in generated text and simply not split on.
-// Link reference definition or footnote definition. Either can be referenced
-// from any other block of the document, so once one is seen the document is
-// no longer splittable. Definitions may also live inside blockquotes and list
-// items (`> [a]: /x`, `- [a]: /x`) and still apply document-wide, so leading
-// quote/list markers are skipped before the `[label]:` test.
-const DEFINITION_LINE =
-  /^ {0,3}(?:(?:>[ \t]*)|(?:[-+*]|\d{1,9}[.)])[ \t]+)*\[[^\]]*\]:/;
-// HTML blocks of CommonMark type 1 (end only at their closing tag) and type 2
-// (comments), plus the Latex plugin's block delimiters. All of them may
-// contain blank lines followed by a `#` line that is *not* a heading.
+/*
+ * Sound, deliberately loose trigger for "this line may start a link reference /
+ * footnote definition". It only decides whether to ask marked
+ * (`hasDefinition`); the answer is marked's. It must have no false negatives —
+ * a definition's label line always contains `]:`, whereas the stricter
+ * `^ {0,3}...` pattern this replaced misses a definition indented into a list
+ * item's content (four-plus spaces, or a tab, after the marker) — so the
+ * trigger is just the label terminator. A false positive costs one `lex`; a
+ * false negative would be a wrong boundary.
+ */
+const DEFINITION_TRIGGER = /\]:/;
+/* ------------ Section boundaries ------------ */
+
+/*
+ * DESIGN CONTRACT — read this before "fixing" a case where no boundary is
+ * placed.
+ *
+ * A section boundary is only allowed before a column-0 ATX heading line, and
+ * only when that line really starts a new top-level block. A boundary at a
+ * point the whole-document parse keeps *inside* a block renders different
+ * markup from the one-shot render, which is the one invariant this feature
+ * has to hold; refusing a boundary merely gives up incremental reuse.
+ *
+ * Which lines qualify is exactly what marked's block tokenizer decides, so we
+ * ask marked (`probeBoundary`) instead of re-deriving its grammar.
+ * Earlier revisions hand-modelled marked's list-item continuation, blockquote
+ * laziness, paragraph interruption, setext eligibility and the fenced-code /
+ * HTML block rules; every model was an approximation, so each round of
+ * differential review found another input where model and parser disagreed,
+ * and every fix added state (the whole thing grew by ~950 lines). That model
+ * is gone. This tracker keeps only:
+ *
+ *   1. `offsets` / `lineStart` / `noSplit` — the section state itself;
+ *   2. a conservative raw-block state (`<pre>`, comments, processing
+ *      instructions, declarations, CDATA, `$$` / `\[` math): while one is
+ *      open, no boundary is recorded. This is *not* a parse of those blocks;
+ *      they are exactly the constructs whose raw text the browser and
+ *      DOMPurify re-interpret (`<?php` opens a bogus comment that can swallow
+ *      a following `<h1>` open tag), so keeping them inside one section is a
+ *      safety rule, and erring towards "still open" only ever loses a split;
+ *   3. a bounded memo of "marked says a heading here is still inside an open
+ *      block", so a fenced code block full of column-0 `#` comment lines is
+ *      not re-lexed once per line.
+ *
+ * The one document-global "must refuse" condition — a link reference /
+ * footnote definition, which any other block may reference — is *not* modelled
+ * as state. It is asked of the renderer's marked (its `links` map) ahead of
+ * every block state, so neither the raw-block state nor a fence can hide a
+ * real definition or fake one out of body text.
+ *
+ * The full history — every deliberate divergence from upstream, the upstream
+ * bugs we fix, and the remaining limits — is recorded in
+ * `memory/x-markdown.md`. Read it before changing this.
+ */
+
+/** Raw HTML blocks whose end condition may span blank lines (CommonMark 1–2/3–5). */
 const RAW_HTML_BLOCK_OPEN = /^ {0,3}<(pre|script|style|textarea)(?=[\s>]|$)/i;
 const HTML_COMMENT_OPEN = /^ {0,3}<!--/;
-// Type 3 (processing instruction, ends at `?>`), type 4 (declaration such as
-// `<!DOCTYPE html`, ends at the first `>`) and type 5 (CDATA, ends at `]]>`).
-// Unlike types 6–7 these do NOT end at a blank line, so they need the raw
-// block treatment just like type 1 and comments.
 const HTML_PI_OPEN = /^ {0,3}<\?/;
 const HTML_DECLARATION_OPEN = /^ {0,3}<![a-zA-Z]/;
 const HTML_CDATA_OPEN = /^ {0,3}<!\[CDATA\[/;
-const MATH_DOLLAR_LINE = /^(\${1,2})\s*$/;
+// The Latex plugin's block rule needs its closing delimiter to recognise the
+// block at all, so a prefix-based check cannot see block math — it is tracked
+// here instead. Without the plugin registered these lines are plain text, and
+// suppressing a boundary on them is merely conservative.
+const MATH_DOLLAR_LINE = /^(\${1,2})$/;
 const MATH_BRACKET_OPEN = /^\\\[/;
-// Any other HTML block start (CommonMark types 6–7): a tag or closing tag at
-// the start of a line. Such a block runs to the next blank line; treating
-// every `<x` line this way is slightly conservative (type 7 cannot interrupt
-// a paragraph) but never wrong.
-const HTML_BLOCK_OPEN = /^ {0,3}<(?:[a-zA-Z]|\/[a-zA-Z])/;
 
-const detectRawBlockOpen = (line: string): SectionState["rawBlock"] => {
+/**
+ * The close condition of a raw block opened by `line`, or null. A block that
+ * already closed on its own line (`<pre>x</pre>`, `<!-- x -->`) is not open.
+ */
+const detectRawBlockOpen = (
+  line: string,
+): { close: string; exact: boolean; bodyChars?: number } | null => {
   const html = line.match(RAW_HTML_BLOCK_OPEN);
   if (html) {
-    // The end condition is the closing tag with its `>`: `</prefix>` or
-    // `</pre ` must not end a <pre> block (CommonMark type 1 requires the
-    // literal `</pre>`, case-insensitive).
-    const close = `</${html[1].toLowerCase()}>`;
+    const close = `</${html[1].toLowerCase()}`;
     return line.toLowerCase().includes(close) ? null : { close, exact: false };
   }
   if (HTML_COMMENT_OPEN.test(line)) {
@@ -366,25 +414,193 @@ const detectRawBlockOpen = (line: string): SectionState["rawBlock"] => {
     return line.includes(">") ? null : { close: ">", exact: false };
   }
   const dollar = line.match(MATH_DOLLAR_LINE);
-  if (dollar) return { close: dollar[1], exact: true };
+  if (dollar) return { close: dollar[1], exact: true, bodyChars: 0 };
   if (MATH_BRACKET_OPEN.test(line)) {
     return line.includes("\\]") ? null : { close: "\\]", exact: false };
   }
   return null;
 };
 
+/**
+ * Whether `line` closes `rawBlock`. `$$` math (exact) closes only at a
+ * column-0 run of the opening delimiter, matching the bundled Latex plugin.
+ */
 const closesRawBlock = (
   line: string,
   rawBlock: NonNullable<SectionState["rawBlock"]>,
 ): boolean =>
   rawBlock.exact
-    ? line.trim() === rawBlock.close
+    ? line.startsWith(rawBlock.close) &&
+      !line.startsWith(`${rawBlock.close}$`) &&
+      /^[ \t]*$/.test(line.slice(rawBlock.close.length))
     : line.toLowerCase().includes(rawBlock.close);
 
+/** How far a memoised "still inside an open block" verdict may be trusted. */
+const OPEN_BLOCK_MEMO_CHARS = 4096;
+
+/** The line appended to probe whether a heading starts a new top-level block. */
+const PROBE_HEADING = "# x\n";
+
 /**
- * Called once per completed line (right after its '\n' has been fed to the
- * fence state). Decides whether the line that just ended starts a new section.
- * O(line) per line, so O(N) over the whole stream.
+ * The splitter's oracle: a block-level lex of the *preprocessed* source by the
+ * renderer's own marked. Callers hand over `Parser.lex`.
+ */
+type SectionLexer = (markdown: string) => readonly Token[];
+
+/** The token array `lex` returns also carries marked's collected `links` map. */
+type LexResult = readonly Token[] & { links?: Links };
+
+/**
+ * Ask marked whether `prefix` plus a column-0 ATX heading parses into strictly
+ * more top-level blocks than `prefix` alone — i.e. whether the heading starts a
+ * new top-level block instead of being swallowed by one the prefix left open —
+ * and, when it does not, whether the swallowing block is an *unclosed fenced
+ * code block* (marked's last top-level token is a fenced `code` token).
+ *
+ * Only the second fact needs interpreting, and only to decide how long a
+ * refusal may be memoised: a fence's body may contain blank lines, so a refusal
+ * a fence caused survives them, while an HTML block and a table end at a blank
+ * line and the refusal they caused must not. Both facts are read off marked's
+ * own answers, never re-derived.
+ */
+const probeBoundary = (
+  lex: SectionLexer,
+  prefix: string,
+): { starts: boolean; fenceCause: boolean } => {
+  const blocks = lex(prefix);
+  const starts = lex(prefix + PROBE_HEADING).length > blocks.length;
+  const last = blocks[blocks.length - 1] as Tokens.Code | undefined;
+  return {
+    starts,
+    fenceCause: last?.type === "code" && last.codeBlockStyle !== "indented",
+  };
+};
+
+/**
+ * Whether `markdown` contains at least one link reference / footnote
+ * definition, per the renderer's own marked. Its `links` map collects
+ * definitions from any depth (`> [a]: /x`, `- [a]: /x`) and stays empty for a
+ * definition-shaped line inside fence, comment, `<pre>` or math body — which
+ * is exactly the distinction the tracker must make.
+ */
+const hasDefinition = (lex: SectionLexer, markdown: string): boolean =>
+  Object.keys((lex(markdown) as LexResult).links ?? {}).length > 0;
+
+/**
+ * Arm the document-global "must refuse" rule's cheap gate. Called for every
+ * completed line whatever block state the line is in, so a raw block or a fence
+ * body can hide neither a real definition nor a definition-shaped line that is
+ * really body text — the gate only decides whether to ask marked, never the
+ * answer.
+ */
+const noteDefinitionTrigger = (state: SectionState, line: string): void => {
+  if (DEFINITION_TRIGGER.test(line)) state.sawDefinitionTrigger = true;
+};
+
+/**
+ * The only document-global "must refuse" rule, settled once per pass: a link
+ * reference / footnote definition can be referenced from any section, so once
+ * the document contains one no boundary may be recorded and the offsets already
+ * recorded are discarded.
+ *
+ * The question — "does the text so far contain a definition" — is asked of the
+ * renderer's marked (`hasDefinition`) on the whole text. It deliberately does
+ * not try to predict *where* a definition ends: marked accepts a title spanning
+ * any number of lines (blank lines included), so a definition can complete
+ * arbitrarily far from the `]:` line that started it, and any line count after
+ * which the probe stops is a wrong boundary waiting to happen. Asking late is
+ * safe: the offsets recorded before the answer arrived are discarded here and
+ * `noSplit` is one-way, so a late yes still collapses the sections.
+ *
+ * It is also asked only when the answer can change the output: with no recorded
+ * boundary `sections` is null whatever the answer, and by the end of the pass
+ * the offsets include every boundary recorded during it, so a boundary that is
+ * about to be used is always covered by a probe on the text that contains it.
+ * (Deferring cannot miss a definition: the probe reads the whole current text,
+ * not a window.) This is what keeps a long `]:`-bearing but definition-free
+ * stream — a TypeScript block full of `[key: string]: T`, say — from paying one
+ * whole-text lex per pass; and once a definition is found, `noSplit` closes the
+ * gate for good.
+ */
+const settleDefinition = (
+  state: SectionState,
+  text: string,
+  lex: SectionLexer,
+): void => {
+  if (state.noSplit) return;
+  if (!state.sawDefinitionTrigger || state.offsets.length === 0) return;
+  if (state.definitionCheckedLength === text.length) return;
+  state.definitionCheckedLength = text.length;
+  if (hasDefinition(lex, text)) {
+    state.noSplit = true;
+    state.offsets = [];
+    state.openBlock = null;
+  }
+};
+
+/**
+ * Total length of the content of every code token (fenced or indented), at any
+ * depth. Used only to compare the document before and after appending one line:
+ * a code token that grows did not exist for that content before, so the line
+ * became code body rather than a new block. Marked's own walker is used rather
+ * than a hand-rolled model of the token shapes: it already knows every place a
+ * child token can live (list items, table cells, extension `childTokens`).
+ */
+const codeContentLength = (tokens: readonly Token[]): number => {
+  let total = 0;
+  walkTokens(tokens as Token[], token => {
+    // `text` is marked's own field for a code token; the guard only keeps a
+    // third-party extension that reuses the `code` type from crashing the loop.
+    if (token.type === "code")
+      total += ((token as Tokens.Code).text ?? "").length;
+  });
+  return total;
+};
+
+/**
+ * Whether `line` (ending just past `lineEnd`) is code body per the renderer's
+ * own marked. A raw-opener-shaped line that is inside a code token must not
+ * open a raw block; see the call site. Appending the line can only grow code
+ * content by becoming the body of an already-open fence - none of the raw
+ * openers (column-0 `$`/`$$`/`\[`, up to three leading spaces before `<`) is
+ * itself a fence line, so a growth here is never a new fence.
+ *
+ * The two lexes are whole-prefix and run for every raw-opener-shaped line, so a
+ * document whose code blocks are full of column-0 `$`/`$$`/`<pre` lines pays
+ * O(prefix) per such line. It is kept because the cheap fence scanner cannot
+ * see a fence indented into a list item's content, and guessing wrong there
+ * splits inside a real math/raw block. The fix for the cost is to derive "is
+ * this line code body" from one token walk of the current prefix (marked's
+ * tokens carry `raw`), not to relax the question.
+ */
+const lineIsCodeContent = (
+  lex: SectionLexer,
+  text: string,
+  lineStart: number,
+  lineEnd: number,
+): boolean =>
+  codeContentLength(lex(text.slice(0, lineEnd))) >
+  codeContentLength(lex(text.slice(0, lineStart)));
+
+/** Fallback lexer for the sections-blind `useStreaming` wrapper. */
+const fallbackLexer = (() => {
+  const marked = new Marked({ gfm: true });
+  return (markdown: string): readonly Token[] => marked.lexer(markdown);
+})();
+
+/**
+ * Called once per completed line, right after the fence state has consumed it.
+ * Decides whether the line that just ended starts a new section.
+ *
+ * The per-line work here is O(line) — a `]:` test, a heading test and cheap
+ * string guards. The marked lexes it can trigger are not, and one of them is
+ * paid with `incremental` off too: a raw-opener-shaped line costs two
+ * whole-prefix lexes (`lineIsCodeContent`) before the `record` gate, because
+ * its answer also shapes the raw-block state a later switch-on sees. The other
+ * two are gated on `record`: a candidate heading that passed every guard costs
+ * O(section) (`probeBoundary`), and the document-global definition question —
+ * the one probe whose cost cannot be bounded by a line count — is settled once
+ * per boundary-bearing pass rather than here (`settleDefinition`).
  */
 const trackSectionBoundary = (
   cache: StreamCache,
@@ -393,65 +609,85 @@ const trackSectionBoundary = (
   componentNames: string[],
   minSectionChars: number,
   record: boolean,
+  lex: SectionLexer,
 ): void => {
   const state = cache.sections;
   const lineStart = state.lineStart;
-  const line = text.slice(lineStart, newlineIndex);
+  // Strip one trailing CR so the heading test works for CRLF documents;
+  // `lineStart` offsets are unaffected since '\r' is never a line's first char.
+  const raw = text.slice(lineStart, newlineIndex);
+  const line = raw.endsWith("\r") ? raw.slice(0, -1) : raw;
   const blank = line.trim() === "";
   state.lineStart = newlineIndex + 1;
+  // A memoised refusal stays valid only while the block that swallowed the
+  // heading is still open, so it is dropped on the lines that can end such a
+  // block: a blank line (which ends an HTML block, a table, a paragraph, a
+  // list) and a line containing `</` (an HTML block ends at its closing tag).
+  // The exception is a refusal an unclosed *fenced code block* caused
+  // (`fenceCause`, marked's own answer: its last top-level token is a fenced
+  // `code` token): a fence runs to its matching fence line — the fence
+  // scanner's `inFenced` flip already re-arms the memo — so blank lines and
+  // closing tags cannot end it. That exception is what keeps a long fenced
+  // block full of blank lines and column-0 `#` lines at one lex instead of one
+  // per line. (The scanner's `inFenced` cannot be used instead of `fenceCause`:
+  // it is over-eager for a fence inside a list item, where the block marked
+  // really swallowed the heading with is not the fence at all.) Only refusals
+  // are ever memoised, so a kept-but-stale memo loses a split at worst, never
+  // invents one.
+  if (!state.openBlock?.fenceCause && (blank || line.includes("</"))) {
+    state.openBlock = null;
+  }
 
+  // Arms the document-global must-refuse rule's gate, before every block state
+  // below so a raw block that consumes the line cannot hide it. The rule
+  // itself is settled once per pass, in `settleDefinition`.
+  noteDefinitionTrigger(state, line);
   if (state.noSplit) return;
+  // Inside a raw block that may span blank lines and contain heading-looking
+  // lines. See the design note above: this is a safety rule, not a parse.
   if (state.rawBlock) {
+    if (state.rawBlock.exact && (state.rawBlock.bodyChars ?? 0) < 2) {
+      // `$$` math needs a non-empty body before its closing run can count, so
+      // the line right after the opener (or after only blank lines) is body.
+      state.rawBlock.bodyChars =
+        (state.rawBlock.bodyChars ?? 0) + line.length + 1;
+      return;
+    }
     if (closesRawBlock(line, state.rawBlock)) state.rawBlock = null;
     return;
   }
-  if (state.inHtmlBlock) {
-    if (blank) state.inHtmlBlock = false;
-    return;
-  }
-  // The fence state has already consumed this line's '\n': for a body line of
-  // a fence it is still open, for the opening line it has just opened, and for
-  // the closing line it has just closed. Neither an opening nor a closing
-  // fence line can match the patterns below, so checking after the feed is safe.
-  if (cache.fence.inFenced) return;
-
   const rawBlock = detectRawBlockOpen(line);
   if (rawBlock) {
+    // A line only looks like a raw opener because it is body text of a code
+    // block that the char-level fence scanner cannot see (a fence indented
+    // inside a list item, say). Opening a raw block there would be sticky:
+    // its closer is ordinary code text that usually never appears again, so
+    // every later heading would be suppressed. Ask the renderer's marked
+    // whether the line is code, never the scanner - a mis-detected fence
+    // would hide a real `$$` block that a prefix lex cannot see.
+    if (lineIsCodeContent(lex, text, lineStart, newlineIndex + 1)) return;
     state.rawBlock = rawBlock;
     return;
   }
-  if (HTML_BLOCK_OPEN.test(line)) {
-    state.inHtmlBlock = true;
-    return;
-  }
-  if (DEFINITION_LINE.test(line)) {
-    state.noSplit = true;
-    state.offsets = [];
-    return;
-  }
-  // An ATX heading can interrupt a paragraph, a list, a blockquote and a GFM
-  // table, so outside the constructs tracked above a column-0 heading line
-  // always starts a new block — no blank line before it is required.
+  // Only a column-0 ATX heading can ever start a section.
   if (!HEADING_LINE.test(line)) return;
   // With `incremental` off the state above still advances (so switching it on
   // mid-stream sees correct definitions and raw blocks) but no boundary is
-  // recorded: sections already built stay whole.
+  // recorded.
   if (!record) return;
 
   const sectionStart = state.offsets.length
     ? state.offsets[state.offsets.length - 1]
     : 0;
   // A boundary at the very start of the document (or of the current section)
-  // would only produce an empty section. Larger sections can still parse to
-  // zero nodes (all-whitespace or sanitize-stripped markup) — that case is
-  // handled by the renderer returning a childless Fragment, keeping this
-  // splitter a pure text scan with no marked/DOMPurify coupling.
-  if (lineStart <= sectionStart || lineStart - sectionStart < minSectionChars)
+  // would only produce an empty section.
+  if (lineStart <= sectionStart || lineStart - sectionStart < minSectionChars) {
     return;
+  }
+  const sectionText = text.slice(sectionStart, lineStart);
   // A custom component opened in this section and closed in a later one would
   // be reported as unclosed (and auto-closed by DOMPurify) if the section were
   // parsed on its own.
-  const sectionText = text.slice(sectionStart, lineStart);
   if (
     componentNames.length > 0 &&
     detectUnclosedComponentTags(sectionText, componentNames).size > 0
@@ -466,9 +702,31 @@ const trackSectionBoundary = (
   if (sectionText.includes("<") && hasUnclosedRawTags(sectionText)) {
     return;
   }
+  // The authoritative check. A refusal is memoised (see the design note); the
+  // memo expires after `OPEN_BLOCK_MEMO_CHARS`, is dropped when the fence
+  // scanner's verdict changes (so a fence that just closed is never left
+  // memoised as open), and — by the drop site above — when the line was blank
+  // or carried a closing tag, unless the refusal was an unclosed fence's.
+  // (No section-start test is needed: `offsets` is mutated only in
+  // `settleDefinition` and below, both of which clear the memo, so a live memo
+  // always belongs to the current section.)
+  const fenceOpen = cache.fence.inFenced;
+  const memo = state.openBlock;
+  if (
+    memo !== null &&
+    memo.fenceOpen === fenceOpen &&
+    lineStart - memo.end < OPEN_BLOCK_MEMO_CHARS
+  ) {
+    return;
+  }
+  const { starts, fenceCause } = probeBoundary(lex, sectionText);
+  if (!starts) {
+    state.openBlock = { end: lineStart, fenceOpen, fenceCause };
+    return;
+  }
+  state.openBlock = null;
   state.offsets.push(lineStart);
 };
-
 /**
  * Slice `output` at the recorded boundaries. A boundary past `limit` falls
  * inside the pending token — a heading right after a table row is held in the
@@ -633,7 +891,17 @@ const resolveKeepSectionsOnEnd = (
 export function useStreamingCore(
   content: Ref<string>,
   streaming: Ref<boolean | StreamingOption | undefined>,
-  components?: Ref<Record<string, Component> | undefined>,
+  components: Ref<Record<string, Component> | undefined> | undefined,
+  /**
+   * Lexer used to decide section boundaries. Must be the renderer's own marked
+   * (`Parser.lex`), so `config.extensions` and the parser's preprocessing
+   * (`protectCustomTags`, `escapeRawHtml`) are honoured — a different grammar
+   * answers about a different document and yields wrong boundaries. Required
+   * rather than defaulted: a silent GFM fallback here would be wrong by
+   * construction for any configured renderer. The sections-blind
+   * `useStreaming` wrapper passes the fallback explicitly.
+   */
+  lex: SectionLexer,
 ): StreamingResult {
   const resolvedStreaming = computed(() => resolveStreaming(streaming.value));
 
@@ -724,10 +992,12 @@ export function useStreamingCore(
 
       feedFenceState(cache.fence, char);
       feedTableState(cache.table, char);
-      // Section state advances even with `incremental` off — it is cheap
-      // (O(line) per line) and keeps definitions, raw blocks and line starts
-      // correct when incremental is switched on mid-stream; only recording
-      // boundaries is gated.
+      // Section state advances even with `incremental` off — the per-line work
+      // is O(line) and keeps definitions, raw blocks and line starts correct
+      // when incremental is switched on mid-stream; only recording boundaries
+      // (and the heading oracle behind them) is gated. The exception is the
+      // raw-opener check inside it, which pays its marked lex pair either way.
+      // See `trackSectionBoundary` for the full cost note.
       if (char === "\n") {
         trackSectionBoundary(
           cache,
@@ -736,6 +1006,7 @@ export function useStreamingCore(
           componentNames,
           minSectionChars,
           trackSections,
+          lex,
         );
       }
       offset += char.length;
@@ -770,6 +1041,17 @@ export function useStreamingCore(
         commitCache(cache);
       }
     }
+
+    // A stream may stop on a line that never got its '\n'. A definition there
+    // still has to drop the boundaries recorded before it (marked parses it at
+    // end of input), so the trailing partial line arms the gate too.
+    if (cache.sections.lineStart < text.length) {
+      noteDefinitionTrigger(
+        cache.sections,
+        text.slice(cache.sections.lineStart),
+      );
+    }
+    settleDefinition(cache.sections, text, lex);
 
     const incompletePlaceholder = handleIncompleteMarkdown(cache, opts);
     return cache.completeMarkdown + (incompletePlaceholder || "");
@@ -859,7 +1141,14 @@ export function useStreaming(
   streaming: Ref<boolean | StreamingOption | undefined>,
   components?: Ref<Record<string, Component> | undefined>,
 ) {
-  const { output, reset } = useStreamingCore(content, streaming, components);
+  // `useStreaming` does not expose `sections`, so the lexer's answers cannot
+  // reach its output; the plain fallback is inert here.
+  const { output, reset } = useStreamingCore(
+    content,
+    streaming,
+    components,
+    fallbackLexer,
+  );
 
   return {
     processedContent: output,

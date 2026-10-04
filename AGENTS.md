@@ -32,3 +32,38 @@ controlled state or clipboard data themselves.
 The framework remains responsible for routing these callbacks from every
 built-in editing surface, honoring `event.preventDefault()`, providing correct
 selection information, and enforcing `disabled` and `readOnly` invariants.
+
+## Memory: read the history before changing ported behaviour
+
+`memory/` is the project's record of where this repo deliberately diverges from
+its upstream (`ant-design/x`) and from the real parser (marked, DOMPurify, the
+browser), and why. It is what stops settled decisions from being re-litigated
+as bugs by the next review.
+
+Rules:
+
+- **Every task: read `memory/README.md` first** (it is short and lists what is
+  covered). **Before** changing an area a memory file covers — currently
+  `packages/x-markdown` streaming (`incremental` boundaries, the boolean
+  preset, the typewriter), the LaTeX plugin / `$` / math handling, and upstream
+  sync state — read that file too.
+- **After** a review, bug report or sync surfaces a new divergence, append it
+  to the matching `memory/` file: date, repro, ground truth, upstream
+  behaviour, our behaviour, covering test, and the decision. Supersede entries
+  with a new dated entry; never delete them.
+- **Every upstream sync**: start from `memory/upstream-sync.md` (cursor, what
+  each `sync/*` branch holds, and how to record the outcome), and update it in
+  the same PR that advances `.sync-upstream.json`.
+- When a `memory/` entry says a case is deliberate, a review finding about it is
+  **not** a bug. Check the entry (and, for the splitter, whether the
+  whole-document render keeps that line inside an open block) before reporting.
+- Do not re-add a hand-written model of marked's block grammar to make a single
+  input split again, and do not "align" a documented divergence back to
+  upstream without first reading why it exists.
+
+Further reading: `.sync-upstream.json` for the sync cursor and package mapping,
+the `DESIGN CONTRACT` comment above `trackSectionBoundary` in
+`packages/x-markdown/src/XMarkdown/composables/useStreaming.ts` for the
+splitter's contract, and
+`packages/x-markdown/src/XMarkdown/__tests__/incremental.test.ts` (whose "does
+not split" assertions are the specification).
