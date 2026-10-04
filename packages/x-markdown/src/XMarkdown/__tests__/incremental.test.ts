@@ -1398,6 +1398,34 @@ describe("streaming.incremental", () => {
       ).toEqual(["# A\n\n```\nx\n```\n\n$$\nmath\n$$\n\n", "## B\n\nb\n"]);
     });
 
+    it("does not disable splitting for a definition-shaped line inside a fence or a raw block", async () => {
+      // `[a]: /x` in fence body is code text — marked extracts no definition
+      // there — so it must not set noSplit or discard earlier boundaries. A
+      // `$$` line opens a raw block first, whose branch consumes the body.
+      expect(
+        await sectionsFor(
+          "# A\n\npara\n\n# B\n\n```markdown\n[a]: /x\n```\n\n# C\n\ntail\n",
+        ),
+      ).toHaveLength(3);
+      expect(
+        await sectionsFor(
+          "# A\n\npara\n\n# B\n\n$$\n[a]: /x\n$$\n\n# C\n\ntail\n",
+        ),
+      ).toHaveLength(3);
+      expect(
+        await sectionsFor(
+          "# A\n\npara\n\n# B\n\n<!--\n[a]: /x\n-->\n\n# C\n\ntail\n",
+        ),
+      ).toHaveLength(3);
+      // A real definition — top-level or nested — still disables splitting.
+      expect(
+        await sectionsFor("# A\n\npara\n\n# B\n\n[x]: /y\n\n# C\n\ntail\n"),
+      ).toBeNull();
+      expect(
+        await sectionsFor("# A\n\npara\n\n# B\n\n> [x]: /y\n\n# C\n\ntail\n"),
+      ).toBeNull();
+    });
+
     it("drops all boundaries once a reference or footnote definition appears", async () => {
       const { scope, content, core } = createCore({
         hasNextChunk: true,

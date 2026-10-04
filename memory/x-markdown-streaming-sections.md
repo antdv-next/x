@@ -106,6 +106,32 @@ covering tests fail on purpose.
   DOM equivalence) and the guard "does not treat a raw opener inside a fenced
   code block as a raw block".
 
+### 2026-10-04: a definition-shaped line in code or a raw block is not a definition
+
+- **Repro:** `# A\n\npara\n\n# B\n\n```markdown\n[a]: /x\n```\n\n# C\n\ntail\n`
+  (the same line inside `$$` math, an HTML comment, or `<pre>` behaves the
+  same).
+- **Ground truth:** marked extracts no link reference definition from fence
+  body, math body or comment body — those lines never yield a `def` token, and
+  a later `[a]` reference cannot resolve to them.
+- **Upstream behaviour:** upstream's fence gate returned before its
+  definition check, so fence body never reached it.
+- **Our behaviour (before this fix):** `DEFINITION_LINE` ran before the
+  raw-block branch and without a code gate, so such a line set `noSplit = true`
+  and discarded the recorded offsets — sections collapsed to `null` mid-stream
+  and the rest of the document never split again. Lost reuse only; the rendered
+  DOM stayed correct.
+- **Decision:** the raw-block branch consumes its body first (order restored),
+  and a fence-body line is confirmed with `lineIsCodeContent` before it may set
+  `noSplit`. A definition-shaped line inside a type-6 HTML block (`<div>`,
+  `<table>`, …) still sets `noSplit` — marked parses no definition there
+  either, so that refusal is over-conservative; it is safe (lost reuse only)
+  and left as-is rather than growing another hand-written block model.
+- **Covering test:** guard "does not disable splitting for a definition-shaped
+  line inside a fence or a raw block" (plus the existing "drops all boundaries
+  once a reference or footnote definition appears" / nested-definition tests,
+  which pin the real-definition path).
+
 ## How it is verified
 
 - `packages/x-markdown/src/XMarkdown/__tests__/incremental.test.ts`: per

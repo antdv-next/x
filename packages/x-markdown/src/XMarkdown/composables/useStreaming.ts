@@ -519,15 +519,6 @@ const trackSectionBoundary = (
   if (blank) state.openBlock = null;
 
   if (state.noSplit) return;
-  // A link reference / footnote definition is visible from every other block,
-  // so once one is seen the document is no longer splittable — and the offsets
-  // recorded so far are discarded, since an earlier section may reference it.
-  if (DEFINITION_LINE.test(line)) {
-    state.noSplit = true;
-    state.offsets = [];
-    state.openBlock = null;
-    return;
-  }
   // Inside a raw block that may span blank lines and contain heading-looking
   // lines. See the design note above: this is a safety rule, not a parse.
   if (state.rawBlock) {
@@ -552,6 +543,21 @@ const trackSectionBoundary = (
     // would hide a real `$$` block that a prefix lex cannot see.
     if (lineIsCodeContent(lex, text, lineStart, newlineIndex + 1)) return;
     state.rawBlock = rawBlock;
+    return;
+  }
+  // A link reference / footnote definition is visible from every other block,
+  // so once one is seen the document is no longer splittable — and the offsets
+  // recorded so far are discarded, since an earlier section may reference it.
+  // The raw-block branch above consumes its body first (a definition-shaped
+  // line inside `$$` math, a comment or a `<pre>` is body text, not a
+  // definition), and a definition-shaped line that is fenced-code body is code
+  // text: marked extracts no definition there, so it must not disable
+  // splitting for the rest of the stream.
+  if (DEFINITION_LINE.test(line)) {
+    if (lineIsCodeContent(lex, text, lineStart, newlineIndex + 1)) return;
+    state.noSplit = true;
+    state.offsets = [];
+    state.openBlock = null;
     return;
   }
   // Only a column-0 ATX heading can ever start a section.
