@@ -73,12 +73,22 @@ export interface SectionState {
    */
   noSplit: boolean;
   /**
-   * Lines still to watch for a definition that spans more than its `[label]:`
-   * line (the destination and title may sit on the following lines). Armed by a
-   * definition-shaped line and cleared by a blank line, since a definition
-   * never spans one. Keeps the marked `links` probe off the per-line path.
+   * Set once any line has carried the label terminator `]:`, the one thing
+   * every link reference / footnote definition contains. It is only a cheap
+   * gate that keeps the marked `links` probe off documents that cannot contain
+   * a definition; whether a definition really exists is marked's answer.
+   * Sticky, because a definition can complete arbitrarily far from its `]:`
+   * line — a title may span any number of lines, blank lines included — so
+   * there is no line count after which the question stops mattering.
    */
-  definitionLookahead: number;
+  sawDefinitionTrigger: boolean;
+  /**
+   * Input length the last `links` probe ran on (-1 before the first). Re-running
+   * the same text (the pass is idempotent) must not pay for the same lex twice,
+   * and the probe itself only runs when a recorded boundary makes its answer
+   * matter — see `settleDefinition`.
+   */
+  definitionCheckedLength: number;
   /**
    * An open raw block whose body may contain blank lines and heading-looking
    * lines: `<pre>`/`<script>`/`<style>`/`<textarea>`, an HTML comment, a
@@ -96,10 +106,18 @@ export interface SectionState {
    * swallowed). It keeps a long fenced code block full of column-0 `#` lines
    * from being re-lexed once per line; the check re-runs once the prefix has
    * grown by more than `OPEN_BLOCK_MEMO_CHARS` or the fence scanner's verdict
-   * changes. Only refusals are stored — reusing a stale refusal loses a split,
-   * never invents one.
+   * changes. It belongs to the current section implicitly: `offsets` only
+   * changes together with clearing this field. `fenceCause` says the refusal
+   * came from an unclosed fenced code block, whose body blank lines do not end
+   * (marked's own last top-level token is a fenced `code` token) — only such a
+   * memo survives a blank line. Only refusals are stored — reusing a stale
+   * refusal loses a split, never invents one.
    */
-  openBlock: { sectionStart: number; end: number; fenceOpen: boolean } | null;
+  openBlock: {
+    end: number;
+    fenceOpen: boolean;
+    fenceCause: boolean;
+  } | null;
 }
 
 export interface StreamCache {

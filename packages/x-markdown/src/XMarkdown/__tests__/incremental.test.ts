@@ -12,7 +12,7 @@ import {
   type VNode,
 } from "vue";
 
-import type { StreamingOption } from "../interface";
+import type { ParserOptions, StreamingOption } from "../interface";
 
 import Section from "../components/Section.vue";
 import {
@@ -21,6 +21,7 @@ import {
   type StreamingResult,
 } from "../composables/useStreaming";
 import { hasUnclosedRawTags } from "../core/detectUnclosedComponentTags";
+import { Parser } from "../core/Parser";
 import XMarkdown from "../index.vue";
 
 /**
@@ -931,10 +932,135 @@ const corpora: Record<string, string> = {
   leadingCommentSection: `<!--\n${"comment ".repeat(30)}\n-->\n\n# Heading\n\ntext\n`,
 };
 
+/**
+ * Corpora whose interesting step is a *refused* boundary, not a placed one, so
+ * only the whole-vs-sectioned DOM equivalence runs on them: the partition suite
+ * requires at least one split per corpus, and several of these never split at
+ * all. They are the shapes a hand-written approximation of marked's line
+ * structure gets wrong — a definition that completes lines below its `]:`, a
+ * protected `<Tag>…</Tag>` region, and code blocks whose body holds fake
+ * closing tags.
+ */
+const noBoundaryCorpora: Record<string, string> = {
+  // marked collects a definition only once its title is closed, and a title may
+  // span any number of lines — blank lines included. The definition therefore
+  // completes far below the `]:` line that starts it, and the earlier reference
+  // must not be split away from it.
+  definitionMultiLineTitle: [
+    "# A",
+    "",
+    "see [a]",
+    "",
+    "# B",
+    "",
+    "[a]:",
+    '/url "t1',
+    "t2",
+    "t3",
+    "t4",
+    't5"',
+  ].join("\n"),
+
+  // protectCustomTags deletes a whole `<BR>…</BR>` region before marked sees
+  // it, so the `# H` inside is not a heading in either render. The splitter has
+  // to lex the same preprocessed text, or it sees a heading the render does
+  // not have and records a boundary inside nothing.
+  protectedCustomTagRegion: [
+    "# A",
+    "",
+    "text ".repeat(40).trim(),
+    "",
+    "<BR>",
+    "",
+    "# H",
+    "</BR>",
+    "",
+    "# B",
+    "",
+    "end",
+  ].join("\n"),
+
+  // A run of backticks indented by four spaces is an indented code block, not a
+  // fence: the `</div>` in its body is code the browser never sees, so the
+  // `<div>` above it really is open and the heading after the block must not be
+  // split away from it.
+  indentedCodeBlockHoldsCloser: [
+    "# A",
+    "",
+    "<div>",
+    "",
+    "    ```",
+    "    </div>",
+    "    ```",
+    "",
+    "# B",
+    "",
+    "end",
+  ].join("\n"),
+
+  // A backtick fence's info string may not contain a backtick, so
+  // `` ```foo``` `` is a paragraph with an inline code span and the `<div>`
+  // after it is real HTML — never closed, so nothing inside it may split.
+  backtickInfoStringWithTag: [
+    "# A",
+    "",
+    "text ".repeat(40).trim(),
+    "",
+    "```foo``` <div> ```",
+    "",
+    "# B",
+    "",
+    "end",
+  ].join("\n"),
+
+  // A line that starts a type-6 HTML block interrupts the paragraph, so the
+  // backtick run opening the paragraph does not pair with the one after the
+  // tag: the `<div>` is real HTML and stays open.
+  backtickSpanAcrossHtmlBlock: [
+    "# A",
+    "",
+    "text ".repeat(40).trim(),
+    "",
+    "`x",
+    "<div>",
+    "y`",
+    "",
+    "# B",
+    "",
+    "end",
+  ].join("\n"),
+
+  // In HTML the self-closing slash is ignored on a non-void element, so
+  // `<div/>` opens a `<div>` that nothing closes and the browser nests the rest
+  // of the document inside it.
+  selfClosingNonVoidTag: [
+    "# A",
+    "",
+    "<div/>",
+    "",
+    "text ".repeat(40).trim(),
+    "",
+    "# B",
+    "",
+    "end",
+  ].join("\n"),
+};
+
+/**
+ * The lexer the mounted renderer would use for `parserOptions`, so the
+ * splitter's oracle and the renderer cannot be asked about different documents
+ * (same defaults as `XMarkdown`'s own Parser: GFM, `protectCustomTags` on).
+ */
+const oracleLexerFor = (parserOptions?: ParserOptions) => {
+  const parser = new Parser(parserOptions);
+  return (markdown: string) => parser.lex(markdown);
+};
+
 /** Drive `useStreamingCore` inside an effect scope with controllable refs. */
 function createCore(
   streaming: boolean | StreamingOption,
   components?: Record<string, Component>,
+  parserOptions?: ParserOptions,
 ) {
   const scope = effectScope();
   const content = ref("");
@@ -942,7 +1068,12 @@ function createCore(
   const componentsRef = ref(components);
   let core!: StreamingResult;
   scope.run(() => {
-    core = useStreamingCore(content, streamingRef, componentsRef);
+    core = useStreamingCore(
+      content,
+      streamingRef,
+      componentsRef,
+      oracleLexerFor(parserOptions),
+    );
   });
   return { scope, content, streamingRef, core };
 }
@@ -997,6 +1128,7 @@ describe("streaming.incremental", () => {
     const renderBoth = (
       streamingExtra: Partial<StreamingOption> = {},
       components?: Record<string, Component>,
+      parserProps: Record<string, unknown> = {},
     ) => {
       const withDefaults = { enableAnimation: false, ...streamingExtra };
       const whole = mount(XMarkdown, {
@@ -1004,6 +1136,7 @@ describe("streaming.incremental", () => {
           content: "",
           streaming: { hasNextChunk: true, ...withDefaults },
           components,
+          ...parserProps,
         },
       });
       const sectioned = mount(XMarkdown, {
@@ -1015,6 +1148,7 @@ describe("streaming.incremental", () => {
             ...withDefaults,
           },
           components,
+          ...parserProps,
         },
       });
       const update = async (content: string, hasNextChunk: boolean) => {
@@ -1022,11 +1156,13 @@ describe("streaming.incremental", () => {
           content,
           streaming: { hasNextChunk, ...withDefaults },
           components,
+          ...parserProps,
         });
         await sectioned.setProps({
           content,
           streaming: { hasNextChunk, incremental: noMin, ...withDefaults },
           components,
+          ...parserProps,
         });
         await nextTick();
         return {
@@ -1039,9 +1175,10 @@ describe("streaming.incremental", () => {
       return { update, whole, sectioned };
     };
 
-    for (const [name, text] of Object.entries(corpora)) {
-      it(`${name}`, async () => {
-        const { update } = renderBoth();
+    const expectStreamedRenderMatchesWhole =
+      (text: string, parserProps: Record<string, unknown> = {}) =>
+      async () => {
+        const { update } = renderBoth({}, undefined, parserProps);
         for (let i = 1; i <= text.length; i++) {
           const { whole, sectioned } = await update(text.slice(0, i), true);
           expect(sectioned).toBe(whole);
@@ -1052,14 +1189,37 @@ describe("streaming.incremental", () => {
         // (hasNextChunk falsy → the non-streaming path; animation off to
         // match the condition the two streaming renders were driven with).
         const plain = mount(XMarkdown, {
-          props: { content: text, streaming: { enableAnimation: false } },
+          props: {
+            content: text,
+            streaming: { enableAnimation: false },
+            ...parserProps,
+          },
         });
         await nextTick();
         expect(done.sectioned).toBe(
           normalizeHTML((plain.element as HTMLElement).innerHTML),
         );
-      }, 60000);
+      };
+
+    for (const [name, text] of Object.entries({
+      ...corpora,
+      ...noBoundaryCorpora,
+    })) {
+      it(`${name}`, expectStreamedRenderMatchesWhole(text), 60000);
     }
+
+    it("matches with a definition that only escapeRawHtml makes live", async () => {
+      // With `escapeRawHtml` the `<pre>` is escaped text before the renderer's
+      // marked sees it, so the `[a]: /x` inside it is a live definition; with
+      // the default options it is HTML-block body. The splitter must read the
+      // same document the renderer does in both cases.
+      const text =
+        "# A\n\nsee [a]\n\n" +
+        "text ".repeat(40) +
+        "\n\n# B\n\n<pre>\n\n[a]: /x\n\n</pre>\n\n# C\n\ntail\n";
+      await expectStreamedRenderMatchesWhole(text, { escapeRawHtml: true })();
+      await expectStreamedRenderMatchesWhole(text)();
+    }, 60000);
 
     it("with custom components, a tail and a code component", async () => {
       const text = corpora.headingsAndBlocks;
@@ -1206,10 +1366,12 @@ describe("streaming.incremental", () => {
       text: string,
       streaming: StreamingOption = {},
       components?: Record<string, Component>,
+      parserOptions?: ParserOptions,
     ) => {
       const { scope, content, core } = createCore(
         { hasNextChunk: true, incremental: noMin, ...streaming },
         components,
+        parserOptions,
       );
       content.value = text;
       await nextTick();
@@ -1512,6 +1674,49 @@ describe("streaming.incremental", () => {
       ).toBeNull();
     });
 
+    it("keeps asking marked while a definition can still complete", async () => {
+      // marked collects a definition only once its title is closed, and a title
+      // may span any number of lines — blank lines included. A probe window
+      // bounded by a line count expires before that, the definition is never
+      // seen, and the earlier section renders `see [a]` where the whole
+      // document renders a link.
+      expect(
+        await sectionsFor(
+          '# A\n\nsee [a]\n\n# B\n\n[a]:\n/url "t1\nt2\nt3\nt4\nt5"\n',
+        ),
+      ).toBeNull();
+      // A blank line inside the title does not end the definition.
+      expect(
+        await sectionsFor('# A\n\nsee [a]\n\n# B\n\n[a]:\n/url "t1\n\nt2"\n'),
+      ).toBeNull();
+      // …including one that completes on the stream's unterminated last line.
+      expect(
+        await sectionsFor('# A\n\nsee [a]\n\n# B\n\n[a]:\n/url "t1\nt2"'),
+      ).toBeNull();
+      // A title that never closes is no definition, so the boundaries stay.
+      expect(
+        await sectionsFor('# A\n\nsee [a]\n\n# B\n\n[a]:\n/url "t1\nt2'),
+      ).toHaveLength(2);
+    });
+
+    it("asks marked about the same preprocessed text the renderer parses", async () => {
+      // `escapeRawHtml` turns `<pre>` into text before the renderer's marked
+      // sees it, which un-hides the `[a]: /x` inside: it is a live definition
+      // and must disable splitting. Lexing the raw source instead would leave
+      // it inside an HTML block and split `see [a]` away from it.
+      const text =
+        "# A\n\nsee [a]\n\n" +
+        "text ".repeat(40) +
+        "\n\n# B\n\n<pre>\n\n[a]: /x\n\n</pre>\n\n# C\n\ntail\n";
+      expect(
+        await sectionsFor(text, {}, undefined, { escapeRawHtml: true }),
+      ).toBeNull();
+      // With the default options the same line is inside a raw HTML block — no
+      // definition — so the boundaries at `# B` and `# C` stand. (The rendered
+      // DOM of both variants is checked in the suite below.)
+      expect(await sectionsFor(text)).toHaveLength(3);
+    });
+
     it("drops all boundaries once a reference or footnote definition appears", async () => {
       const { scope, content, core } = createCore({
         hasNextChunk: true,
@@ -1542,19 +1747,71 @@ describe("streaming.incremental", () => {
       ).toBeNull();
     });
 
-    it("does not end a raw block at a mere closing-tag prefix like </prefix>", async () => {
-      // CommonMark's type-1 end condition is the literal `</pre>`: `</prefix>`
-      // is pre content, and the `#` after it is still inside the block.
+    it("keeps a closing-tag lookalike from ending a raw block early or losing a later split", async () => {
+      // The raw-block tracker is deliberately loose about the end of a type-1
+      // block: any `</pre…` prefix counts, where marked ends the block only at
+      // the literal `</pre>`. The looseness may cost a lex, never a wrong
+      // boundary — the oracle still refuses the headings marked keeps inside
+      // the block — so what is pinned here is that the heading after the real
+      // `</pre>` still splits.
       expect(
         await sectionsFor("# A\n\n<pre>\n\n</prefix>\n\n# x\n\n</pre>\n\n"),
       ).toBeNull();
       expect(
         await sectionsFor("# A\n\n<script>\n</scripts>\n# x\n</script>\n\n"),
       ).toBeNull();
+      // `</pre >` does not end the block for marked either, so `# x` stays
+      // inside it; the real `</pre>` does end it, and `## B` splits. (The
+      // refusal memoised at `# x` is dropped by the closing-tag line.)
+      expect(
+        await sectionsFor("# A\n\n<pre>\n\n</pre >\n# x\n</pre>\n## B\n\n"),
+      ).toEqual(["# A\n\n<pre>\n\n</pre >\n# x\n</pre>\n", "## B\n\n"]);
       // …and the block still ends at the real closing tag.
       expect(
         await sectionsFor("# A\n\n<pre>\n\n# x\n\n</pre>\n\n## B\n\n"),
       ).toHaveLength(2);
+    });
+
+    it("memoises a refused heading across the blank lines inside a fence", async () => {
+      // A fenced block's body may contain blank lines, and a refusal caused by
+      // the open fence stays valid across them. Without the memo surviving
+      // them, every column-0 `#` line in the block would lex the whole prefix
+      // twice, which is the O(N²) the memo exists to prevent.
+      const body = Array.from(
+        { length: 60 },
+        (_, i) => `# ${i}\n\nsome code ${i}\n`,
+      ).join("");
+      const text = `# A\n\npara\n\n\`\`\`sh\n${body}\`\`\`\n\n# B\n\nb\n`;
+
+      const parser = new Parser();
+      let lexCalls = 0;
+      const countingLexer = (markdown: string) => {
+        lexCalls += 1;
+        return parser.lex(markdown);
+      };
+      const scope = effectScope();
+      const content = ref("");
+      const streamingRef = ref<StreamingOption>({
+        hasNextChunk: true,
+        incremental: noMin,
+      });
+      let core!: StreamingResult;
+      scope.run(() => {
+        core = useStreamingCore(
+          content,
+          streamingRef,
+          undefined,
+          countingLexer,
+        );
+      });
+      content.value = text;
+      await nextTick();
+      // The split at `# B` is placed, and the 60 `#` lines inside the fence
+      // cost a handful of lexes (one probe for the refusal, one for the
+      // split), not two per line.
+      expect(core.sections.value).toHaveLength(2);
+      expect(lexCalls).toBeLessThan(20);
+      scope.stop();
     });
 
     it("ends a list at a thematic-break-shaped marker line instead of treating it as a sibling", async () => {
@@ -1984,7 +2241,12 @@ describe("streaming.incremental", () => {
       const streamingRef = ref<StreamingOption>(streaming);
       let core!: StreamingResult;
       scope.run(() => {
-        core = useStreamingCore(content, streamingRef);
+        core = useStreamingCore(
+          content,
+          streamingRef,
+          undefined,
+          oracleLexerFor(),
+        );
       });
       await nextTick();
       expect(core.sections.value).toHaveLength(6);
@@ -2056,7 +2318,12 @@ describe("streaming option identity", () => {
     });
     let core!: StreamingResult;
     scope.run(() => {
-      core = useStreamingCore(content, streamingRef);
+      core = useStreamingCore(
+        content,
+        streamingRef,
+        undefined,
+        oracleLexerFor(),
+      );
     });
     await nextTick();
     const before = core.sections.value;
@@ -2136,11 +2403,56 @@ describe("hasUnclosedRawTags", () => {
     expect(hasUnclosedRawTags("<div>\n\n```\ncode\n```\n\n</div>")).toBe(false);
   });
 
-  it("does not mistake autolinks, stray closers, void or self-closing tags for containers", () => {
+  it("does not mistake autolinks, stray closers or void tags for containers", () => {
     expect(hasUnclosedRawTags("see <https://x.ant.design> now")).toBe(false);
     expect(hasUnclosedRawTags("</div>")).toBe(false);
     expect(hasUnclosedRawTags('<br> and <img src="x"> and <hr>')).toBe(false);
-    expect(hasUnclosedRawTags("<div/>")).toBe(false);
+    // In HTML the self-closing slash is ignored on a non-void element: this
+    // really does open a <div> that nothing closes.
+    expect(hasUnclosedRawTags("<div/>")).toBe(true);
+    expect(hasUnclosedRawTags("<section />\n\ntext")).toBe(true);
+    expect(hasUnclosedRawTags("<section />\n\ntext\n\n</section>")).toBe(false);
+  });
+
+  it("treats an uppercase-spelled tag as a container protectCustomTags may delete", () => {
+    // `protectCustomTags` deletes `<Tag>…</Tag>` wholesale before marked runs,
+    // so a split between them would keep a heading the whole render lost — even
+    // when the name is a void HTML element, as <BR> is.
+    expect(hasUnclosedRawTags("<BR>\n\n# H\n</BR>")).toBe(false);
+    expect(hasUnclosedRawTags("<BR>\n\n# H")).toBe(true);
+    // Lowercase void tags are unaffected.
+    expect(hasUnclosedRawTags("<br>\n\n# H")).toBe(false);
+  });
+
+  it("reads a four-space-indented fence run as an indented code block", () => {
+    // The `</div>` in the block's body is code, so the <div> above is open.
+    expect(hasUnclosedRawTags("<div>\n\n    ```\n    </div>\n    ```\n")).toBe(
+      true,
+    );
+    expect(hasUnclosedRawTags("<div>\n\n    ~~~\n    </div>\n    ~~~\n")).toBe(
+      true,
+    );
+    // …but a real tag after the block is still seen — and is unclosed here.
+    expect(hasUnclosedRawTags("    ```\n<pre>\n    ```")).toBe(true);
+    expect(hasUnclosedRawTags("    ```\n<div></div>\n    ```\n\ntext")).toBe(
+      false,
+    );
+  });
+
+  it("does not pair a line-leading backtick run with a run after an HTML block", () => {
+    // A line starting an HTML block interrupts the paragraph, so the span does
+    // not cross it and the <div> on that line is real HTML.
+    expect(hasUnclosedRawTags("`x\n<div>\ny`\n\n")).toBe(true);
+    // The same pairing inside one paragraph still hides the tag.
+    expect(hasUnclosedRawTags("`x <div> y`\n\n")).toBe(false);
+  });
+
+  it("does not open a fence for a backtick info string that contains a backtick", () => {
+    // ```foo``` is paragraph text with an inline code span, so the <div> after
+    // it is real HTML and stays open.
+    expect(hasUnclosedRawTags("```foo``` <div> ```\n\ntext")).toBe(true);
+    // Tilde fences have no such restriction.
+    expect(hasUnclosedRawTags("~~~a`b\n<div>\n~~~")).toBe(false);
   });
 
   it("handles misnesting like the HTML parser: closing a container closes what is inside it", () => {

@@ -251,6 +251,11 @@ const classifyRawScanLine = (line: string, fence: RawScanFenceState): void => {
   }
   if (runLen < 3) return;
   if (!fence.inFence) {
+    // A *backtick* fence's info string may not contain a backtick (CommonMark,
+    // and marked agrees: ```foo``` is a paragraph with an inline code span).
+    // Opening a phantom fence there swallows every tag in the rest of the
+    // document. Tilde fences have no such restriction.
+    if (marker === "`" && line.slice(pos + runLen).includes("`")) return;
     fence.inFence = true;
     fence.fenceChar = marker;
     fence.fenceLen = runLen;
@@ -268,10 +273,55 @@ const classifyRawScanLine = (line: string, fence: RawScanFenceState): void => {
 };
 
 /**
+ * Tag names whose line-leading `<name` (or, for the type-6 names, `</name`)
+ * starts an HTML block that *interrupts a paragraph*: CommonMark's type-6 list.
+ * Derived by asking marked rather than from memory — `span`, `em`, `a`, `svg`,
+ * `math` and the other inline names are deliberately absent, because a line
+ * starting with one of those is paragraph text that a code span may cross.
+ */
+const PARAGRAPH_INTERRUPTING_TAGS = new Set(
+  "address article aside base basefont blockquote body caption center col colgroup dd details dialog dir div dl dt fieldset figcaption figure footer form frame frameset h1 h2 h3 h4 h5 h6 head header hr html iframe legend li link main menu menuitem nav noframes ol optgroup option p param search section summary table tbody td tfoot th thead title tr track ul".split(
+    " ",
+  ),
+);
+
+/** Type-1 tags interrupt as openers only; their closing tags start nothing. */
+const BLOCK_OPENER_TAGS = new Set(["pre", "script", "style", "textarea"]);
+
+/**
+ * Whether a `<` at `pos` begins an HTML block that interrupts the paragraph a
+ * code span lives in — in which case the span cannot cross it and the tag must
+ * be left visible to the tag scan.
+ */
+const startsParagraphInterruptingBlock = (
+  text: string,
+  pos: number,
+): boolean => {
+  let cursor = pos + 1;
+  const closing = text[cursor] === "/";
+  if (closing) cursor += 1;
+
+  let tagName = "";
+  while (cursor < text.length && TAG_NAME_CHAR_REGEX.test(text[cursor])) {
+    tagName += text[cursor];
+    cursor += 1;
+  }
+
+  tagName = tagName.toLowerCase();
+  if (BLOCK_OPENER_TAGS.has(tagName)) return !closing;
+  return PARAGRAPH_INTERRUPTING_TAGS.has(tagName);
+};
+
+/**
  * Index of the next run of exactly `len` backticks before the paragraph ends,
  * or -1 when there is none. CommonMark: a code span ends at the next run of
  * the *same* length, may contain line endings, and does not cross a blank
  * line; a run with no such closer is literal text, not a span.
+ *
+ * The lookahead also stops where the paragraph does: a blank line, or a line
+ * that starts an HTML block (`<div>`, `</pre>`, …) — the paragraph cannot
+ * continue past either, so a tag on that line is real HTML and must not be
+ * swallowed by a pairing.
  */
 const findClosingBacktickRun = (
   text: string,
@@ -285,6 +335,12 @@ const findClosingBacktickRun = (
       let ahead = pos + 1;
       while (text[ahead] === " " || text[ahead] === "\t") ahead += 1;
       if (text[ahead] === "\n" || ahead >= text.length) return -1;
+      if (
+        text[ahead] === "<" &&
+        startsParagraphInterruptingBlock(text, ahead)
+      ) {
+        return -1;
+      }
       pos += 1;
       continue;
     }
@@ -302,6 +358,56 @@ const findClosingBacktickRun = (
 };
 
 /**
+ * Columns of whitespace between the start of `pos`'s line and `pos`, or -1 when
+ * a non-whitespace character precedes it on the line. A tab advances to the
+ * next multiple of four, the way CommonMark counts indentation.
+ */
+const lineIndentColumns = (text: string, pos: number): number => {
+  let lineStart = pos;
+  while (lineStart > 0 && text[lineStart - 1] !== "\n") lineStart -= 1;
+
+  let columns = 0;
+  for (let i = lineStart; i < pos; i++) {
+    if (text[i] === " ") {
+      columns += 1;
+    } else if (text[i] === "\t") {
+      columns += 4 - (columns % 4);
+    } else {
+      return -1;
+    }
+  }
+  return columns;
+};
+
+/**
+ * End offset of the indented code block whose first line starts at `pos` (a
+ * line indented four columns): the start of the first following line that is
+ * neither blank nor indented four columns, or the end of the text. Blank lines
+ * do not end the block.
+ */
+const skipIndentedCodeBlock = (text: string, pos: number): number => {
+  let cursor = pos;
+  for (;;) {
+    const newline = text.indexOf("\n", cursor);
+    cursor = newline === -1 ? text.length : newline + 1;
+    if (cursor >= text.length) return cursor;
+
+    let probe = cursor;
+    let columns = 0;
+    while (
+      probe < text.length &&
+      (text[probe] === " " || text[probe] === "\t")
+    ) {
+      columns += text[probe] === "\t" ? 4 - (columns % 4) : 1;
+      probe += 1;
+    }
+    if (probe < text.length && text[probe] !== "\n" && columns < 4) {
+      return cursor;
+    }
+  }
+};
+
+/**
  * Scan one run of non-fence lines for raw HTML tags, maintaining the stack of
  * open containers across runs. Returns true when the range ends inside an
  * unterminated tag or comment (the browser would swallow whatever follows,
@@ -312,7 +418,7 @@ const scanRawTagRange = (text: string, openStack: string[]): boolean => {
   while (pos < text.length) {
     const char = text[pos];
 
-    if (char === "`") {
+    if (char === "`" || char === "~") {
       // `` `<div>` `` in prose is text, not an element. Resolving the span by
       // lookahead (rather than assuming every run opens one) matters both
       // ways: with a closer, the `<div>` inside is skipped; without one, the
@@ -320,20 +426,33 @@ const scanRawTagRange = (text: string, openStack: string[]): boolean => {
       // assuming an open span there would let an unclosed container slip past
       // this guard and break the section-split DOM.
       let runLen = 1;
-      while (text[pos + runLen] === "`") runLen += 1;
-      // A run of three or more backticks that *begins its line* is block-level
-      // code (an indented code block, or a fence the line classifier did not
-      // treat as one), never the opener of a paragraph's inline span. Pairing
-      // it with a later run would skip every line between and hide a real tag —
-      // e.g. `    ```\n<pre>\n    ``` ` would swallow the `<pre>` and let an
-      // unclosed container slip past this guard. Skipping only the run is the
-      // safe direction: it can only make more text visible to the tag scan.
-      let lineStart = pos;
-      while (lineStart > 0 && text[lineStart - 1] !== "\n") lineStart -= 1;
-      if (runLen >= 3 && /^[ \t]*$/.test(text.slice(lineStart, pos))) {
+      while (text[pos + runLen] === char) runLen += 1;
+      const indent = runLen >= 3 ? lineIndentColumns(text, pos) : -1;
+
+      // A run of three or more fence characters that begins its line indented
+      // by four columns is an *indented code block*, not a fence: the whole
+      // block is code, so a `</div>` inside it is text the browser never sees.
+      // Skipping the block keeps such a fake closer from popping a container
+      // that is really open, and stopping at the first line that is neither
+      // blank nor indented keeps a real tag after the block visible.
+      if (indent >= 4) {
+        pos = skipIndentedCodeBlock(text, pos);
+        continue;
+      }
+
+      // A line-leading run of three or more backticks is block-level code when
+      // the line classifier recognised it as a fence (then the whole fence is
+      // excluded from this range) and indented code when it is indented four
+      // columns (handled above). What is left is paragraph text — a run whose
+      // info string contains a backtick is not a fence at all — so the ordinary
+      // span pairing below is the right reading, and *not* skipping the run is
+      // what keeps a real tag after the span visible.
+      // A tilde run carries no span semantics, so it is always skipped.
+      if (char === "~") {
         pos += runLen;
         continue;
       }
+
       const close = findClosingBacktickRun(text, pos + runLen, runLen);
       pos = close === -1 ? pos + runLen : close + runLen;
       continue;
@@ -377,7 +496,18 @@ const scanRawTagRange = (text: string, openStack: string[]): boolean => {
       // A tag cut off by the end of the range swallows whatever follows as
       // attribute text in the whole-document parse.
       if (!openingTag.foundEnd) return true;
-      if (!openingTag.isSelfClosing && !VOID_ELEMENTS.has(openingTag.tagName)) {
+      // Two ways a tag that looks opened-and-closed still opens a container:
+      //  - a non-void element with a self-closing slash: in HTML that slash is
+      //    ignored, so `<div/>` really does swallow whatever follows. (Foreign
+      //    content such as `<circle/>` does self-close, but the pop-to-match
+      //    below closes it with its `<svg>` parent.)
+      //  - `<Tag …>`, an uppercase-spelled name: `protectCustomTags` (on by
+      //    default) deletes the whole `<Tag>…</Tag>` region before marked
+      //    parses it, so a split inside that region would keep markup the
+      //    whole-document render does not have.
+      // Both can only add a refusal, never remove one.
+      const customTagShape = /[A-Z]/.test(text[pos + 1] ?? "");
+      if (customTagShape || !VOID_ELEMENTS.has(openingTag.tagName)) {
         openStack.push(openingTag.tagName);
       }
       pos = openingTag.endPos;
