@@ -1,9 +1,9 @@
 <docs lang="zh-CN">
-自定义插槽：`railItem` 接管刻度外观（`scale` 即距离衰减比例），`preview` 接管预览卡片内容，`backToBottom` 接管回到最新按钮。
+自定义插槽：`railItem` 接管刻度外观（`scale` 即距离衰减比例），`preview` 接管预览卡片内容，`backToBottom` 接管回到最新按钮——视口与跟随逻辑仍由组件维护。
 </docs>
 
 <docs lang="en-US">
-Custom slots: `railItem` owns the tick appearance (`scale` is the attenuation ratio), `preview` owns the card content, and `backToBottom` owns the back-to-latest button.
+Custom slots: `railItem` owns the tick appearance (`scale` is the attenuation ratio), `preview` owns the card content, and `backToBottom` owns the back-to-latest button — the viewport and follow logic stay with the component.
 </docs>
 
 <script setup lang="ts">
@@ -17,7 +17,7 @@ const messages = Array.from({ length: 10 }, (_, index) => ({
 
 const items = messages.map((message, index) => ({
   id: message.id,
-  title: `#${index + 1} ${message.from}`,
+  title: `#${index + 1} · ${message.from === "user" ? "You" : "Assistant"}`,
   description: message.content,
 }));
 </script>
@@ -77,10 +77,14 @@ const items = messages.map((message, index) => ({
       style="padding: 8px 16px"
     >
       <div
-        style="
-          padding: 8px 12px;
-          border-radius: 12px;
-          background: var(--ant-color-fill-secondary);
+        style="max-width: 78%; padding: 8px 12px; border-radius: 12px"
+        :style="
+          message.from === 'user'
+            ? {
+                marginInlineStart: 'auto',
+                background: 'var(--ant-color-primary-bg)',
+              }
+            : { background: 'var(--ant-color-fill-secondary)' }
         "
       >
         <a-typography-text>{{ message.content }}</a-typography-text>
