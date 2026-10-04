@@ -2,8 +2,8 @@ import type { CSSObject } from "@antdv-next/cssinjs";
 import type { FullToken, GenerateStyle } from "antdv-next/theme/internal";
 
 import { unit } from "@antdv-next/cssinjs";
-import { genStyleHooks } from "antdv-next/theme/internal";
 
+import { genStyleHooks } from "../../theme/genStyleUtils";
 import {
   FOLLOW_MOTION_EASE,
   MIN_RAIL_ITEM_HEIGHT,
