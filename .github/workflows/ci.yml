@@ -83,7 +83,7 @@ jobs:
         if: matrix.task == 'test'
         uses: codecov/codecov-action@v5
         with:
-          files: coverage/clover.xml
+          files: coverage/lcov.info
           token: ${{ secrets.CODECOV_TOKEN }}
           # Coverage floors already fail the job in vitest.config.ts;
           # Codecov is supplementary reporting, never a second gate.
