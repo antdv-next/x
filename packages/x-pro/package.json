@@ -32,7 +32,8 @@
   "dependencies": {
     "@antdv-next/cssinjs": "catalog:prod",
     "@v-c/util": "catalog:prod",
-    "antdv-next": "catalog:prod"
+    "antdv-next": "catalog:prod",
+    "vue": "catalog:prod"
   },
   "peerDependencies": {
     "vue": ">=3.5.0"

@@ -1,13 +1,16 @@
 <docs lang="zh-CN">
-命令式控制：通过组件 `ref` 定位历史消息、贴底或恢复自动跟随，适合「跳到引用消息」这类外部入口。
+命令式控制：通过组件 `ref` 定位历史消息、贴底或恢复自动跟随，适合「跳到引用消息」这类外部入口；跳转时导轨刻度同步点亮。
 </docs>
 
 <docs lang="en-US">
-Imperative control: use the component `ref` to jump to a message, pin to the bottom, or restore auto-follow — handy for "jump to quoted message" entries.
+Imperative control: use the component `ref` to jump to a message, pin to the bottom, or restore auto-follow — handy for "jump to quoted message" entries, with the rail keeping the active tick in sync.
 </docs>
 
 <script setup lang="ts">
-import type { MessageScrollerRef } from "@antdv-next/x-pro";
+import type {
+  MessageScrollerItem,
+  MessageScrollerRef,
+} from "@antdv-next/x-pro";
 
 import { MessageScroller } from "@antdv-next/x-pro";
 import { ref } from "vue";
@@ -18,6 +21,12 @@ const messages = Array.from({ length: 12 }, (_, index) => ({
   id: `message-${index + 1}`,
   from: index % 2 === 0 ? "user" : "assistant",
   content: `Message ${index + 1}: the reader can jump here from outside the transcript.`,
+}));
+
+const items: MessageScrollerItem[] = messages.map((message, index) => ({
+  id: message.id,
+  title: `Message ${index + 1}`,
+  description: message.content,
 }));
 
 function jumpToLast() {
@@ -45,6 +54,8 @@ function followLatest() {
 
     <MessageScroller
       ref="scrollerRef"
+      navigation="rail"
+      :items="items"
       back-to-bottom
       :style="{
         height: '300px',
