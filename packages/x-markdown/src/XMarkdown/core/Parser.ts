@@ -1,4 +1,4 @@
-import type { Tokens } from "marked";
+import type { Token, Tokens } from "marked";
 
 import { Marked } from "marked";
 
@@ -181,8 +181,38 @@ export class Parser {
     return this.options.codeBlockStatus[lang] ?? this.options.streamStatus;
   }
 
+  /**
+   * Block-lex `markdown` with the same marked configuration this parser
+   * renders with **and the same preprocessing** — the streaming section
+   * splitter uses it to decide whether a `#` line really starts a new
+   * top-level block, so the splitter and the renderer can never disagree.
+   * Lexing the raw source instead would ask the two about different documents:
+   * `protectCustomTags` deletes whole regions the renderer never sees, and
+   * `escapeRawHtml` turns tags into text, either of which moves a heading or a
+   * definition across a boundary. `config.extensions` (the bundled LaTeX
+   * plugin's `$$` rule) come along through `markdownInstance`.
+   */
+  lex(markdown: string): readonly Token[] {
+    return this.markdownInstance.lexer(this.preprocess(markdown));
+  }
+
   parse(markdown: string, parseOptions?: { injectTail?: boolean }): string {
     this.injectTail = parseOptions?.injectTail ?? false;
+
+    const processed = this.preprocess(markdown);
+
+    this.prepareCodeBlockStates(processed);
+    const html = this.markedParse(processed);
+
+    if (this.injectTail) {
+      return this.injectTailMarker(html);
+    }
+
+    return html;
+  }
+
+  /** Everything `parse` does to the source before marked sees it. */
+  private preprocess(markdown: string): string {
     let processed = markdown;
 
     if (this.options.protectCustomTags) {
@@ -193,14 +223,7 @@ export class Parser {
       processed = this.escapeRawHtml(processed);
     }
 
-    this.prepareCodeBlockStates(processed);
-    const html = this.markedParse(processed);
-
-    if (this.injectTail) {
-      return this.injectTailMarker(html);
-    }
-
-    return html;
+    return processed;
   }
 
   private markedParse(markdown: string): string {

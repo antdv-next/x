@@ -40,6 +40,21 @@ const typewriterRef = computed(() => streamingResolved.value?.typewriter);
 const hasNextChunkRef = computed(() => !!streamingResolved.value?.hasNextChunk);
 const pacedContent = useTypewriter(contentRef, typewriterRef, hasNextChunkRef);
 
+// The parser is created before the streaming core because the section
+// splitter borrows its marked instance: a `#` line only starts a section when
+// the *renderer's* marked reads it as a new top-level block, so `config`
+// (including extension plugins such as LaTeX) can never drift from the split.
+const parser = shallowRef(
+  new Parser({
+    openLinksInNewTab: props.openLinksInNewTab,
+    paragraphTag: props.paragraphTag,
+    protectCustomTags: props.protectCustomTagNewlines,
+    escapeRawHtml: props.escapeRawHtml,
+    config: props.config,
+    components: props.components,
+  }),
+);
+
 // An empty output renders nothing at all (no root wrapper, no debug panel),
 // matching upstream's early `if (!output) return null`; the template guards
 // the wrapper with `v-if="processedContent"`.
@@ -47,6 +62,7 @@ const { output: processedContent, sections } = useStreamingCore(
   pacedContent,
   streamingResolved,
   componentsRef,
+  markdown => parser.value.lex(markdown),
 );
 const { tailContent, tailComponent, showTail } = useTail(streamingResolved);
 
@@ -89,17 +105,6 @@ const VNodeRenderer = defineComponent({
     return () => props.node;
   },
 });
-
-const parser = shallowRef(
-  new Parser({
-    openLinksInNewTab: props.openLinksInNewTab,
-    paragraphTag: props.paragraphTag,
-    protectCustomTags: props.protectCustomTagNewlines,
-    escapeRawHtml: props.escapeRawHtml,
-    config: props.config,
-    components: props.components,
-  }),
-);
 
 const renderer = shallowRef(
   new VueRenderer({

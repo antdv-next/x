@@ -56,7 +56,10 @@ export interface TableState {
  * Incremental section-boundary state for `streaming.incremental`. A section
  * boundary is an offset (into the input) where a new top-level block starts
  * and everything before it can be parsed on its own with the same result as
- * parsing the whole document. Only column-0 ATX headings qualify.
+ * parsing the whole document. Only column-0 ATX headings qualify, and whether
+ * such a line really starts a top-level block is decided by lexing the current
+ * section with marked (`trackSectionBoundary`) — never by a hand-written model
+ * of marked's block grammar.
  */
 export interface SectionState {
   /** Offsets where a new section starts. The first section implicitly starts at 0. */
@@ -64,31 +67,57 @@ export interface SectionState {
   /** Offset of the first character of the line currently being streamed */
   lineStart: number;
   /**
-   * Inside an HTML block of CommonMark type 3–7, which ends at the next blank
-   * line. A `#` line inside it is HTML text, not a heading.
-   */
-  inHtmlBlock: boolean;
-  /**
    * Set once a construct that can be referenced from another section has been
-   * seen (link reference / footnote definitions). Splitting is disabled for the
+   * seen (link reference / footnote definition). Splitting is disabled for the
    * rest of the stream and any offsets recorded so far are discarded.
    */
   noSplit: boolean;
   /**
-   * An open block whose body may contain blank lines and heading-looking lines
-   * (`<pre>`, `<script>`, `<style>`, `<textarea>`, HTML comments, `$$` math,
-   * `\[` math). No boundary is recorded until it closes.
+   * Set once any line has carried the label terminator `]:`, the one thing
+   * every link reference / footnote definition contains. It is only a cheap
+   * gate that keeps the marked `links` probe off documents that cannot contain
+   * a definition; whether a definition really exists is marked's answer.
+   * Sticky, because a definition can complete arbitrarily far from its `]:`
+   * line — a title may span any number of lines, blank lines included — so
+   * there is no line count after which the question stops mattering.
    */
-  rawBlock: { close: string; exact: boolean } | null;
+  sawDefinitionTrigger: boolean;
   /**
-   * A list marker line was seen in the current section. Together with
-   * `sawIndentedFence` this vetoes further boundaries: the line-level fence
-   * scanner and the block parser disagree about fences that live inside a
-   * list item (see trackSectionBoundary).
+   * Input length the last `links` probe ran on (-1 before the first). Re-running
+   * the same text (the pass is idempotent) must not pay for the same lex twice,
+   * and the probe itself only runs when a recorded boundary makes its answer
+   * matter — see `settleDefinition`.
    */
-  sawListMarker: boolean;
-  /** A fence run indented by 1–3 spaces was seen in the current section. */
-  sawIndentedFence: boolean;
+  definitionCheckedLength: number;
+  /**
+   * An open raw block whose body may contain blank lines and heading-looking
+   * lines: `<pre>`/`<script>`/`<style>`/`<textarea>`, an HTML comment, a
+   * processing instruction, a declaration, CDATA, or `$$` / `\[` math. Its
+   * raw text is re-interpreted by the browser and DOMPurify (a `<?php` opens a
+   * bogus comment that can swallow a following `<h1>` open tag), so no
+   * boundary is recorded until it closes. `bodyChars` matters only for `exact`
+   * (`$$` math): the plugin's rule needs a non-empty body between the opener
+   * and its closing run.
+   */
+  rawBlock: { close: string; exact: boolean; bodyChars?: number } | null;
+  /**
+   * A memoised "the current section still ends inside an open block" verdict
+   * (marked lexed `text[sectionStart..end]` and a heading there would be
+   * swallowed). It keeps a long fenced code block full of column-0 `#` lines
+   * from being re-lexed once per line; the check re-runs once the prefix has
+   * grown by more than `OPEN_BLOCK_MEMO_CHARS` or the fence scanner's verdict
+   * changes. It belongs to the current section implicitly: `offsets` only
+   * changes together with clearing this field. `fenceCause` says the refusal
+   * came from an unclosed fenced code block, whose body blank lines do not end
+   * (marked's own last top-level token is a fenced `code` token) — only such a
+   * memo survives a blank line. Only refusals are stored — reusing a stale
+   * refusal loses a split, never invents one.
+   */
+  openBlock: {
+    end: number;
+    fenceOpen: boolean;
+    fenceCause: boolean;
+  } | null;
 }
 
 export interface StreamCache {
@@ -195,8 +224,8 @@ export interface StreamingOption {
    */
   hasNextChunk?: boolean;
   /**
-   * @description 流式期间按标题把正文切成若干段，只有正在增长的最后一段随每个 chunk 重新解析、消毒和渲染，前面的段直接复用。只在顶格的 ATX 标题（`# ` ～ `###### `）前切分；围栏代码、HTML 块（`<div>`、`<pre>`、`<script>`、注释等）、`$$` 公式内的 `#` 行不算标题。出现链接引用定义或脚注定义、或自定义组件标签跨越切点时不切分。传对象可调整：短于 `minSectionChars` 的段并入下一段；`keepSectionsOnEnd`（默认 true）表示流结束（`hasNextChunk` 变为 false）后各段保持不变、已挂载的自定义组件不重新挂载，设为 false 则流结束时回到整篇一次性渲染，用了带全局状态的 marked 扩展（如标题 id 去重）时应关掉。
-   * @description Splits the document into sections at headings while streaming so that only the last, still-growing section is re-parsed, sanitized and rendered per chunk; earlier sections are reused as-is. A boundary is only placed before a column-0 ATX heading (`# ` to `###### `); `#` lines inside fenced code, HTML blocks (`<div>`, `<pre>`, `<script>`, comments, …) and `$$` math are not headings. Splitting is disabled when a link reference or footnote definition appears, or when a custom component tag spans the boundary. Pass an object to tune it: sections shorter than `minSectionChars` are merged into the next one; `keepSectionsOnEnd` (default true) keeps the sections once the stream ends (`hasNextChunk` becomes false) so mounted custom components are not remounted, while false re-renders the whole document at once when the stream ends — turn it off when using marked extensions with document-wide state (e.g. heading id de-duplication).
+   * @description 流式期间按标题把正文切成若干段，只有正在增长的最后一段随每个 chunk 重新解析、消毒和渲染，前面的段直接复用。只在顶格的 ATX 标题（`# ` ～ `###### `）前切分，且该行必须真的开启一个新的顶层块——切分器把当前段交给渲染器所用的同一个 marked 实例来判定，而不是自己复刻块级语法，因此不会在围栏代码、HTML 块、列表、引用块或缩进代码内部切分。浏览器与 DOMPurify 会重新解释的原始块（`<pre>`、注释、`<?`、`<!`、`<![CDATA[`）以及 `$$` / `\[` 公式在闭合前不参与切分。**「没有切分」都是有意为之**：拒绝切分只会少复用一段，而多切一段会改变渲染结果。出现链接引用定义或脚注定义、或自定义组件标签跨越切点时不切分。`$$` 公式以自带的 Latex 插件规则为准，未注册该插件时用 `$$` 包住代码围栏的内容请关闭本选项。传对象可调整：短于 `minSectionChars` 的段并入下一段；`keepSectionsOnEnd`（默认 true）表示流结束（`hasNextChunk` 变为 false）后各段保持不变、已挂载的自定义组件不重新挂载，设为 false 则流结束时回到整篇一次性渲染，用了带全局状态的 marked 扩展（如标题 id 去重）时应关掉。
+   * @description Splits the document into sections at headings while streaming so that only the last, still-growing section is re-parsed, sanitized and rendered per chunk; earlier sections are reused as-is. A boundary is only placed before a column-0 ATX heading (`# ` to `###### `) **and only when the renderer's own marked instance reads that line as a new top-level block** — the splitter lexes the current section with the same `config` (extension plugins included) instead of re-implementing the block grammar, so it never splits inside fenced code, an HTML block, a list, a blockquote or indented code. Raw blocks the browser and DOMPurify re-interpret (`<pre>`, comments, `<?`, `<!`, `<![CDATA[`) and `$$` / `\[` math are held out of any split until they close. A case where no boundary is placed is deliberate: refusing only gives up incremental reuse, while an over-eager boundary would change the rendered DOM. Splitting is disabled when a link reference or footnote definition appears, or when a custom component tag spans the boundary. The `$$` math model follows the bundled Latex plugin; without that plugin registered, turn this off for content that wraps code fences in `$$` delimiters. Pass an object to tune it: sections shorter than `minSectionChars` are merged into the next one; `keepSectionsOnEnd` (default true) keeps the sections once the stream ends (`hasNextChunk` becomes false) so mounted custom components are not remounted, while false re-renders the whole document at once when the stream ends — turn it off when using marked extensions with document-wide state (e.g. heading id de-duplication).
    * @default false
    */
   incremental?:

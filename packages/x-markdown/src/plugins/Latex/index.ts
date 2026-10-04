@@ -17,6 +17,7 @@ export type LatexOption = {
 type Token = {
   text: string;
   displayMode: boolean;
+  isBlock?: boolean;
 };
 
 type Render = (token: Token) => string;
@@ -76,15 +77,25 @@ function inlineKatex(renderer: Render, replaceAlignStart: boolean) {
         ? replaceAlign(rawText.trim())
         : rawText.trim();
 
+      // A `\[...\]` run whose content spans a newline is a block-level formula
+      // rendered inside inline flow; the newline test must happen before trim.
+      const isBracketSyntax = nonStandardMatch?.[2] !== undefined;
+      const hasNewline = rawText.includes("\n");
+
       return {
         type: "inlineKatex",
         raw: match[0],
         text,
         displayMode: true,
+        isBlock: isBracketSyntax && hasNewline,
       };
     },
-    renderer: (token: Token) =>
-      `<span class="inline-katex">${renderer(token)}</span>`,
+    renderer: (token: Token) => {
+      const html = renderer(token);
+      return token.isBlock
+        ? `<span class="block-katex">${html}</span>`
+        : `<span class="inline-katex">${html}</span>`;
+    },
   };
 }
 
