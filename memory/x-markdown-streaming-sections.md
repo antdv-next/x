@@ -41,16 +41,16 @@ conservative raw-block state, and a bounded memo of refusals.
 Upstream's `trackSectionBoundary` is ~62 lines. Ours is structurally the same
 shape, plus:
 
-| #   | Divergence                                                                                                                                             | Why                                                                                                                                                                                         |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | Boundaries are verified by lexing the section with the renderer's marked (`startsNewTopLevelBlock` + `openBlock` memo + `Parser.lex`)                  | Upstream's char-level fence scanner is blind to containers, so it splits wrongly when a fence is reopened at top level after a list item ends (upstream bug #1 below)                       |
-| 2   | No `HTML_BLOCK_OPEN` catch-all; HTML blocks are decided by marked                                                                                      | Upstream's "any `<x` line opens an HTML block until a blank line" is a superset approximation that also _misses_ correct splits (e.g. a PI that closes at `?>` before any blank line)       |
-| 3   | Raw-block set extended with `<?` (PI), `<!` (declaration) and `<![CDATA[`                                                                              | Their raw text is re-interpreted by the browser/DOMPurify - `<?php` opens a bogus comment that can swallow a following `<h1>` open tag (upstream bug #2)                                    |
-| 4   | `$$` math: opener must be exactly `$`/`$$` (no trailing whitespace); closer must sit at column 0 with the same run length, only after a non-empty body | Matches the bundled LaTeX plugin's rule `^(\${1,2})\n` / `\n\1`; upstream uses `\s*$` and `line.trim() === close`, which close on indented / longer / trailing-space runs (upstream bug #3) |
-| 5   | A candidate `#` line is still checked when the fence scanner believes it is inside a fence (no hard fence gate)                                        | Upstream returns early whenever `fence.inFenced`, so one mis-detected fence poisons every later split (upstream bug #4)                                                                     |
-| 6   | `hasUnclosedRawTags` veto (upstream only has `detectUnclosedComponentTags`)                                                                            | An unclosed `<div>` is auto-closed by DOMPurify at the section end, which changes the DOM shape                                                                                             |
-| 7   | The tracker state machine runs even when `incremental` is off (`record` gates only the recording); upstream skips it entirely                          | Keeps definitions / raw-block state / line starts correct when `incremental` is switched on mid-stream                                                                                      |
-| 8   | One trailing `\r` is stripped before the line classifiers                                                                                              | CRLF documents                                                                                                                                                                              |
+| #   | Divergence                                                                                                                                                                                                                   | Why                                                                                                                                                                                         |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Boundaries are verified by lexing the section with the renderer's marked (`startsNewTopLevelBlock` + `openBlock` memo + `Parser.lex`)                                                                                        | Upstream's char-level fence scanner is blind to containers, so it splits wrongly when a fence is reopened at top level after a list item ends (upstream bug #1 below)                       |
+| 2   | No `HTML_BLOCK_OPEN` catch-all; HTML blocks are decided by marked                                                                                                                                                            | Upstream's "any `<x` line opens an HTML block until a blank line" is a superset approximation that also _misses_ correct splits (e.g. a PI that closes at `?>` before any blank line)       |
+| 3   | Raw-block set extended with `<?` (PI), `<!` (declaration) and `<![CDATA[`                                                                                                                                                    | Their raw text is re-interpreted by the browser/DOMPurify - `<?php` opens a bogus comment that can swallow a following `<h1>` open tag (upstream bug #2)                                    |
+| 4   | `$$` math: opener must be exactly `$`/`$$` (no trailing whitespace); closer must sit at column 0 with the same run length, only after a non-empty body                                                                       | Matches the bundled LaTeX plugin's rule `^(\${1,2})\n` / `\n\1`; upstream uses `\s*$` and `line.trim() === close`, which close on indented / longer / trailing-space runs (upstream bug #3) |
+| 5   | A candidate `#` line is still checked when the fence scanner believes it is inside a fence (no hard fence gate). Raw-opener detection, by contrast, is gated on the renderer's marked (`lineIsCodeContent`), not the scanner | Upstream returns early whenever `fence.inFenced`, so one mis-detected fence poisons every later split (upstream bug #4)                                                                     |
+| 6   | `hasUnclosedRawTags` veto (upstream only has `detectUnclosedComponentTags`)                                                                                                                                                  | An unclosed `<div>` is auto-closed by DOMPurify at the section end, which changes the DOM shape                                                                                             |
+| 7   | The tracker state machine runs even when `incremental` is off (`record` gates only the recording); upstream skips it entirely                                                                                                | Keeps definitions / raw-block state / line starts correct when `incremental` is switched on mid-stream                                                                                      |
+| 8   | One trailing `\r` is stripped before the line classifiers                                                                                                                                                                    | CRLF documents                                                                                                                                                                              |
 
 ## Upstream bugs we deliberately fix
 
@@ -78,6 +78,33 @@ covering tests fail on purpose.
   document-wide state. If this bites, extend the same way math is handled.
 - Refusals are memoised for up to `OPEN_BLOCK_MEMO_CHARS` (4096) bytes, so a
   split may be lost right after an open block closes. Losing a split is safe.
+
+## Review follow-ups
+
+### 2026-10-04: a raw opener inside a fenced code block is code, not a block
+
+- **Repro:** `# A\n\npara\n\n```sh\n$$\necho hi\n```\n\n## B\n\nb\n\n## C\n\nc\n`
+  (an unpaired `<!--`, a `<pre>` / `<?` without its closer, or a fence nested
+  in a list item behave the same).
+- **Ground truth:** the `$$` / `<!--` line is fenced-code body, so it is not a
+  raw opener; `## B` / `## C` are top-level headings and split normally.
+- **Upstream behaviour:** upstream's tracker returns early whenever its char
+  fence scanner says `inFenced`, so it never sees these lines — but for the
+  wrong reason: its scanner is blind to fences nested in list items.
+- **Our behaviour (before this fix):** the raw-opener detection ran on every
+  line (the hard fence gate had been removed for the _heading_ check), so a
+  raw-opener-shaped line in fence body opened a `state.rawBlock` whose closer
+  is ordinary code text. It never closed, every later heading was suppressed,
+  and `sections` fell back to `null` — a lost incremental reuse, the rendered
+  DOM stayed correct.
+- **Decision:** before opening a raw block, ask the renderer's marked whether
+  the line is code body (`lineIsCodeContent`: appending the line must grow the
+  recursive code-token content). Do **not** re-introduce the char scanner as
+  the gate — a mis-detected fence would hide a real `$$` block that a prefix
+  lex cannot see.
+- **Covering test:** corpus `rawOpenerInFence` (per-character whole-vs-sectioned
+  DOM equivalence) and the guard "does not treat a raw opener inside a fenced
+  code block as a raw block".
 
 ## How it is verified
 

@@ -362,6 +362,29 @@ const corpora: Record<string, string> = {
     "end",
   ].join("\n"),
 
+  // A raw-opener-shaped line inside a fence (`$$`, an unpaired `<!--`) is code
+  // body, not a raw block. Treating it as one would open a sticky block whose
+  // closer is ordinary code text, suppressing every later boundary.
+  rawOpenerInFence: [
+    "# A",
+    "",
+    "para",
+    "",
+    "```sh",
+    "$$",
+    "<!--",
+    "echo hi",
+    "```",
+    "",
+    "## B",
+    "",
+    "b",
+    "",
+    "## C",
+    "",
+    "c",
+  ].join("\n"),
+
   // marked counts a tab as a single column in the marker gap, so the item's
   // content indent is 2 and the fence at two spaces is contained.
   tabAfterMarker: [
@@ -1341,6 +1364,38 @@ describe("streaming.incremental", () => {
       expect(
         await sectionsFor("# A\n\n<pre>\n\n# x\n\n</pre>\n\n## B\n\n"),
       ).toEqual(["# A\n\n<pre>\n\n# x\n\n</pre>\n\n", "## B\n\n"]);
+    });
+
+    it("does not treat a raw opener inside a fenced code block as a raw block", async () => {
+      // A bare `$$` or an unpaired `<!--` in fence body is code text. Opening
+      // a raw block there would be sticky — its closer is ordinary code text
+      // that never appears again — and would suppress every later heading.
+      expect(
+        await sectionsFor(
+          "# A\n\npara\n\n```sh\n$$\necho hi\n```\n\n## B\n\nb\n\n## C\n\nc\n",
+        ),
+      ).toHaveLength(3);
+      expect(
+        await sectionsFor(
+          "# A\n\npara\n\n```sh\n<!--\necho hi\n```\n\n## B\n\nb\n\n## C\n\nc\n",
+        ),
+      ).toHaveLength(3);
+      // A tilde fence behaves the same.
+      expect(
+        await sectionsFor("# A\n\n~~~\n$$\n~~~\n\n## B\n\nb\n\n## C\n\nc\n"),
+      ).toHaveLength(3);
+      // A fence nested in a list item is invisible to the char scanner; its
+      // raw opener is still code body.
+      expect(
+        await sectionsFor(
+          "- item\n\n  ```html\n  <!--\n  code\n  ```\n\n## B\n\nb\n\n## C\n\nc\n",
+        ),
+      ).toHaveLength(3);
+      // A genuine raw opener right after a closed fence still opens its block,
+      // so the heading inside it is not split on.
+      expect(
+        await sectionsFor("# A\n\n```\nx\n```\n\n$$\nmath\n$$\n\n## B\n\nb\n"),
+      ).toEqual(["# A\n\n```\nx\n```\n\n$$\nmath\n$$\n\n", "## B\n\nb\n"]);
     });
 
     it("drops all boundaries once a reference or footnote definition appears", async () => {

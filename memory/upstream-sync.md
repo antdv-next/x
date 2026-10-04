@@ -31,14 +31,13 @@ Package mapping:
 
 ## Cursor
 
-| Field                                  | Value                                                                                                                                   |
-| -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `last_synced_commit`                   | `7bd48aa` (tag `2.9.0`), `sync_count: 5`, `2026-09-12`                                                                                  |
-| Pending advance                        | `b42dc98` "chore: update upstream sync cursor" -> `8b76d6a`, `sync_count: 6`; sits on the unmerged branch `chore/sync-upstream-8b76d6a` |
-| Newest upstream commit visible locally | `8b76d6a` (2026-09-20, merge of PR #2061)                                                                                               |
+| Field                                  | Value                                                  |
+| -------------------------------------- | ------------------------------------------------------ |
+| `last_synced_commit`                   | `8b76d6a` (tag `2.9.0`), `sync_count: 6`, `2026-09-29` |
+| Newest upstream commit visible locally | `8b76d6a` (2026-09-20, merge of PR #2061)              |
 
-The pending advance belongs with the #2061 port, which already landed on
-`main` as `7b6b587`; only the cursor file update is missing.
+The `8b76d6a` advance landed on `main` as `e8f1bf1` "chore: update upstream
+sync cursor" (2026-09-30), together with the #2061 port on `main` as `7b6b587`.
 
 ## Synced PRs
 
@@ -58,7 +57,7 @@ The pending advance belongs with the #2061 port, which already landed on
 | `sync/ant-design-x-2061`                           | `6317ff1`         | The streaming-preset feature branch; superseded by `main` + the current fix branch                         |
 | `sync/ant-design-x-2035`                           | `617f11b`         | Older cursor/state variant (`614a63a`, `sync_count: 4`) plus `d7d0616`; the port that shipped is `2a2c789` |
 | `sync/ant-design-x-614a63a`                        | `a837928`         | "record sync status (25aad7b9..614a63a)"; state only                                                       |
-| `chore/sync-upstream-8b76d6a`                      | `b42dc98`         | **Pending cursor advance** to `8b76d6a`                                                                    |
+| `chore/sync-upstream-8b76d6a`                      | `b42dc98`         | Cursor advance to `8b76d6a`; superseded by `main`'s `e8f1bf1` (same state), branch is history only         |
 
 ## What to record after every sync
 

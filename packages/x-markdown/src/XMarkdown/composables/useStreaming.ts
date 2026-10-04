@@ -438,6 +438,52 @@ const startsNewTopLevelBlock = (
   prefix: string,
 ): boolean => lex(prefix + PROBE_HEADING).length > lex(prefix).length;
 
+/** The slice of a marked block token this file walks; everything else is opaque. */
+interface BlockToken {
+  type?: string;
+  text?: string;
+  tokens?: readonly unknown[];
+  items?: readonly { tokens?: readonly unknown[] }[];
+}
+
+/**
+ * Total length of the content of every code token (fenced or indented), at any
+ * depth. Used only to compare the document before and after appending one line:
+ * a code token that grows did not exist for that content before, so the line
+ * became code body rather than a new block.
+ */
+const codeContentLength = (tokens: readonly unknown[]): number => {
+  let total = 0;
+  for (const raw of tokens) {
+    const token = raw as BlockToken;
+    if (token.type === "code") total += token.text?.length ?? 0;
+    if (token.tokens) total += codeContentLength(token.tokens);
+    if (token.items) {
+      for (const item of token.items) {
+        if (item.tokens) total += codeContentLength(item.tokens);
+      }
+    }
+  }
+  return total;
+};
+
+/**
+ * Whether `line` (ending just past `lineEnd`) is code body per the renderer's
+ * own marked. A raw-opener-shaped line that is inside a code token must not
+ * open a raw block; see the call site. Appending the line can only grow code
+ * content by becoming the body of an already-open fence - none of the raw
+ * openers (column-0 `$`/`$$`/`\[`, up to three leading spaces before `<`) is
+ * itself a fence line, so a growth here is never a new fence.
+ */
+const lineIsCodeContent = (
+  lex: (markdown: string) => readonly unknown[],
+  text: string,
+  lineStart: number,
+  lineEnd: number,
+): boolean =>
+  codeContentLength(lex(text.slice(0, lineEnd))) >
+  codeContentLength(lex(text.slice(0, lineStart)));
+
 /** Fallback lexer for callers that do not hand over the renderer's own. */
 const fallbackLexer = (() => {
   const marked = new Marked({ gfm: true });
@@ -497,6 +543,14 @@ const trackSectionBoundary = (
   }
   const rawBlock = detectRawBlockOpen(line);
   if (rawBlock) {
+    // A line only looks like a raw opener because it is body text of a code
+    // block that the char-level fence scanner cannot see (a fence indented
+    // inside a list item, say). Opening a raw block there would be sticky:
+    // its closer is ordinary code text that usually never appears again, so
+    // every later heading would be suppressed. Ask the renderer's marked
+    // whether the line is code, never the scanner - a mis-detected fence
+    // would hide a real `$$` block that a prefix lex cannot see.
+    if (lineIsCodeContent(lex, text, lineStart, newlineIndex + 1)) return;
     state.rawBlock = rawBlock;
     return;
   }
