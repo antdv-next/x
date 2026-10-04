@@ -1,8 +1,9 @@
 import type { VueWrapper } from "@vue/test-utils";
+import type { App } from "vue";
 
 import { flushPromises, mount } from "@vue/test-utils";
 import { describe, expect, it, vi } from "vitest";
-import { h, nextTick } from "vue";
+import { h, nextTick, ref } from "vue";
 
 import type {
   MessageScrollerItem,
@@ -669,5 +670,504 @@ describe("MessageScroller", () => {
     expect(wrapper.find(CONTENT_SELECTOR).attributes("style")).toContain(
       "padding-bottom: 8px",
     );
+  });
+
+  it("detaches on navigation keys and ignores other keys", async () => {
+    const wrapper = mountScroller();
+
+    await wrapper.find(VIEWPORT_SELECTOR).trigger("keydown", {
+      key: "ArrowDown",
+    });
+    expect(wrapper.emitted("followChange")).toBeUndefined();
+
+    await wrapper.find(VIEWPORT_SELECTOR).trigger("keydown", { key: "PageUp" });
+    expect(lastPayload(wrapper, "followChange")).toEqual([false]);
+    expect(lastPayload(wrapper, "update:follow")).toEqual([false]);
+  });
+
+  it("keeps following when the wheel moves towards the live edge", async () => {
+    const wrapper = mountScroller();
+    const viewport = find(wrapper.element, VIEWPORT_SELECTOR);
+    mockMetrics(viewport, {
+      scrollTop: 560,
+      scrollHeight: 1000,
+      clientHeight: 400,
+    });
+
+    await wrapper.find(VIEWPORT_SELECTOR).trigger("wheel", { deltaY: 1 });
+
+    expect(wrapper.emitted("followChange")).toBeUndefined();
+  });
+
+  it("lets a touch gesture take over a programmatic smooth scroll", async () => {
+    const wrapper = mountScroller();
+    const viewport = find(wrapper.element, VIEWPORT_SELECTOR);
+    mockMetrics(viewport, { scrollHeight: 1000, clientHeight: 400 });
+    const api = wrapper.vm as unknown as MessageScrollerRef;
+
+    api.setFollowing(false);
+    // 重新跟随触发程序化平滑滚动，其屏蔽窗口内忽略滚动事件。
+    api.setFollowing(true);
+
+    mockMetrics(viewport, { scrollTop: 0 });
+    await wrapper.find(VIEWPORT_SELECTOR).trigger("scroll");
+    expect(lastPayload(wrapper, "followChange")).toEqual([true]);
+
+    await wrapper.find(VIEWPORT_SELECTOR).trigger("touchstart");
+    await wrapper.find(VIEWPORT_SELECTOR).trigger("scroll");
+    expect(lastPayload(wrapper, "followChange")).toEqual([false]);
+  });
+
+  it("prefers the native scrollTo when the element provides one", () => {
+    const wrapper = mountScroller({ follow: false, smooth: false });
+    const viewport = find(wrapper.element, VIEWPORT_SELECTOR);
+    const scrollTo = vi.fn();
+    Object.defineProperty(viewport, "scrollTo", {
+      configurable: true,
+      value: scrollTo,
+    });
+    mockMetrics(viewport, { scrollHeight: 1500, clientHeight: 400 });
+
+    (wrapper.vm as unknown as MessageScrollerRef).setFollowing(true);
+
+    expect(scrollTo).toHaveBeenCalledWith({ top: 1500, behavior: "auto" });
+  });
+
+  it("coalesces a burst of content resizes into one follow", async () => {
+    const dispose = installResizeObserverMock();
+
+    try {
+      const wrapper = mountScroller();
+      const viewport = find(wrapper.element, VIEWPORT_SELECTOR);
+      const content = find(wrapper.element, CONTENT_SELECTOR);
+      const writes = trackScroll(viewport, 0);
+      mockMetrics(viewport, { scrollHeight: 1000, clientHeight: 400 });
+
+      TestResizeObserver.trigger(content);
+      TestResizeObserver.trigger(content);
+      TestResizeObserver.trigger(content);
+      await flushFrames();
+
+      expect(writes).toEqual([1000]);
+    } finally {
+      dispose();
+    }
+  });
+
+  it("accepts a numeric index in scrollToItem and ignores one out of range", () => {
+    const wrapper = mountScroller();
+    const api = wrapper.vm as unknown as MessageScrollerRef;
+    const viewport = find(wrapper.element, VIEWPORT_SELECTOR);
+    const target = find(wrapper.element, '[data-message-id="message-3"]');
+    const writes = trackScroll(viewport, 100);
+
+    mockMetrics(viewport, { scrollHeight: 1000, clientHeight: 400 });
+    mockRect(viewport, { top: 0, height: 400 });
+    mockRect(target, { top: 300, height: 40 });
+
+    api.scrollToItem(2);
+    expect(writes).toEqual([220]);
+
+    api.scrollToItem(9);
+    api.scrollToItem("no-such-message");
+    expect(writes).toEqual([220]);
+  });
+
+  it("scrolls through the exposed scrollToEnd without changing follow state", () => {
+    const wrapper = mountScroller({ follow: false });
+    const viewport = find(wrapper.element, VIEWPORT_SELECTOR);
+    const writes = trackScroll(viewport, 0);
+    mockMetrics(viewport, { scrollHeight: 1500, clientHeight: 400 });
+    const api = wrapper.vm as unknown as MessageScrollerRef;
+
+    api.scrollToEnd({ behavior: "auto" });
+
+    expect(writes).toEqual([1500]);
+    expect(api.following).toBe(false);
+    expect(wrapper.emitted("followChange")).toBeUndefined();
+  });
+
+  it("detaches through the exposed setFollowing without scrolling", () => {
+    const wrapper = mountScroller();
+    const viewport = find(wrapper.element, VIEWPORT_SELECTOR);
+    const writes = trackScroll(viewport, 0);
+    mockMetrics(viewport, { scrollHeight: 1000, clientHeight: 400 });
+    const api = wrapper.vm as unknown as MessageScrollerRef;
+
+    api.setFollowing(false);
+
+    expect(api.following).toBe(false);
+    expect(writes).toEqual([]);
+    expect(lastPayload(wrapper, "followChange")).toEqual([false]);
+  });
+
+  it("disconnects observers on unmount and stays inert afterwards", async () => {
+    const dispose = installResizeObserverMock();
+
+    try {
+      const wrapper = mountScroller({ navigation: "rail" });
+      const viewport = find(wrapper.element, VIEWPORT_SELECTOR);
+      const content = find(wrapper.element, CONTENT_SELECTOR);
+      mockMetrics(viewport, { scrollHeight: 1200, clientHeight: 400 });
+
+      // 排入尚未执行的同步帧，卸载时应被取消。
+      TestResizeObserver.trigger(viewport);
+      TestResizeObserver.trigger(content);
+      await nextTick();
+
+      const observers = [...TestResizeObserver.instances];
+      expect(observers.length).toBeGreaterThan(0);
+
+      const api = wrapper.vm as unknown as MessageScrollerRef;
+      wrapper.unmount();
+
+      observers.forEach(observer => {
+        expect(observer.disconnect).toHaveBeenCalled();
+      });
+
+      expect(api.nativeElement).toBeNull();
+      expect(api.viewportElement).toBeNull();
+      expect(api.contentElement).toBeNull();
+      // 卸载后暴露的 API 必须静默降级，而不是抛错。
+      expect(() => {
+        api.scrollToEnd();
+        api.scrollToItem("message-1");
+        api.setFollowing(true);
+      }).not.toThrow();
+
+      // 没有挂起同步帧的卸载路径也必须清理观察者。
+      const plain = mountScroller();
+      const plainObservers = [...TestResizeObserver.instances];
+      plain.unmount();
+
+      expect(plainObservers.length).toBeGreaterThan(observers.length);
+      plainObservers.forEach(observer => {
+        expect(observer.disconnect).toHaveBeenCalled();
+      });
+    } finally {
+      dispose();
+    }
+  });
+
+  it("tracks the message nearest the viewport center while scrolling", async () => {
+    const dispose = installResizeObserverMock();
+
+    try {
+      const wrapper = mountScroller({ navigation: "rail" }, createMessages(5));
+      const { viewport } = setupOverflowingRail(wrapper, 1200, 400);
+      await flushFrames();
+
+      [0, 100, 200, 300, 400].forEach((top, index) => {
+        mockRect(wrapper.findAll("[data-message-id]")[index].element, {
+          top,
+          height: 40,
+        });
+      });
+      mockRect(viewport, { top: 0, height: 400 });
+
+      mockMetrics(viewport, { scrollTop: 300 });
+      await wrapper.find(VIEWPORT_SELECTOR).trigger("scroll");
+      await nextTick();
+
+      // 视口中心 200px 落在 message-3 的行中心 220px 上。
+      expect(railItem(wrapper, 2).attributes("data-active")).toBeDefined();
+      expect(railItem(wrapper, 1).attributes("data-active")).toBeUndefined();
+    } finally {
+      dispose();
+    }
+  });
+
+  it("marks the last item active near the live edge", async () => {
+    const dispose = installResizeObserverMock();
+
+    try {
+      const wrapper = mountScroller({ navigation: "rail" }, createMessages(5));
+      const { viewport } = setupOverflowingRail(wrapper, 1200, 400);
+      await flushFrames();
+
+      mockMetrics(viewport, { scrollTop: 790 });
+      await wrapper.find(VIEWPORT_SELECTOR).trigger("scroll");
+      await nextTick();
+
+      expect(railItem(wrapper, 4).attributes("data-active")).toBeDefined();
+      expect(railItem(wrapper, 4).attributes("aria-current")).toBe("location");
+      expect(wrapper.emitted("followChange")).toBeUndefined();
+    } finally {
+      dispose();
+    }
+  });
+
+  it("falls back to the default item height when the viewport is too short", async () => {
+    const dispose = installResizeObserverMock();
+
+    try {
+      const wrapper = mountScroller({ navigation: "rail" }, createMessages(3));
+      // 视口高度小于导轨上下内缩之和，单项高度退回默认值。
+      setupOverflowingRail(wrapper, 1200, 20);
+      await flushFrames();
+
+      expect(wrapper.find(RAIL_SELECTOR).exists()).toBe(true);
+      expect(railItem(wrapper, 0).attributes("style")).toContain(
+        "height: 14px",
+      );
+    } finally {
+      dispose();
+    }
+  });
+
+  it("re-syncs the rail when navigation is enabled after mount", async () => {
+    const dispose = installResizeObserverMock();
+
+    try {
+      const wrapper = mountScroller();
+      expect(wrapper.find(RAIL_SELECTOR).exists()).toBe(false);
+
+      await wrapper.setProps({ navigation: "rail" });
+      setupOverflowingRail(wrapper);
+      await flushFrames();
+
+      expect(wrapper.find(RAIL_SELECTOR).exists()).toBe(true);
+      expect(findRailItems(wrapper)).toHaveLength(3);
+    } finally {
+      dispose();
+    }
+  });
+
+  it("opens the preview for a keyboard-focused rail item", async () => {
+    const dispose = installResizeObserverMock();
+
+    try {
+      const wrapper = mountScroller({ navigation: "rail" });
+      setupOverflowingRail(wrapper);
+      await flushFrames();
+
+      // 鼠标点击的聚焦不是 focus-visible，不弹出卡片。
+      await railItem(wrapper, 1).trigger("focus");
+      await nextTick();
+      expect(wrapper.find(PREVIEW_SELECTOR).exists()).toBe(false);
+
+      const item = railItem(wrapper, 1);
+      vi.spyOn(item.element, "matches").mockReturnValue(true);
+      await item.trigger("focus");
+      await nextTick();
+      expect(wrapper.find(".ant-message-scroller-preview-title").text()).toBe(
+        "Message 2",
+      );
+    } finally {
+      dispose();
+    }
+  });
+
+  it("keeps the focused preview while focus stays inside the rail", async () => {
+    const dispose = installResizeObserverMock();
+
+    try {
+      const wrapper = mountScroller({ navigation: "rail" });
+      setupOverflowingRail(wrapper);
+      await flushFrames();
+
+      const item = railItem(wrapper, 1);
+      vi.spyOn(item.element, "matches").mockReturnValue(true);
+      await item.trigger("focus");
+      await nextTick();
+      expect(wrapper.find(PREVIEW_SELECTOR).exists()).toBe(true);
+
+      await wrapper.find(RAIL_SELECTOR).trigger("blur", {
+        relatedTarget: railItem(wrapper, 2).element,
+      });
+      await nextTick();
+      expect(wrapper.find(PREVIEW_SELECTOR).exists()).toBe(true);
+
+      await wrapper.find(RAIL_SELECTOR).trigger("blur", {
+        relatedTarget: document.body,
+      });
+      await nextTick();
+      expect(wrapper.find(PREVIEW_SELECTOR).exists()).toBe(false);
+    } finally {
+      dispose();
+    }
+  });
+
+  it("ignores hover for touch pointers", async () => {
+    const dispose = installResizeObserverMock();
+
+    try {
+      const wrapper = mountScroller({ navigation: "rail" });
+      setupOverflowingRail(wrapper);
+      await flushFrames();
+
+      await railItem(wrapper, 1).trigger("pointerenter", {
+        pointerType: "touch",
+      });
+      await nextTick();
+
+      expect(wrapper.find(PREVIEW_SELECTOR).exists()).toBe(false);
+    } finally {
+      dispose();
+    }
+  });
+
+  it("keeps the pinned preview when the tap lands inside the rail", async () => {
+    const dispose = installResizeObserverMock();
+
+    try {
+      const wrapper = mountScroller({ navigation: "rail" });
+      setupOverflowingRail(wrapper);
+      await flushFrames();
+
+      await railItem(wrapper, 1).trigger("pointerdown", {
+        pointerType: "touch",
+      });
+      await railItem(wrapper, 1).trigger("click");
+      // 触屏抬手后指针离开刻度项，卡片靠锁定继续展示。
+      await wrapper.find(RAIL_SELECTOR).trigger("pointerleave");
+      await flushFrames();
+      expect(wrapper.find(PREVIEW_SELECTOR).exists()).toBe(true);
+
+      railItem(wrapper, 0).element.dispatchEvent(
+        new Event("pointerdown", { bubbles: true }),
+      );
+      await flushFrames();
+      expect(wrapper.find(PREVIEW_SELECTOR).exists()).toBe(true);
+
+      await wrapper.find(RAIL_SELECTOR).trigger("pointerleave");
+      document.body.dispatchEvent(new Event("pointerdown", { bubbles: true }));
+      await flushFrames();
+      expect(wrapper.find(PREVIEW_SELECTOR).exists()).toBe(false);
+    } finally {
+      dispose();
+    }
+  });
+
+  it("renders item descriptions in the preview card", async () => {
+    const dispose = installResizeObserverMock();
+
+    try {
+      const items = createMessages().map<MessageScrollerItem>(message => ({
+        id: message.id,
+        title: `Title ${message.id}`,
+        description: `Description ${message.id}`,
+      }));
+      const wrapper = mountScroller({ navigation: "rail", items });
+      setupOverflowingRail(wrapper);
+      await flushFrames();
+
+      await railItem(wrapper, 1).trigger("pointerenter", {
+        pointerType: "mouse",
+      });
+      await nextTick();
+
+      expect(
+        wrapper.find(".ant-message-scroller-preview-description").text(),
+      ).toBe("Description message-2");
+    } finally {
+      dispose();
+    }
+  });
+
+  it("degrades gracefully when the hovered message disappears", async () => {
+    const dispose = installResizeObserverMock();
+
+    try {
+      const messages = ref(createMessages(4));
+      const wrapper = mount(MessageScroller, {
+        attachTo: document.body,
+        props: { navigation: "rail" },
+        slots: {
+          default: () =>
+            messages.value.map(message =>
+              h("div", { "data-message-id": message.id }, message.text),
+            ),
+        },
+      });
+      setupOverflowingRail(wrapper);
+      await flushFrames();
+
+      await railItem(wrapper, 2).trigger("pointerenter", {
+        pointerType: "mouse",
+      });
+      await nextTick();
+      expect(wrapper.find(".ant-message-scroller-preview-title").text()).toBe(
+        "Message 3",
+      );
+
+      messages.value = createMessages(2);
+      await nextTick();
+      await flushFrames();
+
+      // 悬停项已不存在：刻度退化为统一的最小比例，预览卡片收起。
+      expect(findRailItems(wrapper)).toHaveLength(2);
+      expect(railItem(wrapper, 0).attributes("style")).toContain(
+        "--ant-message-scroller-rail-scale: 0.25",
+      );
+      expect(wrapper.find(PREVIEW_SELECTOR).exists()).toBe(false);
+    } finally {
+      dispose();
+    }
+  });
+
+  it("merges class and style attributes passed to the host element", () => {
+    const wrapper = mount(MessageScroller, {
+      attrs: {
+        class: ["scroller-class", { "scroller-flag": true }],
+        style: "color: rgb(1, 2, 3)",
+      },
+      slots: {
+        default: () => h("div", { "data-message-id": "message-1" }, "a"),
+      },
+    });
+    const root = wrapper.find(".ant-message-scroller");
+
+    expect(root.classes()).toContain("scroller-class");
+    expect(root.classes()).toContain("scroller-flag");
+    expect(root.attributes("style")).toContain("color: rgb(1, 2, 3)");
+  });
+
+  it("merges an object class and style attribute passed to the host element", () => {
+    const wrapper = mount(MessageScroller, {
+      attrs: {
+        class: { "scroller-object": true },
+        style: { marginTop: "3px" },
+      },
+      slots: {
+        default: () => h("div", { "data-message-id": "message-1" }, "a"),
+      },
+    });
+    const root = wrapper.find(".ant-message-scroller");
+
+    expect(root.classes()).toContain("scroller-object");
+    expect(root.attributes("style")).toContain("margin-top: 3px");
+  });
+
+  it("resolves function-form semantic classes and styles", () => {
+    const wrapper = mount(MessageScroller, {
+      props: {
+        classes: () => ({ content: "calculated-content" }),
+        styles: () => ({ viewport: { marginTop: "6px" } }),
+      },
+      slots: {
+        default: () => h("div", { "data-message-id": "message-1" }, "a"),
+      },
+    });
+
+    expect(wrapper.find(CONTENT_SELECTOR).classes()).toContain(
+      "calculated-content",
+    );
+    expect(wrapper.find(VIEWPORT_SELECTOR).attributes("style")).toContain(
+      "margin-top: 6px",
+    );
+  });
+
+  it("installs MessageScroller and XProProvider through app.use", () => {
+    const component = vi.fn();
+    const app = { component } as unknown as App;
+
+    (MessageScroller as unknown as { install: (app: App) => void }).install(
+      app,
+    );
+    (XProProvider as unknown as { install: (app: App) => void }).install(app);
+
+    expect(component).toHaveBeenCalledWith("AMessageScroller", MessageScroller);
+    expect(component).toHaveBeenCalledWith("AXProProvider", XProProvider);
   });
 });
