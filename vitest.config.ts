@@ -29,9 +29,11 @@ export default mergeConfig(
       root: fileURLToPath(new URL("./", import.meta.url)),
       coverage: {
         provider: "v8",
-        // clover.xml feeds Codecov; json-summary/html stay for the CI step
-        // summary and the downloadable artifact.
-        reporter: ["text-summary", "json-summary", "html", "clover"],
+        // lcov.info feeds Codecov; json-summary/html stay for the CI step
+        // summary and the downloadable artifact. The clover reporter is not
+        // used: it zeroes every `falsecount`, so Codecov reports every
+        // conditional line as a partial branch.
+        reporter: ["text-summary", "json-summary", "html", "lcov"],
         reportsDirectory: "./coverage",
         // Scoped to the four packages that actually ship runtime code and have
         // tests. docs/playground are apps, and x-skill has no test suite —
@@ -41,6 +43,7 @@ export default mergeConfig(
           "packages/x-markdown/src/**/*.{ts,tsx,vue}",
           "packages/x-sdk/src/**/*.{ts,tsx,vue}",
           "packages/x-card/src/**/*.{ts,tsx,vue}",
+          "packages/x-pro/src/**/*.{ts,tsx,vue}",
         ],
         exclude: [
           "**/__tests__/**",

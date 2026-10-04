@@ -29,7 +29,14 @@ export default defineConfig({
     sourcemap: false,
     emptyOutDir: true,
     rolldownOptions: {
-      external: ["vue"],
+      external: [
+        "vue",
+        "antdv-next",
+        /^antdv-next\/.*/,
+        "@v-c/util",
+        "@antdv-next/cssinjs",
+        /^@antdv-next\/cssinjs\/.*/,
+      ],
       output: {
         preserveModules: true,
         preserveModulesRoot: "src",

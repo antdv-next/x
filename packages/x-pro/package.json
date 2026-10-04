@@ -29,6 +29,11 @@
     "type-check": "vue-tsc --project tsconfig.build.json --noEmit",
     "build": "vp build --config vite.build.config.ts"
   },
+  "dependencies": {
+    "@antdv-next/cssinjs": "catalog:prod",
+    "@v-c/util": "catalog:prod",
+    "antdv-next": "catalog:prod"
+  },
   "peerDependencies": {
     "vue": ">=3.5.0"
   }

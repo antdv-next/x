@@ -1,5 +1,6 @@
 import { version as cardVersion } from "../../../x-card/package.json";
 import { version as markdownVersion } from "../../../x-markdown/package.json";
+import { version as proVersion } from "../../../x-pro/package.json";
 import { version as sdkVersion } from "../../../x-sdk/package.json";
 import { version as skillVersion } from "../../../x-skill/package.json";
 import { version as xVersion } from "../../../x/package.json";
@@ -51,6 +52,16 @@ export const headerItems: HeaderItem[] = [
       "en-US": "Card",
     },
     version: cardVersion,
+  },
+  {
+    key: "pro",
+    path: "/pro",
+    basePath: "/pro",
+    label: {
+      "zh-CN": "Pro",
+      "en-US": "Pro",
+    },
+    version: proVersion,
   },
   {
     key: "sdk",
