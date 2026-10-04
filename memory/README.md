@@ -26,17 +26,14 @@ decisions settled.
    that supersedes it.
 3. **Prefer "refuse" over "guess".** For the streaming splitter the invariant
    is `sectioned render ≡ whole-document render`; a case where we place _no_
-   boundary is always safe, a wrong boundary is not. See
-   `x-markdown-streaming-sections.md`.
+   boundary is always safe, a wrong boundary is not. See `x-markdown.md`.
 4. **Do not re-derive a parser.** If a decision needs to know what markdown
    means, ask marked. Hand-written models of its grammar are what created this
    folder in the first place.
 
 ## Index
 
-| File                                                                     | Covers                                                                                                                                                                            |
-| ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`x-markdown-streaming-sections.md`](./x-markdown-streaming-sections.md) | `streaming.incremental` section boundaries: the contract, our divergences from `ant-design/x`, upstream bugs we fix, remaining limits                                             |
-| [`x-markdown-latex.md`](./x-markdown-latex.md)                           | The bundled LaTeX plugin and `$` / `$$` / `\[` handling: which upstream fixes are synced, which were missed, how the splitter treats math                                         |
-| [`upstream-sync.md`](./upstream-sync.md)                                 | Sync state: the `.sync-upstream.json` cursor, every ported upstream PR and where it landed, open `sync/*` branches, and what to record after a sync                               |
-| [`x-markdown-streaming-preset.md`](./x-markdown-streaming-preset.md)     | Streaming preset + typewriter + AnimationText/Section/memo: the downstream-only fixes (fade-in units, indented fences, inline-code runs, grapheme window) and the Vue API mapping |
+| File                                     | Covers                                                                                                                                                                                                                                   |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`x-markdown.md`](./x-markdown.md)       | Everything `packages/x-markdown`: `streaming.incremental` section boundaries (contract, divergences, upstream bugs we fix, limits), the LaTeX plugin and `$` / `$$` / `\[` math, and the streaming preset / typewriter / Vue API mapping |
+| [`upstream-sync.md`](./upstream-sync.md) | Sync state: the `.sync-upstream.json` cursor, every ported upstream PR and where it landed, open `sync/*` branches, and what to record after a sync                                                                                      |

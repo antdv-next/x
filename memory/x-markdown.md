@@ -1,4 +1,21 @@
-# `streaming.incremental` section boundaries
+# x-markdown: streaming, math and the Vue API mapping
+
+**This is the single record for `packages/x-markdown`.** It was consolidated on
+2026-10-04 from `x-markdown-streaming-sections.md`, `x-markdown-latex.md` and
+`x-markdown-streaming-preset.md`; every entry from those files is preserved
+below. `memory/upstream-sync.md` (the sync cursor) stays separate.
+
+Read the section that covers what you are about to change, and check that the
+change does not undo a decision recorded there.
+
+- **1. `streaming.incremental` section boundaries** — the contract, our
+  divergences from `ant-design/x`, the upstream bugs we fix, remaining limits.
+- **2. LaTeX plugin and `$` / `$$` / `\[` math** — what is synced, what was
+  missed, how the splitter treats math.
+- **3. Streaming preset, typewriter and the Vue API mapping** — the
+  downstream-only fixes and the Vue API translation.
+
+## 1. `streaming.incremental` section boundaries
 
 **Files:** `packages/x-markdown/src/XMarkdown/composables/useStreaming.ts`
 (`trackSectionBoundary` and the `DESIGN CONTRACT` comment above it),
@@ -8,7 +25,7 @@
 **Origin:** port of `ant-design/x` PR #2061 (upstream commit `8b76d6a`),
 landed downstream as `0703ba2`; tracked in issue #225.
 
-## The invariant
+### The invariant
 
 While streaming, rendering the sections must produce **exactly** the
 whole-document DOM at every point of the stream (and the same DOM as a plain
@@ -20,7 +37,7 @@ changes the rendered markup (a spurious `<h1>` where the full render has code
 or raw text). Placing **no** boundary only costs incremental reuse. So every
 ambiguity must resolve to "do not split".
 
-## The decision (2026-10-03): ask marked, do not model it
+### The decision (2026-10-03): ask marked, do not model it
 
 Rounds 1-9 of review produced downstream-only fixes that grew a hand-written
 model of marked's block grammar - list-item continuation, blockquote laziness,
@@ -36,7 +53,7 @@ matters: does `prefix + "# x\n"` parse into strictly more top-level blocks
 than `prefix`? The tracker keeps only the offsets, a `noSplit` flag, a small
 conservative raw-block state, and a bounded memo of refusals.
 
-## Deliberate divergences from upstream's file
+### Deliberate divergences from upstream's file
 
 Upstream's `trackSectionBoundary` is ~62 lines. Ours is structurally the same
 shape, plus:
@@ -52,7 +69,7 @@ shape, plus:
 | 7   | The tracker state machine runs even when `incremental` is off (`record` gates only the recording); upstream skips it entirely                                                                                                | Keeps definitions / raw-block state / line starts correct when `incremental` is switched on mid-stream                                                                                      |
 | 8   | One trailing `\r` is stripped before the line classifiers                                                                                                                                                                    | CRLF documents                                                                                                                                                                              |
 
-## Upstream bugs we deliberately fix
+### Upstream bugs we deliberately fix
 
 Each of these is a case where upstream's tracker records a boundary that the
 whole-document render does not have. **Do not "align" these away** - the
@@ -66,7 +83,7 @@ covering tests fail on purpose.
 | 4   | `- ```ts\n  code\n  ```\n\n## B\n`                                   | The fence is inside the item and closes there; the "closing" line is not a new opener                                                      | The scanner opens a fence on the closing line and never closes it -> **no further splits at all** | Splits at `## B`                    | corpus `fenceOnMarkerLine`                                                                                             |
 | 5   | `<div align="center">\n\ntext...\n\n# Title\n\n</div>\n\n## After\n` | The `<div>` is only closed after the heading                                                                                               | Splits inside the container -> DOMPurify auto-closes it                                           | No split until the container closes | guard "does not split while a raw HTML container is open, but angle brackets in code do not veto"                      |
 
-## Remaining limits (accepted)
+### Remaining limits (accepted)
 
 - `$$` / `\[` math is tracked with a hand-written rule, because the plugin's
   block rule only matches once its **closing** delimiter is present - a
@@ -79,9 +96,9 @@ covering tests fail on purpose.
 - Refusals are memoised for up to `OPEN_BLOCK_MEMO_CHARS` (4096) bytes, so a
   split may be lost right after an open block closes. Losing a split is safe.
 
-## Review follow-ups
+### Review follow-ups
 
-### 2026-10-04: a raw opener inside a fenced code block is code, not a block
+#### 2026-10-04: a raw opener inside a fenced code block is code, not a block
 
 - **Repro:** `# A\n\npara\n\n```sh\n$$\necho hi\n```\n\n## B\n\nb\n\n## C\n\nc\n`
   (an unpaired `<!--`, a `<pre>` / `<?` without its closer, or a fence nested
@@ -106,7 +123,7 @@ covering tests fail on purpose.
   DOM equivalence) and the guard "does not treat a raw opener inside a fenced
   code block as a raw block".
 
-### 2026-10-04: a definition-shaped line in code or a raw block is not a definition
+#### 2026-10-04: a definition-shaped line in code or a raw block is not a definition
 
 - **Repro:** `# A\n\npara\n\n# B\n\n```markdown\n[a]: /x\n```\n\n# C\n\ntail\n`
   (the same line inside `$$` math, an HTML comment, or `<pre>` behaves the
@@ -132,7 +149,7 @@ covering tests fail on purpose.
   once a reference or footnote definition appears" / nested-definition tests,
   which pin the real-definition path).
 
-### 2026-10-04: the definition decision is asked of marked, not of the line's position
+#### 2026-10-04: the definition decision is asked of marked, not of the line's position
 
 Supersedes the entry above, which fixed one direction (definitions wrongly
 refusing inside code/raw bodies) and opened the other (real definitions wrongly
@@ -172,7 +189,7 @@ ignored).
   document has a definition" and corpus `definitionAfterUnclosedMath`
   (per-character whole-vs-sectioned DOM equivalence).
 
-### 2026-10-04: the definition trigger must be a sound over-approximation
+#### 2026-10-04: the definition trigger must be a sound over-approximation
 
 Found while reviewing the entry above; same date, supersedes its trigger.
 
@@ -199,7 +216,7 @@ Found while reviewing the entry above; same date, supersedes its trigger.
   `definitionIndentedInList` (per-character whole-vs-sectioned DOM
   equivalence).
 
-### 2026-10-04: the raw-container veto must not pair a line-leading backtick run
+#### 2026-10-04: the raw-container veto must not pair a line-leading backtick run
 
 Found by the 1000-document differential fuzz (1 failure); unrelated to the
 definition work — that input contains no `]:`, so `trackDefinition` is inert.
@@ -227,7 +244,7 @@ definition work — that input contains no `]:`, so `trackDefinition` is inert.
   backtick run into a span across blocks" and the boundary guard "does not
   split out of a nested raw container the tag scan must see".
 
-## How it is verified
+### How it is verified
 
 - `packages/x-markdown/src/XMarkdown/__tests__/incremental.test.ts`: per
   character whole-vs-sectioned DOM equivalence over the corpora, plus boundary
@@ -237,10 +254,112 @@ definition work — that input contains no `]:`, so `trackDefinition` is inert.
   compare sectioned vs whole render at every step. 800 documents x 2 seeds
   produced 0 divergences on 2026-10-03.
 
-## Do not
+### Do not
 
 - Do not re-add a hand-written model of marked's block grammar to make one
   input split again. If a split is missing, the fix is to improve how we _ask_
   marked (or to accept the refusal), never to predict it ourselves.
 - Do not "align" the divergences above back to upstream without reading this
   file: they are upstream bugs, not porting mistakes.
+
+## 2. LaTeX plugin and `$` / `$$` / `\[` math
+
+**Files:** `packages/x-markdown/src/plugins/Latex/index.ts`,
+`packages/x-markdown/src/plugins/Latex/__tests__/index.test.ts`, the theme
+rules for `.inline-katex` / `.block-katex`
+(`packages/x-markdown/src/XMarkdown/index.css` and the two `themes/index.css`
+copies).
+**Upstream counterpart:** `ant-design/x` -> `packages/x-markdown/src/plugins/Latex/`.
+**Splitter side:** how the streaming section tracker treats math is recorded in
+section 1 of this file (divergence #4 and remaining limit #1).
+
+### Synced (aligned)
+
+- **Currency is not math** - upstream `fix(markdown): avoid parsing currency as
+LaTeX` (#1997 line) plus `allow escaped dollar signs inside inline formulas`.
+  Downstream commit `c463ec1`. The plugin implements Pandoc's single-dollar
+  rules in `isValidInlineDollarMatch`: `$12, $20` and `$ x $` are not math,
+  `$$...$$` is exempt, and `\$` inside a formula is not a closing delimiter.
+  Covered by the currency / escaped-dollar / single-dollar-rule tests.
+
+### Fixed on 2026-10-03: multi-line `\[...\]` was not ported
+
+Upstream `feat(latex): support render block latex in inline` +
+`feat(latex): block latex use span insteadof div` (the `#1859` feat/latex
+line, merged 2026-04-12) marks an inline `\[...\]` run whose content spans a
+newline as `isBlock` and renders it with `<span class="block-katex">`; a
+single-line `\[...\]` stays `<span class="inline-katex">`.
+
+This had **not** been ported: our plugin never emitted `block-katex`, while our
+theme already carried `.x-markdown .block-katex { display: block; margin: 1em
+0 }` copied verbatim from upstream - a dead rule. Repro (before the fix):
+mounting with `config: { extensions: latexPlugin() }` and
+`content\n\[\frac{a}{b}\n\]\ncontent` produced `.inline-katex` and no
+`.block-katex`, where upstream produces the opposite.
+
+Fixed in the plugin (the newline test must run before `trim()`), with the two
+upstream cases added as tests ("should render multi-line `\[..\]` as a
+block-level formula", "should still render single-line `\[..\]` as an inline
+formula").
+
+### Known gaps to re-check on the next sync
+
+- Our plugin test file is a subset of upstream's (~20 cases). Upstream cases
+  without an obvious downstream twin: inline `$$\n...\n$$`, inline
+  `\[\n...\n\]`, block `$$...$$` on one line, `align*` replacement, empty
+  content, "content without LaTeX", `throwOnError: true`. Verify each on the
+  next sync instead of assuming coverage.
+- Only upstream commits up to `8b76d6a` are visible in the local clone
+  (`.sync-upstream.json` cursor is `8b76d6a`, tag 2.9.0). Anything newer about
+  `$` / LaTeX needs a fetch before it can be compared.
+
+### Do not
+
+- Do not "simplify" the plugin to always emit `.inline-katex`; the
+  `block-katex` path is upstream behaviour with theme support already in place.
+- Do not move math out of the streaming tracker's raw-block state without
+  reading why it is there: the plugin's block rule only matches once its
+  closing delimiter is present, so a prefix-based marked check cannot see the
+  block.
+
+## 3. Streaming preset, typewriter and the Vue API mapping
+
+**Files:** `packages/x-markdown/src/XMarkdown/utils/streaming.ts` (the preset),
+`composables/useTypewriter.ts`, `components/AnimationText.vue`,
+`components/Section.vue`, `index.vue`.
+**Upstream counterpart:** `ant-design/x` -> `hooks/useTypewriter.ts`,
+`AnimationText.tsx`, `Section.tsx`, `utils/memo.ts`, `index.tsx`.
+**Origin:** port of `ant-design/x` PR #2061 (`8b76d6a`), landed as `7b6b587`
+(#226) and `6ea3c9d` (#229).
+
+### Deliberate divergences (not the marked-oracle kind)
+
+Same rule as the rest of this file: these are fixes for real bugs, and a
+review that reports them is reporting upstream's behaviour.
+
+| #   | Where                             | Divergence from upstream                                                                                                                          | Why                                                                                                                                                                                                                                                                              |
+| --- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | `utils/streaming.ts` `PRESET`     | adds `animationConfig: Object.freeze({ splitBy: "sentence" })`                                                                                    | `streaming={true}` opens the typewriter while `enableAnimation` defaults to true; with the default `splitBy: "chunk"` every frame's few revealed characters become their own fade-in node, so a long answer accumulates thousands of them. Upstream's preset leaves the default. |
+| 2   | `useTypewriter` `scanBoundaries`  | opening / closing fences may be indented 0-3 spaces (`lineIndent`)                                                                                | CommonMark, and it must agree with `feedFenceState` in `useStreaming`; upstream's scanner only recognises column-0 fences, so an indented fence's body is treated as prose and sentence-split                                                                                    |
+| 3   | `useTypewriter` `scanBoundaries`  | a closing fence must be followed by whitespace only (`lineTailBlank`)                                                                             | CommonMark: a line like ` ```js ` inside a fenced block is body text, not the terminator                                                                                                                                                                                         |
+| 4   | `useTypewriter`                   | inline-code backtick run length (`inlineCodeLen`, `backtickRun`, `settleBacktickRun`)                                                             | CommonMark: a run of N backticks is closed only by a run of exactly N; upstream toggles on every backtick                                                                                                                                                                        |
+| 5   | `useTypewriter`                   | `safeWindowStart` and `streamSafeEnd`                                                                                                             | The `Intl.Segmenter` window must start at a real cluster start (a window opened mid-cluster reports boundaries that do not exist), and a trailing high surrogate / ZWJ must be held back or the typewriter shows U+FFFD / a half-joined emoji                                    |
+| 6   | `components/AnimationText.vue`    | props are flattened (`splitBy`, `delimiters`, `maxSentenceChars`, `fadeDuration`, `easing`) instead of upstream's single `animationConfig` object | Vue SFC API; `index.vue` unpacks `streaming.animationConfig` into them. Sentence-splitting semantics and defaults match upstream                                                                                                                                                 |
+| 7   | `utils/memo.ts`                   | not ported                                                                                                                                        | `arePropsEqualIgnoringDomNode` is a `React.memo` comparator with no Vue equivalent; downstream relies on the documented stable `components` / `componentsProps` references instead                                                                                               |
+| 8   | `Parser.lex` + `index.vue` wiring | ours only                                                                                                                                         | Feeds the section tracker's marked oracle - see section 1                                                                                                                                                                                                                        |
+
+### Verified aligned
+
+- `plugins/Latex` - after the `isBlock` port recorded in section 2.
+- `AnimationText` sentence splitting: same defaults (`。！？.!?\n`),
+  `maxSentenceChars: 120` and cap-while-waiting behaviour as upstream.
+
+### Do not
+
+- Do not "align" divergences 1-5 back to upstream: they fix the preset's
+  fade-in node explosion, mis-detected fences in the typewriter scanner, and
+  half-cut emoji / flags. When porting a future upstream typewriter change,
+  keep them and re-run `composables/__tests__/useTypewriter.test.ts`.
+- Do not add a Vue equivalent of `arePropsEqualIgnoringDomNode` without
+  reconsidering the `components` / `componentsProps` stability convention that
+  replaced it.

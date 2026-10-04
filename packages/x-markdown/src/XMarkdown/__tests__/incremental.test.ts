@@ -35,7 +35,7 @@ import XMarkdown from "../index.vue";
  * new top-level block, and **a test asserting that nothing splits is the
  * specification, not a bug** — refusing a boundary only costs incremental
  * reuse, while an over-eager boundary would change the rendered DOM. See
- * `memory/x-markdown-streaming-sections.md` for the history behind the
+ * `memory/x-markdown.md` for the history behind the
  * deliberate refusals.
  */
 

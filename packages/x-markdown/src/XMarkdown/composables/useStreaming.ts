@@ -371,7 +371,7 @@ const DEFINITION_TRIGGER = /\]:/;
  *
  * The full history — every deliberate divergence from upstream, the upstream
  * bugs we fix, and the remaining limits — is recorded in
- * `memory/x-markdown-streaming-sections.md`. Read it before changing this.
+ * `memory/x-markdown.md`. Read it before changing this.
  */
 
 /** Raw HTML blocks whose end condition may span blank lines (CommonMark 1–2/3–5). */
