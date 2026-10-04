@@ -229,6 +229,7 @@ const getInitialSectionState = (): SectionState => ({
   offsets: [],
   lineStart: 0,
   noSplit: false,
+  definitionLookahead: 0,
   rawBlock: null,
   openBlock: null,
 });
@@ -358,6 +359,12 @@ const DEFINITION_LINE =
  *      block", so a fenced code block full of column-0 `#` comment lines is
  *      not re-lexed once per line.
  *
+ * The one document-global "must refuse" condition — a link reference /
+ * footnote definition, which any other block may reference — is *not* modelled
+ * as state. It is asked of the renderer's marked (its `links` map) ahead of
+ * every block state, so neither the raw-block state nor a fence can hide a
+ * real definition or fake one out of body text.
+ *
  * The full history — every deliberate divergence from upstream, the upstream
  * bugs we fix, and the remaining limits — is recorded in
  * `memory/x-markdown-streaming-sections.md`. Read it before changing this.
@@ -437,6 +444,78 @@ const startsNewTopLevelBlock = (
   lex: (markdown: string) => readonly unknown[],
   prefix: string,
 ): boolean => lex(prefix + PROBE_HEADING).length > lex(prefix).length;
+
+/**
+ * How many lines after its `[label]:` line a definition may still complete.
+ * CommonMark allows the destination and the title each to start on the next
+ * line, so three lines is the most one definition spans; the window is only a
+ * bound on re-probing, never a correctness limit (a definition that somehow
+ * needed longer would simply be missed, and a missed definition is a lost
+ * split, not a wrong boundary).
+ */
+const DEFINITION_LOOKAHEAD = 3;
+
+/** The token array `lex` returns also carries marked's collected `links` map. */
+type LexResult = readonly unknown[] & { links?: Record<string, unknown> };
+
+/**
+ * Whether `markdown` contains at least one link reference / footnote
+ * definition, per the renderer's own marked. Its `links` map collects
+ * definitions from any depth (`> [a]: /x`, `- [a]: /x`) and stays empty for a
+ * definition-shaped line inside fence, comment, `<pre>` or math body — which
+ * is exactly the distinction the tracker must make.
+ */
+const hasDefinition = (
+  lex: (markdown: string) => readonly unknown[],
+  markdown: string,
+): boolean => Object.keys((lex(markdown) as LexResult).links ?? {}).length > 0;
+
+/**
+ * The only document-global "must refuse" rule: a link reference / footnote
+ * definition can be referenced from any section, so once the document contains
+ * one no boundary may be recorded and the offsets already recorded are
+ * discarded. Asked of the renderer's marked (`hasDefinition`), never read off
+ * the line's position, so a raw block that consumes the line can hide neither
+ * a real definition nor a definition-shaped line that is really body text. The
+ * call site in `trackSectionBoundary` runs this before every block state for
+ * exactly that reason.
+ *
+ * `complete` marks a line terminated by `\n`; only those arm or advance the
+ * lookahead window, so the stream's trailing partial line can be checked
+ * without disturbing it (a definition with no closing newline still counts —
+ * marked parses it at end of input).
+ */
+const trackDefinition = (
+  state: SectionState,
+  text: string,
+  lineStart: number,
+  lineEnd: number,
+  complete: boolean,
+  lex: (markdown: string) => readonly unknown[],
+): void => {
+  if (state.noSplit) return;
+  const raw = text.slice(lineStart, lineEnd);
+  const line = raw.endsWith("\r") ? raw.slice(0, -1) : raw;
+  const blank = line.trim() === "";
+  const definitionShaped = DEFINITION_LINE.test(line);
+  const watch = definitionShaped || state.definitionLookahead > 0;
+  if (complete) {
+    // A definition never spans a blank line, so a blank ends the window; a
+    // definition-shaped line (re)arms it and any other watched line spends one
+    // step of it.
+    state.definitionLookahead = blank
+      ? 0
+      : definitionShaped
+        ? DEFINITION_LOOKAHEAD
+        : Math.max(0, state.definitionLookahead - 1);
+  }
+  if (watch && hasDefinition(lex, text.slice(0, lineEnd))) {
+    state.noSplit = true;
+    state.offsets = [];
+    state.openBlock = null;
+    state.definitionLookahead = 0;
+  }
+};
 
 /** The slice of a marked block token this file walks; everything else is opaque. */
 interface BlockToken {
@@ -518,6 +597,9 @@ const trackSectionBoundary = (
   // one extra lex while a stale memo could cost a split.
   if (blank) state.openBlock = null;
 
+  // The document-global must-refuse rule, decided before every block state
+  // below so a raw block that consumes the line cannot hide it.
+  trackDefinition(state, text, lineStart, newlineIndex + 1, true, lex);
   if (state.noSplit) return;
   // Inside a raw block that may span blank lines and contain heading-looking
   // lines. See the design note above: this is a safety rule, not a parse.
@@ -543,21 +625,6 @@ const trackSectionBoundary = (
     // would hide a real `$$` block that a prefix lex cannot see.
     if (lineIsCodeContent(lex, text, lineStart, newlineIndex + 1)) return;
     state.rawBlock = rawBlock;
-    return;
-  }
-  // A link reference / footnote definition is visible from every other block,
-  // so once one is seen the document is no longer splittable — and the offsets
-  // recorded so far are discarded, since an earlier section may reference it.
-  // The raw-block branch above consumes its body first (a definition-shaped
-  // line inside `$$` math, a comment or a `<pre>` is body text, not a
-  // definition), and a definition-shaped line that is fenced-code body is code
-  // text: marked extracts no definition there, so it must not disable
-  // splitting for the rest of the stream.
-  if (DEFINITION_LINE.test(line)) {
-    if (lineIsCodeContent(lex, text, lineStart, newlineIndex + 1)) return;
-    state.noSplit = true;
-    state.offsets = [];
-    state.openBlock = null;
     return;
   }
   // Only a column-0 ATX heading can ever start a section.
@@ -921,6 +988,22 @@ export function useStreamingCore(
       if (cache.token === TokenType.Text) {
         commitCache(cache);
       }
+    }
+
+    // A stream may stop on a line that never got its '\n'. A definition there
+    // still has to drop the boundaries recorded before it (marked parses it at
+    // end of input), so run the same check for the trailing partial line —
+    // without the completion side effects, since there is no later line to
+    // carry a lookahead.
+    if (cache.sections.lineStart < text.length) {
+      trackDefinition(
+        cache.sections,
+        text,
+        cache.sections.lineStart,
+        text.length,
+        false,
+        lex,
+      );
     }
 
     const incompletePlaceholder = handleIncompleteMarkdown(cache, opts);

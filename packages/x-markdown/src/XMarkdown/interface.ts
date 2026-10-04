@@ -73,6 +73,13 @@ export interface SectionState {
    */
   noSplit: boolean;
   /**
+   * Lines still to watch for a definition that spans more than its `[label]:`
+   * line (the destination and title may sit on the following lines). Armed by a
+   * definition-shaped line and cleared by a blank line, since a definition
+   * never spans one. Keeps the marked `links` probe off the per-line path.
+   */
+  definitionLookahead: number;
+  /**
    * An open raw block whose body may contain blank lines and heading-looking
    * lines: `<pre>`/`<script>`/`<style>`/`<textarea>`, an HTML comment, a
    * processing instruction, a declaration, CDATA, or `$$` / `\[` math. Its

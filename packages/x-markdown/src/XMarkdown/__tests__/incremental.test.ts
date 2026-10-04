@@ -385,6 +385,23 @@ const corpora: Record<string, string> = {
     "c",
   ].join("\n"),
 
+  // An unclosed `$$` is an ordinary paragraph, so the `[a]: /x` after the blank
+  // line really is a link reference definition: an earlier `[a]` must not be
+  // split away from it, or the sectioned render loses the link the whole render
+  // resolves. Definitions are the only document-global must-refuse condition,
+  // so the decision is asked of marked rather than read off the line position.
+  definitionAfterUnclosedMath: [
+    "# A",
+    "",
+    "see [a]",
+    "",
+    "# B",
+    "",
+    "$$",
+    "",
+    "[a]: /x",
+  ].join("\n"),
+
   // marked counts a tab as a single column in the marker gap, so the item's
   // content indent is 2 and the fence at two spaces is contained.
   tabAfterMarker: [
@@ -1424,6 +1441,35 @@ describe("streaming.incremental", () => {
       expect(
         await sectionsFor("# A\n\npara\n\n# B\n\n> [x]: /y\n\n# C\n\ntail\n"),
       ).toBeNull();
+    });
+
+    it("asks marked, not the line position, whether the document has a definition", async () => {
+      // An unclosed `$$` (or `\[`) is an ordinary paragraph, so the following
+      // `[a]: /x` really is a definition — marked's `links` map has it — and
+      // splitting the earlier `[a]` away from it would render `[a]` as literal
+      // text. The conservative raw-block state must not hide it.
+      expect(
+        await sectionsFor("# A\n\nsee [a]\n\n# B\n\n$$\n\n[a]: /x\n"),
+      ).toBeNull();
+      expect(
+        await sectionsFor("# A\n\nsee [a]\n\n# B\n\n\\[\n\n[a]: /x\n"),
+      ).toBeNull();
+      // The destination and/or title may complete on a later line.
+      expect(
+        await sectionsFor("# A\n\nsee [a]\n\n# B\n\n[a]:\n/url\n"),
+      ).toBeNull();
+      // A definition-shaped line that marked reads as body text (fence,
+      // comment, real `$$` math) still leaves the earlier boundaries alone.
+      expect(
+        await sectionsFor(
+          "# A\n\npara\n\n# B\n\n```md\n[a]: /x\n```\n\n# C\n\ntail\n",
+        ),
+      ).toHaveLength(3);
+      expect(
+        await sectionsFor(
+          "# A\n\npara\n\n# B\n\n<!--\n[a]: /x\n-->\n\n# C\n\ntail\n",
+        ),
+      ).toHaveLength(3);
     });
 
     it("drops all boundaries once a reference or footnote definition appears", async () => {

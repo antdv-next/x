@@ -132,6 +132,46 @@ covering tests fail on purpose.
   once a reference or footnote definition appears" / nested-definition tests,
   which pin the real-definition path).
 
+### 2026-10-04: the definition decision is asked of marked, not of the line's position
+
+Supersedes the entry above, which fixed one direction (definitions wrongly
+refusing inside code/raw bodies) and opened the other (real definitions wrongly
+ignored).
+
+- **Repro:** `# A\n\nsee [a]\n\n# B\n\n$$\n\n[a]: /x\n` (an unclosed `$$` or
+  `\[`; the same with or without the bundled Latex plugin registered).
+- **Ground truth:** an unclosed `$$` is an ordinary paragraph, so `[a]: /x` is
+  a real link reference definition. marked's `links` map contains `a`, the line
+  is not inside any open block, and the whole-document render resolves
+  `see [a]`.
+- **Upstream behaviour:** upstream checks `DEFINITION_LINE` _after_ its
+  raw-block branch, so the conservative raw-block state swallows the line and
+  the definition is missed; upstream places the boundary and renders `see [a]`
+  as literal text. An inherited upstream bug we now fix (upstream's `links`
+  map is not consulted at all).
+- **Our behaviour (before this fix):** same as upstream after the `fba2f90`
+  reorder — the sectioned render emitted `[a]` where the whole render emitted
+  `<a href="/x">a</a>`. That is a **wrong boundary**, not a lost split, so
+  neither the "refuse is always safe" rule nor the "check whether the
+  whole-document render keeps the line inside an open block" rule covers it.
+- **Decision:** the definition check now runs _ahead of every block state_ and
+  asks the renderer's marked for its `links` map. Nothing a raw-block branch
+  consumes can hide a definition, and a definition-shaped line inside a fence,
+  comment, `<pre>` or real math body cannot fake one. A `definitionLookahead`
+  window (3 lines, cleared by a blank line, since a definition never spans one)
+  picks up definitions whose destination/title sits on a later line.
+- **Why this closes the class:** link/footnote definitions are the only
+  document-global "must refuse" condition. Deciding them from marked instead of
+  from the line's position removes the ordering dependence between that
+  condition and the over-approximating block state, so adding future raw
+  openers can no longer re-open it. It also supersedes the older note that a
+  definition-shaped line inside a type-6 HTML block refuses conservatively:
+  marked extracts no definition there, so the line no longer refuses and the
+  reuse is kept.
+- **Covering test:** guard "asks marked, not the line position, whether the
+  document has a definition" and corpus `definitionAfterUnclosedMath`
+  (per-character whole-vs-sectioned DOM equivalence).
+
 ## How it is verified
 
 - `packages/x-markdown/src/XMarkdown/__tests__/incremental.test.ts`: per
