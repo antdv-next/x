@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="160px" height="104px" viewBox="0 0 160 104" version="1.1" xmlns="http://www.w3.org/2000/svg">
+  <title>MessageScroller</title>
+  <rect x="8" y="8" width="144" height="88" rx="6" fill="#141414" stroke="#303030"/>
+  <rect x="16" y="20" width="88" height="12" rx="6" fill="#111A2C"/>
+  <rect x="24" y="24" width="60" height="4" rx="2" fill="#15325B"/>
+  <rect x="56" y="38" width="88" height="12" rx="6" fill="#262626"/>
+  <rect x="64" y="42" width="60" height="4" rx="2" fill="#434343"/>
+  <rect x="16" y="56" width="88" height="12" rx="6" fill="#111A2C"/>
+  <rect x="24" y="60" width="52" height="4" rx="2" fill="#15325B"/>
+  <rect x="56" y="74" width="88" height="12" rx="6" fill="#262626"/>
+  <rect x="64" y="78" width="44" height="4" rx="2" fill="#434343"/>
+  <rect x="132" y="26" width="14" height="2" rx="1" fill="#595959"/>
+  <rect x="124" y="36" width="22" height="2" rx="1" fill="#1677FF"/>
+  <rect x="130" y="46" width="16" height="2" rx="1" fill="#434343"/>
+  <rect x="134" y="56" width="12" height="2" rx="1" fill="#303030"/>
+  <rect x="136" y="66" width="10" height="2" rx="1" fill="#303030"/>
+  <rect x="132" y="76" width="14" height="2" rx="1" fill="#595959"/>
+</svg>

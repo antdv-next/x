@@ -1,7 +1,7 @@
 ---
 title: MessageScroller
 description: A streaming conversation viewport that follows new content, releases control when the reader scrolls away, and offers a rail for jumping between messages.
-order: 2
+order: 3
 packageName: x-pro
 ---
 
@@ -54,7 +54,7 @@ With `navigation="rail"`:
 
 ### Properties {#properties}
 
-Properties marked ✓ can be configured globally through [`XProProvider`](/pro#global-config).
+Properties marked ✓ can be configured globally through [`XProProvider`](/pro/introduction#global-config).
 
 | Property        | Description                                                                                    | Type                            | Default               | Version | Global Config |
 | --------------- | ---------------------------------------------------------------------------------------------- | ------------------------------- | --------------------- | ------- | ------------- |

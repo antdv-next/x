@@ -8,6 +8,8 @@ export interface ComponentOverviewItem {
   description: Record<OverviewLocale, string>;
   group: Record<OverviewLocale, string>;
   groupOrder: number;
+  /** 卡片所属的文档分区，缺省为 `x`（@antdv-next/x 组件）。 */
+  section?: "x" | "pro";
   cover: string;
   coverDark: string;
   tag?: string;
@@ -379,5 +381,27 @@ export const componentOverviewItems: ComponentOverviewItem[] = [
       "https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*sSjhQ6q2-Z0AAAAAAAAAAAAADgCCAQ/original",
     coverDark:
       "https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*-gLqQpan1NAAAAAAAAAAAAAADgCCAQ/original",
+  },
+  {
+    slug: "message-scroller",
+    path: "/pro/message-scroller",
+    title: "MessageScroller",
+    subtitle: {
+      "zh-CN": "会话流式滚动容器",
+    },
+    description: {
+      "zh-CN":
+        "面向 Agent 会话的流式滚动容器，内容流入时自动贴底，读者上滑即脱离跟随。",
+      "en-US":
+        "A streaming conversation viewport that follows new content and releases control when the reader scrolls away.",
+    },
+    group: {
+      "zh-CN": "通用",
+      "en-US": "Common",
+    },
+    groupOrder: 0,
+    section: "pro",
+    cover: "/component-overview/message-scroller.svg",
+    coverDark: "/component-overview/message-scroller-dark.svg",
   },
 ];
