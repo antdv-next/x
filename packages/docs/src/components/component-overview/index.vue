@@ -12,6 +12,14 @@ import { componentOverviewItems } from "./data";
 
 defineOptions({ name: "ComponentOverview" });
 
+const props = withDefaults(
+  defineProps<{
+    /** 展示哪个文档分区的组件卡片，默认 `x`。 */
+    section?: "x" | "pro";
+  }>(),
+  { section: "x" },
+);
+
 interface OverviewGroup {
   key: string;
   label: string;
@@ -118,6 +126,7 @@ const uiText = computed(() => {
 const groupedItems = computed<OverviewGroup[]>(() => {
   const keyword = search.value.trim().toLowerCase();
   const filtered = componentOverviewItems
+    .filter(item => (item.section ?? "x") === props.section)
     .filter(item => {
       if (!keyword) return true;
 

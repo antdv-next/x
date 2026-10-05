@@ -2,7 +2,7 @@
 title: MessageScroller
 subtitle: 会话流式滚动容器
 description: 面向 Agent 会话的流式滚动容器，内容流入时自动贴底，读者上滑即脱离跟随，并可用消息导航导轨快速定位历史。
-order: 2
+order: 3
 packageName: x-pro
 ---
 
@@ -55,7 +55,7 @@ packageName: x-pro
 
 ### 属性 {#properties}
 
-标注 ✓ 的属性支持通过 [`XProProvider`](/pro-cn#global-config) 全局配置。
+标注 ✓ 的属性支持通过 [`XProProvider`](/pro/introduction#global-config) 全局配置。
 
 | 参数            | 说明                                                       | 类型                            | 默认值                | 版本 | 全局配置 |
 | --------------- | ---------------------------------------------------------- | ------------------------------- | --------------------- | ---- | -------- |
