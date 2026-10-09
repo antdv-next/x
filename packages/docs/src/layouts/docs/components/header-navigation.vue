@@ -70,8 +70,21 @@ const useStyles = createStyles(({ token, css }) => ({
     color: ${token.colorText} !important;
     font-weight: 500;
   `,
+  navItem: css`
+    position: relative;
+  `,
   itemLabel: css`
     white-space: nowrap;
+  `,
+  itemTag: css`
+    position: absolute;
+    top: -6px;
+    inset-inline-end: -18px;
+    font-size: 10px;
+    line-height: 14px;
+    padding: 0 4px;
+    border-radius: 7px;
+    pointer-events: none;
   `,
   searchItem: css`
     display: flex;
@@ -107,11 +120,24 @@ function getItemPath(path: string) {
       v-for="item in headerItems"
       :key="item.key"
       :to="{ path: getItemPath(item.path), query: route.query }"
-      :class="clsx(activeKey === item.key && styleState.styles.itemActive)"
+      :class="
+        clsx(
+          activeKey === item.key && styleState.styles.itemActive,
+          styleState.styles.navItem,
+        )
+      "
     >
       <span :class="styleState.styles.itemLabel">
         {{ item.label[isZhCN ? "zh-CN" : "en-US"] }}
       </span>
+      <a-tag
+        v-if="item.tag"
+        :class="styleState.styles.itemTag"
+        size="small"
+        color="success"
+      >
+        {{ item.tag }}
+      </a-tag>
     </router-link>
   </nav>
 </template>

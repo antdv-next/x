@@ -11,6 +11,7 @@ export interface HeaderItem {
   basePath: string;
   label: Record<"zh-CN" | "en-US", string>;
   version?: string;
+  tag?: string;
 }
 
 export const headerItems: HeaderItem[] = [
@@ -62,6 +63,7 @@ export const headerItems: HeaderItem[] = [
       "en-US": "Pro",
     },
     version: proVersion,
+    tag: "Dev",
   },
   {
     key: "sdk",
