@@ -1,4 +1,4 @@
-import type { App, CSSProperties, SlotsType, StyleValue } from "vue";
+import type { App, CSSProperties, SlotsType } from "vue";
 
 import { clsx } from "@v-c/util";
 import { useBaseConfig } from "antdv-next/config-provider/context";
@@ -20,6 +20,11 @@ import type {
   MessageScrollerStylesType,
 } from "./types";
 
+import {
+  omitClassAndStyle,
+  resolveAttrClass,
+  resolveAttrStyle,
+} from "../_util/attrs";
 import { useMergeSemantic } from "../_util/semantic";
 import { useXProComponentConfig } from "../config-provider";
 import enUSLocale from "../locale/en_US";
@@ -44,36 +49,6 @@ export type MessageScrollerSemanticName =
 type MessageScrollerEmitOptions = {
   [K in keyof MessageScrollerEmits]: MessageScrollerEmits[K];
 };
-
-/**
- * 属性透传时保留 `class`，其余属性交给根元素。
- */
-function omitClassAndStyle(attrs: Record<string, unknown>) {
-  const nextAttrs = { ...attrs };
-  delete nextAttrs.class;
-  delete nextAttrs.style;
-  return nextAttrs;
-}
-
-function resolveAttrClass(
-  value: unknown,
-): string | string[] | Record<string, boolean> | undefined {
-  if (typeof value === "string" || Array.isArray(value)) {
-    return value as string | string[];
-  }
-
-  return value && typeof value === "object"
-    ? (value as Record<string, boolean>)
-    : undefined;
-}
-
-function resolveAttrStyle(value: unknown): StyleValue {
-  if (typeof value === "string") {
-    return value;
-  }
-
-  return value && typeof value === "object" ? (value as StyleValue) : undefined;
-}
 
 /**
  * 刻度缩放通过 CSS 变量下发，自定义插槽内容也能复用同一比例。

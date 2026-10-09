@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="160px" height="104px" viewBox="0 0 160 104" version="1.1" xmlns="http://www.w3.org/2000/svg">
+  <title>TodoList</title>
+  <rect x="8" y="8" width="144" height="88" rx="6" fill="#141414" stroke="#303030"/>
+  <!-- header: status icon, title, counter -->
+  <circle cx="22" cy="22" r="6" fill="#49AA19"/>
+  <path d="M19.4 22.2 21.4 24.2 24.8 20.6" stroke="#141414" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="34" y="19" width="44" height="6" rx="3" fill="#E6E6E6"/>
+  <rect x="118" y="19" width="26" height="6" rx="3" fill="#434343"/>
+  <!-- row 1: completed -->
+  <circle cx="22" cy="42" r="6" fill="#49AA19"/>
+  <path d="M19.4 42.2 21.4 44.2 24.8 40.6" stroke="#141414" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="34" y="39" width="70" height="6" rx="3" fill="#434343"/>
+  <rect x="34" y="41" width="70" height="1.5" rx="0.75" fill="#595959"/>
+  <!-- row 2: in progress -->
+  <circle cx="22" cy="62" r="6" fill="none" stroke="#1677FF" stroke-width="1.6" stroke-dasharray="20 40" transform="rotate(-90 22 62)"/>
+  <circle cx="22" cy="62" r="6" fill="none" stroke="#15325B" stroke-width="1.6"/>
+  <rect x="34" y="59" width="88" height="6" rx="3" fill="#595959"/>
+  <rect x="128" y="59" width="16" height="6" rx="3" fill="#15325B"/>
+  <!-- row 3: pending -->
+  <circle cx="22" cy="82" r="6" fill="none" stroke="#434343" stroke-width="1.6" stroke-dasharray="2 3"/>
+  <rect x="34" y="79" width="62" height="6" rx="3" fill="#303030"/>
+</svg>

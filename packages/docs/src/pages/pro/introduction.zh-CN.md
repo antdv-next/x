@@ -17,6 +17,7 @@ pnpm add @antdv-next/x-pro
 ## 组件 {#components}
 
 - [MessageScroller 会话流式滚动容器](/pro/message-scroller) — 流式跟随、消息导航导轨、回到最新。
+- [TodoList 任务清单](/pro/todo-list) — 形变状态图标、自动折叠、滚动跟随。
 
 ## 全局配置 {#global-config}
 

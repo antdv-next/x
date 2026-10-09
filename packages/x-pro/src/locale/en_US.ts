@@ -10,6 +10,15 @@ const xProLocale = {
     backToLatest: "Back to latest",
     railItemLabel: "Go to message {index} of {total}",
   },
+  TodoList: {
+    title: "To-dos",
+    counterLabel: "{completed} of {total} completed",
+    toggleLabel: "Toggle {title}",
+    statusPending: "Pending",
+    statusInProgress: "In progress",
+    statusCompleted: "Completed",
+    statusCancelled: "Cancelled",
+  },
 } satisfies XProLocale;
 
 export default xProLocale;

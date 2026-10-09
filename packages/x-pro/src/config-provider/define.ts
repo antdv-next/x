@@ -7,6 +7,11 @@ import type {
   MessageScrollerNavigation,
   MessageScrollerProps,
 } from "../message-scroller/types";
+import type {
+  TodoListClassNamesType,
+  TodoListProps,
+  TodoListStylesType,
+} from "../todo-list/types";
 
 export interface MessageScrollerConfig {
   followThreshold?: number;
@@ -27,12 +32,29 @@ export interface MessageScrollerConfig {
       }) => Record<string, CSSProperties>);
 }
 
+/**
+ * TodoList 的包级默认配置。
+ *
+ * 刻意不含 `items`：每个实例各自的任务数据没有包级默认值的语义。
+ */
+export interface TodoListConfig extends Omit<
+  TodoListProps,
+  "items" | "prefixCls" | "rootClass"
+> {
+  class?: string;
+  style?: CSSProperties;
+  classes?: TodoListClassNamesType;
+  styles?: TodoListStylesType;
+}
+
 export interface XProConfigContextProps {
   messageScroller?: MessageScrollerConfig;
+  todoList?: TodoListConfig;
 }
 
 export const X_PRO_CONFIG_KEYS = [
   "messageScroller",
+  "todoList",
 ] as const satisfies readonly (keyof XProConfigContextProps)[];
 
 export interface XProProviderProps
