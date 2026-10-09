@@ -197,7 +197,11 @@ const genMessageScrollerStyle: GenerateStyle<
       },
 
       /**
-       * 轨道用单格网格承载卡片：交叉淡入淡出期间新旧卡片重叠，轨道高度不会叠加跳动。
+       * 轨道承载卡片并负责滑动；卡片本身用 `grid-area` 钉在同一个网格单元里。
+       *
+       * `Transition` 默认模式在新旧卡片交叉淡入淡出期间同时保留两个节点，网格若不显式指定
+       * 单元，自动排布会把它们放进两行，轨道高度翻倍，居中的预览层随即被顶起再落回——每次
+       * 切换都抖一下。钉在同一格后轨道高度取两者较大值，不再叠加。
        */
       [`${componentCls}-preview-track`]: {
         display: "grid",
@@ -207,6 +211,7 @@ const genMessageScrollerStyle: GenerateStyle<
       },
 
       [`${componentCls}-preview`]: {
+        gridArea: "1 / 1",
         width: "100%",
         padding: `${unit(token.paddingXS)} ${unit(token.paddingSM)}`,
         border: `${lineWidth} solid ${token.previewBorderColor}`,
