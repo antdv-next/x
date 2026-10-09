@@ -404,4 +404,26 @@ export const componentOverviewItems: ComponentOverviewItem[] = [
     cover: "/component-overview/message-scroller.svg",
     coverDark: "/component-overview/message-scroller-dark.svg",
   },
+  {
+    slug: "todo-list",
+    path: "/pro/todo-list",
+    title: "TodoList",
+    subtitle: {
+      "zh-CN": "任务清单",
+    },
+    description: {
+      "zh-CN":
+        "面向 Agent 任务计划的折叠清单，形变状态图标呈现每一步进展，完成即收起。",
+      "en-US":
+        "A collapsible task plan for agents, with morphing status icons and auto-collapse once the work is done.",
+    },
+    group: {
+      "zh-CN": "通用",
+      "en-US": "Common",
+    },
+    groupOrder: 0,
+    section: "pro",
+    cover: "/component-overview/todo-list.svg",
+    coverDark: "/component-overview/todo-list-dark.svg",
+  },
 ];

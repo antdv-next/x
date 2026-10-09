@@ -58,6 +58,7 @@ export {
 } from "./context";
 export type {
   MessageScrollerConfig,
+  TodoListConfig,
   XProConfigContextProps,
   XProProviderEmits,
   XProProviderProps,

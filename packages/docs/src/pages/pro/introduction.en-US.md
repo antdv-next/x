@@ -17,6 +17,7 @@ pnpm add @antdv-next/x-pro
 ## Components {#components}
 
 - [MessageScroller — streaming conversation viewport](/pro/message-scroller) with streaming follow, rail navigation and back-to-latest.
+- [TodoList — collapsible task plan](/pro/todo-list) with morphing status icons, auto-collapse and scroll following.
 
 ## Global Config {#global-config}
 

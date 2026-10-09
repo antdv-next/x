@@ -18,6 +18,10 @@ const RAIL_SCALE_FLOOR = 0.25;
 
 const ITEM_ID_ATTRIBUTE = /\[([\w-]+)\]/;
 
+/** 跨组件复用的实现放在 `_util`，这里只做转出，保持既有导入路径稳定。 */
+export { prefersReducedMotion } from "../_util/motion";
+export { formatTemplate as formatMessageScrollerTemplate } from "../_util/template";
+
 /**
  * 导轨刻度的距离衰减比例。
  */
@@ -75,22 +79,4 @@ export function resolveElementPreview(element: HTMLElement) {
       PREVIEW_DESCRIPTION_LENGTH,
     ),
   };
-}
-
-export function prefersReducedMotion() {
-  return (
-    typeof window !== "undefined" &&
-    typeof window.matchMedia === "function" &&
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches
-  );
-}
-
-export function formatMessageScrollerTemplate(
-  template: string,
-  values: Record<string, string | number>,
-) {
-  return template.replace(/\{(\w+)\}/g, (match, key) => {
-    const value = values[key];
-    return value === undefined ? match : String(value);
-  });
 }
