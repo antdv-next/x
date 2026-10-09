@@ -4,7 +4,7 @@ import { clsx } from "@v-c/util";
 import { useBaseConfig } from "antdv-next/config-provider/context";
 import useCSSVarCls from "antdv-next/config-provider/hooks/useCSSVarCls";
 import { useLocaleContext } from "antdv-next/locale/index";
-import { computed, defineComponent, ref, shallowRef, Transition } from "vue";
+import { computed, defineComponent, shallowRef, Transition } from "vue";
 
 import type { TodoListLocale, XProLocale } from "../locale/types";
 import type {

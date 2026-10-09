@@ -1,8 +1,9 @@
 import type { VueWrapper } from "@vue/test-utils";
+import type { Plugin } from "vue";
 
 import { mount } from "@vue/test-utils";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { h, nextTick, ref } from "vue";
+import { createApp, h, nextTick, ref } from "vue";
 
 import type { TodoItem, TodoListRef } from "../src/todo-list/types";
 
@@ -493,5 +494,217 @@ describe("TodoList", () => {
     await wrapper.setProps({ items: items.value });
 
     expect(wrapper.findAll(ITEM_SELECTOR)).toHaveLength(2);
+  });
+
+  it("registers itself as a global component on install", () => {
+    const app = createApp({ render: () => null });
+    app.use(TodoList as unknown as Plugin);
+
+    expect(app.component("ATodoList")).toBe(TodoList);
+  });
+
+  it("honours a later defaultOpen change while uncontrolled", async () => {
+    const wrapper = mountTodo({ defaultOpen: true });
+
+    await wrapper.setProps({ defaultOpen: false });
+
+    expect(wrapper.find(HEADER_SELECTOR).attributes("aria-expanded")).toBe(
+      "false",
+    );
+  });
+
+  it("ignores a defaultOpen change while controlled", async () => {
+    const wrapper = mountTodo({ open: true });
+
+    await wrapper.setProps({ defaultOpen: false });
+
+    // 受控时 `open` 说了算，`defaultOpen` 只提供非受控初值。
+    expect(wrapper.find(HEADER_SELECTOR).attributes("aria-expanded")).toBe(
+      "true",
+    );
+  });
+
+  it("lets the host re-open a controlled panel and forgets the auto-collapse", async () => {
+    const wrapper = mountTodo({
+      open: true,
+      items: [todo("1", "completed"), todo("2", "in-progress")],
+    });
+
+    // 全部终态触发自动折叠，但受控宿主忽略这次广播，视图仍是展开的。
+    await wrapper.setProps({
+      open: true,
+      items: [todo("1", "completed"), todo("2", "completed")],
+    });
+    expect(lastPayload(wrapper, "openChange")).toEqual([false]);
+
+    // 宿主自己把 open 拨到 true：自动折叠标记作废，之后再来任务不会重复广播。
+    await wrapper.setProps({
+      open: true,
+      items: [todo("1", "completed"), todo("2", "completed")],
+    });
+    await wrapper.setProps({
+      open: true,
+      items: [
+        todo("1", "completed"),
+        todo("2", "completed"),
+        todo("3", "pending"),
+      ],
+    });
+
+    expect(wrapper.emitted("openChange")).toHaveLength(1);
+  });
+
+  it("lets the host drive setOpen imperatively without flipping the flag back", async () => {
+    const wrapper = mountTodo({ open: true });
+
+    (wrapper.vm as unknown as TodoListRef).setOpen(false);
+    await nextTick();
+
+    expect(lastPayload(wrapper, "openChange")).toEqual([false]);
+
+    // 受控宿主没接住，视图保持 true；但内部已记为手动操作，
+    // 因此再来一个待办也不会被自动展开逻辑改写。
+    await wrapper.setProps({
+      open: true,
+      items: [todo("1", "completed"), todo("2", "pending")],
+    });
+
+    expect(wrapper.find(HEADER_SELECTOR).attributes("aria-expanded")).toBe(
+      "true",
+    );
+  });
+
+  it("scrolls to the end through the ref, with an explicit behavior", async () => {
+    const wrapper = mountTodo();
+    const viewport = find(wrapper.element, CONTENT_SELECTOR);
+    const scrollTo = vi.fn();
+    Object.defineProperty(viewport, "scrollHeight", {
+      configurable: true,
+      value: 500,
+    });
+    Object.defineProperty(viewport, "scrollTo", {
+      configurable: true,
+      value: scrollTo,
+    });
+
+    (wrapper.vm as unknown as TodoListRef).scrollToEnd({ behavior: "auto" });
+
+    expect(scrollTo).toHaveBeenCalledWith({ top: 500, behavior: "auto" });
+  });
+
+  it("falls back to scrollTop when the element has no scrollTo", async () => {
+    const wrapper = mountTodo();
+    const viewport = find(wrapper.element, CONTENT_SELECTOR);
+    Object.defineProperty(viewport, "scrollHeight", {
+      configurable: true,
+      value: 320,
+    });
+    Object.defineProperty(viewport, "scrollTo", {
+      configurable: true,
+      value: undefined,
+    });
+
+    (wrapper.vm as unknown as TodoListRef).scrollToEnd({ behavior: "auto" });
+
+    expect(viewport.scrollTop).toBe(320);
+  });
+
+  it("cancels a pending scroll frame when a second batch arrives", async () => {
+    const cancelAnimationFrame = vi.fn();
+    const frames: FrameRequestCallback[] = [];
+    vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => {
+      frames.push(cb);
+      return frames.length;
+    });
+    vi.stubGlobal("cancelAnimationFrame", cancelAnimationFrame);
+
+    const wrapper = mountTodo({ items: [todo("1")] });
+
+    await wrapper.setProps({ items: [todo("1"), todo("2")] });
+    await wrapper.setProps({ items: [todo("1"), todo("2"), todo("3")] });
+
+    // 第一帧还没跑就又来了一批，上一帧必须取消，否则会滚两次。
+    expect(cancelAnimationFrame).toHaveBeenCalledWith(1);
+  });
+
+  it("cancels a pending scroll frame on unmount", async () => {
+    const cancelAnimationFrame = vi.fn();
+    vi.stubGlobal("requestAnimationFrame", () => 7);
+    vi.stubGlobal("cancelAnimationFrame", cancelAnimationFrame);
+
+    const wrapper = mountTodo({ items: [todo("1")] });
+
+    await wrapper.setProps({ items: [todo("1"), todo("2")] });
+    wrapper.unmount();
+
+    expect(cancelAnimationFrame).toHaveBeenCalledWith(7);
+  });
+
+  it("does not schedule a scroll frame on unmount without a pending one", () => {
+    const cancelAnimationFrame = vi.fn();
+    vi.stubGlobal("cancelAnimationFrame", cancelAnimationFrame);
+
+    const wrapper = mountTodo();
+    wrapper.unmount();
+
+    expect(cancelAnimationFrame).not.toHaveBeenCalled();
+  });
+
+  it("scrollToEnd is a no-op before the viewport exists", () => {
+    const wrapper = mountTodo({ defaultOpen: false });
+    const api = wrapper.vm as unknown as TodoListRef;
+
+    expect(api.viewportElement).toBeNull();
+    expect(() => api.scrollToEnd()).not.toThrow();
+  });
+
+  it("does not follow a new task while the panel is collapsed", async () => {
+    const frames: FrameRequestCallback[] = [];
+    vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => {
+      frames.push(cb);
+      return frames.length;
+    });
+    vi.stubGlobal("cancelAnimationFrame", vi.fn());
+
+    const wrapper = mountTodo({ defaultOpen: false, items: [todo("1")] });
+
+    await wrapper.setProps({ items: [todo("1"), todo("2")] });
+
+    // 折叠时容器高度为 0，滚动既无意义也看不见，连帧都不该排。
+    expect(frames).toHaveLength(0);
+  });
+
+  it("reports null elements once unmounted", () => {
+    const wrapper = mountTodo();
+    const api = wrapper.vm as unknown as TodoListRef;
+
+    wrapper.unmount();
+
+    expect(api.nativeElement).toBeNull();
+    expect(api.viewportElement).toBeNull();
+  });
+
+  it("forgets an auto-collapse once the host re-opens it", async () => {
+    const wrapper = mountTodo({
+      open: false,
+      items: [todo("1", "completed"), todo("2", "completed")],
+    });
+
+    // 宿主把 open 从 false 拨到 true：自动折叠标记作废。
+    await wrapper.setProps({
+      open: true,
+      items: [todo("1", "completed"), todo("2", "completed")],
+    });
+
+    expect(wrapper.find(HEADER_SELECTOR).attributes("aria-expanded")).toBe(
+      "true",
+    );
+  });
+
+  it("renders an empty list when items is omitted", () => {
+    const wrapper = mount(TodoList, { attachTo: document.body });
+
+    expect(wrapper.findAll(ITEM_SELECTOR)).toHaveLength(0);
+    expect(wrapper.find(COUNTER_SELECTOR).text()).toBe("0 of 0 completed");
   });
 });
