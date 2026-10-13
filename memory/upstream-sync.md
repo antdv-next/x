@@ -108,9 +108,10 @@ table above; `x-markdown.md`).
 
 ## 2026-10-13: Browser repro supersedes the exact #2050 port
 
-- Repro: open the Folder comparison in `packages/playground`, with both
-  hover backgrounds visible. A direct two-line port makes the background
-  move upward instead of centering it.
+- Repro: a local-only Folder comparison in `packages/playground`, with both
+  hover backgrounds visible, shows that a direct two-line port makes the
+  background move upward instead of centering it. The comparison is not
+  part of the submitted PR.
 - Ground truth: DevTools computed styles show Tree's later
   `.ant-tree .ant-tree-switcher:before` rule wins the equal-specificity
   cascade for width, height and top. Before the port, the background is
@@ -120,7 +121,7 @@ table above; `x-markdown.md`).
   selector under `${antCls}-tree` to outrank Tree's own rules regardless of
   insertion order. Computed styles are now 10x10px at top 12px with a -5px
   transform, centered within the 24px switcher.
-- Coverage: the playground renders two real Folder instances, restoring
+- Coverage: the local comparison renders two real Folder instances, restoring
   the pre-fix computed styles on the left, with synchronized expansion,
   persistent hover and optional 2x zoom. Browser verification covers the
   actual cascade; the existing Folder unit suite does not measure layout.

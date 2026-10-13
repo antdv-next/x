@@ -1,49 +1,59 @@
 <script setup lang="ts">
-import { XProvider } from "@antdv-next/x";
+import type { BubbleItemType } from "@antdv-next/x";
+
+import { BubbleList, Sender, Welcome, XProvider } from "@antdv-next/x";
 import { ref } from "vue";
 
-import ChatDemo from "./ChatDemo.vue";
-import FolderComparison from "./FolderComparison.vue";
+const items = ref<BubbleItemType[]>([
+  {
+    key: "welcome",
+    content: "Hello! How can I help you today?",
+    placement: "start",
+    role: "assistant",
+  },
+]);
 
-const demo = ref("folder");
+const loading = ref(false);
+
+async function handleSubmit(value: string) {
+  if (!value.trim()) return;
+
+  items.value.push({
+    key: `user-${Date.now()}`,
+    content: value,
+    placement: "end",
+    role: "user",
+  });
+
+  // Simulate assistant response
+  loading.value = true;
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  items.value.push({
+    key: `assistant-${Date.now()}`,
+    content: `You said: "${value}"`,
+    placement: "start",
+    role: "assistant",
+  });
+  loading.value = false;
+}
 </script>
 
 <template>
   <XProvider>
-    <nav class="demo-nav" aria-label="Playground 示例">
-      <button :aria-pressed="demo === 'folder'" @click="demo = 'folder'">
-        Folder 对比 · #240
-      </button>
-      <button :aria-pressed="demo === 'chat'" @click="demo = 'chat'">
-        聊天演示
-      </button>
-    </nav>
-    <FolderComparison v-if="demo === 'folder'" />
-    <ChatDemo v-else />
+    <div style="max-width: 800px; margin: 0 auto; padding: 24px">
+      <Welcome
+        icon="https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*s5sNRo5LjfQAAAAAAAAAAAAADgCCAQ/fmt.webp"
+        title="你好，我是 Antdv Next X"
+        description="基于 Antdv Next 的 AGI 产品界面解决方案，打造更美好的智能愿景~"
+      />
+
+      <BubbleList :items="items" :auto-scroll="true" style="margin-top: 24px" />
+
+      <Sender
+        :loading="loading"
+        style="margin-top: 24px"
+        @submit="handleSubmit"
+      />
+    </div>
   </XProvider>
 </template>
-
-<style scoped>
-.demo-nav {
-  display: flex;
-  gap: 8px;
-  max-width: 1120px;
-  margin: 24px auto 0;
-  padding: 0 24px;
-}
-
-.demo-nav button {
-  padding: 10px 16px;
-  border: 1px solid #d9d9d9;
-  border-radius: 6px;
-  background: #fff;
-  color: #333;
-  cursor: pointer;
-}
-
-.demo-nav button[aria-pressed="true"] {
-  border-color: #1677ff;
-  color: #0958d9;
-  background: #e6f4ff;
-}
-</style>
