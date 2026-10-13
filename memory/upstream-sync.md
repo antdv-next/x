@@ -31,10 +31,10 @@ Package mapping:
 
 ## Cursor
 
-| Field                                  | Value                                                  |
-| -------------------------------------- | ------------------------------------------------------ |
-| `last_synced_commit`                   | `8b76d6a` (tag `2.9.0`), `sync_count: 6`, `2026-09-29` |
-| Newest upstream commit visible locally | `8b76d6a` (2026-09-20, merge of PR #2061)              |
+| Field                                      | Value                                                         |
+| ------------------------------------------ | ------------------------------------------------------------- |
+| `last_synced_commit`                       | `fc3a0cc` (latest tag `2.9.0`), `sync_count: 7`, `2026-10-13` |
+| Newest upstream commit verified via GitHub | `fc3a0cc` (2026-10-12, merge of PR #2050)                     |
 
 The `8b76d6a` advance landed on `main` as `e8f1bf1` "chore: update upstream
 sync cursor" (2026-09-30), together with the #2061 port on `main` as `7b6b587`.
@@ -83,3 +83,48 @@ table above; `x-markdown.md`).
   say so instead of guessing.
 - `sync_count` in `.sync-upstream.json` is the only machine-readable cursor
   history; keep this file in sync with it when the cursor moves.
+
+## 2026-10-13: Folder switcher hover alignment (#2050)
+
+- Upstream: [ant-design/x#2050](https://github.com/ant-design/x/pull/2050),
+  commit `fc3a0cc7f35993dbb1ea3f792e4ba978a7294ed1`; downstream tracking
+  issue: [#240](https://github.com/antdv-next/x/issues/240).
+- Repro: hover a Folder directory's expand/collapse switcher. The 10px
+  background pseudo-element is not vertically centered with the icon.
+- Ground truth: an absolutely positioned pseudo-element with `top: 50%`
+  and `transform: translateY(-50%)` centers its own height within the switcher.
+- Upstream adds these declarations in `style/index.tsx`; downstream ports
+  them unchanged into `packages/x/components/folder/style/folder.ts`, where
+  the equivalent style generator lives. There is no behavioral divergence.
+- Landing branch: `sync/ant-design-x-2050`. The style fix and cursor advance
+  are included together so merging the PR advances the cursor atomically.
+- Coverage: existing `packages/x/components/folder/__tests__/index.test.tsx`
+  and the workspace unit suite. No new CSS-value assertion was added for
+  this two-declaration visual fix (upstream also has no new test).
+- Decision: GitHub's comparison from `8b76d6a` to `fc3a0cc` contains exactly
+  this one commit; advance the cursor to `fc3a0cc`, retain latest tag `2.9.0`,
+  and increment `sync_count` to 7. The local-clone caveat above remains a
+  historical limitation; this sync verifies the upstream range via GitHub.
+
+## 2026-10-13: Browser repro supersedes the exact #2050 port
+
+- Repro: a local-only Folder comparison in `packages/playground`, with both
+  hover backgrounds visible, shows that a direct two-line port makes the
+  background move upward instead of centering it. The comparison is not
+  part of the submitted PR.
+- Ground truth: DevTools computed styles show Tree's later
+  `.ant-tree .ant-tree-switcher:before` rule wins the equal-specificity
+  cascade for width, height and top. Before the port, the background is
+  24x24px at top 0; after the direct port it is still 24x24px at top 0,
+  but now has `translateY(-50%)`, moving it upward by 12px.
+- Upstream adds only top and transform. Downstream also nests the switcher
+  selector under `${antCls}-tree` to outrank Tree's own rules regardless of
+  insertion order. Computed styles are now 10x10px at top 12px with a -5px
+  transform, centered within the 24px switcher.
+- Coverage: the local comparison renders two real Folder instances, restoring
+  the pre-fix computed styles on the left, with synchronized expansion,
+  persistent hover and optional 2x zoom. Browser verification covers the
+  actual cascade; the existing Folder unit suite does not measure layout.
+- Decision: retain the upstream positioning and add the more specific
+  selector downstream. This supersedes the earlier no-divergence entry;
+  an exact port is insufficient with the downstream Tree style order.
