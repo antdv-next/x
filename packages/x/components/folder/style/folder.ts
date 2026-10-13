@@ -26,7 +26,8 @@ const genFolderStyle: GenerateStyle<FolderToken> = token => {
         paddingInline: token.padding,
         paddingBlock: token.paddingXS,
       },
-      [`${antCls}-tree-switcher`]: {
+      // Outrank Tree's own switcher rules regardless of style insertion order.
+      [`${antCls}-tree ${antCls}-tree-switcher`]: {
         width: "10px",
         "&:before": {
           width: "10px",
