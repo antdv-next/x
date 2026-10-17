@@ -516,3 +516,40 @@ review that reports them is reporting upstream's behaviour.
 - Do not add a Vue equivalent of `arePropsEqualIgnoringDomNode` without
   reconsidering the `components` / `componentsProps` stability convention that
   replaced it.
+
+## 4. Link and paragraph renderer output
+
+**Files:** `packages/x-markdown/src/XMarkdown/core/Parser.ts`
+(`configureRenderers`).
+**Surfaced by:** the `ant-design/x` PR #2055 port (CJK autolinks), 2026-10-17.
+
+Downstream overrides `link` and `paragraph` on the marked instance, and both
+render slightly different HTML than marked's defaults — which is what
+upstream's `Parser` uses.
+
+| Where               | Ground truth (marked default)                                                                                                  | Upstream behaviour                                       | Our behaviour                                                                  |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `paragraph`         | `<p>…</p>\n` — the default renderer appends a trailing newline                                                                 | keeps the trailing `\n`                                  | emits `<p>…</p>` with no trailing newline                                      |
+| `link`              | runs `href` through marked's `cleanUrl`, percent-encoding non-ASCII: `路径（详情）` -> `%E8%B7%AF%E5%BE%84%EF%BC%88…%EF%BC%89` | keeps `cleanUrl` (its test asserts the encoded `href`)   | writes `token.href` verbatim, so a CJK `href` stays literal                    |
+| `openLinksInNewTab` | n/a (marked has no such option)                                                                                                | defaults to `false`; its tests get a bare `<a href="…">` | defaults to `true`, so links carry `target="_blank" rel="noopener noreferrer"` |
+
+**Decision (2026-10-17): keep as-is.** The CJK autolink fix truncates
+`token.raw` / `token.href` and is orthogonal to how the renderer emits the
+`href`; re-routing `link` through `cleanUrl` would change every existing
+`href` and is not part of a sync port. The ported tests assert our real output:
+`XMarkdown/__tests__/parser.test.ts` -> `describe("CJK autolinks")` (the three
+differences above are called out in a comment there).
+
+**Wiring requirement.** `setOptions({ config })` rebuilds `markdownInstance`
+via `updateMarkedConfig`, so any `markdownInstance.use(...)` extension must be
+re-applied there as well as in the constructor — a config update otherwise
+silently drops it. `configureCjkAutolinks()` is mounted in both; covered by
+"survives a marked config update" in the same describe block.
+
+### Do not
+
+- Do not "align" our `href` output to upstream's encoded form without reading
+  this entry: the difference is pre-existing, deliberate-by-omission, and wider
+  than the autolink feature.
+- Do not mount a marked extension only in the constructor; `updateMarkedConfig`
+  rebuilds the instance.

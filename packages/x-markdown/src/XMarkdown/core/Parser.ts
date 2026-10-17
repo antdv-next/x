@@ -1,6 +1,6 @@
 import type { Token, Tokens } from "marked";
 
-import { Marked } from "marked";
+import { Marked, Tokenizer } from "marked";
 
 import type { MarkedConfig, ParserOptions } from "../interface";
 
@@ -18,6 +18,10 @@ export function escapeHtml(html: string): string {
   }
   return html;
 }
+
+const CJK_AUTOLINK_BOUNDARY = /[），。！？；：、]/u;
+const CJK_PAREN_OPEN = "（";
+const CJK_PAREN_CLOSE = "）";
 
 export class Parser {
   private static readonly COMPLETE_FENCED_CODE =
@@ -46,6 +50,7 @@ export class Parser {
     };
 
     this.markdownInstance = new Marked(this.options.config);
+    this.configureCjkAutolinks();
     this.configureRenderers();
   }
 
@@ -55,7 +60,66 @@ export class Parser {
       ...config,
     };
     this.markdownInstance = new Marked(this.options.config);
+    this.configureCjkAutolinks();
     this.configureRenderers();
+  }
+
+  /**
+   * marked 的裸链接（autolink）规则会一路吃到空白或行尾，中文正文里紧跟 URL 的
+   * 中文标点（`），。！？；：、`）因此会被并进链接。这里覆写 `url` tokenizer：
+   * 在第一个 CJK 边界标点处截断 token；成对的全角括号内部受保护，
+   * 未配对的开括号不保护后续正文。
+   */
+  private configureCjkAutolinks() {
+    this.markdownInstance.use({
+      tokenizer: {
+        url(src) {
+          const token = Tokenizer.prototype.url.call(this, src);
+          if (!token) {
+            return false;
+          }
+
+          // 只有配对成功的括号区间才受保护；未配对的开括号不能让后续正文免于截断
+          const matchedParens = new Map<number, number>();
+          const openParens: number[] = [];
+          for (let index = 0; index < token.raw.length; index += 1) {
+            const character = token.raw[index];
+            if (character === CJK_PAREN_OPEN) {
+              openParens.push(index);
+            } else if (character === CJK_PAREN_CLOSE && openParens.length > 0) {
+              matchedParens.set(openParens.pop()!, index);
+            }
+          }
+
+          let boundaryIndex = -1;
+          for (let index = 0; index < token.raw.length; index += 1) {
+            const closeIndex = matchedParens.get(index);
+            if (closeIndex !== undefined) {
+              // 跳到配对右括号之后，其间的标点属于链接本身
+              index = closeIndex;
+            } else if (CJK_AUTOLINK_BOUNDARY.test(token.raw[index])) {
+              boundaryIndex = index;
+              break;
+            }
+          }
+
+          if (boundaryIndex < 0) {
+            return false;
+          }
+
+          const raw = token.raw.slice(0, boundaryIndex);
+          const removedLength = token.raw.length - raw.length;
+          const href = token.href.slice(0, token.href.length - removedLength);
+          return {
+            ...token,
+            raw,
+            text: raw,
+            href,
+            tokens: [{ type: "text", raw, text: raw }],
+          };
+        },
+      },
+    });
   }
 
   private configureRenderers() {
