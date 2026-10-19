@@ -379,34 +379,36 @@ const MessageScroller = defineComponent<
               class={`${prefixCls.value}-preview-track`}
               style={{ transform: previewTransform.value }}
             >
-              <Transition name={`${prefixCls.value}-preview-motion`}>
-                {previewEntry.value ? (
-                  <div
-                    key={previewEntry.value.id}
-                    class={clsx(
-                      `${prefixCls.value}-preview`,
-                      mergedClassNames.value.preview,
-                    )}
-                    style={mergedStyles.value.preview}
-                  >
-                    {slots.preview?.({
-                      item: previewEntry.value.item,
-                      index: previewEntry.value.index,
-                    }) ?? (
-                      <>
-                        <div class={`${prefixCls.value}-preview-title`}>
-                          {previewEntry.value.item.title}
+              {/*
+                切换即换文：内容不交叉淡入淡出。新旧卡片若同帧叠在同一网格单元，
+                半透明的新卡片会透出旧文案，切换瞬间出现重影；这里内容直接落到新
+                激活项，位置仍由轨道的 transform 连续滑动。
+              */}
+              {previewEntry.value ? (
+                <div
+                  class={clsx(
+                    `${prefixCls.value}-preview`,
+                    mergedClassNames.value.preview,
+                  )}
+                  style={mergedStyles.value.preview}
+                >
+                  {slots.preview?.({
+                    item: previewEntry.value.item,
+                    index: previewEntry.value.index,
+                  }) ?? (
+                    <>
+                      <div class={`${prefixCls.value}-preview-title`}>
+                        {previewEntry.value.item.title}
+                      </div>
+                      {previewEntry.value.item.description ? (
+                        <div class={`${prefixCls.value}-preview-description`}>
+                          {previewEntry.value.item.description}
                         </div>
-                        {previewEntry.value.item.description ? (
-                          <div class={`${prefixCls.value}-preview-description`}>
-                            {previewEntry.value.item.description}
-                          </div>
-                        ) : null}
-                      </>
-                    )}
-                  </div>
-                ) : null}
-              </Transition>
+                      ) : null}
+                    </>
+                  )}
+                </div>
+              ) : null}
             </div>
           </div>
         )}

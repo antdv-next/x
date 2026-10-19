@@ -5,7 +5,6 @@ import { unit } from "@antdv-next/cssinjs";
 
 import { genStyleHooks } from "../../theme/genStyleUtils";
 import {
-  FOLLOW_MOTION_EASE,
   MIN_RAIL_ITEM_HEIGHT,
   prepareComponentToken,
   resolveRailScaleVar,
@@ -45,7 +44,6 @@ const genMessageScrollerStyle: GenerateStyle<
   const railCls = `${componentCls}-rail`;
   const railTickCls = `${railCls}-tick`;
   const railScaleVar = resolveRailScaleVar(componentCls.replace(/^\./, ""));
-  const previewMotionCls = `${componentCls}-preview-motion`;
   const backToBottomCls = `${componentCls}-back-to-bottom`;
   const backToBottomMotionCls = `${componentCls}-back-to-bottom-motion`;
   const motion = `${token.motionDuration} ${token.motionEase}`;
@@ -197,11 +195,7 @@ const genMessageScrollerStyle: GenerateStyle<
       },
 
       /**
-       * 轨道承载卡片并负责滑动；卡片本身用 `grid-area` 钉在同一个网格单元里。
-       *
-       * `Transition` 默认模式在新旧卡片交叉淡入淡出期间同时保留两个节点，网格若不显式指定
-       * 单元，自动排布会把它们放进两行，轨道高度翻倍，居中的预览层随即被顶起再落回——每次
-       * 切换都抖一下。钉在同一格后轨道高度取两者较大值，不再叠加。
+       * 轨道承载单张卡片并负责滑动：卡片内容随激活项即时替换，不存在新旧同帧的阶段。
        */
       [`${componentCls}-preview-track`]: {
         display: "grid",
@@ -211,7 +205,6 @@ const genMessageScrollerStyle: GenerateStyle<
       },
 
       [`${componentCls}-preview`]: {
-        gridArea: "1 / 1",
         width: "100%",
         padding: `${unit(token.paddingXS)} ${unit(token.paddingSM)}`,
         border: `${lineWidth} solid ${token.previewBorderColor}`,
@@ -235,32 +228,6 @@ const genMessageScrollerStyle: GenerateStyle<
         color: token.previewDescriptionColor,
         fontSize: token.fontSizeSM,
         lineHeight: token.lineHeightSM,
-      },
-
-      [`${previewMotionCls}-enter-from`]: {
-        opacity: 0,
-        transform: "translateY(4px)",
-        filter: "blur(6px)",
-      },
-
-      [`${previewMotionCls}-enter-to, ${previewMotionCls}-leave-from`]: {
-        opacity: 1,
-        transform: "translateY(0)",
-        filter: "blur(0px)",
-      },
-
-      [`${previewMotionCls}-leave-to`]: {
-        opacity: 0,
-        transform: "translateY(-2px)",
-        filter: "blur(4px)",
-      },
-
-      [`${previewMotionCls}-enter-active`]: {
-        transition: `opacity 180ms ${FOLLOW_MOTION_EASE}, transform 180ms ${FOLLOW_MOTION_EASE}, filter 180ms ${FOLLOW_MOTION_EASE}`,
-      },
-
-      [`${previewMotionCls}-leave-active`]: {
-        transition: `opacity 120ms ${FOLLOW_MOTION_EASE}, transform 120ms ${FOLLOW_MOTION_EASE}, filter 120ms ${FOLLOW_MOTION_EASE}`,
       },
 
       /**
@@ -329,7 +296,7 @@ const genMessageScrollerStyle: GenerateStyle<
             transition: "none",
           },
 
-        [`${previewMotionCls}-enter-active, ${previewMotionCls}-leave-active, ${backToBottomMotionCls}-enter-active, ${backToBottomMotionCls}-leave-active`]:
+        [`${backToBottomMotionCls}-enter-active, ${backToBottomMotionCls}-leave-active`]:
           {
             transition: "none",
           },
