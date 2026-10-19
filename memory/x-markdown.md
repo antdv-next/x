@@ -521,7 +521,10 @@ review that reports them is reporting upstream's behaviour.
 
 **Files:** `packages/x-markdown/src/XMarkdown/core/Parser.ts`
 (`configureRenderers`).
-**Surfaced by:** the `ant-design/x` PR #2055 port (CJK autolinks), 2026-10-17.
+**Surfaced by:** reviewing the `ant-design/x` PR #2055 port (CJK autolinks),
+2026-10-17. The port itself was reverted 2026-10-19 (upstream PR never
+merged); the three differences below are pre-existing downstream behaviour and
+are unaffected by the revert.
 
 Downstream overrides `link` and `paragraph` on the marked instance, and both
 render slightly different HTML than marked's defaults — which is what
@@ -533,18 +536,17 @@ upstream's `Parser` uses.
 | `link`              | runs `href` through marked's `cleanUrl`, percent-encoding non-ASCII: `路径（详情）` -> `%E8%B7%AF%E5%BE%84%EF%BC%88…%EF%BC%89` | keeps `cleanUrl` (its test asserts the encoded `href`)   | writes `token.href` verbatim, so a CJK `href` stays literal                    |
 | `openLinksInNewTab` | n/a (marked has no such option)                                                                                                | defaults to `false`; its tests get a bare `<a href="…">` | defaults to `true`, so links carry `target="_blank" rel="noopener noreferrer"` |
 
-**Decision (2026-10-17): keep as-is.** The CJK autolink fix truncates
-`token.raw` / `token.href` and is orthogonal to how the renderer emits the
-`href`; re-routing `link` through `cleanUrl` would change every existing
-`href` and is not part of a sync port. The ported tests assert our real output:
-`XMarkdown/__tests__/parser.test.ts` -> `describe("CJK autolinks")` (the three
-differences above are called out in a comment there).
+**Decision (2026-10-17, still standing after the 2026-10-19 revert): keep
+as-is.** Re-routing `link` through `cleanUrl` would change every existing
+`href` and is not part of any sync port. No dedicated test pins the three
+differences; they are visible in `configureRenderers` and in any rendered
+link or paragraph.
 
 **Wiring requirement.** `setOptions({ config })` rebuilds `markdownInstance`
 via `updateMarkedConfig`, so any `markdownInstance.use(...)` extension must be
 re-applied there as well as in the constructor — a config update otherwise
-silently drops it. `configureCjkAutolinks()` is mounted in both; covered by
-"survives a marked config update" in the same describe block.
+silently drops it. (The reverted #2055 port mounted `configureCjkAutolinks()`
+in both places for exactly this reason.)
 
 ### Do not
 

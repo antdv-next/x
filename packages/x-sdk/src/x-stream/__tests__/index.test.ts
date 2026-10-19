@@ -78,45 +78,4 @@ describe("XStream", () => {
     expect(cancel).not.toHaveBeenCalled();
     expect(stream.locked).toBe(false);
   });
-
-  describe.each(["=", "=>", ":::", "🔑"])("kvSeparator %s", kvSeparator => {
-    it.each([false, true])(
-      "parses complete values (byte-by-byte: %s)",
-      async byteByByte => {
-        const data = JSON.stringify({ text: `中文${kvSeparator}value` });
-        const input = `event${kvSeparator}message##data${kvSeparator}${data}||event${kvSeparator}end##data${kvSeparator}`;
-        const bytes = new TextEncoder().encode(input);
-        const readableStream = new ReadableStream({
-          start(controller) {
-            if (byteByByte) {
-              for (const byte of bytes) {
-                controller.enqueue(Uint8Array.of(byte));
-              }
-            } else {
-              controller.enqueue(bytes);
-            }
-            controller.close();
-          },
-        });
-
-        const result: any[] = [];
-        for await (const value of XStream({
-          readableStream,
-          streamSeparator: "||",
-          partSeparator: "##",
-          kvSeparator,
-        })) {
-          result.push(value);
-        }
-
-        expect(result).toEqual([
-          { event: "message", data },
-          { event: "end", data: "" },
-        ]);
-        expect(JSON.parse(result[0].data)).toEqual({
-          text: `中文${kvSeparator}value`,
-        });
-      },
-    );
-  });
 });

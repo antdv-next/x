@@ -161,13 +161,13 @@ merge** — the 2026-10-17 entry said the opposite. All 8 upstream PRs were
 re-checked that day and were still `OPEN` with unchanged head SHAs, #2049
 having been open ~40 days; the fixes are wanted downstream regardless.
 
-| Issue | Upstream PR (head) | Downstream PR (merge commit)      | Branch                   |
-| ----- | ------------------ | --------------------------------- | ------------------------ |
-| #243  | #2066 `9c7f23336b` | #251 (`41d057a`)                  | `sync/ant-design-x-2066` |
-| #244  | #2068 `9baa2dc4b5` | #252 (`ac9981a`)                  | `sync/ant-design-x-2068` |
-| #245  | #2067 `2dd4977c4d` | #253 (`9533d55`)                  | `sync/ant-design-x-2067` |
-| #246  | #2065 `46fe77012b` | #254 (`c63e8e9`)                  | `sync/ant-design-x-2065` |
-| #247  | #2055 `8eae4ac5fc` | #255 (`d50013f`)                  | `sync/ant-design-x-2055` |
+| Issue | Upstream PR (head) | Downstream PR (merge commit) | Branch                   |
+| ----- | ------------------ | ---------------------------- | ------------------------ |
+| #243  | #2066 `9c7f23336b` | #251 (`41d057a`)             | `sync/ant-design-x-2066` |
+| #244  | #2068 `9baa2dc4b5` | #252 (`ac9981a`)             | `sync/ant-design-x-2068` |
+| #245  | #2067 `2dd4977c4d` | #253 (`9533d55`)             | `sync/ant-design-x-2067` |
+| #246  | #2065 `46fe77012b` | #254 (`c63e8e9`)             | `sync/ant-design-x-2065` |
+| #247  | #2055 `8eae4ac5fc` | #255 (`d50013f`)             | `sync/ant-design-x-2055` |
 
 - **The cursor deliberately does not move.** `.sync-upstream.json` stays at
   `fc3a0cc` (`sync_count: 7`): these ports come from _unmerged_ upstream PRs,
@@ -206,7 +206,7 @@ having been open ~40 days; the fixes are wanted downstream regardless.
   merge or get closed, `main` carries five fixes that exist upstream only as
   open PRs.
 - **Merge-time reconciliation rule**: when one of these PRs merges, the
-  `fc3a0cc..HEAD` enumeration re-finds it. Diff the upstream *merge commit*
+  `fc3a0cc..HEAD` enumeration re-finds it. Diff the upstream _merge commit_
   against the downstream landing commit above — not against the open-PR head —
   and reconcile by hand. #255 already deviates in two documented places, so a
   blind re-port would revert downstream-only fixes.
@@ -225,9 +225,34 @@ having been open ~40 days; the fixes are wanted downstream regardless.
   enumeration re-finds it (the cursor deliberately never moved for these);
   re-file a tracking issue then. Do not port from an open PR's head.
 - **Why open upstream PRs become tracking issues at all** (asked 2026-10-19):
-  the cursor only covers *merged* upstream commits, so unmerged PRs are
+  the cursor only covers _merged_ upstream commits, so unmerged PRs are
   invisible to the `fc3a0cc..HEAD` enumeration by construction. On 2026-10-17
   the compare came back `identical`, the enumeration pass had nothing to list,
   and the run additionally enumerated upstream's open PRs, filing #243–#250.
   That is the only reason an unmerged PR shows up as a `sync` issue; the issue
   bodies themselves say "合并前不要移植".
+
+## 2026-10-19: #251-#255 reverted (ports from unmerged upstream PRs)
+
+- **Decision: drop the five ports.** #251 (`41d057a`), #252 (`ac9981a`),
+  #253 (`9533d55`), #254 (`c63e8e9`) and #255 (`d50013f`) are reverted in one
+  commit; `packages/x-sdk` and `packages/x-markdown/src` are byte-identical to
+  the pre-port tree (`0b301c256`, verified with `git diff`). The five upstream
+  PRs (#2055, #2065-#2068) are all still `OPEN` with unchanged heads, and
+  carrying upstream-unmerged fixes on `main` was judged the worse trade: the
+  fork has to be reconciled by hand at merge time (#255 already deviated in
+  two places) and upstream may still rework or close the PRs.
+- Supersedes the 2026-10-18 "port now instead of waiting" decision and its
+  merge-time reconciliation rule; the 2026-10-17 rule (port only after the
+  upstream PR merges) is the standing policy again.
+- No downstream code depended on the ports: the only commits after them on
+  `main` were `memory/` updates. Nothing else was reverted.
+- `memory/x-markdown.md` §4 is **kept**, not reverted: its three renderer
+  differences are pre-existing downstream behaviour (see the edited entry).
+  Only the port-specific wording was updated.
+- Re-port path: when an upstream PR merges, the `fc3a0cc..HEAD` enumeration
+  finds it fresh (the cursor never moved and `main` no longer carries the
+  port); port from the merge commit then. `git log --grep=<PR number>` is no
+  longer needed as a skip check for these five — they are gone from `main`.
+- Companion change: the `cross-repo-pr-sync` skill now forbids enumerating or
+  porting unmerged upstream PRs at all (see the next entry).

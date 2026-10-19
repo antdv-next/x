@@ -72,11 +72,8 @@ export default class DeepSeekChatProvider<
         ? originMessage?.content
         : originMessage?.content.text || "";
     if (!originMessageContent && currentThink) {
-      originMessageContent = `\n\n<think>\n\n${currentThink?.replace?.(/^\n{0,2}/, "")}`;
-    } else {
-      originMessageContent += currentThink;
-    }
-    if (
+      content = `\n\n<think>\n\n${currentThink?.replace?.(/^\n{0,2}/, "")}`;
+    } else if (
       originMessageContent.includes("<think>") &&
       !originMessageContent.includes("</think>") &&
       currentContent
@@ -87,7 +84,7 @@ export default class DeepSeekChatProvider<
       );
       content = `${originMessageContent?.replace?.(/[\s\n]{0,2}$/, "")}\n\n</think>\n\n${currentContent}`;
     } else {
-      content = `${originMessageContent || ""}${currentContent}`;
+      content = `${originMessageContent || ""}${currentThink}${currentContent}`;
     }
 
     return {

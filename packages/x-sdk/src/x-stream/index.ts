@@ -117,15 +117,9 @@ function splitPart(
         if (!isValidString(key)) return acc;
 
         // Extract the value from the line after the separator
-        const value = line.slice(separatorIndex + kvSeparator.length).trim();
+        const value = line.slice(separatorIndex + 1).trim();
 
-        return {
-          ...acc,
-          [key]:
-            key === "data" && acc.data !== undefined
-              ? `${acc.data}\n${value}`
-              : value,
-        };
+        return { ...acc, [key]: value };
       }, {});
 
       if (Object.keys(sseEvent).length === 0) return;
