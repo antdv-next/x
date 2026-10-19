@@ -256,3 +256,22 @@ having been open ~40 days; the fixes are wanted downstream regardless.
   longer needed as a skip check for these five — they are gone from `main`.
 - Companion change: the `cross-repo-pr-sync` skill now forbids enumerating or
   porting unmerged upstream PRs at all (see the next entry).
+
+## 2026-10-19: policy codified - never sync unmerged upstream PRs
+
+- The 2026-10-17 run enumerated upstream's **open** PRs when the cursor range
+  came back empty and filed #243-#250; the 2026-10-18 run then ported five of
+  them; both are reverted/closed as of today. Root cause: the skill had no
+  scope rule, so "nothing merged since the cursor" was treated as "look
+  wider" instead of "nothing to sync".
+- New hard rule, in force from today: **only merged upstream commits are
+  synced.** Unmerged (`open`/`draft`) PRs are never enumerated, never get
+  tracking issues, never get `sync/*` branches, never get ported. An empty
+  cursor range ends the sync.
+- Codified in: `.agents/skills/cross-repo-pr-sync/SKILL.md` (new "同步范围"
+  section, Step 2 note, Step 3 merge-state check, 注意事项),
+  `references/priority-rules.md` (前置范围规则), and `AGENTS.md`
+  ("Every upstream sync" bullet).
+- If a fix is wanted downstream before its upstream PR merges, that is an
+  explicit maintainer decision outside this process - it must carry its own
+  reconciliation plan and its own memory entry, not ride in as a sync.

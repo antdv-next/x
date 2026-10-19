@@ -53,7 +53,11 @@ Rules:
   with a new dated entry; never delete them.
 - **Every upstream sync**: start from `memory/upstream-sync.md` (cursor, what
   each `sync/*` branch holds, and how to record the outcome), and update it in
-  the same PR that advances `.sync-upstream.json`.
+  the same PR that advances `.sync-upstream.json`. Sync only **merged**
+  upstream commits: unmerged (`open`/`draft`) PRs are out of scope — do not
+  enumerate them, file tracking issues for them, or port them; when the cursor
+  range is empty, the answer is "nothing to sync". (The 2026-10-19 rollback of
+  #251–#255 is the recorded outcome of violating this.)
 - When a `memory/` entry says a case is deliberate, a review finding about it is
   **not** a bug. Check the entry (and, for the splitter, whether the
   whole-document render keeps that line inside an open block) before reporting.
