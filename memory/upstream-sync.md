@@ -128,3 +128,75 @@ table above; `x-markdown.md`).
 - Decision: retain the upstream positioning and add the more specific
   selector downstream. This supersedes the earlier no-divergence entry;
   an exact port is insufficient with the downstream Tree style order.
+
+## 2026-10-17: cursor already at upstream HEAD; 8 open upstream PRs filed as issues
+
+- Verification (GitHub API): `compare fc3a0cc...main` is `identical`
+  (`total_commits: 0`), upstream `pushed_at` 2026-10-12 — no merged upstream
+  commits since the 2026-10-13 sync. Cursor `fc3a0cc` (`sync_count: 7`) is
+  current; `.sync-upstream.json` unchanged.
+- Downstream state: the #2050 port is on `main` as `04dd85d` (#241); no
+  `sync/*` branches remain locally or on `origin`.
+- The 8 **open** (unmerged) upstream PRs were filed as tracking issues
+  `#243`–`#250` (label `sync`), each with upstream diff evidence, downstream
+  parity check (`file:line`), priority and porting criteria. Port only after
+  the upstream PR merges; re-check the diff at merge time.
+- PR → issue: #2066→#243, #2068→#244, #2067→#245, #2065→#246, #2055→#247,
+  #2049→#248, #2058→#249, #2057→#250.
+- Pre-sync findings recorded so the next sync does not re-litigate them:
+  - **#2049 is likely N/A**: downstream `Suggestion.tsx` `onContentKeyDown`
+    already `stopPropagation`s Space (with `#171` test coverage asserting
+    `defaultPrevented === false`). Do not port upstream's
+    `display: contents` wrapper on top of it; verify equivalence first.
+  - **#2066 is a partial port**: downstream `x-request/index.ts`
+    `jsonResponseHandler` already calls `finishRequest()` in the
+    `success === false` branch; only the `requestSignal` identity guard is
+    missing. Do not double-add the finishRequest call.
+  - #2065/#2067 both touch `x-stream` `splitPart`; port them in one branch.
+
+## 2026-10-18: the 5 fix issues ported (upstream PRs still open); #248 closed N/A
+
+**Explicit decision: port now instead of waiting for the upstream PRs to
+merge** — the 2026-10-17 entry said the opposite. All 8 upstream PRs were
+re-checked that day and were still `OPEN` with unchanged head SHAs, #2049
+having been open ~40 days; the fixes are wanted downstream regardless.
+
+| Issue | Upstream PR (head) | Downstream | Branch                   |
+| ----- | ------------------ | ---------- | ------------------------ |
+| #243  | #2066 `9c7f23336b` | #251       | `sync/ant-design-x-2066` |
+| #244  | #2068 `9baa2dc4b5` | #252       | `sync/ant-design-x-2068` |
+| #245  | #2067 `2dd4977c4d` | #253       | `sync/ant-design-x-2067` |
+| #246  | #2065 `46fe77012b` | #254       | `sync/ant-design-x-2065` |
+| #247  | #2055 `8eae4ac5fc` | #255       | `sync/ant-design-x-2055` |
+
+- **The cursor deliberately does not move.** `.sync-upstream.json` stays at
+  `fc3a0cc` (`sync_count: 7`): these ports come from _unmerged_ upstream PRs,
+  so they sit outside the cursor range. When those PRs eventually merge, the
+  next sync's `fc3a0cc..HEAD` enumeration **will re-find them** — check
+  `git log --grep=<upstream PR number>` on `main` first and skip; do not port
+  a second time.
+- Supersedes the 2026-10-17 note "#2065/#2067 … port them in one branch": they
+  shipped as **two separate PRs** (`#253`, `#254`) per explicit instruction.
+  The two still compose — merging all five branches into one tree and running
+  `vp run test:unit` gives 72 files / 1072 tests, 0 failures, and `splitPart`
+  merges without a conflict.
+- `#255` deviates from the upstream diff in two places: `Tokenizer.prototype.url`
+  is called inline rather than through a module-level constant (the constant
+  trips oxlint `unbound-method` and would lift the `vp check` warning baseline
+  from 9 to 10), and `configureCjkAutolinks()` is mounted in **both** the
+  constructor and `updateMarkedConfig`, which rebuilds the marked instance — a
+  downstream-only method upstream does not have. The link/paragraph renderer
+  differences this exposed are recorded in `x-markdown.md` §4.
+- **#248 closed as not applicable** (`not planned`), evidence posted on the
+  issue: downstream `Suggestion.tsx:186-199` `onContentKeyDown` already
+  `stopPropagation`s Space and `:307` mounts it deeper than Cascader's root,
+  so `BaseSelect`'s keyboard model never sees the key;
+  `__tests__/index.test.tsx:412` and `:628` assert
+  `defaultPrevented === false`. Upstream's `display: contents` wrapper would
+  double up the handling, so it was not ported.
+- **Deferred, still open**: #249 (#2058 sender composition callbacks) and #250
+  (#2057 actions custom tooltip). Both add public API, so they wait for their
+  upstream PR to merge; both re-checked on 2026-10-18 and still `OPEN` with
+  unchanged heads.
+- Still owed: once #251–#255 land, this entry needs the merge commits added
+  (it currently records the PRs as opened, not merged).
