@@ -161,13 +161,13 @@ merge** — the 2026-10-17 entry said the opposite. All 8 upstream PRs were
 re-checked that day and were still `OPEN` with unchanged head SHAs, #2049
 having been open ~40 days; the fixes are wanted downstream regardless.
 
-| Issue | Upstream PR (head) | Downstream | Branch                   |
-| ----- | ------------------ | ---------- | ------------------------ |
-| #243  | #2066 `9c7f23336b` | #251       | `sync/ant-design-x-2066` |
-| #244  | #2068 `9baa2dc4b5` | #252       | `sync/ant-design-x-2068` |
-| #245  | #2067 `2dd4977c4d` | #253       | `sync/ant-design-x-2067` |
-| #246  | #2065 `46fe77012b` | #254       | `sync/ant-design-x-2065` |
-| #247  | #2055 `8eae4ac5fc` | #255       | `sync/ant-design-x-2055` |
+| Issue | Upstream PR (head) | Downstream PR (merge commit)      | Branch                   |
+| ----- | ------------------ | --------------------------------- | ------------------------ |
+| #243  | #2066 `9c7f23336b` | #251 (`41d057a`)                  | `sync/ant-design-x-2066` |
+| #244  | #2068 `9baa2dc4b5` | #252 (`ac9981a`)                  | `sync/ant-design-x-2068` |
+| #245  | #2067 `2dd4977c4d` | #253 (`9533d55`)                  | `sync/ant-design-x-2067` |
+| #246  | #2065 `46fe77012b` | #254 (`c63e8e9`)                  | `sync/ant-design-x-2065` |
+| #247  | #2055 `8eae4ac5fc` | #255 (`d50013f`)                  | `sync/ant-design-x-2055` |
 
 - **The cursor deliberately does not move.** `.sync-upstream.json` stays at
   `fc3a0cc` (`sync_count: 7`): these ports come from _unmerged_ upstream PRs,
@@ -199,8 +199,17 @@ having been open ~40 days; the fixes are wanted downstream regardless.
   they waited for their upstream PR to merge; both re-checked on 2026-10-18
   and still `OPEN` with unchanged heads. Closed as `not planned` on
   2026-10-19 — see the entry below.
-- Still owed: once #251–#255 land, this entry needs the merge commits added
-  (it currently records the PRs as opened, not merged).
+- **Landed 2026-10-19 (merge commits filled in above)**: #251–#255 are all
+  merged into `main`. Re-checked the same day: all five upstream PRs are
+  **still `OPEN`** (#2055 last pushed 2026-10-01, #2065/#2067/#2068
+  2026-10-13, #2066 2026-10-15; no merges, no maintainer response). Until they
+  merge or get closed, `main` carries five fixes that exist upstream only as
+  open PRs.
+- **Merge-time reconciliation rule**: when one of these PRs merges, the
+  `fc3a0cc..HEAD` enumeration re-finds it. Diff the upstream *merge commit*
+  against the downstream landing commit above — not against the open-PR head —
+  and reconcile by hand. #255 already deviates in two documented places, so a
+  blind re-port would revert downstream-only fixes.
 
 ## 2026-10-19: #249/#250 closed not planned (upstream PRs still open)
 
