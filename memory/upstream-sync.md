@@ -194,9 +194,31 @@ having been open ~40 days; the fixes are wanted downstream regardless.
   `__tests__/index.test.tsx:412` and `:628` assert
   `defaultPrevented === false`. Upstream's `display: contents` wrapper would
   double up the handling, so it was not ported.
-- **Deferred, still open**: #249 (#2058 sender composition callbacks) and #250
-  (#2057 actions custom tooltip). Both add public API, so they wait for their
-  upstream PR to merge; both re-checked on 2026-10-18 and still `OPEN` with
-  unchanged heads.
+- **Deferred, then closed 2026-10-19**: #249 (#2058 sender composition
+  callbacks) and #250 (#2057 actions custom tooltip). Both add public API, so
+  they waited for their upstream PR to merge; both re-checked on 2026-10-18
+  and still `OPEN` with unchanged heads. Closed as `not planned` on
+  2026-10-19 — see the entry below.
 - Still owed: once #251–#255 land, this entry needs the merge commits added
   (it currently records the PRs as opened, not merged).
+
+## 2026-10-19: #249/#250 closed not planned (upstream PRs still open)
+
+- Both tracking issues closed as `not planned` with the reason posted on each:
+  upstream [#2058](https://github.com/ant-design/x/pull/2058) and
+  [#2057](https://github.com/ant-design/x/pull/2057) are still `OPEN` a month
+  after filing (last upstream activity 2026-09-17/18, no maintainer response,
+  unresolved CodeRabbit merge-risk notes on both).
+- These two add public API, so the 2026-10-18 rule stands: port only after the
+  upstream PR merges. The closure means "not now", not "never" — unlike #248
+  (closed N/A on downstream parity evidence), no parity finding exists here.
+- Reopen path: when either PR merges, the next sync's `fc3a0cc..HEAD`
+  enumeration re-finds it (the cursor deliberately never moved for these);
+  re-file a tracking issue then. Do not port from an open PR's head.
+- **Why open upstream PRs become tracking issues at all** (asked 2026-10-19):
+  the cursor only covers *merged* upstream commits, so unmerged PRs are
+  invisible to the `fc3a0cc..HEAD` enumeration by construction. On 2026-10-17
+  the compare came back `identical`, the enumeration pass had nothing to list,
+  and the run additionally enumerated upstream's open PRs, filing #243–#250.
+  That is the only reason an unmerged PR shows up as a `sync` issue; the issue
+  bodies themselves say "合并前不要移植".
