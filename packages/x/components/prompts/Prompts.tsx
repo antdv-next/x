@@ -4,6 +4,7 @@ import { useConfig } from "antdv-next/config-provider/context";
 import {
   computed,
   defineComponent,
+  getCurrentInstance,
   nextTick,
   onMounted,
   ref,
@@ -100,6 +101,7 @@ export const XPrompts = defineComponent({
   },
   emits: ["itemClick"],
   setup(props, { expose, emit, slots }) {
+    const instance = getCurrentInstance();
     const configCtx = useConfig();
     const attrs = useAttrs();
     const contextConfig = useXComponentConfig("prompts");
@@ -218,6 +220,13 @@ export const XPrompts = defineComponent({
         >
           {items.map((item, index) => {
             const itemHasChildren = hasChildren(item);
+            // `itemClick` is a declared emit, so the listener never reaches
+            // `attrs`; read it off the vnode. Only leaf items become native
+            // buttons, so Enter/Space and the disabled state come from the
+            // platform instead of a re-implemented keydown handler.
+            const isInteractive =
+              !itemHasChildren && Boolean(instance?.vnode.props?.onItemClick);
+            const ItemComponent = isInteractive ? "button" : "div";
             const iconNode = renderItemNode(
               "iconRender",
               item,
@@ -241,7 +250,7 @@ export const XPrompts = defineComponent({
             );
 
             return (
-              <div
+              <ItemComponent
                 {...getItemDomAttrs(item)}
                 key={item.key ?? `key-${index}`}
                 class={[
@@ -259,7 +268,13 @@ export const XPrompts = defineComponent({
                   nested ? mergedStyles.value.subItem : mergedStyles.value.item,
                   item.style,
                 ]}
-                onClick={() => triggerItemClick(item, nested)}
+                {...(isInteractive
+                  ? {
+                      type: "button" as const,
+                      disabled: item.disabled,
+                      onClick: () => triggerItemClick(item, nested),
+                    }
+                  : {})}
               >
                 {hasRenderableNode(iconNode) && (
                   <div class={`${props.prefixCls}-icon`}>{iconNode}</div>
@@ -285,7 +300,7 @@ export const XPrompts = defineComponent({
                     </div>
                   )}
                 </div>
-              </div>
+              </ItemComponent>
             );
           })}
         </div>
