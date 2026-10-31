@@ -325,7 +325,8 @@ having been open ~40 days; the fixes are wanted downstream regardless.
   error - both avoid new `vp check` warnings and keep the baseline at 9.
   `packages/x-skill` now has `"test": "node --import tsx --test tests/*.test.ts"`
   and `vitest.config.ts` excludes `packages/x-skill/**` (its `.js` specifiers
-  do not resolve under vitest).
+  do not resolve under vitest). Root `test:unit` chains the package's `test`
+  script and CI runs it as its own step, so the suite is not skipped silently.
 - **Branch layout deviation.** The skill's per-PR `sync/*` branch carries the
   port only; the cursor and this entry live on `chore/sync-upstream-da08db1`,
   which contains the three ports as cherry-picks. Three PRs cannot each advance

@@ -79,6 +79,12 @@ jobs:
         if: matrix.task == 'test'
         run: vp run test:coverage
 
+      # x-skill runs its own `node --test` suite: its ESM `.js` specifiers do
+      # not resolve under vitest, so it is excluded from the coverage run.
+      - name: x-skill tests
+        if: matrix.task == 'test'
+        run: vp run --filter @antdv-next/x-skill test
+
       - name: Upload coverage to Codecov
         if: matrix.task == 'test'
         uses: codecov/codecov-action@v7
