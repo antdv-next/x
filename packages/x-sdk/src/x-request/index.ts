@@ -280,6 +280,7 @@ export class XRequestClass<
     }
 
     this.abortController = new AbortController();
+    const { signal } = this.abortController;
     this.isTimeout = false;
     this.isStreamTimeout = false;
     const {
@@ -333,7 +334,7 @@ export class XRequestClass<
         ...extraParams,
       } as Input,
       headers: margeHeaders,
-      signal: this.abortController.signal,
+      signal,
       middlewares,
     };
 
@@ -388,6 +389,7 @@ export class XRequestClass<
           case "application/json":
             await this.jsonResponseHandler<Output, ChatMessage>(
               response,
+              signal,
               callbacks,
             );
             break;
@@ -543,14 +545,17 @@ export class XRequestClass<
     ChatMessage extends SimpleType = string,
   >(
     response: Response,
+    requestSignal: AbortSignal,
     callbacks?: XRequestCallbacks<Output, ChatMessage>,
   ) => {
     const chunk: Output = await response.json();
 
     if ((chunk as JSONOutPut)?.success === false) {
-      this.finishRequest();
       const error = new Error((chunk as JSONOutPut).message || "System error");
       error.name = (chunk as JSONOutPut).name || "SystemError";
+      if (requestSignal === this.abortController.signal) {
+        this.finishRequest();
+      }
       callbacks?.onError?.(error, chunk, response.headers);
     } else {
       callbacks?.onUpdate?.(chunk, response.headers);
