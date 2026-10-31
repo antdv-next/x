@@ -33,6 +33,7 @@
   },
   "scripts": {
     "type-check": "tsc --project tsconfig.json --noEmit",
+    "test": "node --import tsx --test tests/*.test.ts",
     "build": "tsc --project tsconfig.build.json",
     "generate-meta": "tsx scripts/generate-meta.ts",
     "generate-version": "tsx scripts/generate-version.ts"
