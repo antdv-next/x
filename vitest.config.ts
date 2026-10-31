@@ -22,6 +22,9 @@ export default mergeConfig(
         ...configDefaults.exclude,
         "**/dist/**",
         "e2e/**",
+        // x-skill runs its own `node --test` suite (tests/*.test.ts); its
+        // sources resolve `.js` ESM specifiers that vitest does not map.
+        "packages/x-skill/**",
         // Local Claude Code worktrees hold full repo copies; never run their
         // tests as part of this repo's suite.
         ".claude/**",
