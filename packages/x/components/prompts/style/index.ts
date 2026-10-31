@@ -66,6 +66,10 @@ const genPromptsStyle: GenerateStyle<PromptsToken> = token => {
         display: "flex",
         gap: token.paddingXS,
         height: "auto",
+        appearance: "none",
+        font: "inherit",
+        color: "inherit",
+        textAlign: "start",
         paddingBlock: token.paddingSM,
         paddingInline: token.padding,
         alignItems: "flex-start",
@@ -76,6 +80,7 @@ const genPromptsStyle: GenerateStyle<PromptsToken> = token => {
           .map(prop => `${prop} ${token.motionDurationSlow}`)
           .join(","),
         border: `${unit(token.lineWidth)} ${token.lineType} ${token.colorBorderSecondary}`,
+        margin: 0,
 
         [`&:not(${componentCls}-item-has-nest)`]: {
           "&:hover": {
