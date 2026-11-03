@@ -116,6 +116,25 @@ describe("Prompts", () => {
     ]);
   });
 
+  it("renders a native button for once-only itemClick listeners", async () => {
+    const onItemClick = vi.fn();
+    const wrapper = track(
+      mount(Prompts, {
+        props: {
+          items,
+          onItemClickOnce: onItemClick,
+        },
+      }),
+    );
+    const first = wrapper.findAll(".antd-prompts-item")[0]!;
+
+    expect(first.element.tagName).toBe("BUTTON");
+    await first.trigger("click");
+    await first.trigger("click");
+
+    expect(onItemClick).toHaveBeenCalledTimes(1);
+  });
+
   it("keeps static items as non-interactive elements without an itemClick listener", () => {
     const wrapper = track(
       mount(Prompts, {

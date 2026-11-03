@@ -224,8 +224,10 @@ export const XPrompts = defineComponent({
             // `attrs`; read it off the vnode. Only leaf items become native
             // buttons, so Enter/Space and the disabled state come from the
             // platform instead of a re-implemented keydown handler.
+            const vnodeProps = instance?.vnode.props;
             const isInteractive =
-              !itemHasChildren && Boolean(instance?.vnode.props?.onItemClick);
+              !itemHasChildren &&
+              Boolean(vnodeProps?.onItemClick || vnodeProps?.onItemClickOnce);
             const ItemComponent = isInteractive ? "button" : "div";
             const iconNode = renderItemNode(
               "iconRender",
