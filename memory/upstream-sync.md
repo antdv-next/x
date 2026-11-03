@@ -31,23 +31,26 @@ Package mapping:
 
 ## Cursor
 
-| Field                                      | Value                                                         |
-| ------------------------------------------ | ------------------------------------------------------------- |
-| `last_synced_commit`                       | `fc3a0cc` (latest tag `2.9.0`), `sync_count: 7`, `2026-10-13` |
-| Newest upstream commit verified via GitHub | `fc3a0cc` (2026-10-12, merge of PR #2050)                     |
+| Field                                      | Value                                                             |
+| ------------------------------------------ | ----------------------------------------------------------------- |
+| `last_synced_commit`                       | `da08db1` (latest tag `2.10.0`), `sync_count: 8`, `2026-11-01`    |
+| Newest upstream commit verified via GitHub | `da08db1` (2026-10-29, tag `2.10.0`, merges of #2066/#2070-#2073) |
 
 The `8b76d6a` advance landed on `main` as `e8f1bf1` "chore: update upstream
 sync cursor" (2026-09-30), together with the #2061 port on `main` as `7b6b587`.
 
 ## Synced PRs
 
-| Upstream PR                                                                                                                                        | Upstream commit | Downstream landing                                                                                            | Notes                                                                                                                                      |
-| -------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| [#2035](https://github.com/ant-design/x/pull/2035) fix(mermaid): zoom cap / full export                                                            | `614a63a`       | `2a2c789` (#206)                                                                                              | Ported; the `sync/ant-design-x-2035` branch also carries a different, unmerged variant `d7d0616`                                           |
-| [#1969](https://github.com/ant-design/x/pull/1969) chore(deps): marked 15.x -> 16.x                                                                | `37877ef`       | `9fd614e` (#214)                                                                                              | Token API migration in `core/Parser.ts` / `core/VueRenderer.ts`                                                                            |
-| [#2056](https://github.com/ant-design/x/pull/2056) fix(mermaid): blank graph on first render                                                       | `90dfa88`       | `3a28202` + `ab60748` (#213)                                                                                  | Upstream's antd bump and snapshot updates are N/A downstream                                                                               |
-| [#1997](https://github.com/ant-design/x/pull/1997) fix(markdown): avoid parsing currency as LaTeX                                                  | `7470e60`       | `c463ec1` (#188)                                                                                              | See `x-markdown.md` (LaTeX math)                                                                                                           |
-| [#2061](https://github.com/ant-design/x/pull/2061) feat+perf(x-markdown): streaming preset (incremental sections, incomplete markdown, typewriter) | `8b76d6a`       | `7b6b587` (#226), `6ea3c9d` (#229), plus the round 7-9 fixes on `fix/x-markdown-section-tracker-continuation` | **Not a 1:1 port** - the section tracker deliberately diverges. Read `x-markdown.md` (section boundaries) before touching or "aligning" it |
+| Upstream PR                                                                                                                                        | Upstream commit | Downstream landing                                                                                            | Notes                                                                                                                                                                                    |
+| -------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [#2035](https://github.com/ant-design/x/pull/2035) fix(mermaid): zoom cap / full export                                                            | `614a63a`       | `2a2c789` (#206)                                                                                              | Ported; the `sync/ant-design-x-2035` branch also carries a different, unmerged variant `d7d0616`                                                                                         |
+| [#1969](https://github.com/ant-design/x/pull/1969) chore(deps): marked 15.x -> 16.x                                                                | `37877ef`       | `9fd614e` (#214)                                                                                              | Token API migration in `core/Parser.ts` / `core/VueRenderer.ts`                                                                                                                          |
+| [#2056](https://github.com/ant-design/x/pull/2056) fix(mermaid): blank graph on first render                                                       | `90dfa88`       | `3a28202` + `ab60748` (#213)                                                                                  | Upstream's antd bump and snapshot updates are N/A downstream                                                                                                                             |
+| [#1997](https://github.com/ant-design/x/pull/1997) fix(markdown): avoid parsing currency as LaTeX                                                  | `7470e60`       | `c463ec1` (#188)                                                                                              | See `x-markdown.md` (LaTeX math)                                                                                                                                                         |
+| [#2061](https://github.com/ant-design/x/pull/2061) feat+perf(x-markdown): streaming preset (incremental sections, incomplete markdown, typewriter) | `8b76d6a`       | `7b6b587` (#226), `6ea3c9d` (#229), plus the round 7-9 fixes on `fix/x-markdown-section-tracker-continuation` | **Not a 1:1 port** - the section tracker deliberately diverges. Read `x-markdown.md` (section boundaries) before touching or "aligning" it                                               |
+| [#2071](https://github.com/ant-design/x/pull/2071) fix(x-skill): prevent path traversal and credential leaks                                       | `10707af`       | `sync/ant-design-x-2071` (`65fb2d5`)                                                                          | Adds `src/safePath.ts` + `tests/security.test.ts`; downstream splits the CLI into `cli.ts` and keeps `antdv-next` as the default GitHub owner                                            |
+| [#2070](https://github.com/ant-design/x/pull/2070) fix(prompts): add keyboard accessibility to items                                               | `91c4066`       | `sync/ant-design-x-2070` (`65749f6`)                                                                          | Downstream renders the nested list inline, so "leaf" means `!hasChildren`, not a nested `Prompts` instance; the listener is read from `vnode.props` (declared emits never reach `attrs`) |
+| [#2066](https://github.com/ant-design/x/pull/2066) fix(x-sdk): finish requests after JSON business errors                                          | `9077193`       | `sync/ant-design-x-2066` (`8683699`)                                                                          | Re-port of the reverted #251: downstream already finished the request before `onError`; only the `requestSignal` identity guard was missing                                              |
 
 ## Branches left around
 
@@ -275,3 +278,67 @@ having been open ~40 days; the fixes are wanted downstream regardless.
 - If a fix is wanted downstream before its upstream PR merges, that is an
   explicit maintainer decision outside this process - it must carry its own
   reconciliation plan and its own memory entry, not ride in as a sync.
+
+## 2026-11-01: 2.10.0 sync (`fc3a0cc..da08db1`) - #2066, #2070, #2071 ported; #2072/#2073 N/A
+
+- Range verification: GitHub `compare/fc3a0cc...da08db1` returns `ahead_by: 14`
+  and tag `2.10.0` (`67f9592`, annotated) points at `da08db1` itself, so the
+  range is exactly the 2.10.0 release. Every commit in it is merged.
+- Merged PRs in range and their outcome:
+
+  | PR                                                 | Outcome                                              |
+  | -------------------------------------------------- | ---------------------------------------------------- |
+  | [#2066](https://github.com/ant-design/x/pull/2066) | ported - `sync/ant-design-x-2066` (`8683699`)        |
+  | [#2070](https://github.com/ant-design/x/pull/2070) | ported - `sync/ant-design-x-2070` (`65749f6`)        |
+  | [#2071](https://github.com/ant-design/x/pull/2071) | ported - `sync/ant-design-x-2071` (`65fb2d5`)        |
+  | [#2072](https://github.com/ant-design/x/pull/2072) | not applicable - upstream release prep               |
+  | [#2073](https://github.com/ant-design/x/pull/2073) | not applicable - upstream changelog + demo snapshots |
+
+- **#2072/#2073 skipped on purpose.** They only touch upstream
+  `CHANGELOG.*`, package versions, the `x-skill` `SKILL.md` version stamps and
+  upstream demo snapshots. Downstream has no `CHANGELOG` and versions its
+  packages independently (`@antdv-next/x-skill` is `0.0.3`); its snapshots are
+  regenerated by its own tests.
+- **#2066** (merge `9077193`): downstream already called `finishRequest()`
+  before `onError` (see the 2026-10-17 entry), so only the `requestSignal`
+  identity guard and the signal capture were missing. The reverted `#251`
+  port is superseded by this merge-based port. Regression:
+  `packages/x-sdk/src/x-request/__tests__/json-state.test.ts` (5 cases; the
+  two concurrency cases fail without the guard).
+- **#2070** (merge `91c4066`): interactive **leaf** items become
+  `<button type="button" disabled>`; static items stay `<div>`. Two downstream
+  adaptations: (a) the nested list is rendered inline there, so "leaf" is
+  `!hasChildren(item)` rather than upstream's nested-`Prompts`-instance test;
+  (b) `vnode.props.onItemClick` is read directly, because `itemClick` is a
+  declared emit and therefore never reaches `attrs`. Tab/Enter/Space are
+  native button behaviour - there is no keydown handler to port. jsdom cannot
+  synthesise Enter/Space activation, so the test pins the native contract
+  (tag, `type`, `disabled`, `tabIndex`) instead of a fake keyboard event.
+- **#2071** (merge `10707af`): `getSkillRepo.ts` was replaced with the
+  upstream final file plus the downstream adaptations already present before
+  the sync (ESM `__dirname` shim, `.js` specifiers, default owner
+  `antdv-next`); `src/safePath.ts` and `tests/security.test.ts` are new.
+  Deliberate differences from the upstream diff: the direct-run guard uses
+  `pathToFileURL(process.argv[1])` (ESM, upstream is CJS `require.main`),
+  `validVersions.sort((a, b) => this.compareVersions(a, b))` instead of
+  `.sort(this.compareVersions)` and `String(item.type)` in the unsupported-type
+  error - both avoid new `vp check` warnings and keep the baseline at 9.
+  `packages/x-skill` now has `"test": "node --import tsx --test tests/*.test.ts"`
+  and `vitest.config.ts` excludes `packages/x-skill/**` (its `.js` specifiers
+  do not resolve under vitest). Root `test:unit` chains the package's `test`
+  script and CI runs it as its own step, so the suite is not skipped silently.
+- **Branch layout deviation.** The skill's per-PR `sync/*` branch carries the
+  port only; the cursor and this entry live on `chore/sync-upstream-da08db1`,
+  which contains the three ports as cherry-picks. Three PRs cannot each advance
+  the same cursor atomically, and a separate cursor-only advance would make
+  `da08db1` look synced before the ports land - that is exactly the failure
+  class the 2026-10-19 revert was about.
+- Verification: `vp check` 0 errors / 9 warnings (baseline unchanged),
+  `vp test` 69 files / 1031 tests, `node --import tsx --test` in
+  `packages/x-skill` 15/15, `x-skill --help` smoke run, `x-request` suite 8/8,
+  `prompts` suite 14/14, `@antdv-next/x-skill` type-check clean.
+- Open upstream PRs #2055, #2065, #2067, #2068, #2058, #2057 are still
+  unmerged and remain out of scope (their tracking issues stay closed); the
+  cursor now covers them only when they merge.
+- Supersedes the clone caveat above: the local clone is fetched to `da08db1`
+  and GitHub API access works from this environment.

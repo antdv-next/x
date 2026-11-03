@@ -83,16 +83,26 @@ describe("Prompts", () => {
     expect(wrapper.find(".prompt-icon-2").exists()).toBe(true);
   });
 
-  it("emits itemClick when a clickable item is clicked", async () => {
+  it("emits itemClick from a native button for clickable items", async () => {
     const wrapper = track(
       mount(Prompts, {
         props: {
           items,
+          onItemClick: vi.fn(),
         },
       }),
     );
 
-    await wrapper.findAll(".antd-prompts-item")[0]!.trigger("click");
+    const first = wrapper.findAll(".antd-prompts-item")[0]!;
+
+    expect(first.element.tagName).toBe("BUTTON");
+    expect(first.attributes("type")).toBe("button");
+    expect(first.attributes("disabled")).toBeUndefined();
+    expect((first.element as HTMLElement).tabIndex).toBe(0);
+    expect(first.text()).toContain("Label 1");
+    expect(first.text()).toContain("Description 1");
+
+    await first.trigger("click");
 
     expect(wrapper.emitted("itemClick")).toBeTruthy();
     expect(wrapper.emitted("itemClick")).toHaveLength(1);
@@ -104,6 +114,42 @@ describe("Prompts", () => {
         }),
       },
     ]);
+  });
+
+  it("renders a native button for once-only itemClick listeners", async () => {
+    const onItemClick = vi.fn();
+    const wrapper = track(
+      mount(Prompts, {
+        props: {
+          items,
+          onItemClickOnce: onItemClick,
+        },
+      }),
+    );
+    const first = wrapper.findAll(".antd-prompts-item")[0]!;
+
+    expect(first.element.tagName).toBe("BUTTON");
+    await first.trigger("click");
+    await first.trigger("click");
+
+    expect(onItemClick).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps static items as non-interactive elements without an itemClick listener", () => {
+    const wrapper = track(
+      mount(Prompts, {
+        props: {
+          items,
+        },
+      }),
+    );
+
+    const promptItems = wrapper.findAll(".antd-prompts-item");
+
+    expect(promptItems).toHaveLength(2);
+    promptItems.forEach(item => {
+      expect(item.element.tagName).toBe("DIV");
+    });
   });
 
   it("calls @item-click listener when a clickable item is clicked", async () => {
@@ -156,19 +202,27 @@ describe("Prompts", () => {
     });
   });
 
-  it("does not emit itemClick for disabled items", async () => {
+  it("disables the native button for disabled items", async () => {
+    const onItemClick = vi.fn();
     const wrapper = track(
       mount(Prompts, {
         props: {
           items,
+          onItemClick,
         },
       }),
     );
 
-    await wrapper.findAll(".antd-prompts-item")[1]!.trigger("click");
+    const disabledItem = wrapper.findAll(".antd-prompts-item")[1]!;
+
+    expect(disabledItem.element.tagName).toBe("BUTTON");
+    expect(disabledItem.attributes("disabled")).toBeDefined();
+    expect(disabledItem.classes()).toContain("antd-prompts-item-disabled");
+
+    await disabledItem.trigger("click");
 
     expect(wrapper.emitted("itemClick")).toBeFalsy();
-    expect(wrapper.find(".antd-prompts-item-disabled").exists()).toBe(true);
+    expect(onItemClick).not.toHaveBeenCalled();
   });
 
   it("supports vertical and wrap layout classes", () => {
@@ -192,6 +246,7 @@ describe("Prompts", () => {
       mount(Prompts, {
         props: {
           items: nestedItems,
+          onItemClick: vi.fn(),
         },
       }),
     );
@@ -202,6 +257,8 @@ describe("Prompts", () => {
     expect(wrapper.text()).toContain("Child Label 1");
     expect(wrapper.find(".antd-prompts-item-has-nest").exists()).toBe(true);
     expect(wrapper.find(".antd-prompts-nested").exists()).toBe(true);
+    expect(promptItems[0]!.element.tagName).toBe("DIV");
+    expect(promptItems[1]!.element.tagName).toBe("BUTTON");
 
     await promptItems[0]!.trigger("click");
     expect(wrapper.emitted("itemClick")).toBeFalsy();

@@ -16,7 +16,7 @@
     "docs:llm": "vp run --filter @antdv-next/docs build:llm",
     "docs:llm:text": "vp run --filter @antdv-next/docs build:llm:text",
     "docs:llm:semantic": "vp run --filter @antdv-next/docs build:llm:semantic",
-    "test:unit": "./node_modules/.bin/vp test",
+    "test:unit": "./node_modules/.bin/vp test && ./node_modules/.bin/vp run --filter @antdv-next/x-skill test",
     "test:coverage": "./node_modules/.bin/vp test --coverage",
     "size:report": "node scripts/size-report.mjs",
     "type-check": "vp run --filter \"./packages/*\" --filter \"!./packages/docs\" type-check",
