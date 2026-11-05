@@ -59,6 +59,7 @@ export {
 export type {
   MessageScrollerConfig,
   TodoListConfig,
+  QuestionnaireConfig,
   XProConfigContextProps,
   XProProviderEmits,
   XProProviderProps,

@@ -8,6 +8,7 @@ Community-driven agent components for [Antdv X](https://github.com/antdv-next/x)
 
 - **MessageScroller** — conversation scroll container with streaming follow, rail navigation and back-to-latest, plus an `XProProvider` for package-level component config and locale.
 - **TodoList** — collapsible agent task plan with morphing status icons, a completion counter, auto-collapse, and scroll following.
+- **Questionnaire** — focused human-in-the-loop questions with structured answers, validation, optional drafts, idempotent retries, and submission receipts.
 
 ## License
 

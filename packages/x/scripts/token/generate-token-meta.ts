@@ -23,15 +23,19 @@ const output = path.resolve(
 );
 
 function getEntryModuleName(file: any) {
-  const sourceFile = file.sources?.[0]?.fileName;
+  const sourceFile =
+    file.sources?.[0]?.fullFileName ?? file.sources?.[0]?.fileName;
   const rawName = sourceFile
     ? normalizePath(sourceFile)
     : normalizePath(file.name ?? "");
   const srcIndex = rawName.lastIndexOf("/components/");
+  const proSrcIndex = rawName.lastIndexOf("/x-pro/src/");
   const normalized =
-    srcIndex >= 0
-      ? rawName.slice(srcIndex + "/components/".length)
-      : rawName.replace(/^components\//, "");
+    proSrcIndex >= 0
+      ? rawName.slice(proSrcIndex + "/x-pro/src/".length)
+      : srcIndex >= 0
+        ? rawName.slice(srcIndex + "/components/".length)
+        : rawName.replace(/^components\//, "");
   return normalized.replace(/\/index(\.(ts|tsx))?$/, "");
 }
 
@@ -102,6 +106,21 @@ async function main() {
   );
 
   const project = await app.convert();
+  const proApp = await Application.bootstrap(
+    {
+      entryPoints: [
+        normalizePath(
+          path.resolve(repoRoot, "packages/x-pro/src/*/style/token.ts"),
+        ),
+      ],
+      entryPointStrategy: "expand",
+      tsconfig: path.resolve(repoRoot, "packages/x-pro/tsconfig.build.json"),
+      skipErrorChecking: true,
+      logLevel: "Error",
+    },
+    [new TSConfigReader(), new TypeDocReader()],
+  );
+  const proProject = await proApp.convert();
 
   if (project) {
     const tokenMeta: TokenMeta = {
@@ -111,60 +130,63 @@ async function main() {
       components: {},
     };
 
-    project.children?.forEach((file: any) => {
-      const moduleName = getEntryModuleName(file);
+    [...(project.children ?? []), ...(proProject?.children ?? [])].forEach(
+      (file: any) => {
+        const moduleName = getEntryModuleName(file);
 
-      if (moduleName === "theme/interface") {
-        let presetColors: string[] = [];
-        file.children?.forEach((type: any) => {
-          if (type.name === "SeedToken") {
-            tokenMeta.seed = getTokenList(type.children, "seed");
-          } else if (type.name === "MapToken") {
-            tokenMeta.map = getTokenList(type.children, "map");
-          } else if (type.name === "AliasToken") {
-            tokenMeta.alias = getTokenList(type.children, "alias");
-          } else if (type.name === "PresetColors") {
-            const elements =
-              type?.type?.target?.elements || type?.type?.elements;
-            if (Array.isArray(elements))
-              presetColors = elements.map((item: any) => item.value);
-          }
-        });
+        if (moduleName === "theme/interface") {
+          let presetColors: string[] = [];
+          file.children?.forEach((type: any) => {
+            if (type.name === "SeedToken") {
+              tokenMeta.seed = getTokenList(type.children, "seed");
+            } else if (type.name === "MapToken") {
+              tokenMeta.map = getTokenList(type.children, "map");
+            } else if (type.name === "AliasToken") {
+              tokenMeta.alias = getTokenList(type.children, "alias");
+            } else if (type.name === "PresetColors") {
+              const elements =
+                type?.type?.target?.elements || type?.type?.elements;
+              if (Array.isArray(elements))
+                presetColors = elements.map((item: any) => item.value);
+            }
+          });
 
-        tokenMeta.seed = tokenMeta.seed
-          .filter(
+          tokenMeta.seed = tokenMeta.seed
+            .filter(
+              item => !presetColors.some(color => item.token.startsWith(color)),
+            )
+            .concat(getPresetColorsTokenList(presetColors));
+          tokenMeta.map = tokenMeta.map.filter(
             item => !presetColors.some(color => item.token.startsWith(color)),
-          )
-          .concat(getPresetColorsTokenList(presetColors));
-        tokenMeta.map = tokenMeta.map.filter(
-          item => !presetColors.some(color => item.token.startsWith(color)),
-        );
-        tokenMeta.alias = tokenMeta.alias.filter(
-          item => !presetColors.some(color => item.token.startsWith(color)),
-        );
+          );
+          tokenMeta.alias = tokenMeta.alias.filter(
+            item => !presetColors.some(color => item.token.startsWith(color)),
+          );
 
-        tokenMeta.alias = tokenMeta.alias.filter(
-          item => !tokenMeta.map.some(mapItem => mapItem.token === item.token),
-        );
-        tokenMeta.map = tokenMeta.map.filter(
-          item =>
-            !tokenMeta.seed.some(seedItem => seedItem.token === item.token),
-        );
-      } else {
-        const componentMatch = moduleName.match(/^([^/]+)\/style/);
-        if (!componentMatch) return;
+          tokenMeta.alias = tokenMeta.alias.filter(
+            item =>
+              !tokenMeta.map.some(mapItem => mapItem.token === item.token),
+          );
+          tokenMeta.map = tokenMeta.map.filter(
+            item =>
+              !tokenMeta.seed.some(seedItem => seedItem.token === item.token),
+          );
+        } else {
+          const componentMatch = moduleName.match(/^([^/]+)\/style/);
+          if (!componentMatch) return;
 
-        const component = getComponentName(componentMatch![1]!);
-        const componentToken = file.children?.find(
-          (item: any) => item?.name === "ComponentToken",
-        );
-        if (componentToken) {
-          const tokenList = getTokenList(componentToken.children, component);
-          if (!tokenMeta.components[component] || tokenList.length > 0)
-            tokenMeta.components[component] = tokenList;
+          const component = getComponentName(componentMatch![1]!);
+          const componentToken = file.children?.find(
+            (item: any) => item?.name === "ComponentToken",
+          );
+          if (componentToken) {
+            const tokenList = getTokenList(componentToken.children, component);
+            if (!tokenMeta.components[component] || tokenList.length > 0)
+              tokenMeta.components[component] = tokenList;
+          }
         }
-      }
-    });
+      },
+    );
 
     const finalMeta = Object.entries(tokenMeta).reduce<any>(
       (acc, [key, value]) => {

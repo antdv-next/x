@@ -49,7 +49,7 @@ Adding an entry smooth-scrolls the container to the bottom so the newest task st
 
 ### Properties {#properties}
 
-Properties marked ✓ can be configured globally through [`XProProvider`](/pro/introduction#global-config).
+Properties marked ✓ can be configured globally through `XProProvider`.
 
 | Property           | Description                                                                                    | Type                     | Default    | Version | Global Config |
 | ------------------ | ---------------------------------------------------------------------------------------------- | ------------------------ | ---------- | ------- | ------------- |
