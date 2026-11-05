@@ -10,7 +10,7 @@ export function readDraft(
   | { answers: QuestionnaireAnswers; step: number; skipped: string[] }
   | undefined {
   try {
-    const raw = localStorage.getItem(key);
+    const raw = window.localStorage.getItem(key);
     if (!raw) return;
     const draft = JSON.parse(raw);
     if (
@@ -44,7 +44,7 @@ export function writeDraft(
   skipped: string[],
 ) {
   try {
-    localStorage.setItem(
+    window.localStorage.setItem(
       key,
       JSON.stringify({
         id: payload.id,
@@ -61,7 +61,7 @@ export function writeDraft(
 }
 export function removeDraft(key: string) {
   try {
-    localStorage.removeItem(key);
+    window.localStorage.removeItem(key);
   } catch {
     /* Optional storage. */
   }

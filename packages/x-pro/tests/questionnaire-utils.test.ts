@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { QuestionnairePayload } from "../src";
 
 import { pruneAnswers, resolveSubmitGate, validateQuestionnaire } from "../src";
-import { readDraft } from "../src/questionnaire/draft";
+import { readDraft, removeDraft, writeDraft } from "../src/questionnaire/draft";
 
 const payload: QuestionnairePayload = {
   id: "q",
@@ -128,7 +128,7 @@ describe("questionnaire wire validation", () => {
     ).toBe("maxSelections");
   });
   it("ignores expired, corrupt and mismatching drafts and storage errors", () => {
-    localStorage.setItem(
+    window.localStorage.setItem(
       "draft",
       JSON.stringify({
         id: "q",
@@ -138,7 +138,7 @@ describe("questionnaire wire validation", () => {
       }),
     );
     expect(readDraft("draft", payload)).toBeUndefined();
-    localStorage.setItem("draft", "{bad");
+    window.localStorage.setItem("draft", "{bad");
     expect(readDraft("draft", payload)).toBeUndefined();
     const spy = vi
       .spyOn(Storage.prototype, "getItem")
@@ -147,6 +147,40 @@ describe("questionnaire wire validation", () => {
       });
     expect(readDraft("draft", payload)).toBeUndefined();
     spy.mockRestore();
-    localStorage.clear();
+    window.localStorage.clear();
+  });
+
+  it("uses browser storage when the Node global storage is unavailable", () => {
+    const storage = window.localStorage;
+    // Newer Node runtimes can expose a global storage unrelated to jsdom's window.
+    vi.stubGlobal("localStorage", undefined);
+    vi.stubGlobal("window", { localStorage: storage });
+    try {
+      const answers = { one: { selected: ["a"] } };
+      writeDraft("browser-draft", payload, answers, 0, []);
+      expect(readDraft("browser-draft", payload)).toEqual({
+        answers,
+        step: 0,
+        skipped: [],
+      });
+      removeDraft("browser-draft");
+      expect(storage.getItem("browser-draft")).toBeNull();
+    } finally {
+      storage.removeItem("browser-draft");
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("does not require a browser window for server rendering", () => {
+    vi.stubGlobal("window", undefined);
+    try {
+      expect(readDraft("server-draft", payload)).toBeUndefined();
+      expect(() =>
+        writeDraft("server-draft", payload, {}, 0, []),
+      ).not.toThrow();
+      expect(() => removeDraft("server-draft")).not.toThrow();
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });

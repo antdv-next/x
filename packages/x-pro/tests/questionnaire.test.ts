@@ -71,7 +71,7 @@ function submissions(wrapper: VueWrapper) {
 afterEach(() => {
   wrappers.splice(0).forEach(w => w.unmount());
   vi.useRealTimers();
-  localStorage.clear();
+  window.localStorage.clear();
 });
 
 describe("Questionnaire", () => {
