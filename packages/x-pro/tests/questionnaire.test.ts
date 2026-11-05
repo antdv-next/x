@@ -11,6 +11,9 @@ import type {
 } from "../src";
 
 import { Questionnaire, XProProvider, zhCN } from "../src";
+import { installBrowserStorage } from "./_util-storage";
+
+installBrowserStorage();
 
 const wrappers: VueWrapper[] = [];
 function payload(
@@ -71,7 +74,7 @@ function submissions(wrapper: VueWrapper) {
 afterEach(() => {
   wrappers.splice(0).forEach(w => w.unmount());
   vi.useRealTimers();
-  window.localStorage.clear();
+  globalThis.window?.localStorage?.clear();
 });
 
 describe("Questionnaire", () => {
