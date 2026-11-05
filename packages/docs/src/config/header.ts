@@ -63,7 +63,6 @@ export const headerItems: HeaderItem[] = [
       "en-US": "Pro",
     },
     version: proVersion,
-    tag: "Dev",
   },
   {
     key: "sdk",
