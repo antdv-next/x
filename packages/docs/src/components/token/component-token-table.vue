@@ -22,6 +22,7 @@ defineOptions({
 
 const props = defineProps<{
   component: string;
+  provider?: string;
 }>();
 
 const { t, locale } = useLocale();
@@ -211,7 +212,7 @@ const globalOpen = ref(import.meta.env.DEV);
 
 // Code generation
 const componentCode = computed(() => {
-  return `<XProvider
+  return `<${props.provider ?? "XProvider"}
   :theme="{
     components: {
       ${props.component}: {
@@ -221,11 +222,11 @@ const componentCode = computed(() => {
   }"
 >
   ...
-</XProvider>`;
+</${props.provider ?? "XProvider"}>`;
 });
 
 const globalCode = computed(() => {
-  return `<XProvider
+  return `<${props.provider ?? "XProvider"}
   :theme="{
     token: {
       /* ${t("components.componentTokenTable.globalComment")} */
@@ -233,7 +234,7 @@ const globalCode = computed(() => {
   }"
 >
   ...
-</XProvider>`;
+</${props.provider ?? "XProvider"}>`;
 });
 </script>
 

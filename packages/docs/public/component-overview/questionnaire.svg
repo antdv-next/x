@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="104" viewBox="0 0 160 104">
+  <title>Questionnaire</title>
+  <rect x="8" y="8" width="144" height="88" rx="6" fill="#fff" stroke="#f0f0f0"/>
+  <rect x="20" y="18" width="74" height="6" rx="3" fill="#262626"/>
+  <circle cx="22" cy="34" r="2" fill="#1677ff"/><circle cx="30" cy="34" r="2" fill="#d9d9d9"/><circle cx="38" cy="34" r="2" fill="#d9d9d9"/>
+  <rect x="20" y="44" width="120" height="18" rx="4" fill="#e6f4ff" stroke="#91caff"/>
+  <circle cx="30" cy="53" r="4" fill="#1677ff"/><rect x="42" y="51" width="65" height="4" rx="2" fill="#1677ff"/>
+  <rect x="20" y="66" width="120" height="16" rx="4" fill="#fafafa" stroke="#f0f0f0"/>
+  <circle cx="30" cy="74" r="4" fill="none" stroke="#bfbfbf"/><rect x="42" y="72" width="48" height="4" rx="2" fill="#bfbfbf"/>
+  <rect x="113" y="86" width="27" height="4" rx="2" fill="#1677ff"/>
+</svg>

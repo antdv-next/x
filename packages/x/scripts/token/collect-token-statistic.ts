@@ -37,6 +37,7 @@ let ConfigProvider: any;
 const blackList = [
   "Mermaid",
   "XProvider",
+  "XProProvider",
   "Notification",
   "XNotification",
   "SenderHeader",
@@ -69,6 +70,23 @@ const ComponentCustomizeRender: Record<string, RenderFn> = {
   Actions: Actions => h(Actions, { items: [] }),
   CodeHighlighter: CodeHighlighter =>
     h(CodeHighlighter, { content: "const a = 1;" }),
+  MessageScroller: MessageScroller => h(MessageScroller),
+  TodoList: TodoList => h(TodoList, { items: [] }),
+  Questionnaire: Questionnaire =>
+    h(Questionnaire, {
+      payload: {
+        id: "token-statistic",
+        revision: 1,
+        questions: [
+          {
+            id: "answer",
+            title: "Question",
+            type: "single",
+            allowCustom: true,
+          },
+        ],
+      },
+    }),
 };
 
 function shouldRenderComponent(name: string) {
@@ -165,7 +183,8 @@ async function main() {
   ConfigProvider = antdvNext.ConfigProvider;
 
   const antdModule = await import("../../dist/index.js");
-  antd = antdModule;
+  const xProModule = await import("../../../x-pro/dist/index.js");
+  antd = { ...antdModule, ...xProModule };
 
   resetStatistic();
   await collect({ hashed: false }, "default");

@@ -7,6 +7,7 @@ import type {
   MessageScrollerNavigation,
   MessageScrollerProps,
 } from "../message-scroller/types";
+import type { QuestionnaireProps } from "../questionnaire/types";
 import type {
   TodoListClassNamesType,
   TodoListProps,
@@ -47,7 +48,16 @@ export interface TodoListConfig extends Omit<
   styles?: TodoListStylesType;
 }
 
+export interface QuestionnaireConfig extends Pick<
+  QuestionnaireProps,
+  "allowRevision" | "disabled" | "dismissible" | "classes" | "styles"
+> {
+  class?: string;
+  style?: CSSProperties;
+}
+
 export interface XProConfigContextProps {
+  questionnaire?: QuestionnaireConfig;
   messageScroller?: MessageScrollerConfig;
   todoList?: TodoListConfig;
 }
@@ -55,6 +65,7 @@ export interface XProConfigContextProps {
 export const X_PRO_CONFIG_KEYS = [
   "messageScroller",
   "todoList",
+  "questionnaire",
 ] as const satisfies readonly (keyof XProConfigContextProps)[];
 
 export interface XProProviderProps

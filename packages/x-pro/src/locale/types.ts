@@ -25,7 +25,40 @@ export interface TodoListLocale {
   statusCancelled: string;
 }
 
+export interface QuestionnaireLocale {
+  title: string;
+  progress: string;
+  required: string;
+  optional: string;
+  other: string;
+  customPlaceholder: string;
+  previous: string;
+  next: string;
+  submit: string;
+  skipQuestion: string;
+  skip: string;
+  dismiss: string;
+  revise: string;
+  retry: string;
+  pending: string;
+  submitting: string;
+  submitted: string;
+  expired: string;
+  cancelled: string;
+  error: string;
+  invalidConfig: string;
+  requiredError: string;
+  minSelections: string;
+  maxSelections: string;
+  unanswered: string;
+  skipped: string;
+  limitReached: string;
+  showMore: string;
+  showLess: string;
+}
+
 export interface XProLocale extends AntLocale {
   MessageScroller?: MessageScrollerLocale;
   TodoList?: TodoListLocale;
+  Questionnaire?: QuestionnaireLocale;
 }

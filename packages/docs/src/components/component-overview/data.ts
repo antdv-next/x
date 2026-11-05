@@ -426,4 +426,20 @@ export const componentOverviewItems: ComponentOverviewItem[] = [
     cover: "/component-overview/todo-list.svg",
     coverDark: "/component-overview/todo-list-dark.svg",
   },
+  {
+    slug: "questionnaire",
+    path: "/pro/questionnaire",
+    title: "Questionnaire",
+    subtitle: { "zh-CN": "问卷回复面板" },
+    description: {
+      "zh-CN": "逐题收集结构化答案，提供校验、草稿恢复和提交回执。",
+      "en-US":
+        "Collect structured human answers with validation, draft recovery and receipts.",
+    },
+    group: { "zh-CN": "通用", "en-US": "Common" },
+    groupOrder: 0,
+    section: "pro",
+    cover: "/component-overview/questionnaire.svg",
+    coverDark: "/component-overview/questionnaire-dark.svg",
+  },
 ];

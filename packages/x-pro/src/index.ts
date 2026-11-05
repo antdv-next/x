@@ -2,12 +2,14 @@
 // This package is a community extension: it is not ported from, affiliated
 // with, or synced to the Ant Design X upstream.
 import type { ComponentToken as MessageScrollerComponentToken } from "./message-scroller/style";
+import type { ComponentToken as QuestionnaireComponentToken } from "./questionnaire/style";
 import type { ComponentToken as TodoListComponentToken } from "./todo-list/style";
 
 declare module "antdv-next/theme/interface/components" {
   interface ComponentTokenMap {
     MessageScroller?: MessageScrollerComponentToken;
     TodoList?: TodoListComponentToken;
+    Questionnaire?: QuestionnaireComponentToken;
   }
 }
 
@@ -34,6 +36,7 @@ export {
 export type {
   MessageScrollerConfig,
   TodoListConfig,
+  QuestionnaireConfig,
   XProConfigContextProps,
   XProProviderEmits,
   XProProviderProps,
@@ -61,5 +64,15 @@ export { default as zhCN } from "./locale/zh_CN";
 export type {
   MessageScrollerLocale,
   TodoListLocale,
+  QuestionnaireLocale,
   XProLocale,
 } from "./locale/types";
+
+export { Questionnaire } from "./questionnaire";
+export type * from "./questionnaire/types";
+export {
+  validateQuestionnaire,
+  pruneAnswers,
+  isAnswered,
+  resolveSubmitGate,
+} from "./questionnaire/utils";
