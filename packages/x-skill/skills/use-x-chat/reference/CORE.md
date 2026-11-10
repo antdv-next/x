@@ -145,7 +145,10 @@ const { messages } = useXChat({
     // Server error
     return {
       content:
-        errorInfo?.error?.message || "Network error, please try again later",
+        errorInfo?.message ||
+        errorInfo?.error?.message ||
+        error.message ||
+        "Network error, please try again later",
       role: "assistant" as const,
     };
   },

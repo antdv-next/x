@@ -129,7 +129,11 @@ const ChatWithRegenerate = defineComponent(() => {
         };
       }
       return {
-        content: errorInfo?.error?.message || "网络异常",
+        content:
+          errorInfo?.message ||
+          errorInfo?.error?.message ||
+          error.message ||
+          "网络异常",
         role: "assistant",
       };
     },

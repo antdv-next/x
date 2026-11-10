@@ -144,7 +144,11 @@ const { messages } = useXChat({
 
     // 服务器错误
     return {
-      content: errorInfo?.error?.message || "网络异常，请稍后重试",
+      content:
+        errorInfo?.message ||
+        errorInfo?.error?.message ||
+        error.message ||
+        "网络异常，请稍后重试",
       role: "assistant" as const,
     };
   },

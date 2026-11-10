@@ -132,7 +132,11 @@ const ChatWithRegenerate = defineComponent(() => {
         };
       }
       return {
-        content: errorInfo?.error?.message || "Network error",
+        content:
+          errorInfo?.message ||
+          errorInfo?.error?.message ||
+          error.message ||
+          "Network error",
         role: "assistant",
       };
     },
