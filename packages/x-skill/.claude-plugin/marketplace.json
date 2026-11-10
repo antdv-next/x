@@ -17,6 +17,9 @@
       "x-markdown",
       "markdown",
       "chat-provider",
+      "x-components",
+      "x-card",
+      "a2ui",
       "ai",
       "vue",
       "typescript"
@@ -32,8 +35,17 @@
       "skills": [
         "./skills/use-x-chat",
         "./skills/x-chat-provider",
-        "./skills/x-request"
+        "./skills/x-request",
+        "./skills/x-card"
       ]
+    },
+    {
+      "name": "x-components",
+      "description": "Antdv Next X UI component skill package, covering chat UI components such as Bubble, Sender, Conversations, ThoughtChain, Actions, and more",
+      "descriptionZh": "Antdv Next X UI 组件技能包，覆盖 Bubble、Sender、Conversations、ThoughtChain、Actions 等对话界面组件",
+      "source": "./",
+      "strict": false,
+      "skills": ["./skills/x-components"]
     },
     {
       "name": "x-markdown",

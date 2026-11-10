@@ -12,6 +12,14 @@
         "tags": ["chat", "hook", "sdk"]
       },
       {
+        "skill": "x-card",
+        "name": "x-card",
+        "version": "0.0.3",
+        "desc": "Use when rendering A2UI dynamic cards with @antdv-next/x-card — covers XCardBox, XCardCard, A2UI v0.8/v0.9 commands, data binding, action events, component catalogs, and custom component contracts.",
+        "descZh": "使用 @antdv-next/x-card 渲染 A2UI 动态卡片时使用，覆盖 XCardBox、XCardCard、A2UI v0.8/v0.9 指令、数据绑定、动作事件、组件目录以及自定义组件契约。",
+        "tags": ["sdk"]
+      },
+      {
         "skill": "x-chat-provider",
         "name": "x-chat-provider",
         "version": "0.0.3",
@@ -26,6 +34,20 @@
         "desc": "Focus on explaining the practical configuration and usage of XRequest, providing accurate configuration instructions based on official documentation",
         "descZh": "专注讲解 XRequest 的实际配置和使用，基于官方文档提供准确的配置说明",
         "tags": ["request", "sdk"]
+      }
+    ]
+  },
+  "x-components": {
+    "description": "Antdv Next X UI component skill package, covering chat UI components such as Bubble, Sender, Conversations, ThoughtChain, Actions, and more",
+    "descriptionZh": "Antdv Next X UI 组件技能包，覆盖 Bubble、Sender、Conversations、ThoughtChain、Actions 等对话界面组件",
+    "skills": [
+      {
+        "skill": "x-components",
+        "name": "x-components",
+        "version": "0.0.3",
+        "desc": "Use when building AI chat UIs with @antdv-next/x components — covers Bubble, BubbleList, Sender, Conversations, Prompts, ThoughtChain, Actions, Welcome, Attachments, Sources, Suggestion, Think, FileCard, CodeHighlighter, Mermaid, Folder, XProvider, and Notification.",
+        "descZh": "使用 @antdv-next/x 构建 AI 对话界面时使用，覆盖 Bubble、BubbleList、Sender、Conversations、Prompts、ThoughtChain、Actions、Welcome、Attachments、Sources、Suggestion、Think、FileCard、CodeHighlighter、Mermaid、Folder、XProvider 和 Notification。",
+        "tags": ["sdk"]
       }
     ]
   },
