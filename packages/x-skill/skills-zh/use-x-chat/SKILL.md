@@ -52,27 +52,6 @@ import { MyChatProvider } from "./MyChatProvider";
 const provider = new MyChatProvider({
   // Provider 场景必须设置 manual: true
   request: XRequest("https://your-api.com/chat", { manual: true }),
-  // 当设置 requestPlaceholder 时，会在请求开始前显示占位消息
-  requestPlaceholder: {
-    content: "正在思考中...",
-    role: "assistant",
-    timestamp: Date.now(),
-  },
-  // 当设置 requestFallback 时，会在请求失败时显示兜底消息
-  requestFallback: (_, { error, errorInfo, messageInfo }) => {
-    if (error.name === "AbortError") {
-      return {
-        content: messageInfo?.message?.content || "已取消回复",
-        role: "assistant" as const,
-        timestamp: Date.now(),
-      };
-    }
-    return {
-      content: errorInfo?.error?.message || "网络异常，请稍后重试",
-      role: "assistant" as const,
-      timestamp: Date.now(),
-    };
-  },
 });
 ```
 
@@ -83,7 +62,30 @@ import { useXChat } from "@antdv-next/x-sdk";
 import { defineComponent } from "vue";
 
 const ChatComponent = defineComponent(() => {
-  const { messages, onRequest, isRequesting } = useXChat({ provider });
+  const { messages, onRequest, isRequesting } = useXChat({
+    provider,
+    // 请求进行中显示占位消息。
+    requestPlaceholder: {
+      content: "正在思考中...",
+      role: "assistant",
+      timestamp: Date.now(),
+    },
+    // 请求失败时显示兜底消息。
+    requestFallback: (_, { error, errorInfo, messageInfo }) => {
+      if (error.name === "AbortError") {
+        return {
+          content: messageInfo?.message?.content || "已取消回复",
+          role: "assistant" as const,
+          timestamp: Date.now(),
+        };
+      }
+      return {
+        content: errorInfo?.error?.message || "网络异常，请稍后重试",
+        role: "assistant" as const,
+        timestamp: Date.now(),
+      };
+    },
+  });
 
   return () => (
     <div>

@@ -52,28 +52,6 @@ import { MyChatProvider } from "./MyChatProvider";
 const provider = new MyChatProvider({
   // manual: true is required for Provider usage
   request: XRequest("https://your-api.com/chat", { manual: true }),
-  // When requestPlaceholder is set, a placeholder message is shown before the request starts
-  requestPlaceholder: {
-    content: "Thinking...",
-    role: "assistant",
-    timestamp: Date.now(),
-  },
-  // When requestFallback is set, a fallback message is shown when the request fails
-  requestFallback: (_, { error, errorInfo, messageInfo }) => {
-    if (error.name === "AbortError") {
-      return {
-        content: messageInfo?.message?.content || "Reply cancelled",
-        role: "assistant" as const,
-        timestamp: Date.now(),
-      };
-    }
-    return {
-      content:
-        errorInfo?.error?.message || "Network error, please try again later",
-      role: "assistant" as const,
-      timestamp: Date.now(),
-    };
-  },
 });
 ```
 
@@ -84,7 +62,31 @@ import { useXChat } from "@antdv-next/x-sdk";
 import { defineComponent } from "vue";
 
 const ChatComponent = defineComponent(() => {
-  const { messages, onRequest, isRequesting } = useXChat({ provider });
+  const { messages, onRequest, isRequesting } = useXChat({
+    provider,
+    // Show a placeholder while the request is in flight.
+    requestPlaceholder: {
+      content: "Thinking...",
+      role: "assistant",
+      timestamp: Date.now(),
+    },
+    // Show a fallback message if the request fails.
+    requestFallback: (_, { error, errorInfo, messageInfo }) => {
+      if (error.name === "AbortError") {
+        return {
+          content: messageInfo?.message?.content || "Reply cancelled",
+          role: "assistant" as const,
+          timestamp: Date.now(),
+        };
+      }
+      return {
+        content:
+          errorInfo?.error?.message || "Network error, please try again later",
+        role: "assistant" as const,
+        timestamp: Date.now(),
+      };
+    },
+  });
 
   return () => (
     <div>
