@@ -1,6 +1,6 @@
 ---
 name: x-request
-version: 0.0.1
+version: 0.0.3
 description: 专注讲解 XRequest 的实际配置和使用，基于官方文档提供准确的配置说明
 ---
 
@@ -39,18 +39,18 @@ description: 专注讲解 XRequest 的实际配置和使用，基于官方文档
 
 ### 📋 系统要求
 
-| 依赖包                | 版本要求 | 自动安装 | 作用                      |
-| --------------------- | -------- | -------- | ------------------------- |
-| **@antdv-next/x-sdk** | ≥2.2.2   | ✅       | 核心SDK，包含XRequest工具 |
+| 依赖包                | 版本要求  | 自动安装 | 作用                      |
+| --------------------- | --------- | -------- | ------------------------- |
+| **@antdv-next/x-sdk** | `>=0.0.4` | ✅       | 核心SDK，包含XRequest工具 |
 
 ### 🛠️ 一键安装
 
 ```bash
-# 推荐使用 tnpm
-tnpm install @antdv-next/x-sdk
+# npm
+npm install @antdv-next/x-sdk
 
-# 或使用 npm
-npm add @antdv-next/x-sdk
+# pnpm
+pnpm add @antdv-next/x-sdk
 
 # 检查版本
 npm ls @antdv-next/x-sdk
@@ -68,11 +68,11 @@ const request = XRequest("https://api.example.com/chat");
 
 // 如需手动控制（用于Provider场景）
 const providerRequest = XRequest("https://api.example.com/chat", {
-  manual: true, // 仅此项通常需要显式配置
+  manual: true,
 });
 ```
 
-> 💡 **提示**：XRequest 已内置合理的默认配置，大多数情况下只需提供API地址即可使用。
+> 💡 **提示**：XRequest 已内置合理的默认配置。`baseURL` 支持字符串或 ref，`options` 可选。传给 Chat Provider 时必须设置 `manual: true`，否则 `AbstractChatProvider` 会抛出 `request must be manual`。
 
 # 📦 技术栈概览
 
@@ -101,6 +101,13 @@ graph TD
 # 🔧 核心配置详解
 
 核心功能参考内容 [CORE.md](reference/CORE.md)
+
+## 请求与响应行为
+
+- 请求始终以 `POST` 发出；其他 `RequestInit` 字段会透传，但 `method` 会被覆盖。
+- `text/event-stream` 响应依次按 `streamSeparator`（`\n\n`）、`partSeparator`（`\n`）、`kvSeparator`（`:`）拆分。同一事件内重复的 `data` 字段会用 `\n` 合并；自定义多字符 `kvSeparator` 会被完整消费。
+- `application/json` 响应中 `success: false` 时会调用 `onError(error, payload, headers)`，而不是 `onSuccess`。
+- `run()` 返回布尔值；`state` 以响应式方式暴露 `isTimeout`、`isStreamTimeout`、`isRequesting`。
 
 # 🛡️ 安全指南
 
@@ -186,14 +193,17 @@ validateSecurity({
 ```typescript
 import { XRequest } from "@antdv-next/x-sdk";
 
-// 测试接口可用性
+// 测试接口可用性（未设置 manual，因此会立即发起请求）
 const testRequest = XRequest("https://httpbin.org/post", {
   params: { test: "data" },
+  callbacks: {
+    onSuccess: chunks => console.log("success", chunks),
+    onError: error => console.error("failed", error),
+  },
 });
 
-// 立即发送请求
-const response = await testRequest();
-console.log(response);
+// 也可以直接等待进行中的请求
+await testRequest.asyncHandler;
 ```
 
 ## 配合其他技能
@@ -335,4 +345,4 @@ graph LR
 
 ## 💻 示例代码
 
-- [custom-provider-width-ui.tsx](https://github.com/antdv-next/x/blob/main/packages/docs/src/pages/sdk/demo/chat-provider-with-ui.vue) - 自定义 Provider 完整示例
+- [chat-provider-with-ui.vue](https://github.com/antdv-next/x/blob/main/packages/docs/src/pages/sdk/demo/chat-provider-with-ui.vue) - 自定义 Provider 完整示例

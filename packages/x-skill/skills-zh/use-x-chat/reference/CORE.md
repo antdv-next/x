@@ -28,7 +28,12 @@ setMessages([
     status: "success",
   },
 ]);
+
+// updater 形式：接收当前列表并返回新列表
+setMessages(prev => [...prev, welcomeMessage]);
 ```
+
+`setMessages` 返回布尔值，表示更新是否生效。
 
 #### 更新单条消息
 
@@ -42,7 +47,12 @@ setMessage("msg-id", {
 
 // 标记为错误 - 更新 status
 setMessage("msg-id", { status: "error" });
+
+// updater 形式
+setMessage("msg-id", prev => ({ ...prev, status: "success" }));
 ```
+
+`setMessage` 和 `removeMessage` 同样返回布尔值。
 
 ### 2. 请求控制
 
@@ -80,8 +90,8 @@ const { abort, isRequesting } = useXChat({ provider });
 #### 基础使用
 
 ```tsx
-import { defineComponent } from "vue";
 import { useXChat } from "@antdv-next/x-sdk";
+import { defineComponent } from "vue";
 
 const ChatComponent = defineComponent(() => {
   const { messages, onReload } = useXChat({ provider });
@@ -92,7 +102,7 @@ const ChatComponent = defineComponent(() => {
         <div key={msg.id}>
           <span>{msg.message.content}</span>
           {msg.message.role === "assistant" && (
-            <button onClick={() => onReload(msg.id)}>重新生成</button>
+            <button onClick={() => onReload(msg.id, {})}>重新生成</button>
           )}
         </div>
       ))}
@@ -105,7 +115,7 @@ const ChatComponent = defineComponent(() => {
 
 1. **只能重新生成AI回复**：通常只能对 `role === 'assistant'` 的消息使用重新发送
 2. **状态管理**：重新发送会将对应消息状态设为 `loading`
-3. **参数传递**：可以通过 `extra` 参数传递额外信息给Provider
+3. **参数传递**：`onReload(id, requestParams, { extraInfo })` —— `requestParams` 必传，没有时传 `{}`；`extraInfo` 会存到消息上供业务自己使用
 4. **错误处理**：建议配合 `requestFallback` 处理重新发送失败的情况
 
 ### 3. 错误处理
@@ -134,7 +144,11 @@ const { messages } = useXChat({
 
     // 服务器错误
     return {
-      content: errorInfo?.error?.message || "网络异常，请稍后重试",
+      content:
+        errorInfo?.message ||
+        errorInfo?.error?.message ||
+        error.message ||
+        "网络异常，请稍后重试",
       role: "assistant" as const,
     };
   },
@@ -146,8 +160,8 @@ const { messages } = useXChat({
 一般情况下无需配置，默认配合 Bubble 组件的 loading 状态使用，如需自定义 loading 时的内容可参考：
 
 ```tsx
-import { defineComponent } from "vue";
 import { useXChat } from "@antdv-next/x-sdk";
+import { defineComponent } from "vue";
 
 const ChatComponent = defineComponent(() => {
   const { messages, onRequest } = useXChat({ provider });
@@ -172,11 +186,42 @@ const ChatComponent = defineComponent(() => {
 ```ts
 const { messages } = useXChat({
   provider,
-  requestPlaceholder: (_, { error, messageInfo }) => {
+  requestPlaceholder: (_, { messages }) => {
     return {
-      content: "正在生成中...",
+      content: messages.length > 0 ? "正在生成中..." : "正在思考中...",
       role: "assistant",
     };
   },
 });
 ```
+
+占位符函数只接收 `{ messages }`，拿不到错误信息；错误信息请用 `requestFallback`。
+
+### 5. 多会话管理
+
+用 `conversationKey` 隔离消息 store，用 `useXConversations` 管理会话列表：
+
+```ts
+import { useXChat, useXConversations } from "@antdv-next/x-sdk";
+
+const {
+  conversations,
+  activeConversationKey,
+  addConversation,
+  removeConversation,
+  setActiveConversationKey,
+} = useXConversations({
+  defaultConversations: [{ key: "1", label: "新会话" }],
+  defaultActiveConversationKey: "1",
+});
+
+const { messages, onRequest, queueRequest } = useXChat({
+  provider,
+  conversationKey: activeConversationKey,
+});
+```
+
+- 修改 `activeConversationKey` 会切换 `useXChat` 暴露的消息 store。
+- `queueRequest(activeConversationKey.value, params)` 会等待该会话的异步 `defaultMessages` 加载完成后再发送。
+- `isDefaultMessagesRequesting` 可用于在历史消息加载期间禁用发送框。
+- `useXConversations` 创建的会话会被使用相同 key 的 `useXChat` 实例共享。

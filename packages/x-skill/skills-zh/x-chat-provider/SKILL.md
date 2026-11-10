@@ -1,6 +1,6 @@
 ---
 name: x-chat-provider
-version: 0.0.1
+version: 0.0.3
 description: 专注于自定义 Chat Provider 的实现，帮助将任意流式接口适配为 Antdv Next X 标准格式
 ---
 
@@ -79,10 +79,10 @@ graph LR
 
 #### 系统要求
 
-| 依赖包                | 版本要求 | 自动安装 | 作用                        |
-| --------------------- | -------- | -------- | --------------------------- |
-| **@antdv-next/x-sdk** | ≥0.0.1   | ✅       | 核心SDK，包含Provider和Hook |
-| **@antdv-next/x**     | 最新版   | ✅       | UI组件库，构建聊天界面      |
+| 依赖包                | 版本要求  | 自动安装 | 作用                        |
+| --------------------- | --------- | -------- | --------------------------- |
+| **@antdv-next/x-sdk** | `>=0.0.4` | ✅       | 核心SDK，包含Provider和Hook |
+| **@antdv-next/x**     | 最新版    | ✅       | UI组件库，构建聊天界面      |
 
 #### 🛠️ 一键环境检查
 
@@ -97,7 +97,7 @@ npm install @antdv-next/x-sdk@latest
 
 | SDK版本 | 支持功能         | 兼容性  |
 | ------- | ---------------- | ------- |
-| ≥0.0.1  | 完整Provider功能 | ✅ 推荐 |
+| >=0.0.4 | 完整Provider功能 | ✅ 推荐 |
 
 ### 🎯 Provider选择决策树
 
@@ -119,19 +119,20 @@ graph TD
 
 #### 开箱即用的Provider
 
-| Provider类型          | 适用场景         | 使用方式     |
-| --------------------- | ---------------- | ------------ |
-| **OpenAI Provider**   | 标准OpenAI API   | 直接导入使用 |
-| **DeepSeek Provider** | 标准DeepSeek API | 直接导入使用 |
+| Provider类型          | 适用场景         | 类名                   |
+| --------------------- | ---------------- | ---------------------- |
+| **OpenAI Provider**   | 标准OpenAI API   | `OpenAIChatProvider`   |
+| **DeepSeek Provider** | 标准DeepSeek API | `DeepSeekChatProvider` |
+| **Default Provider**  | 最小转换         | `DefaultChatProvider`  |
 
 #### 快速判断指南
 
-| 场景             | 推荐方案              | 示例                     |
-| ---------------- | --------------------- | ------------------------ |
-| 调用官方OpenAI   | 内置OpenAI Provider   | `new OpenAIProvider()`   |
-| 调用官方DeepSeek | 内置DeepSeek Provider | `new DeepSeekProvider()` |
-| 公司内部API      | 自定义Provider        | 见四步实现               |
-| 第三方非标API    | 自定义Provider        | 见四步实现               |
+| 场景             | 推荐方案              | 示例                            |
+| ---------------- | --------------------- | ------------------------------- |
+| 调用官方OpenAI   | 内置OpenAI Provider   | `new OpenAIChatProvider(...)`   |
+| 调用官方DeepSeek | 内置DeepSeek Provider | `new DeepSeekChatProvider(...)` |
+| 公司内部API      | 自定义Provider        | 见四步实现                      |
+| 第三方非标API    | 自定义Provider        | 见四步实现                      |
 
 # 📋 四步实现自定义 Provider
 
@@ -193,8 +194,14 @@ interface MyAPIResponse {
 ### 🏗️ 代码模板（复制即用）
 
 ```ts
-// MyChatProvider.ts
+import type {
+  TransformMessage,
+  XRequestConfigOptions,
+} from "@antdv-next/x-sdk";
+
 import { AbstractChatProvider } from "@antdv-next/x-sdk";
+// MyChatProvider.ts
+import { unref } from "vue";
 
 // ====== 第1处修改：定义你的接口类型 ======
 interface MyInput {
@@ -224,7 +231,7 @@ export class MyChatProvider extends AbstractChatProvider<
   // 参数转换：将useXChat参数转为你的API参数
   transformParams(
     requestParams: Partial<MyInput>,
-    options: XRequestOptions<MyInput, MyOutput, MyMessage>,
+    options: XRequestConfigOptions<MyInput, MyOutput, MyMessage>,
   ): MyInput {
     if (typeof requestParams !== "object") {
       throw new Error("requestParams must be an object");
@@ -235,7 +242,8 @@ export class MyChatProvider extends AbstractChatProvider<
       context: requestParams.context,
       model: "gpt-3.5-turbo", // 根据你的API调整
       stream: true,
-      ...(options?.params || {}),
+      // options.params 可能是 ref
+      ...(unref(options?.params) || {}),
     };
   }
 
@@ -249,23 +257,37 @@ export class MyChatProvider extends AbstractChatProvider<
   }
 
   // ====== 第3处修改：响应数据转换 ======
-  transformMessage(info: {
-    originMessage: MyMessage;
-    chunk: MyOutput;
-  }): MyMessage {
+  transformMessage(info: TransformMessage<MyMessage, MyOutput>): MyMessage {
     const { originMessage, chunk } = info;
 
-    // 处理结束标记
-    if (!chunk?.content || chunk.content === "[DONE]") {
-      return { ...originMessage, status: "success" as const };
+    // 最终 onSuccess 传的是 chunks 而不是单个 chunk，此时返回已累积的消息
+    if (!chunk) {
+      return (
+        originMessage || {
+          content: "",
+          role: "assistant",
+          timestamp: Date.now(),
+        }
+      );
     }
 
-    // 累加响应内容
+    // 处理结束标记
+    if (chunk.content === "[DONE]") {
+      return (
+        originMessage || {
+          content: "",
+          role: "assistant",
+          timestamp: Date.now(),
+        }
+      );
+    }
+
+    // 累加响应内容。不要在这里放 MessageStatus：
+    // status 由 useXChat 在 MessageInfo 上管理。
     return {
-      ...originMessage,
-      content: `${originMessage.content || ""}${chunk.content || ""}`,
-      role: "assistant" as const,
-      status: "loading" as const,
+      content: `${originMessage?.content || ""}${chunk.content || ""}`,
+      role: "assistant",
+      timestamp: originMessage?.timestamp ?? Date.now(),
     };
   }
 }
@@ -303,9 +325,10 @@ npx tsc --noEmit MyChatProvider.ts
 ### 🔧 完整集成示例
 
 ```ts
+import { XRequest } from "@antdv-next/x-sdk";
+
 // 1. 引入依赖
 import { MyChatProvider } from "./MyChatProvider";
-import { XRequest } from "@antdv-next/x-sdk";
 
 // 2. 配置XRequest（由x-request技能负责）
 const request = XRequest("https://your-api.com/chat", {
@@ -328,13 +351,20 @@ const request = XRequest("https://your-api.com/chat", {
 
 // 3. 创建Provider实例
 const provider = new MyChatProvider({
-  request, // 必须传入XRequest实例
+  request, // 必须传入设置了 manual: true 的 XRequest 实例
+});
+
+// request 也可以传工厂函数，在 Provider 构造时求值：
+const lazyProvider = new MyChatProvider({
+  request: () => XRequest("https://your-api.com/chat", { manual: true }),
 });
 
 // 4. 现在可以配合useXChat使用
 // 这部分由use-x-chat技能负责
 export { provider };
 ```
+
+> `transformLocalMessage` 可以返回一条消息或消息数组。`transformMessage` 收到完整的 `TransformMessage`：`originMessage?`、`chunk`、`chunks`、`status`、`responseHeaders`。只返回 `ChatMessage`；消息状态由 `useXChat` 管理。
 
 ### 🎉 使用优势
 
@@ -486,7 +516,8 @@ class MyProvider extends AbstractChatProvider {
 
 // 强制使用 XRequest：
 const provider = new MyProvider({
-  request: XRequest("https://your-api.com/chat"),
+  // 必须设置 manual: true，否则 AbstractChatProvider 会抛错
+  request: XRequest("https://your-api.com/chat", { manual: true }),
 });
 ```
 
@@ -535,4 +566,4 @@ const provider = new MyProvider({
 
 ## 💻 示例代码
 
-- [custom-provider-width-ui.tsx](https://github.com/antdv-next/x/blob/main/packages/docs/src/pages/sdk/demo/chat-provider-with-ui.vue) - 自定义 Provider 完整示例
+- [chat-provider-with-ui.vue](https://github.com/antdv-next/x/blob/main/packages/docs/src/pages/sdk/demo/chat-provider-with-ui.vue) - 自定义 Provider 完整示例

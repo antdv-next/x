@@ -52,7 +52,8 @@ const request = XRequest("https://your-api.com/chat", {
   params: {
     query: "你好",
   },
-  manual: true, // ⚠️ 在provider中使用时必须设置为true
+  // 没有设置 manual，请求会立即发起并触发回调。
+  // 只有由调用方（如 Chat Provider）控制 run() 时才需要 manual: true。
   callbacks: {
     onSuccess: messages => {
       setStatus("success");
@@ -70,21 +71,20 @@ const request = XRequest("https://your-api.com/chat", {
 });
 ```
 
-> ⚠️ **重要提醒**：当 XRequest 用于 x-chat-provider 或 use-x-chat 的 provider 中时，`manual: true` 是必须的配置项，否则会立即发送请求而不是等待调用。
+> ⚠️ **重要提醒**：当 XRequest 用于 x-chat-provider 或 use-x-chat 的 provider 中时，`manual: true` 是必须的配置项，否则 `AbstractChatProvider` 会抛出 `request must be manual`。
 
-````
-
-### 带 URL 参数
+### 带参数
 
 ```typescript
-const request = XRequest('https://your-api.com/chat', {
-  method: 'GET',
+const request = XRequest("https://your-api.com/chat", {
   params: {
-    model: 'gpt-3.5-turbo',
+    model: "gpt-3.5-turbo",
     max_tokens: 1000,
   },
 });
-````
+```
+
+`params` 会合并进 JSON body。XRequest 始终发送 `POST`；传入 `method: "GET"` 也会被实现覆盖。
 
 # 4. 流式配置
 
@@ -143,49 +143,92 @@ const request = XRequest("/api/proxy/chat", {
 });
 ```
 
-# 6.自定义流转换器
+# 6. 自定义流转换器
 
-当 AI 服务商返回非标准格式时，使用 `transformStream` 自定义数据转换。
+当 AI 服务商返回非标准格式时，使用 `transformStream` 自定义数据转换。XRequest 会先把响应体按 UTF-8 解码为字符串，因此转换器收到的是 `string` 类型的 chunk，需要 enqueue 回调所期望的 `Output` 对象。
 
 #### 基础示例
 
 ```typescript
-const request = XRequest("https://api.example.com/chat", {
-  params: { message: "你好" },
-  transformStream: () =>
-    new TransformStream({
-      transform(chunk, controller) {
-        // TextDecoder 将二进制数据转换为字符串
-        const text = new TextDecoder().decode(chunk);
-        const lines = text.split("\n");
-
-        for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            const data = line.slice(6);
-            if (data !== "[DONE]") {
-              // TextEncoder 将字符串转回二进制
-              controller.enqueue(new TextEncoder().encode(data));
-            }
-          }
+// 这里 Output 为 { content: string }
+const request = XRequest<{ message: string }, { content: string }>(
+  "https://api.example.com/chat",
+  {
+    params: { message: "你好" },
+    transformStream: () => {
+      let buffer = "";
+      const processLine = (
+        line: string,
+        controller: TransformStreamDefaultController,
+      ) => {
+        if (!line.startsWith("data: ")) return;
+        const data = line.slice(6);
+        if (data !== "[DONE]") {
+          controller.enqueue({ content: data });
         }
-      },
-    }),
-});
+      };
+
+      return new TransformStream({
+        transform(chunk, controller) {
+          // chunk 已经是解码后的字符串，不要再调用 TextDecoder
+          const lines = (buffer + chunk).split("\n");
+          buffer = lines.pop() ?? "";
+          for (const rawLine of lines) {
+            processLine(
+              rawLine.endsWith("\r") ? rawLine.slice(0, -1) : rawLine,
+              controller,
+            );
+          }
+        },
+        flush(controller) {
+          processLine(
+            buffer.endsWith("\r") ? buffer.slice(0, -1) : buffer,
+            controller,
+          );
+        },
+      });
+    },
+  },
+);
 ```
 
 #### 常用转换模板
 
 ```typescript
-// OpenAI 格式
-const openaiStream = () =>
-  new TransformStream({
+// OpenAI SSE 格式：使用工厂函数，保证每次请求都得到新的流
+const openaiStream = () => {
+  let buffer = "";
+  const processLine = (
+    line: string,
+    controller: TransformStreamDefaultController,
+  ) => {
+    if (!line.startsWith("data: ")) return;
+    const data = line.slice(6);
+    if (data === "[DONE]") return;
+    const json = JSON.parse(data);
+    const content = json.choices?.[0]?.delta?.content || "";
+    if (content) {
+      controller.enqueue({ content });
+    }
+  };
+
+  return new TransformStream({
     transform(chunk, controller) {
-      const text = new TextDecoder().decode(chunk);
-      const data = JSON.parse(text);
-      const content = data.choices?.[0]?.delta?.content || "";
-      controller.enqueue(new TextEncoder().encode(content));
+      const lines = (buffer + chunk).split("\n");
+      buffer = lines.pop() ?? "";
+      for (const rawLine of lines) {
+        const line = rawLine.endsWith("\r") ? rawLine.slice(0, -1) : rawLine;
+        processLine(line, controller);
+      }
+    },
+    flush(controller) {
+      processLine(
+        buffer.endsWith("\r") ? buffer.slice(0, -1) : buffer,
+        controller,
+      );
     },
   });
+};
 
 // 使用示例
 const request = XRequest(url, {
@@ -194,30 +237,4 @@ const request = XRequest(url, {
 });
 ```
 
-> ⚠️ **注意**：ReadableStream 只能被一个 reader 锁定，避免重复使用同一实例。
-
-#### 🔍 TextDecoder/TextEncoder 说明
-
-**什么时候需要它们？**
-
-| 场景               | 数据类型            | 是否需要转换        |
-| ------------------ | ------------------- | ------------------- |
-| **标准 fetch API** | `Uint8Array` 二进制 | ✅ 需要 TextDecoder |
-| **XRequest 封装**  | 可能是字符串        | ❌ 可能不需要       |
-| **自定义流处理**   | 取决于实现          | 🤔 需要判断类型     |
-
-**实际使用建议：**
-
-```typescript
-transformStream: () =>
-  new TransformStream({
-    transform(chunk, controller) {
-      // 安全做法：先判断类型
-      const text =
-        typeof chunk === "string" ? chunk : new TextDecoder().decode(chunk);
-
-      // 现在 text 一定是字符串了
-      controller.enqueue(text);
-    },
-  });
-```
+> ⚠️ **注意**：Web `ReadableStream` 只能被一个 reader 锁定，不要复用同一个 `TransformStream` 实例，始终传入工厂函数（`() => new TransformStream(...)`），如上例所示。这些示例会缓存跨 chunk 的不完整行；生产环境还应处理完整 SSE 规范，包括多行 `data` 字段和事件边界。

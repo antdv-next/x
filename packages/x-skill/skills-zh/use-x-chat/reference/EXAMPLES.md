@@ -1,155 +1,94 @@
-# 完整示例项目
+# 完整示例
 
-## 带有对话管理的完整项目
+## 带会话管理的聊天应用
 
 ```tsx
-import { defineComponent, ref } from "vue";
-import { useXChat } from "@antdv-next/x-sdk";
-import { chatProvider } from "../services/chatService";
+import { BubbleList, Conversations, Sender } from "@antdv-next/x";
+import { useXChat, useXConversations } from "@antdv-next/x-sdk";
+import { computed, defineComponent } from "vue";
+
 import type { ChatMessage } from "../providers/ChatProvider";
-import {
-  Bubble,
-  Sender,
-  Conversations,
-  type ConversationsProps,
-} from "@antdv-next/x";
+
+import { chatProvider } from "../services/chatService";
 
 const App = defineComponent(() => {
-  const conversations = ref([{ key: "1", label: "新对话" }]);
-  const activeKey = ref("1");
-  const senderRef = ref<InstanceType<typeof Sender> | null>(null);
-
-  // 新建对话
-  const handleNewConversation = () => {
-    const newKey = Date.now().toString();
-    conversations.value.push({
-      key: newKey,
-      label: `对话 ${conversations.value.length + 1}`,
-    });
-    activeKey.value = newKey;
-  };
-
-  // 删除对话
-  const handleDeleteConversation = (key: string) => {
-    const filtered = conversations.value.filter(item => item.key !== key);
-    if (filtered.length === 0) {
-      const newKey = Date.now().toString();
-      conversations.value = [{ key: newKey, label: "新对话" }];
-    } else {
-      conversations.value = filtered;
-    }
-
-    if (activeKey.value === key) {
-      activeKey.value = conversations.value[0]?.key || "1";
-    }
-  };
+  const {
+    conversations,
+    activeConversationKey,
+    addConversation,
+    removeConversation,
+    setActiveConversationKey,
+  } = useXConversations({
+    defaultConversations: [{ key: "1", label: "新会话" }],
+    defaultActiveConversationKey: "1",
+  });
 
   const { messages, onRequest, isRequesting, abort } = useXChat<
     ChatMessage,
     ChatMessage,
     { query: string },
-    { content: string; time: string; status: "success" | "error" }
+    { content: string }
   >({
     provider: chatProvider,
-    conversationKey: activeKey,
-    requestFallback: (_, { error }) => {
-      if (error.name === "AbortError") {
-        return {
-          content: "已取消",
-          role: "assistant" as const,
-          timestamp: Date.now(),
-        };
-      }
-      return {
-        content: "请求失败",
-        role: "assistant" as const,
-        timestamp: Date.now(),
-      };
-    },
+    conversationKey: activeConversationKey,
   });
 
-  const menuConfig: ConversationsProps["menu"] = conversation => ({
-    items: [
-      {
-        label: "删除",
-        key: "delete",
-        danger: true,
-      },
-    ],
-    onClick: ({ key: menuKey }) => {
-      if (menuKey === "delete") {
-        handleDeleteConversation(conversation.key);
-      }
-    },
-  });
+  const bubbleItems = computed(() =>
+    messages.value.map(({ id, message, status }) => ({
+      key: id,
+      role: message.role,
+      content: message.content,
+      loading: status === "loading",
+    })),
+  );
+
+  const handleNewConversation = () => {
+    const key = Date.now().toString();
+    addConversation({ key, label: `会话 ${conversations.value.length + 1}` });
+    setActiveConversationKey(key);
+  };
+
+  const handleDeleteConversation = (key: string) => {
+    removeConversation(key);
+    if (activeConversationKey.value === key) {
+      setActiveConversationKey(conversations.value[0]?.key ?? "");
+    }
+  };
 
   return () => (
     <div style={{ display: "flex", height: "100vh" }}>
-      {/* 会话列表 */}
-      <div
-        style={{
-          width: "240px",
-          borderRight: "1px solid #f0f0f0",
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
+      <div style={{ width: "240px", borderRight: "1px solid #f0f0f0" }}>
         <Conversations
-          creation={{
-            onClick: handleNewConversation,
-          }}
           items={conversations.value}
-          activeKey={activeKey.value}
-          menu={menuConfig}
-          onActiveChange={key => {
-            activeKey.value = key;
-          }}
+          activeKey={activeConversationKey.value}
+          creation={{ onClick: handleNewConversation }}
+          onActiveChange={key => setActiveConversationKey(key)}
+          menu={conversation => ({
+            items: [{ key: "delete", label: "删除", danger: true }],
+            onClick: ({ key }) => {
+              if (key === "delete") handleDeleteConversation(conversation.key);
+            },
+          })}
         />
       </div>
 
-      {/* 聊天区域 */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-        <div
-          style={{
-            padding: "16px",
-            borderBottom: "1px solid #f0f0f0",
-            fontSize: "16px",
-            fontWeight: 500,
-          }}
-        >
-          {conversations.value.find(c => c.key === activeKey.value)?.label ||
-            "对话"}
-        </div>
-
-        <div style={{ flex: 1, padding: "16px", overflow: "auto" }}>
-          <Bubble.List
+        <div style={{ flex: 1, overflow: "auto", padding: "16px" }}>
+          <BubbleList
+            items={bubbleItems.value}
             role={{
-              assistant: {
-                placement: "start",
-              },
-              user: {
-                placement: "end",
-              },
+              assistant: { placement: "start" },
+              user: { placement: "end" },
             }}
-            items={messages.value.map(msg => ({
-              key: msg.id,
-              content: msg.message.content,
-              role: msg.message.role,
-              loading: msg.status === "loading",
-            }))}
           />
         </div>
 
         <div style={{ padding: "16px", borderTop: "1px solid #f0f0f0" }}>
           <Sender
             loading={isRequesting.value}
-            ref={senderRef}
-            onSubmit={(content: string) => {
-              onRequest({ query: content });
-              senderRef.value?.clear?.();
-            }}
+            placeholder="请输入消息..."
+            onSubmit={content => onRequest({ query: content })}
             onCancel={abort}
-            placeholder="输入消息..."
           />
         </div>
       </div>
@@ -160,15 +99,17 @@ const App = defineComponent(() => {
 export default App;
 ```
 
-## 带状态管理的重新发送
+## 重新生成回复
 
 ```tsx
-import { defineComponent, ref } from "vue";
+import { BubbleList, Sender, SenderHeader } from "@antdv-next/x";
 import { useXChat } from "@antdv-next/x-sdk";
-import { Bubble, Sender } from "@antdv-next/x";
 import { Button } from "antdv-next";
-import { chatProvider } from "../services/chatService";
+import { computed, defineComponent, ref } from "vue";
+
 import type { ChatMessage } from "../providers/ChatProvider";
+
+import { chatProvider } from "../services/chatService";
 
 const ChatWithRegenerate = defineComponent(() => {
   const senderRef = ref<InstanceType<typeof Sender> | null>(null);
@@ -176,95 +117,84 @@ const ChatWithRegenerate = defineComponent(() => {
     ChatMessage,
     ChatMessage,
     { query: string },
-    { content: string; time: string; status: "success" | "error" }
+    { content: string }
   >({
     provider: chatProvider,
-    requestPlaceholder: {
-      content: "正在思考中...",
-      role: "assistant",
-      timestamp: Date.now(),
-    },
+    requestPlaceholder: { content: "正在思考中...", role: "assistant" },
     requestFallback: (_, { error, errorInfo, messageInfo }) => {
       if (error.name === "AbortError") {
         return {
           content: messageInfo?.message?.content || "已取消回复",
-          role: "assistant" as const,
-          timestamp: Date.now(),
+          role: "assistant",
         };
       }
       return {
-        content: errorInfo?.error?.message || "网络异常，请稍后重试",
-        role: "assistant" as const,
-        timestamp: Date.now(),
+        content:
+          errorInfo?.message ||
+          errorInfo?.error?.message ||
+          error.message ||
+          "网络异常",
+        role: "assistant",
       };
     },
   });
 
-  // 跟踪正在重新生成的消息ID
   const regeneratingId = ref<string | number | null>(null);
 
-  const handleRegenerate = (messageId: string | number): void => {
+  const handleRegenerate = (messageId: string | number) => {
     regeneratingId.value = messageId;
-    onReload(
-      messageId,
-      {},
-      {
-        extraInfo: { regenerate: true },
-      },
-    );
+    // requestParams 必传；没有额外参数时传 {}
+    onReload(messageId, {}, { extraInfo: { regenerate: true } });
   };
+
+  const bubbleItems = computed(() =>
+    messages.value.map(({ id, message, status }) => ({
+      key: id,
+      role: message.role,
+      content: message.content,
+      loading: status === "loading",
+      footer:
+        message.role === "assistant" ? (
+          <Button
+            type="text"
+            size="small"
+            loading={regeneratingId.value === id && isRequesting.value}
+            disabled={isRequesting.value && regeneratingId.value !== id}
+            onClick={() => handleRegenerate(id)}
+          >
+            {regeneratingId.value === id ? "生成中..." : "重新生成"}
+          </Button>
+        ) : null,
+    })),
+  );
 
   return () => (
     <div>
-      <Bubble.List
+      <BubbleList
+        items={bubbleItems.value}
         role={{
-          assistant: {
-            placement: "start",
-          },
-          user: {
-            placement: "end",
-          },
+          assistant: { placement: "start" },
+          user: { placement: "end" },
         }}
-        items={messages.value.map(msg => ({
-          key: msg.id,
-          content: msg.message.content,
-          role: msg.message.role,
-          loading: msg.status === "loading",
-          footer: msg.message.role === "assistant" && (
-            <Button
-              type="text"
-              size="small"
-              loading={regeneratingId.value === msg.id && isRequesting.value}
-              onClick={() => handleRegenerate(msg.id)}
-              disabled={isRequesting.value && regeneratingId.value !== msg.id}
-            >
-              {regeneratingId.value === msg.id ? "生成中..." : "重新生成"}
-            </Button>
-          ),
-        }))}
       />
-      <div>
-        <Sender
-          loading={isRequesting.value}
-          onSubmit={(content: string) => {
-            onRequest({ query: content });
-            senderRef.value?.clear?.();
-          }}
-          onCancel={abort}
-          ref={senderRef}
-          placeholder="输入消息..."
-          allowSpeech
-          prefix={
-            <Sender.Header
-              title="AI 助手"
-              open={false}
-              styles={{
-                content: { padding: 0 },
-              }}
-            />
-          }
-        />
-      </div>
+      <Sender
+        ref={senderRef}
+        loading={isRequesting.value}
+        placeholder="请输入消息..."
+        allowSpeech
+        onSubmit={content => {
+          onRequest({ query: content });
+          senderRef.value?.clear?.();
+        }}
+        onCancel={abort}
+        prefix={
+          <SenderHeader
+            title="AI 助手"
+            open={false}
+            styles={{ content: { padding: 0 } }}
+          />
+        }
+      />
     </div>
   );
 });

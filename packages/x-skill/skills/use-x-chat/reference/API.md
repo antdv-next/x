@@ -1,66 +1,96 @@
-### useXChat
+# useXChat API
 
-```tsx | pure
+## Signature
+
+```ts
 type useXChat<
-  ChatMessage extends SimpleType = object,
+  ChatMessage extends SimpleType = string,
   ParsedMessage extends SimpleType = ChatMessage,
   Input = RequestParams<ChatMessage>,
   Output = SSEOutput,
-> = (
-  config: XChatConfig<ChatMessage, ParsedMessage, Input, Output>,
-) => XChatConfigReturnType;
-```
-
-<!-- prettier-ignore -->
-| Property | Description | Type | Default | Version |
-| --- | --- | --- | --- | --- |
-| ChatMessage | Message data type, defines the structure of chat messages | object | object | - |
-| ParsedMessage | Parsed message type, message format for component consumption | ChatMessage | ChatMessage | - |
-| Input | Request parameter type, defines the structure of request parameters | RequestParams\<ChatMessage\> | RequestParams\<ChatMessage\> | - |
-| Output | Response data type, defines the format of received response data | SSEOutput | SSEOutput | - |
-
-### XChatConfig
-
-<!-- prettier-ignore -->
-| Property | Description | Type | Default | Version |
-| --- | --- | --- | --- | --- |
-| provider | Data provider used to convert data and requests of different structures into formats that useXChat can consume. The platform includes built-in `DefaultChatProvider` and `OpenAIChatProvider`, and you can also implement your own Provider by inheriting `AbstractChatProvider`. See: [Chat Provider Documentation](/sdk/chat-provider) | AbstractChatProvider\<ChatMessage, Input, Output\> | - | - |
-| conversationKey | Session unique identifier (globally unique), used to distinguish different sessions | string | Symbol('ConversationKey') | - |
-| defaultMessages | Default display messages | MessageInfo\<ChatMessage\>[] \| (info: { conversationKey?: string }) => MessageInfo\<ChatMessage\>[] \| (info: { conversationKey?: string }) => Promise\<MessageInfo\<ChatMessage\>[]\> | - | - |
-| parser | Converts ChatMessage into ParsedMessage for consumption. When not set, ChatMessage is consumed directly. Supports converting one ChatMessage into multiple ParsedMessages | (message: ChatMessage) => BubbleMessage \| BubbleMessage[] | - | - |
-| requestFallback | Fallback message for failed requests. When not provided, no message will be displayed | ChatMessage \| (requestParams: Partial\<Input\>,info: { error: Error; errorInfo: any; messages: ChatMessage[], message: ChatMessage }) => ChatMessage\|Promise\<ChatMessage\> | - | - |
-| requestPlaceholder | Placeholder message during requests. When not provided, no message will be displayed | ChatMessage \| (requestParams: Partial\<Input\>, info: { messages: Message[] }) => ChatMessage \| Promise\<Message\> | - | - |
-
-### XChatConfigReturnType
-
-| Property                    | Description                                                                                       | Type                                                                                                          | Default | Version |
-| --------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ------- | ------- |
-| abort                       | Cancel request                                                                                    | () => void                                                                                                    | -       | -       |
-| isRequesting                | Whether a request is in progress (Vue Ref)                                                        | Ref\<boolean\>                                                                                                | -       | -       |
-| isDefaultMessagesRequesting | Whether the default message list is requesting (Vue Ref)                                          | Ref\<boolean\>                                                                                                | false   | -       |
-| messages                    | Current managed message list content (Vue Ref)                                                    | Ref\<MessageInfo\<ChatMessage\>[]\>                                                                           | -       | -       |
-| parsedMessages              | Content translated through `parser` (Vue Ref)                                                     | Ref\<MessageInfo\<ParsedMessages\>[]\>                                                                        | -       | -       |
-| onReload                    | Regenerate, will send request to backend and update the message with new returned data            | (id: string \| number, requestParams: Partial\<Input\>, opts: { extra: AnyObject }) => void                   | -       | -       |
-| onRequest                   | Add a Message and trigger request                                                                 | (requestParams: Partial\<Input\>, opts: { extra: AnyObject }) => void                                         | -       | -       |
-| setMessages                 | Directly modify messages without triggering requests                                              | (messages: Partial\<MessageInfo\<ChatMessage\>\>[]) => void                                                   | -       | -       |
-| setMessage                  | Directly modify a single message without triggering requests                                      | (id: string \| number, info: Partial\<MessageInfo\<ChatMessage\>\>) => void                                   | -       | -       |
-| removeMessage               | Deleting a single message will not trigger a request                                              | (id: string \| number) => void                                                                                | -       | -       |
-| queueRequest                | Will add the request to a queue, waiting for the conversationKey to be initialized before sending | (conversationKey: string \| symbol, requestParams: Partial\<Input\>, opts?: { extraInfo: AnyObject }) => void | -       | -       |
-
-#### MessageInfo
-
-```ts
-interface MessageInfo<ChatMessage> {
-  id: number | string;
-  message: ChatMessage;
-  status: MessageStatus;
-  extra?: AnyObject;
+> = (config: XChatConfig<ChatMessage, ParsedMessage, Input, Output>) => {
+  onRequest: ...
+  onReload: ...
+  abort: () => void
+  isRequesting: ComputedRef<boolean>
+  isDefaultMessagesRequesting: Readonly<Ref<boolean>>
+  messages: ShallowRef<MessageInfo<ChatMessage>[]>
+  parsedMessages: ComputedRef<MessageInfo<ParsedMessage>[]>
+  setMessages: ...
+  setMessage: ...
+  removeMessage: ...
+  queueRequest: ...
 }
 ```
 
-#### MessageStatus
+## XChatConfig
+
+| Property           | Description                                                                                                                                                                                            | Type                                                                                                                                                                                                         | Default                     |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------- |
+| provider           | Converts requests and response chunks into the standard message flow. Built-in `DefaultChatProvider`, `OpenAIChatProvider`, and `DeepSeekChatProvider` are available, or extend `AbstractChatProvider` | `MaybeRef<AbstractChatProvider<ChatMessage, Input, Output>>`                                                                                                                                                 | -                           |
+| conversationKey    | Unique conversation identifier. Changing the ref switches the message store. Defaults to a generated `Symbol`                                                                                          | `MaybeRef<string \| undefined>`                                                                                                                                                                              | `Symbol('ConversationKey')` |
+| defaultMessages    | Initial messages. May be an array, a ref, or a sync/async function receiving `{ conversationKey }`                                                                                                     | `MaybeRef<DefaultMessageInfo<ChatMessage>[]>` \| `(info: { conversationKey?: string }) => DefaultMessageInfo<ChatMessage>[] \| Promise<DefaultMessageInfo<ChatMessage>[]>`                                   | -                           |
+| parser             | Converts `ChatMessage` into `ParsedMessage` for components. May return one message or an array                                                                                                         | `(message: ChatMessage) => ParsedMessage \| ParsedMessage[]`                                                                                                                                                 | -                           |
+| requestPlaceholder | Placeholder message shown while a request is in flight; when absent, no placeholder message is added                                                                                                   | `MaybeRef<ChatMessage>` \| `(requestParams: Partial<Input>, info: { messages: ChatMessage[] }) => ChatMessage`                                                                                               | -                           |
+| requestFallback    | Fallback message shown on failure. When absent, the loading message is marked `error` / `abort` instead. `errorInfo` is optional; `messageInfo` is the current loading/updating message                | `MaybeRef<ChatMessage>` \| `(requestParams: Partial<Input>, info: { error: Error; errorInfo?: any; messages: ChatMessage[]; messageInfo: MessageInfo<ChatMessage> }) => ChatMessage \| Promise<ChatMessage>` | -                           |
+
+> `provider` is typed as optional, but `onRequest`, `onReload`, and `abort` throw `provider is required` when it is missing. In practice, always pass a provider.
+
+## Return value
+
+| Property                    | Description                                                                                   | Type                                                                                                                                                          |
+| --------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| onRequest                   | Add a local message and trigger a request                                                     | `(requestParams: Partial<Input>, opts?: { extraInfo?: AnyObject }) => void`                                                                                   |
+| onReload                    | Regenerate a message. `requestParams` is required; pass `{}` when there are no extra params   | `(id: string \| number, requestParams: Partial<Input>, opts?: { extraInfo?: AnyObject }) => void`                                                             |
+| abort                       | Abort the current request                                                                     | `() => void`                                                                                                                                                  |
+| isRequesting                | Whether the current conversation is requesting                                                | `ComputedRef<boolean>`                                                                                                                                        |
+| isDefaultMessagesRequesting | Whether `defaultMessages` is still loading (useful to disable the sender)                     | `Readonly<Ref<boolean>>`                                                                                                                                      |
+| messages                    | Current message list                                                                          | `ShallowRef<MessageInfo<ChatMessage>[]>`                                                                                                                      |
+| parsedMessages              | Message list transformed through `parser`                                                     | `ComputedRef<MessageInfo<ParsedMessage>[]>`                                                                                                                   |
+| setMessages                 | Replace or update the whole list without triggering a request. Accepts an array or an updater | `(messages: MessageInfo<ChatMessage>[] \| ((ori: MessageInfo<ChatMessage>[]) => MessageInfo<ChatMessage>[])) => boolean`                                      |
+| setMessage                  | Update one message without triggering a request. Accepts a partial message or an updater      | `(id: string \| number, message: Partial<MessageInfo<ChatMessage>> \| ((message: MessageInfo<ChatMessage>) => Partial<MessageInfo<ChatMessage>>)) => boolean` |
+| removeMessage               | Remove one message without triggering a request                                               | `(id: string \| number) => boolean`                                                                                                                           |
+| queueRequest                | Queue a request until the conversation's `defaultMessages` finish loading                     | `(conversationKey: string \| number \| symbol, requestParams: Partial<Input>, opts?: { extraInfo?: AnyObject }) => void`                                      |
+
+## MessageInfo
+
+```ts
+interface MessageInfo<Message> {
+  id: number | string;
+  message: Message;
+  status: MessageStatus;
+  extraInfo?: AnyObject;
+}
+```
+
+`DefaultMessageInfo` is `Pick<MessageInfo, "message"> & Partial<Omit<MessageInfo, "message">>`: `id` is optional and defaults to `default_<index>`, `status` defaults to `local`.
+
+## MessageStatus
 
 ```ts
 type MessageStatus =
   "local" | "loading" | "updating" | "success" | "error" | "abort";
 ```
+
+## Related: useXConversations
+
+For the conversation list itself, use `useXConversations` from the same package:
+
+```ts
+const {
+  conversations,
+  activeConversationKey,
+  setActiveConversationKey,
+  addConversation,
+  removeConversation,
+  setConversation,
+  getConversation,
+  setConversations,
+  getMessages,
+} = useXConversations({
+  defaultConversations: [{ key: "1", label: "New conversation" }],
+  defaultActiveConversationKey: "1",
+});
+```
+
+Pass `activeConversationKey` to `useXChat({ conversationKey: activeConversationKey })` so each conversation keeps its own message store.

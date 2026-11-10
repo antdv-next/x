@@ -1,155 +1,97 @@
-# Complete Example Projects
+# Complete Examples
 
-## Project with Conversation Management
+## Chat with conversation management
 
 ```tsx
-import { defineComponent, ref } from "vue";
-import { useXChat } from "@antdv-next/x-sdk";
-import { chatProvider } from "../services/chatService";
+import { BubbleList, Conversations, Sender } from "@antdv-next/x";
+import { useXChat, useXConversations } from "@antdv-next/x-sdk";
+import { computed, defineComponent } from "vue";
+
 import type { ChatMessage } from "../providers/ChatProvider";
-import {
-  Bubble,
-  Sender,
-  Conversations,
-  type ConversationsProps,
-} from "@antdv-next/x";
+
+import { chatProvider } from "../services/chatService";
 
 const App = defineComponent(() => {
-  const conversations = ref([{ key: "1", label: "New Conversation" }]);
-  const activeKey = ref("1");
-  const senderRef = ref<InstanceType<typeof Sender> | null>(null);
-
-  // Create new conversation
-  const handleNewConversation = () => {
-    const newKey = Date.now().toString();
-    conversations.value.push({
-      key: newKey,
-      label: `Conversation ${conversations.value.length + 1}`,
-    });
-    activeKey.value = newKey;
-  };
-
-  // Delete conversation
-  const handleDeleteConversation = (key: string) => {
-    const filtered = conversations.value.filter(item => item.key !== key);
-    if (filtered.length === 0) {
-      const newKey = Date.now().toString();
-      conversations.value = [{ key: newKey, label: "New Conversation" }];
-    } else {
-      conversations.value = filtered;
-    }
-
-    if (activeKey.value === key) {
-      activeKey.value = conversations.value[0]?.key || "1";
-    }
-  };
+  const {
+    conversations,
+    activeConversationKey,
+    addConversation,
+    removeConversation,
+    setActiveConversationKey,
+  } = useXConversations({
+    defaultConversations: [{ key: "1", label: "New conversation" }],
+    defaultActiveConversationKey: "1",
+  });
 
   const { messages, onRequest, isRequesting, abort } = useXChat<
     ChatMessage,
     ChatMessage,
     { query: string },
-    { content: string; time: string; status: "success" | "error" }
+    { content: string }
   >({
     provider: chatProvider,
-    conversationKey: activeKey,
-    requestFallback: (_, { error }) => {
-      if (error.name === "AbortError") {
-        return {
-          content: "Cancelled",
-          role: "assistant" as const,
-          timestamp: Date.now(),
-        };
-      }
-      return {
-        content: "Request failed",
-        role: "assistant" as const,
-        timestamp: Date.now(),
-      };
-    },
+    conversationKey: activeConversationKey,
   });
 
-  const menuConfig: ConversationsProps["menu"] = conversation => ({
-    items: [
-      {
-        label: "Delete",
-        key: "delete",
-        danger: true,
-      },
-    ],
-    onClick: ({ key: menuKey }) => {
-      if (menuKey === "delete") {
-        handleDeleteConversation(conversation.key);
-      }
-    },
-  });
+  const bubbleItems = computed(() =>
+    messages.value.map(({ id, message, status }) => ({
+      key: id,
+      role: message.role,
+      content: message.content,
+      loading: status === "loading",
+    })),
+  );
+
+  const handleNewConversation = () => {
+    const key = Date.now().toString();
+    addConversation({
+      key,
+      label: `Conversation ${conversations.value.length + 1}`,
+    });
+    setActiveConversationKey(key);
+  };
+
+  const handleDeleteConversation = (key: string) => {
+    removeConversation(key);
+    if (activeConversationKey.value === key) {
+      setActiveConversationKey(conversations.value[0]?.key ?? "");
+    }
+  };
 
   return () => (
     <div style={{ display: "flex", height: "100vh" }}>
-      {/* Conversation List */}
-      <div
-        style={{
-          width: "240px",
-          borderRight: "1px solid #f0f0f0",
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
+      <div style={{ width: "240px", borderRight: "1px solid #f0f0f0" }}>
         <Conversations
-          creation={{
-            onClick: handleNewConversation,
-          }}
           items={conversations.value}
-          activeKey={activeKey.value}
-          menu={menuConfig}
-          onActiveChange={key => {
-            activeKey.value = key;
-          }}
+          activeKey={activeConversationKey.value}
+          creation={{ onClick: handleNewConversation }}
+          onActiveChange={key => setActiveConversationKey(key)}
+          menu={conversation => ({
+            items: [{ key: "delete", label: "Delete", danger: true }],
+            onClick: ({ key }) => {
+              if (key === "delete") handleDeleteConversation(conversation.key);
+            },
+          })}
         />
       </div>
 
-      {/* Chat Area */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-        <div
-          style={{
-            padding: "16px",
-            borderBottom: "1px solid #f0f0f0",
-            fontSize: "16px",
-            fontWeight: 500,
-          }}
-        >
-          {conversations.value.find(c => c.key === activeKey.value)?.label ||
-            "Conversation"}
-        </div>
-
-        <div style={{ flex: 1, padding: "16px", overflow: "auto" }}>
-          <Bubble.List
+        <div style={{ flex: 1, overflow: "auto", padding: "16px" }}>
+          <BubbleList
+            items={bubbleItems.value}
             role={{
-              assistant: {
-                placement: "start",
-              },
-              user: {
-                placement: "end",
-              },
+              assistant: { placement: "start" },
+              user: { placement: "end" },
             }}
-            items={messages.value.map(msg => ({
-              key: msg.id,
-              content: msg.message.content,
-              role: msg.message.role,
-              loading: msg.status === "loading",
-            }))}
           />
         </div>
 
         <div style={{ padding: "16px", borderTop: "1px solid #f0f0f0" }}>
           <Sender
             loading={isRequesting.value}
-            ref={senderRef}
-            onSubmit={(content: string) => {
-              onRequest({ query: content });
-              senderRef.value?.clear?.();
-            }}
-            onCancel={abort}
             placeholder="Enter message..."
+            onSubmit={content => onRequest({ query: content })}
+            onCancel={abort}
           />
         </div>
       </div>
@@ -160,15 +102,17 @@ const App = defineComponent(() => {
 export default App;
 ```
 
-## With State Management Resend
+## Regenerate a reply
 
 ```tsx
-import { defineComponent, ref } from "vue";
+import { BubbleList, Sender, SenderHeader } from "@antdv-next/x";
 import { useXChat } from "@antdv-next/x-sdk";
-import { Bubble, Sender } from "@antdv-next/x";
 import { Button } from "antdv-next";
-import { chatProvider } from "../services/chatService";
+import { computed, defineComponent, ref } from "vue";
+
 import type { ChatMessage } from "../providers/ChatProvider";
+
+import { chatProvider } from "../services/chatService";
 
 const ChatWithRegenerate = defineComponent(() => {
   const senderRef = ref<InstanceType<typeof Sender> | null>(null);
@@ -176,96 +120,84 @@ const ChatWithRegenerate = defineComponent(() => {
     ChatMessage,
     ChatMessage,
     { query: string },
-    { content: string; time: string; status: "success" | "error" }
+    { content: string }
   >({
     provider: chatProvider,
-    requestPlaceholder: {
-      content: "Thinking...",
-      role: "assistant",
-      timestamp: Date.now(),
-    },
+    requestPlaceholder: { content: "Thinking...", role: "assistant" },
     requestFallback: (_, { error, errorInfo, messageInfo }) => {
       if (error.name === "AbortError") {
         return {
           content: messageInfo?.message?.content || "Reply cancelled",
-          role: "assistant" as const,
-          timestamp: Date.now(),
+          role: "assistant",
         };
       }
       return {
         content:
-          errorInfo?.error?.message || "Network error, please try again later",
-        role: "assistant" as const,
-        timestamp: Date.now(),
+          errorInfo?.message ||
+          errorInfo?.error?.message ||
+          error.message ||
+          "Network error",
+        role: "assistant",
       };
     },
   });
 
-  // Track message ID being regenerated
   const regeneratingId = ref<string | number | null>(null);
 
-  const handleRegenerate = (messageId: string | number): void => {
+  const handleRegenerate = (messageId: string | number) => {
     regeneratingId.value = messageId;
-    onReload(
-      messageId,
-      {},
-      {
-        extraInfo: { regenerate: true },
-      },
-    );
+    // requestParams is required; pass {} when there is nothing extra to send
+    onReload(messageId, {}, { extraInfo: { regenerate: true } });
   };
+
+  const bubbleItems = computed(() =>
+    messages.value.map(({ id, message, status }) => ({
+      key: id,
+      role: message.role,
+      content: message.content,
+      loading: status === "loading",
+      footer:
+        message.role === "assistant" ? (
+          <Button
+            type="text"
+            size="small"
+            loading={regeneratingId.value === id && isRequesting.value}
+            disabled={isRequesting.value && regeneratingId.value !== id}
+            onClick={() => handleRegenerate(id)}
+          >
+            {regeneratingId.value === id ? "Generating..." : "Regenerate"}
+          </Button>
+        ) : null,
+    })),
+  );
 
   return () => (
     <div>
-      <Bubble.List
+      <BubbleList
+        items={bubbleItems.value}
         role={{
-          assistant: {
-            placement: "start",
-          },
-          user: {
-            placement: "end",
-          },
+          assistant: { placement: "start" },
+          user: { placement: "end" },
         }}
-        items={messages.value.map(msg => ({
-          key: msg.id,
-          content: msg.message.content,
-          role: msg.message.role,
-          loading: msg.status === "loading",
-          footer: msg.message.role === "assistant" && (
-            <Button
-              type="text"
-              size="small"
-              loading={regeneratingId.value === msg.id && isRequesting.value}
-              onClick={() => handleRegenerate(msg.id)}
-              disabled={isRequesting.value && regeneratingId.value !== msg.id}
-            >
-              {regeneratingId.value === msg.id ? "Generating..." : "Regenerate"}
-            </Button>
-          ),
-        }))}
       />
-      <div>
-        <Sender
-          loading={isRequesting.value}
-          onSubmit={(content: string) => {
-            onRequest({ query: content });
-            senderRef.value?.clear?.();
-          }}
-          onCancel={abort}
-          ref={senderRef}
-          placeholder="Enter message..."
-          allowSpeech
-          prefix={
-            <Sender.Header
-              title="AI Assistant"
-              open={false}
-              styles={{
-                content: { padding: 0 },
-              }}
-            />
-          }
-        />
-      </div>
+      <Sender
+        ref={senderRef}
+        loading={isRequesting.value}
+        placeholder="Enter message..."
+        allowSpeech
+        onSubmit={content => {
+          onRequest({ query: content });
+          senderRef.value?.clear?.();
+        }}
+        onCancel={abort}
+        prefix={
+          <SenderHeader
+            title="AI Assistant"
+            open={false}
+            styles={{ content: { padding: 0 } }}
+          />
+        }
+      />
     </div>
   );
 });

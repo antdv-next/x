@@ -1,12 +1,12 @@
 ---
 name: use-x-chat
-version: 0.0.1
-description: Focus on explaining how to use the useXChat Hook, including custom Provider integration, message management, error handling, etc.
+version: 0.0.3
+description: Use when building Vue chat state with useXChat, including custom Provider integration, message management, error handling, and multi-conversation management.
 ---
 
 # 🎯 Skill Positioning
 
-> **Core Positioning**: Use the `useXChat` Hook to build professional AI conversation applications **Prerequisites**: Already have a custom Chat Provider (refer to [x-chat-provider skill](../x-chat-provider))
+> **Core Positioning**: Use the `useXChat` Hook to build professional AI conversation applications. **Prerequisite**: Already have a custom Chat Provider (refer to [x-chat-provider skill](../x-chat-provider))
 
 ## Table of Contents
 
@@ -20,100 +20,76 @@ description: Focus on explaining how to use the useXChat Hook, including custom 
   - [Message Management](#1-message-management)
   - [Request Control](#2-request-control)
   - [Error Handling](#3-error-handling)
-  - [Complete Example Project](#-complete-example-project)
+  - [Multi-conversation Management](#4-multi-conversation-management)
 - [📋 Prerequisites and Dependencies](#-prerequisites-and-dependencies)
 - [🚨 Development Rules](#-development-rules)
 - [🔗 Reference Resources](#-reference-resources)
-  - [📚 Core Reference Documentation](#-core-reference-documentation)
-  - [🌐 SDK Official Documentation](#-sdk-official-documentation)
-  - [💻 Example Code](#-example-code)
 
 # 🚀 Quick Start
 
 ## 1. Dependency Management
 
-### 🎯 Automatic Dependency Handling
-
-### 📋 System Requirements
-
-- **@antdv-next/x-sdk**: latest version (automatically installed)
-- **@antdv-next/x**: latest version (UI components, automatically installed)
-
-### ⚠️ Version Issue Auto-fix
-
-If version mismatch is detected, the skill will automatically:
-
-- ✅ Prompt current version status
-- ✅ Provide fix suggestions
-- ✅ Use relative paths to ensure compatibility
-
-#### 🎯 Built-in Version Check
-
-The use-x-chat skill has built-in version checking functionality, automatically checking version compatibility on startup:
-
-**🔍 Auto-check Function** The skill will automatically check if the `@antdv-next/x-sdk` version meets requirements on startup:
-
-**📋 Check Contents:**
-
-- ✅ Currently installed version
-- ✅ Whether it meets minimum requirements
-- ✅ Automatically provide fix suggestions
-- ✅ Friendly error prompts
-
-**🛠️ Version Issue Fix** If version mismatch is detected, the skill will provide specific fix commands:
+| Package               | Version Requirement | Purpose                                    |
+| --------------------- | ------------------- | ------------------------------------------ |
+| **@antdv-next/x-sdk** | `>=0.0.4`           | `useXChat`, `useXConversations`, providers |
+| **@antdv-next/x**     | latest              | UI components (Bubble, Sender, ...)        |
 
 ```bash
-# Auto-prompted fix commands
-npm install @antdv-next/x-sdk@latest
+npm install @antdv-next/x-sdk @antdv-next/x
 ```
 
 ## 2. Three-step Integration
 
 ### Step 1: Prepare Provider
 
-This part is handled by the x-chat-provider skill
+This part is handled by the x-chat-provider skill. The XRequest instance passed to a Provider must use `manual: true`; otherwise `AbstractChatProvider` throws `request must be manual`.
 
 ```ts
-import { MyChatProvider } from "./MyChatProvider";
 import { XRequest } from "@antdv-next/x-sdk";
 
-// Recommended to use XRequest as the default request method
+import { MyChatProvider } from "./MyChatProvider";
+
 const provider = new MyChatProvider({
-  // Default use XRequest, no need for custom fetch
-  request: XRequest("https://your-api.com/chat"),
-  // When requestPlaceholder is set, placeholder message will be displayed before request starts
-  requestPlaceholder: {
-    content: "Thinking...",
-    role: "assistant",
-    timestamp: Date.now(),
-  },
-  // When requestFallback is set, fallback message will be displayed when request fails
-  requestFallback: (_, { error, errorInfo, messageInfo }) => {
-    if (error.name === "AbortError") {
-      return {
-        content: messageInfo?.message?.content || "Reply cancelled",
-        role: "assistant" as const,
-        timestamp: Date.now(),
-      };
-    }
-    return {
-      content:
-        errorInfo?.error?.message || "Network error, please try again later",
-      role: "assistant" as const,
-      timestamp: Date.now(),
-    };
-  },
+  // manual: true is required for Provider usage
+  request: XRequest("https://your-api.com/chat", { manual: true }),
 });
 ```
 
 ### Step 2: Basic Usage
 
 ```tsx
-import { defineComponent } from "vue";
 import { useXChat } from "@antdv-next/x-sdk";
+import { defineComponent } from "vue";
 
 const ChatComponent = defineComponent(() => {
-  const { messages, onRequest, isRequesting } = useXChat({ provider });
+  const { messages, onRequest, isRequesting } = useXChat({
+    provider,
+    // Show a placeholder while the request is in flight.
+    requestPlaceholder: {
+      content: "Thinking...",
+      role: "assistant",
+      timestamp: Date.now(),
+    },
+    // Show a fallback message if the request fails.
+    requestFallback: (_, { error, errorInfo, messageInfo }) => {
+      if (error.name === "AbortError") {
+        return {
+          content: messageInfo?.message?.content || "Reply cancelled",
+          role: "assistant" as const,
+          timestamp: Date.now(),
+        };
+      }
+      return {
+        content:
+          errorInfo?.message ||
+          errorInfo?.error?.message ||
+          error.message ||
+          "Network error, please try again later",
+        role: "assistant" as const,
+        timestamp: Date.now(),
+      };
+    },
+  });
 
   return () => (
     <div>
@@ -122,7 +98,12 @@ const ChatComponent = defineComponent(() => {
           {msg.message.role}: {msg.message.content}
         </div>
       ))}
-      <button onClick={() => onRequest({ query: "Hello" })}>Send</button>
+      <button
+        disabled={isRequesting.value}
+        onClick={() => onRequest({ query: "Hello" })}
+      >
+        Send
+      </button>
     </div>
   );
 });
@@ -130,17 +111,34 @@ const ChatComponent = defineComponent(() => {
 
 ### Step 3: UI Integration
 
+`BubbleList` expects `BubbleItemType[]`, not `MessageInfo[]`; map the message list before passing it. The exported component is `BubbleList` (there is no `Bubble.List` in Vue).
+
 ```tsx
-import { defineComponent } from "vue";
-import { Bubble, Sender } from "@antdv-next/x";
+import { BubbleList, Sender } from "@antdv-next/x";
 import { useXChat } from "@antdv-next/x-sdk";
+import { computed, defineComponent } from "vue";
 
 const ChatUI = defineComponent(() => {
   const { messages, onRequest, isRequesting, abort } = useXChat({ provider });
 
+  const bubbleItems = computed(() =>
+    messages.value.map(({ id, message, status }) => ({
+      key: id,
+      role: message.role,
+      content: message.content,
+      loading: status === "loading",
+    })),
+  );
+
   return () => (
     <div style={{ height: "600px" }}>
-      <Bubble.List items={messages.value} />
+      <BubbleList
+        items={bubbleItems.value}
+        role={{
+          user: { placement: "end" },
+          assistant: { placement: "start" },
+        }}
+      />
       <Sender
         loading={isRequesting.value}
         onSubmit={content => onRequest({ query: content })}
@@ -173,10 +171,10 @@ interface MessageInfo<Message> {
   id: number | string; // Message unique identifier
   message: Message; // Actual message content
   status: MessageStatus; // Sending status
-  extraInfo?: AnyObject; // Extended information
+  extraInfo?: AnyObject; // Extra per-request information
 }
 
-// Message status enum
+// Message status
 type MessageStatus =
   "local" | "loading" | "updating" | "success" | "error" | "abort";
 ```
@@ -186,6 +184,33 @@ type MessageStatus =
 > 💡 **Tip**: API may update with versions, it is recommended to check [official documentation](https://github.com/antdv-next/x/blob/main/packages/docs/src/pages/sdk/use-x-chat.en-US.md) for the latest information
 
 Core functionality reference content [CORE.md](reference/CORE.md)
+
+## 4. Multi-conversation Management
+
+`useXChat` keeps one message store per `conversationKey`. Manage the conversation list with `useXConversations` from the same package, then pass its active key to `useXChat`:
+
+```ts
+import { useXChat, useXConversations } from "@antdv-next/x-sdk";
+
+const {
+  conversations,
+  activeConversationKey,
+  addConversation,
+  removeConversation,
+} = useXConversations({
+  defaultConversations: [{ key: "1", label: "New conversation" }],
+  defaultActiveConversationKey: "1",
+});
+
+const { messages, onRequest, queueRequest } = useXChat({
+  provider,
+  conversationKey: activeConversationKey,
+});
+```
+
+- `conversationKey` accepts a ref; changing it switches the message store automatically.
+- Call `queueRequest(conversationKey, params)` when you need to send before async `defaultMessages` have loaded; the request runs after they settle.
+- `useXConversations` also exposes `setActiveConversationKey`, `setConversation`, `getConversation`, `setConversations`, and `getMessages`.
 
 # 📋 Prerequisites and Dependencies
 
@@ -233,12 +258,13 @@ Core functionality reference content [CORE.md](reference/CORE.md)
 
 ## 📚 Core Reference Documentation
 
-- [API.md](reference/API.md) - Complete API reference documentation
-- [EXAMPLES.md](reference/EXAMPLES.md) - All practical example code
+- [API.md](reference/API.md) - Complete API reference, return values, `MessageInfo`, `useXConversations`
+- [EXAMPLES.md](reference/EXAMPLES.md) - Practical example code
 
 ## 🌐 SDK Official Documentation
 
 - [useXChat Official Documentation](https://github.com/antdv-next/x/blob/main/packages/docs/src/pages/sdk/use-x-chat.en-US.md)
+- [useXConversations Official Documentation](https://github.com/antdv-next/x/blob/main/packages/docs/src/pages/sdk/use-x-conversations.en-US.md)
 - [XRequest Official Documentation](https://github.com/antdv-next/x/blob/main/packages/docs/src/pages/sdk/x-request.en-US.md)
 - [Chat Provider Official Documentation](https://github.com/antdv-next/x/blob/main/packages/docs/src/pages/sdk/chat-provider.en-US.md)
 

@@ -1,6 +1,6 @@
 ---
 name: x-request
-version: 0.0.1
+version: 0.0.3
 description: Focus on explaining the practical configuration and usage of XRequest, providing accurate configuration instructions based on official documentation
 ---
 
@@ -41,16 +41,16 @@ description: Focus on explaining the practical configuration and usage of XReque
 
 | Package               | Version Requirement | Auto Install | Purpose                          |
 | --------------------- | ------------------- | ------------ | -------------------------------- |
-| **@antdv-next/x-sdk** | ≥2.2.2              | ✅           | Core SDK, includes XRequest tool |
+| **@antdv-next/x-sdk** | `>=0.0.4`           | ✅           | Core SDK, includes XRequest tool |
 
 ### 🛠️ One-click Installation
 
 ```bash
-# Recommended to use tnpm
-tnpm install @antdv-next/x-sdk
+# npm
+npm install @antdv-next/x-sdk
 
-# Or use npm
-npm add @antdv-next/x-sdk
+# pnpm
+pnpm add @antdv-next/x-sdk
 
 # Check version
 npm ls @antdv-next/x-sdk
@@ -66,13 +66,13 @@ import { XRequest } from "@antdv-next/x-sdk";
 // Minimal configuration: only need to provide API URL
 const request = XRequest("https://api.example.com/chat");
 
-// For manual control (used in Provider scenarios)
+// For manual control (required in Provider scenarios)
 const providerRequest = XRequest("https://api.example.com/chat", {
-  manual: true, // Usually only this needs explicit configuration
+  manual: true,
 });
 ```
 
-> 💡 **Tip**: XRequest has built-in reasonable default configurations. In most cases, you only need to provide the API URL to use it.
+> 💡 **Tip**: XRequest has built-in reasonable defaults. `baseURL` accepts a string or a ref, and `options` is optional. When the request is passed to a Chat Provider, `manual: true` is mandatory — otherwise `AbstractChatProvider` throws `request must be manual`.
 
 # 📦 Technology Stack Overview
 
@@ -101,6 +101,13 @@ graph TD
 # 🔧 Core Configuration Details
 
 Core functionality reference content [CORE.md](reference/CORE.md)
+
+## Request and response behavior
+
+- Requests are always sent with `POST`; other `RequestInit` fields are forwarded, but `method` is overridden.
+- `text/event-stream` responses are split by `streamSeparator` (`\n\n`), then `partSeparator` (`\n`), then `kvSeparator` (`:`). Repeated `data` fields in one event are joined with `\n`, and a custom multi-character `kvSeparator` is consumed in full.
+- `application/json` responses with `success: false` call `onError(error, payload, headers)` instead of `onSuccess`.
+- `run()` returns a boolean; `state` exposes `isTimeout`, `isStreamTimeout`, and `isRequesting` reactively.
 
 # 🛡️ Security Guide
 
@@ -188,14 +195,17 @@ validateSecurity({
 ```typescript
 import { XRequest } from "@antdv-next/x-sdk";
 
-// Test interface availability
+// Test interface availability (runs immediately because `manual` is not set)
 const testRequest = XRequest("https://httpbin.org/post", {
   params: { test: "data" },
+  callbacks: {
+    onSuccess: chunks => console.log("success", chunks),
+    onError: error => console.error("failed", error),
+  },
 });
 
-// Send request immediately
-const response = await testRequest();
-console.log(response);
+// Or await the in-flight request directly
+await testRequest.asyncHandler;
 ```
 
 ## Integration with Other Skills
@@ -337,4 +347,4 @@ graph LR
 
 ## 💻 Example Code
 
-- [custom-provider-width-ui.tsx](https://github.com/antdv-next/x/blob/main/packages/docs/src/pages/sdk/demo/chat-provider-with-ui.vue) - Complete example of custom Provider
+- [chat-provider-with-ui.vue](https://github.com/antdv-next/x/blob/main/packages/docs/src/pages/sdk/demo/chat-provider-with-ui.vue) - Complete example of custom Provider

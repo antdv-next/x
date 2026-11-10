@@ -1,6 +1,6 @@
 ---
 name: x-markdown
-version: 0.0.1
+version: 0.0.3
 description: 当任务涉及 @antdv-next/x-markdown 的 Markdown 渲染、流式输出、自定义组件映射、插件、主题或聊天富内容展示时使用。
 ---
 
@@ -36,13 +36,15 @@ description: 当任务涉及 @antdv-next/x-markdown 的 Markdown 渲染、流式
 
 # 🚀 快速决策指南
 
-| 当你需要...             | 优先阅读                                 | 典型结果                                     |
-| ----------------------- | ---------------------------------------- | -------------------------------------------- |
-| 用最小配置渲染 Markdown | [CORE.md](reference/CORE.md)             | 用 `XMarkdown` 渲染基础内容                  |
-| 渲染 LLM 流式输出       | [STREAMING.md](reference/STREAMING.md)   | 正确处理 `hasNextChunk`、占位符、尾部指示器  |
-| 把标签映射到业务组件    | [EXTENSIONS.md](reference/EXTENSIONS.md) | 为自定义标签、代码块、富内容组件建立稳定映射 |
-| 增加插件或主题定制      | [EXTENSIONS.md](reference/EXTENSIONS.md) | 完成插件导入、主题类名接入、最小 CSS 覆盖    |
-| 查看属性细节和默认值    | [API.md](reference/API.md)               | 获取 `XMarkdown` 与 streaming 的完整属性表   |
+| 当你需要...             | 优先阅读                                 | 典型结果                                      |
+| ----------------------- | ---------------------------------------- | --------------------------------------------- |
+| 用最小配置渲染 Markdown | [CORE.md](reference/CORE.md)             | 用 `XMarkdown` 渲染基础内容                   |
+| 渲染 LLM 流式输出       | [STREAMING.md](reference/STREAMING.md)   | 布尔预设或 `hasNextChunk`、占位符、尾部指示器 |
+| 优化长流性能            | [STREAMING.md](reference/STREAMING.md)   | `incremental` 分段，只重新渲染仍在增长的一段  |
+| 增加打字机或淡入效果    | [STREAMING.md](reference/STREAMING.md)   | `streaming.typewriter` 与 `animationConfig`   |
+| 把标签映射到业务组件    | [EXTENSIONS.md](reference/EXTENSIONS.md) | 稳定的 `components` / `componentsProps` 映射  |
+| 增加插件或主题定制      | [EXTENSIONS.md](reference/EXTENSIONS.md) | 完成插件导入、主题类名接入、最小 CSS 覆盖     |
+| 查看属性细节和默认值    | [API.md](reference/API.md)               | 获取 `XMarkdown` 与 streaming 的完整属性表    |
 
 # 🛠 推荐工作流
 
@@ -53,20 +55,32 @@ description: 当任务涉及 @antdv-next/x-markdown 的 Markdown 渲染、流式
 
 ## 最小使用示例
 
-```tsx
+```vue
+<script setup>
 import { XMarkdown } from "@antdv-next/x-markdown";
+</script>
 
-export default () => <XMarkdown content="# Hello" />;
+<template>
+  <XMarkdown content="# Hello" />
+</template>
+```
+
+流式场景最短且正确的写法是布尔预设：
+
+```vue
+<XMarkdown :content="content" :streaming="isStreaming" />
 ```
 
 # 🚨 开发规则
 
 - `components` 映射尽量保持稳定，不要在每次渲染时创建新的内联组件对象。
-- 最后一块内容必须设置 `streaming.hasNextChunk = false`，否则不完整占位内容不会被刷新成最终结果。
-- 谨慎处理原始 HTML。如果只想保留文本展示，优先使用 `escapeRawHtml`。
-- 如果必须渲染 HTML，请显式审查 `dompurifyConfig`，不要依赖模糊默认行为。
-- 主题覆盖尽量最小化。先继承 `x-markdown-light` 或 `x-markdown-dark`，只改必要变量。
+- 固定额外 props 用 `componentsProps`，不要用内联闭包；这样组件引用才能保持稳定。
+- LLM 输出优先使用 `:streaming="isStreaming"`（布尔预设）。对象形式下最后一块必须设置 `hasNextChunk = false`，否则不完整占位内容不会被刷新成最终结果。
+- 长流开启 `incremental`；已完成的段会停止重新解析和渲染。
+- 谨慎处理原始 HTML。只保留文本展示时使用 `escapeRawHtml`；原始 HTML 内部会净化，没有 `dompurifyConfig` 属性。
+- 主题覆盖尽量最小化。同时引入 `themes/index.css` 与 `x-markdown-light` / `x-markdown-dark`，只改必要变量。
 - 如果自定义组件依赖完整语法，再在 `streamStatus === 'done'` 时执行昂贵逻辑。
+- `config`、`streaming`、`components`、`componentsProps` 尽量放在组件外部保持稳定（模块常量或 `computed`）。
 
 # 🤝 技能协作
 
@@ -88,13 +102,13 @@ export default () => <XMarkdown content="# Hello" />;
 - [CORE.md](reference/CORE.md) - 包职责、安装与起步、安全默认值、常见渲染模式
 - [STREAMING.md](reference/STREAMING.md) - 分块渲染、不完整语法恢复、loading/done 行为
 - [EXTENSIONS.md](reference/EXTENSIONS.md) - 组件映射、插件、主题、自定义标签建议
-- [API.md](reference/API.md) - 从官方 `x-markdown` 文档生成的 API 参考
+- [API.md](reference/API.md) - 与当前源码对齐的属性表、流式选项与默认值
 
 ## 官方文档
 
-- [XMarkdown 介绍](https://github.com/antdv-next/x/blob/main/packages/docs/src/pages/markdown/introduce.zh-CN.md)
+- [XMarkdown 介绍](https://github.com/antdv-next/x/blob/main/packages/docs/src/pages/markdown/index.zh-CN.md)
 - [XMarkdown 示例](https://github.com/antdv-next/x/blob/main/packages/docs/src/pages/markdown/examples.zh-CN.md)
 - [XMarkdown 流式渲染](https://github.com/antdv-next/x/blob/main/packages/docs/src/pages/markdown/streaming.zh-CN.md)
-- [XMarkdown Components](https://github.com/antdv-next/x/blob/main/packages/docs/src/pages/markdown/components.zh-CN.md)
 - [XMarkdown 插件](https://github.com/antdv-next/x/blob/main/packages/docs/src/pages/markdown/plugins.zh-CN.md)
+- [XMarkdown LaTeX 插件](https://github.com/antdv-next/x/blob/main/packages/docs/src/pages/markdown/plugin-latex.zh-CN.md)
 - [XMarkdown 主题](https://github.com/antdv-next/x/blob/main/packages/docs/src/pages/markdown/themes.zh-CN.md)

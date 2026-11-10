@@ -1,24 +1,28 @@
 ## Scenario1: OpenAI Format
 
-OpenAI format uses built-in Provider, use OpenAIProvider:
+OpenAI format uses the built-in provider `OpenAIChatProvider`. The request must be manual because the Provider controls when it runs:
 
 ```ts
-import { OpenAIProvider } from "@antdv-next/x-sdk";
+import { OpenAIChatProvider, XRequest } from "@antdv-next/x-sdk";
 
-const provider = new OpenAIProvider({
-  request: XRequest("https://api.openai.com/v1/chat/completions"),
+const provider = new OpenAIChatProvider({
+  request: XRequest("https://api.openai.com/v1/chat/completions", {
+    manual: true,
+  }),
 });
 ```
 
-## Scenario2 DeepSeek Format
+## Scenario2: DeepSeek Format
 
-DeepSeek format uses built-in Provider, use DeepSeekProvider:
+DeepSeek format uses the built-in provider `DeepSeekChatProvider`:
 
 ```ts
-import { DeepSeekProvider } from "@antdv-next/x-sdk";
+import { DeepSeekChatProvider, XRequest } from "@antdv-next/x-sdk";
 
-const provider = new DeepSeekProvider({
-  request: XRequest("https://api.deepseek.com/v1/chat/completions"),
+const provider = new DeepSeekChatProvider({
+  request: XRequest("https://api.deepseek.com/v1/chat/completions", {
+    manual: true,
+  }),
 });
 ```
 
@@ -28,23 +32,27 @@ const provider = new DeepSeekProvider({
 
 ```ts
 transformMessage(info) {
-  const { originMessage, chunk } = info || {};
-  const data = JSON.parse(chunk.data);
+  const { originMessage, chunk } = info;
+
+  if (!chunk?.data) {
+    return originMessage ?? { content: "", role: "assistant" };
+  }
+
   try {
-   if (data.error) {
-    return {
-      ...originMessage,
-      content: data.error.message,
-      status: 'error',
-    };
+    const data = JSON.parse(chunk.data);
+    if (data.error) {
+      return {
+        ...originMessage,
+        content: data.error.message,
+        role: "assistant",
+      };
+    }
+  } catch {
+    // Keep the accumulated message on malformed payloads.
   }
-  // Other normal processing logic
-  } catch (error) {
-  return {
-      ...originMessage,
-      status: 'error',
-    };
-  }
+
+  // Normal accumulation/processing logic
+  return originMessage ?? { content: "", role: "assistant" };
 }
 ```
 
@@ -60,12 +68,12 @@ interface MyOutput {
 }
 
 transformMessage(info) {
-  const { originMessage, chunk } = info || {};
+  const { originMessage, chunk } = info;
 
   return {
     ...originMessage,
-    content: chunk.content,
-    metadata: chunk.metadata, // Can extend MyMessage type
+    content: `${originMessage?.content || ""}${chunk?.content || ""}`,
+    metadata: chunk?.metadata, // Extend MyMessage type if needed
   };
 }
 ```

@@ -52,7 +52,8 @@ const request = XRequest("https://your-api.com/chat", {
   params: {
     query: "Hello",
   },
-  manual: true, // ⚠️ Must be set to true when used in provider
+  // `manual` is omitted so the request starts immediately and callbacks fire.
+  // Set `manual: true` only when the caller (e.g. a Chat Provider) controls `run()`.
   callbacks: {
     onSuccess: messages => {
       setStatus("success");
@@ -70,21 +71,20 @@ const request = XRequest("https://your-api.com/chat", {
 });
 ```
 
-> ⚠️ **Important Reminder**: When XRequest is used in x-chat-provider or use-x-chat provider, `manual: true` is a required configuration, otherwise the request will be sent immediately instead of waiting for invocation.
+> ⚠️ **Important Reminder**: When XRequest is used in x-chat-provider or use-x-chat provider, `manual: true` is a required configuration, otherwise `AbstractChatProvider` throws `request must be manual`.
 
-````
-
-### With URL Parameters
+### With Parameters
 
 ```typescript
-const request = XRequest('https://your-api.com/chat', {
-  method: 'GET',
+const request = XRequest("https://your-api.com/chat", {
   params: {
-    model: 'gpt-3.5-turbo',
+    model: "gpt-3.5-turbo",
     max_tokens: 1000,
   },
 });
-````
+```
+
+`params` is merged into the JSON body. XRequest always sends `POST`; a `method: "GET"` option is overridden by the implementation.
 
 # 4. Streaming Configuration
 
@@ -145,47 +145,90 @@ const request = XRequest("/api/proxy/chat", {
 
 # 6. Custom Stream Transformers
 
-When AI service providers return non-standard formats, use `transformStream` for custom data transformation.
+When AI service providers return non-standard formats, use `transformStream` for custom data transformation. XRequest decodes the response body to UTF-8 strings first, so the transformer receives `string` chunks and must enqueue the `Output` objects your callbacks expect.
 
 #### Basic Example
 
 ```typescript
-const request = XRequest("https://api.example.com/chat", {
-  params: { message: "Hello" },
-  transformStream: () =>
-    new TransformStream({
-      transform(chunk, controller) {
-        // TextDecoder converts binary data to string
-        const text = new TextDecoder().decode(chunk);
-        const lines = text.split("\n");
-
-        for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            const data = line.slice(6);
-            if (data !== "[DONE]") {
-              // TextEncoder converts string back to binary
-              controller.enqueue(new TextEncoder().encode(data));
-            }
-          }
+// Output is { content: string } here
+const request = XRequest<{ message: string }, { content: string }>(
+  "https://api.example.com/chat",
+  {
+    params: { message: "Hello" },
+    transformStream: () => {
+      let buffer = "";
+      const processLine = (
+        line: string,
+        controller: TransformStreamDefaultController,
+      ) => {
+        if (!line.startsWith("data: ")) return;
+        const data = line.slice(6);
+        if (data !== "[DONE]") {
+          controller.enqueue({ content: data });
         }
-      },
-    }),
-});
+      };
+
+      return new TransformStream({
+        transform(chunk, controller) {
+          // `chunk` is already a decoded string; do not call TextDecoder again
+          const lines = (buffer + chunk).split("\n");
+          buffer = lines.pop() ?? "";
+          for (const rawLine of lines) {
+            processLine(
+              rawLine.endsWith("\r") ? rawLine.slice(0, -1) : rawLine,
+              controller,
+            );
+          }
+        },
+        flush(controller) {
+          processLine(
+            buffer.endsWith("\r") ? buffer.slice(0, -1) : buffer,
+            controller,
+          );
+        },
+      });
+    },
+  },
+);
 ```
 
 #### Common Transformation Templates
 
 ```typescript
-// OpenAI format
-const openaiStream = () =>
-  new TransformStream({
+// OpenAI SSE format: reuse this factory so every request gets a new stream
+const openaiStream = () => {
+  let buffer = "";
+  const processLine = (
+    line: string,
+    controller: TransformStreamDefaultController,
+  ) => {
+    if (!line.startsWith("data: ")) return;
+    const data = line.slice(6);
+    if (data === "[DONE]") return;
+    const json = JSON.parse(data);
+    const content = json.choices?.[0]?.delta?.content || "";
+    if (content) {
+      controller.enqueue({ content });
+    }
+  };
+
+  return new TransformStream({
     transform(chunk, controller) {
-      const text = new TextDecoder().decode(chunk);
-      const data = JSON.parse(text);
-      const content = data.choices?.[0]?.delta?.content || "";
-      controller.enqueue(new TextEncoder().encode(content));
+      const lines = (buffer + chunk).split("\n");
+      buffer = lines.pop() ?? "";
+      for (const rawLine of lines) {
+        const line = rawLine.endsWith("\r") ? rawLine.slice(0, -1) : rawLine;
+        processLine(line, controller);
+      }
+    },
+    flush(controller) {
+      processLine(
+        buffer.endsWith("\r") ? buffer.slice(0, -1) : buffer,
+        controller,
+      );
     },
   });
+};
 
 // Usage example
 const request = XRequest(url, {
@@ -194,30 +237,4 @@ const request = XRequest(url, {
 });
 ```
 
-> ⚠️ **Note**: ReadableStream can only be locked by one reader, avoid reusing the same instance.
-
-#### 🔍 TextDecoder/TextEncoder Explanation
-
-**When are they needed?**
-
-| Scenario                     | Data Type                 | Need Conversion?          |
-| ---------------------------- | ------------------------- | ------------------------- |
-| **Standard fetch API**       | `Uint8Array` binary       | ✅ Need TextDecoder       |
-| **XRequest wrapper**         | May be string             | ❌ May not need           |
-| **Custom stream processing** | Depends on implementation | 🤔 Need to determine type |
-
-**Practical Usage Suggestions:**
-
-```typescript
-transformStream: () =>
-  new TransformStream({
-    transform(chunk, controller) {
-      // Safe approach: check type first
-      const text =
-        typeof chunk === "string" ? chunk : new TextDecoder().decode(chunk);
-
-      // Now text is definitely a string
-      controller.enqueue(text);
-    },
-  });
-```
+> ⚠️ **Note**: A Web `ReadableStream` can be locked by only one reader, so never reuse a `TransformStream` instance. Always pass a factory (`() => new TransformStream(...)`), as above. These examples buffer incomplete lines between chunks; production parsers should also handle the full SSE specification, including multiline `data` fields and event boundaries.

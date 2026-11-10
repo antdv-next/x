@@ -1,128 +1,115 @@
-### XRequestFunction
+# XRequest API
 
-```ts | pure
-type XRequestFunction<
-  Input = Record<PropertyKey, any>,
-  Output = Record<string, string>,
-> = (
-  baseURL: string,
-  options: XRequestOptions<Input, Output>,
-) => XRequestClass<Input, Output>;
+## XRequestFunction
+
+```ts
+type XRequestFunction<Input = AnyObject, Output = SSEOutput> = (
+  baseURL: MaybeRef<string>,
+  options?: XRequestConfigOptions<Input, Output>,
+) => AbstractXRequestClass<Input, Output>;
 ```
 
-### XRequestFunction
+`baseURL` may be a string or a ref. `options` is optional; the request runs immediately unless `manual: true`.
 
-| Property | Description      | Type                             | Default | Version |
-| -------- | ---------------- | -------------------------------- | ------- | ------- |
-| baseURL  | API endpoint URL | string                           | -       | -       |
-| options  | Request options  | XRequestOptions\<Input, Output\> | -       | -       |
+## XRequestConfigOptions
 
-### XRequestOptions
+| Property        | Description                                                                                           | Type                                                                                                                                      | Default            |
+| --------------- | ----------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
+| callbacks       | Request callbacks                                                                                     | `XRequestCallbacks<Output>`                                                                                                               | -                  |
+| params          | Request parameters. Merged into the JSON body                                                         | `MaybeRef<Partial<Input>>`                                                                                                                | -                  |
+| headers         | Additional request headers. Merged over global headers                                                | `MaybeRef<Record<string, string>>`                                                                                                        | -                  |
+| timeout         | Time from sending the request to connecting to the service, in ms                                     | `MaybeRef<number>`                                                                                                                        | -                  |
+| streamTimeout   | Maximum interval between chunks in stream mode, in ms                                                 | `MaybeRef<number>`                                                                                                                        | -                  |
+| fetch           | Custom fetch implementation                                                                           | `(baseURL: Parameters<typeof fetch>[0], options: XRequestOptions<Input, Output>) => Promise<Response>`                                    | `globalThis.fetch` |
+| middlewares     | Pre/post request middlewares                                                                          | `XFetchMiddlewares<Input, Output>`                                                                                                        | -                  |
+| transformStream | Custom stream transformer. Also accepts a factory receiving `(baseURL, responseHeaders)`              | `XStreamOptions<Output>["transformStream"] \| ((baseURL: string, responseHeaders: Headers) => XStreamOptions<Output>["transformStream"])` | -                  |
+| streamSeparator | Separates stream events. Ignored when `transformStream` is set                                        | `MaybeRef<string>`                                                                                                                        | `"\n\n"`           |
+| partSeparator   | Separates parts inside one event. Ignored when `transformStream` is set                               | `MaybeRef<string>`                                                                                                                        | `"\n"`             |
+| kvSeparator     | Separates key and value inside a part. Ignored when `transformStream` is set                          | `MaybeRef<string>`                                                                                                                        | `":"`              |
+| manual          | When `true`, the request is not sent until `run()` is called. Required when passed to a Chat Provider | `MaybeRef<boolean>`                                                                                                                       | `false`            |
+| retryInterval   | Retry interval in ms. No retry when unset                                                             | `MaybeRef<number>`                                                                                                                        | -                  |
+| retryTimes      | Maximum retry attempts                                                                                | `MaybeRef<number>`                                                                                                                        | -                  |
 
-| Property        | Description                                                                                                      | Type                                                                                                                                        | Default | Version |
-| --------------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ------- | ------- |
-| callbacks       | Request callback handlers                                                                                        | XRequestCallbacks\<Output\>                                                                                                                 | -       | -       |
-| params          | Request parameters                                                                                               | Input                                                                                                                                       | -       | -       |
-| headers         | Additional request headers                                                                                       | Record\<string, string\>                                                                                                                    | -       | -       |
-| timeout         | Request timeout configuration (time from sending request to connecting to service), unit: ms                     | number                                                                                                                                      | -       | -       |
-| streamTimeout   | Stream mode data timeout configuration (time interval for each chunk return), unit: ms                           | number                                                                                                                                      | -       | -       |
-| fetch           | Custom fetch object                                                                                              | `typeof fetch`                                                                                                                              | -       | -       |
-| middlewares     | Middlewares for pre- and post-request processing                                                                 | XFetchMiddlewares                                                                                                                           | -       | -       |
-| transformStream | Stream processor                                                                                                 | XStreamOptions\<Output\>['transformStream'] \| ((baseURL: string, responseHeaders: Headers) => XStreamOptions\<Output\>['transformStream']) | -       | -       |
-| streamSeparator | Stream separator, used to separate different data streams. Does not take effect when transformStream has a value | string                                                                                                                                      | \n\n    | 2.2.0   |
-| partSeparator   | Part separator, used to separate different parts of data. Does not take effect when transformStream has a value  | string                                                                                                                                      | \n      | 2.2.0   |
-| kvSeparator     | Key-value separator, used to separate keys and values. Does not take effect when transformStream has a value     | string                                                                                                                                      | :       | 2.2.0   |
-| manual          | Whether to manually control request sending. When `true`, need to manually call `run` method                     | boolean                                                                                                                                     | false   | -       |
-| retryInterval   | Retry interval when request is interrupted or fails, in milliseconds. If not set, automatic retry will not occur | number                                                                                                                                      | -       | -       |
-| retryTimes      | Maximum number of retry attempts. No further retries will be attempted after exceeding this limit                | number                                                                                                                                      | -       | -       |
+> Other `RequestInit` fields are forwarded, but `method` is always set to `POST` by the implementation. There is no `GET` mode.
 
-### XRequestCallbacks
+## XRequestCallbacks
 
-| Property  | Description                                                                                                                                                                                                                                                                                                                              | Type                                                                                              | Default | Version |
-| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ------- | ------- |
-| onSuccess | Success callback. When used with Chat Provider, additionally gets the assembled message                                                                                                                                                                                                                                                  | (chunks: Output[], responseHeaders: Headers, message: ChatMessage) => void                        | -       | -       |
-| onError   | Error handling callback. `onError` can return a number indicating the retry interval (in milliseconds) when a request exception occurs. When both `onError` return value and `options.retryInterval` exist, the `onError` return value takes precedence. When used with Chat Provider, additionally gets the assembled fail back message | (error: Error, errorInfo: any, responseHeaders?: Headers, message: ChatMessage) => number \| void | -       | -       |
-| onUpdate  | Message update callback. When used with Chat Provider, additionally gets the assembled message                                                                                                                                                                                                                                           | (chunk: Output, responseHeaders: Headers, message: ChatMessage) => void                           | -       | -       |
+| Property  | Description                                                                                                                                                      | Type                                                                                                         |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| onSuccess | Success callback. When used with a Chat Provider, also receives the assembled message                                                                            | `(chunks: Output[], responseHeaders: Headers, message?: MessageInfo<ChatMessage>) => void`                   |
+| onError   | Error callback. When used with a Chat Provider, also receives the fallback message. Returning a number uses it as the retry interval (overrides `retryInterval`) | `(error: Error, errorInfo?: any, responseHeaders?: Headers, fallbackMsg?: MessageInfo<ChatMessage>) => void` |
+| onUpdate  | Incremental update callback. When used with a Chat Provider, also receives the assembled message                                                                 | `(chunk: Output, responseHeaders: Headers, message?: MessageInfo<ChatMessage>) => void`                      |
 
-### XRequestClass
+## AbstractXRequestClass / XRequestClass
 
-| Property     | Description                                             | Type                     | Default | Version |
-| ------------ | ------------------------------------------------------- | ------------------------ | ------- | ------- |
-| abort        | Cancel request                                          | () => void               | -       | -       |
-| run          | Manually execute request (effective when `manual=true`) | (params?: Input) => void | -       | -       |
-| isRequesting | Whether currently requesting                            | boolean                  | -       | -       |
+| Member          | Description                                               | Type                                                                                |
+| --------------- | --------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| baseURL         | Base URL (may be a ref)                                   | `MaybeRef<string>`                                                                  |
+| options         | Request options                                           | `XRequestConfigOptions<Input, Output>`                                              |
+| run             | Manually execute the request (only when `manual` is true) | `(params?: Input) => boolean`                                                       |
+| abort           | Abort the request                                         | `() => void`                                                                        |
+| manual          | Whether manual mode is active                             | `boolean`                                                                           |
+| isTimeout       | Whether the connect timeout fired                         | `boolean`                                                                           |
+| isStreamTimeout | Whether the stream chunk timeout fired                    | `boolean`                                                                           |
+| isRequesting    | Whether the request is in flight                          | `boolean`                                                                           |
+| state           | Readonly reactive state                                   | `Readonly<{ isTimeout: boolean; isStreamTimeout: boolean; isRequesting: boolean }>` |
+| asyncHandler    | Promise for the current request                           | `Promise<any>`                                                                      |
 
-### setXRequestGlobalOptions
+## setXRequestGlobalOptions
 
-```ts | pure
+```ts
 type setXRequestGlobalOptions<Input, Output> = (
   options: XRequestGlobalOptions<Input, Output>,
 ) => void;
 ```
 
-### XRequestGlobalOptions
+`XRequestGlobalOptions` is a `Pick` of `headers`, `timeout`, `streamTimeout`, `middlewares`, `fetch`, `transformStream`, and `manual`.
 
-```ts | pure
-type XRequestGlobalOptions<Input, Output> = Pick<
-  XRequestOptions<Input, Output>,
-  | "headers"
-  | "timeout"
-  | "streamTimeout"
-  | "middlewares"
-  | "fetch"
-  | "transformStream"
-  | "manual"
->;
-```
+## XFetchMiddlewares
 
-### XFetchMiddlewares
-
-```ts | pure
-interface XFetchMiddlewares {
+```ts
+interface XFetchMiddlewares<Input, Output> {
   onRequest?: (
-    ...ags: Parameters<typeof fetch>
-  ) => Promise<Parameters<typeof fetch>>;
+    baseURL: Parameters<typeof fetch>[0],
+    options: XRequestOptions<Input, Output>,
+  ) => Promise<[Parameters<typeof fetch>[0], XRequestOptions<Input, Output>]>;
   onResponse?: (response: Response) => Promise<Response>;
 }
 ```
 
+## Response handling
+
+- `text/event-stream`: split with `streamSeparator` (`\n\n` by default), then `partSeparator` (`\n`), then `kvSeparator` (`:`). Repeated `data` fields in one event are joined with `\n`; a multi-character `kvSeparator` is fully consumed.
+- `application/json`: parsed as one chunk. If the payload has `success: false`, an `Error` is created from `message` / `name`, `onError` is called with the payload as `errorInfo`, and the request finishes. Otherwise `onUpdate` and `onSuccess([chunk])` are called.
+- Any other content type throws `The response content-type: ... is not support!`.
+
 ## FAQ
 
-### When using transformStream in XRequest, it causes stream locking issues on the second input request. How to solve this?
+### transformStream causes stream locking on the second request
 
-```ts | pure
-onError TypeError: Failed to execute 'getReader' on 'ReadableStream': ReadableStreamDefaultReader constructor can only accept readable streams that are not yet locked to a reader
-```
+The Web Streams API allows a stream to be locked by only one reader. Return a new stream from a factory instead of reusing one instance:
 
-The Web Streams API stipulates that a stream can only be locked by one reader at the same time. Reuse will cause an error. Therefore, when using TransformStream, you need to pay attention to the following points:
-
-1. Ensure that the transformStream function returns a new ReadableStream object, not the same object.
-2. Ensure that the transformStream function does not perform multiple read operations on response.body.
-
-**Recommended Writing**
-
-```tsx | pure
+```ts
 const provider = ref(
   new CustomProvider({
     request: XRequest(url, {
       manual: true,
-      // Recommended: transformStream returns a new instance with a function
+      // ✅ A new TransformStream per request
       transformStream: () =>
         new TransformStream({
           transform(chunk, controller) {
-            // Your custom processing logic
             controller.enqueue({ data: chunk });
           },
         }),
-      // Other configurations...
     }),
   }),
 );
 ```
 
-```tsx | pure
+```ts
+// ❌ Reusing the same TransformStream instance across requests
 const request = XRequest(url, {
   manual: true,
-  transformStream: new TransformStream({ ... }), // Do not persist in Provider/ref
+  transformStream: new TransformStream({ ... }),
 });
 ```
