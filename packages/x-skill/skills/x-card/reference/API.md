@@ -67,6 +67,8 @@ The renderer injects two callbacks into every rendered component:
 
 Every other prop comes from the command, resolved against the data model. In v0.9 the action object reaches the component as `props.action.event`; in v0.8 as `props.action` with a `context` array.
 
+`child` / `children` are removed from props and passed as the **default slot** (`<Component {...props}>{children}</Component>`). Container components must render `slots.default?.()`.
+
 ## Command types
 
 ```ts
@@ -79,6 +81,8 @@ type XCardCommand =
   | DataModelUpdateCommand
   | BeginRenderingCommand;
 ```
+
+The protocol version is tracked per Surface/Card: the last version-bearing command (or v0.8 command) determines prop and action resolution for that Surface.
 
 ### v0.9
 

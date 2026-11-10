@@ -1,6 +1,6 @@
 # Command Reference
 
-Every command is one JSON object. The runtime inspects its keys; commands can be interleaved and appended over time. `version` is only present on v0.9 commands — its absence marks a v0.8 command.
+Every command is one JSON object. The runtime inspects its keys; commands can be interleaved and appended over time. `version` is only present on v0.9 commands — its absence marks a v0.8 command. The protocol version is tracked **per Surface/Card**: the last version-bearing command (or v0.8 command) determines how that Surface's props and actions are resolved, so do not mix versions for the same Surface.
 
 ```ts
 import type { XCardCommand } from "@antdv-next/x-card";

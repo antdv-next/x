@@ -100,7 +100,7 @@ const messages = [
     <Welcome title="Hello!" description="How can I help you?" />
     <Prompts
       :items="prompts"
-      :on-item-click="info => console.log(info.data.label)"
+      @item-click="info => console.log(info.data.label)"
     />
     <BubbleList :items="messages" />
     <Sender v-model:value="value" :on-submit="msg => console.log(msg)" />
@@ -118,7 +118,7 @@ const messages = [
 - **Prefer the preset sub-components** `ActionsCopy`, `ActionsFeedback`, `ActionsAudio`, and `ActionsItem` over building custom equivalents. The legacy `Actions.Copy` namespace form is compatible but not preferred.
 - **Sender `onSubmit` vs `onChange`**: `onSubmit` fires on the send button or Enter key; `onChange` fires on every keystroke — do not conflate them.
 - **Never render `Mermaid` or `CodeHighlighter` inside a Bubble `content` string** — use the `content` slot, `contentRender`, or the Markdown `components` map instead.
-- **Callback props use the `onXxx` form in templates** (`:on-submit`, `:on-change`, `:on-item-click`) matching the component API; `v-model:value` / `v-model:items` cover two-way bindings.
+- **Declared callback props and emit-only events bind differently** — declared `onXxx` props accept `:on-xxx` (`:on-submit`, `:on-change` on Sender); emit-only events need `@event-name` (`@item-click` on Prompts, `@change` on Attachments, `@selected-file-change` on Folder, `@expand` on Think/ThoughtChain). The `:on-xxx` form does not register emit-only listeners; check [API.md](reference/API.md) when unsure. `v-model:value` / `v-model:items` cover two-way bindings.
 
 # 🤝 Skill Collaboration
 
@@ -134,7 +134,7 @@ const messages = [
 
 - [COMPONENTS.md](reference/COMPONENTS.md) — Component-by-component guide with usage, key props, and Vue examples
 - [PATTERNS.md](reference/PATTERNS.md) — Full-page composition patterns and integration recipes
-- [API.md](reference/API.md) — Consolidated prop, event, and slot reference for all 17 component families
+- [API.md](reference/API.md) — Consolidated prop, event, and slot reference for all 18 component families
 
 ## Official Documentation
 

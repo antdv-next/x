@@ -67,6 +67,8 @@ interface ActionPayload {
 
 其他属性均来自指令，并已按数据模型解析。v0.9 中 action 对象以 `props.action.event` 到达组件；v0.8 中为 `props.action`，其 `context` 是数组。
 
+`child` / `children` 会从属性中移除，并作为**默认插槽**传入（`<Component {...props}>{children}</Component>`）。容器组件必须渲染 `slots.default?.()`。
+
 ## 指令类型
 
 ```ts
@@ -79,6 +81,8 @@ type XCardCommand =
   | DataModelUpdateCommand
   | BeginRenderingCommand;
 ```
+
+协议版本按 Surface/Card 跟踪：最后一条带版本信息（或 v0.8）的指令决定该 Surface 的属性与动作解析方式。
 
 ### v0.9
 

@@ -60,7 +60,7 @@
 { id: "cmd", component: "Text", text: { path: "/labels/help" } }
 ```
 
-v0.8 可以用 `{ literalString: "/help" }` 避免此问题。
+v0.8 有**同样**的限制：`parseV08Node` 会把 `{ literalString: "/help" }` 解包为裸字符串，随后解析器仍会把开头的 `/` 当作路径。两个版本中，都请把字面量存入数据模型并绑定 `{ path: "/labels/help" }`。
 
 ## 双向绑定
 
@@ -72,7 +72,7 @@ const TextField = defineComponent({
   props: {
     label: { type: String, default: "" },
     value: { type: String, default: "" },
-    path: { type: String, default: undefined }, // 可选便捷属性
+    fieldPath: { type: String, default: undefined }, // 由数据模型提供的路径字符串
     onDataChange: { type: Function, default: undefined },
   },
   setup(props) {
@@ -83,7 +83,7 @@ const TextField = defineComponent({
           value={props.value}
           onInput={(event: Event) => {
             const next = (event.target as HTMLInputElement).value;
-            if (props.path) props.onDataChange?.(props.path, next);
+            if (props.fieldPath) props.onDataChange?.(props.fieldPath, next);
           }}
         />
       </label>
@@ -92,21 +92,22 @@ const TextField = defineComponent({
 });
 ```
 
-指令：
+指令（先把目标路径存入数据模型）：
 
 ```ts
+// updateDataModel: { path: "/meta/nameFieldPath", value: "/form/name" }
 {
   id: "name-input",
   component: "TextField",
   label: "Name",
   value: { path: "/form/name" },
-  path: "/form/name",
+  fieldPath: { path: "/meta/nameFieldPath" },
 }
 ```
 
 用户输入时，运行时写入 `/form/name`；绑定到该路径的其他属性会在同一次渲染中更新。
 
-> 上面的 `path` 属性是组件级约定，不属于 A2UI。A2UI 只保证 `value` 被解析且注入了 `onDataChange`；写入哪个路径由组件决定。
+> 上面的 `fieldPath` 属性是组件级约定，不属于 A2UI。A2UI 只保证 `value` 被解析且注入了 `onDataChange`；写入哪个路径由组件决定。**不要**传入字面量 `fieldPath: "/form/name"`：v0.9 会把任何以 `/` 开头的字符串解析为数据路径，属性收到的将是 `/form/name` 的当前值，而不是路径本身。
 
 ## v0.8 编码
 

@@ -60,7 +60,7 @@ If you need a slash-prefixed literal, store it in the data model and bind it:
 { id: "cmd", component: "Text", text: { path: "/labels/help" } }
 ```
 
-v0.8 avoids this with `{ literalString: "/help" }`.
+v0.8 has the **same** limitation: `parseV08Node` unwraps `{ literalString: "/help" }` to a bare string, and the resolver then treats a leading `/` as a path. In both versions, store the literal in the data model and bind `{ path: "/labels/help" }`.
 
 ## Two-way binding
 
@@ -72,7 +72,7 @@ const TextField = defineComponent({
   props: {
     label: { type: String, default: "" },
     value: { type: String, default: "" },
-    path: { type: String, default: undefined }, // optional convenience
+    fieldPath: { type: String, default: undefined }, // path string supplied by the model
     onDataChange: { type: Function, default: undefined },
   },
   setup(props) {
@@ -83,7 +83,7 @@ const TextField = defineComponent({
           value={props.value}
           onInput={(event: Event) => {
             const next = (event.target as HTMLInputElement).value;
-            if (props.path) props.onDataChange?.(props.path, next);
+            if (props.fieldPath) props.onDataChange?.(props.fieldPath, next);
           }}
         />
       </label>
@@ -92,21 +92,22 @@ const TextField = defineComponent({
 });
 ```
 
-Command:
+Command (after storing the target path in the model):
 
 ```ts
+// updateDataModel: { path: "/meta/nameFieldPath", value: "/form/name" }
 {
   id: "name-input",
   component: "TextField",
   label: "Name",
   value: { path: "/form/name" },
-  path: "/form/name",
+  fieldPath: { path: "/meta/nameFieldPath" },
 }
 ```
 
 When the user types, the runtime writes `/form/name`; every other prop bound to that path updates in the same render pass.
 
-> The `path` prop above is a component-level convention, not part of A2UI. A2UI only guarantees that `value` is resolved and `onDataChange` is injected; the component decides which path to write.
+> The `fieldPath` prop above is a component-level convention, not part of A2UI. A2UI only guarantees that `value` is resolved and `onDataChange` is injected; the component decides which path to write. Do **not** pass a literal `fieldPath: "/form/name"`: v0.9 resolves any `/`-prefixed string as a data path, so the prop would receive the current value at `/form/name` instead of the path itself.
 
 ## v0.8 encoding
 

@@ -77,7 +77,7 @@ const onSubmit = (content: string) => {
             <Prompts
               :items="prompts"
               wrap
-              :on-item-click="info => (value = String(info.data.label))"
+              @item-click="info => (value = String(info.data.label))"
             />
           </div>
         </template>
@@ -117,8 +117,10 @@ import {
   ActionsFeedback,
   BubbleList,
 } from "@antdv-next/x";
-import type { BubbleItemType, RoleType } from "@antdv-next/x";
+import type { BubbleItemType, BubbleListProps } from "@antdv-next/x";
 import { h, ref } from "vue";
+
+type RoleMap = NonNullable<BubbleListProps["role"]>;
 
 const items = ref<BubbleItemType[]>([]);
 const feedback = ref<"like" | "dislike" | "default">("default");
@@ -128,7 +130,7 @@ const handleRetry = () => {
 };
 
 // 只定义一次 —— 不要在每次渲染时重建该对象。
-const role: RoleType = {
+const role: RoleMap = {
   assistant: {
     placement: "start",
     footer: content =>
@@ -263,7 +265,7 @@ const steps = ref([
 
 <template>
   <!-- 单块可折叠思考区域 -->
-  <Bubble placement="start" :loading="isStreaming && !answer">
+  <Bubble placement="start" content="" :loading="isStreaming && !answer">
     <template #content>
       <Think
         v-if="reasoning"
@@ -383,23 +385,30 @@ const onChange = (next: string, onTrigger: (info?: any | false) => void) => {
 ```vue
 <script setup lang="ts">
 import { BubbleList, Sources } from "@antdv-next/x";
-import type { BubbleItemType, SourcesItem, RoleType } from "@antdv-next/x";
+import type {
+  BubbleItemType,
+  BubbleListProps,
+  SourcesProps,
+} from "@antdv-next/x";
 import { h, ref } from "vue";
+
+type RoleMap = NonNullable<BubbleListProps["role"]>;
+type SourceItem = NonNullable<SourcesProps["items"]>[number];
 
 const items = ref<BubbleItemType[]>([]);
 
 // 假设每条 item 在 extraInfo.sources 中携带引用
-const role: RoleType = {
+const role: RoleMap = {
   assistant: {
     placement: "start",
     footer: (_content, info) => {
-      const sources = (info.extraInfo?.sources ?? []) as SourcesItem[];
+      const sources = (info.extraInfo?.sources ?? []) as SourceItem[];
       if (!sources.length) return null;
       return h(Sources, {
         title: "Sources",
         items: sources,
         defaultExpanded: false,
-        onClick: (item: SourcesItem) => item.url && window.open(item.url),
+        onClick: (item: SourceItem) => item.url && window.open(item.url),
       });
     },
   },

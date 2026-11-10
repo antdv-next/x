@@ -53,7 +53,7 @@ The root component must have `id: "root"`. Only nodes reachable from the root th
 
 ## Custom component contract
 
-Every custom component receives the resolved A2UI props plus two injected callbacks:
+Every custom component receives the resolved A2UI props, two injected callbacks, and its child nodes as the **default slot**:
 
 ```ts
 interface XCardInjectedProps {
@@ -64,6 +64,7 @@ interface XCardInjectedProps {
 
 - **`onAction(name, context)`** — call it when the user interacts. `name` is the event name from the command's `action`; `context` is the value map the component supplies.
 - **`onDataChange(path, value)`** — call it for two-way input binding. It writes `value` at `path` in the Surface data model, and the UI re-renders.
+- **`slots.default`** — `child` / `children` are stripped from props and rendered as the default slot. A container component must render `slots.default?.()` or the A2UI tree stops at that node.
 
 Example button component:
 
@@ -101,7 +102,7 @@ function onCommand(cmd: XCardCommand) {
 
 The Box processes only newly appended commands; a full replay is not needed. The Card re-applies its own commands when the queue grows, which is what makes progressive rendering work.
 
-> Replacing the array with a **shorter** one resets the Box's internal cursor. Replacing it with a same-length array is not observed — always append or change the length.
+> Replacing the array with a **shorter** one resets the Box's internal cursor. Replacing it with a same-length array is not observed — always append or change the length. Neither resets a Card: its component registry and data model persist until `deleteSurface` or a remount.
 
 Typical SSE flow:
 
@@ -168,7 +169,7 @@ registerCatalog(catalog);
 ```
 
 ```ts
-{ version: "v0.9", createSurface: { surfaceId: "booking", catalogId: "local://booking.json" } }
+{ version: "v0.9", createSurface: { surfaceId: "booking", catalogId: "local://booking-catalog.json" } }
 ```
 
 See [CATALOG.md](CATALOG.md) for schema details and validation behaviour.
@@ -181,5 +182,5 @@ See [CATALOG.md](CATALOG.md) for schema details and validation behaviour.
 | Nothing renders                           | No component with `id: "root"`                          | Make the root component `id: "root"`                            |
 | Warning `component "X" is not registered` | Missing entry in the `components` map, or name mismatch | Register it with the exact name                                 |
 | Card ignores new commands                 | Mutated the array without changing its length           | Append, or use `.push`                                          |
-| Card rendered an old state after reset    | Replaced commands with the same length                  | Push a new array of different length or remount the Box         |
+| Card rendered an old state after reset    | Replaced the command array (does not clear the Card)    | Send `deleteSurface` for the Surface, or remount the Box        |
 | Literal text becomes empty                | String starts with `/` and was treated as a path        | Use `{ path }` only for bindings; avoid slash-prefixed literals |

@@ -61,7 +61,7 @@ Agent → A2UI JSON commands → XCardBox (command queue, catalogs)
 <script setup lang="tsx">
 import { defineComponent, ref } from "vue";
 import { XCardBox, XCardCard } from "@antdv-next/x-card";
-import type { ActionPayload } from "@antdv-next/x-card";
+import type { ActionPayload, XCardCommand } from "@antdv-next/x-card";
 
 const Text = defineComponent({
   name: "DemoText",
@@ -71,7 +71,7 @@ const Text = defineComponent({
 
 const components = { Text };
 
-const commands = ref([
+const commands = ref<XCardCommand[]>([
   {
     version: "v0.9",
     createSurface: { surfaceId: "demo" },
@@ -126,8 +126,8 @@ function handleAction(payload: ActionPayload) {
 - **`XCardBox` must wrap every `XCardCard`** — the Card injects the Box context; rendering it outside the Box renders nothing.
 - **`XCardCard`'s `id` must equal the `surfaceId`** used in the commands. One Card per Surface; multiple Cards can share one Box.
 - **Component names must start with an uppercase letter and match the command names exactly.** Register them in the `components` map; unregistered names log a warning and render nothing.
-- **Append commands; do not rebuild the array in place with a shorter one.** The Box processes only newly appended commands and resets only when the length shrinks. Push to a reactive array for streaming.
-- **Commands may mix v0.8 and v0.9 in one stream.** Version is detected per command (`version: "v0.9"` vs no version field). Do not mix component formats within one `updateComponents` / `surfaceUpdate` call.
+- **Append commands; do not rebuild the array in place with a shorter one.** The Box processes only newly appended commands and resets its cursor only when the length shrinks. Replacing the array does **not** reset a Card's component registry or data model — send `deleteSurface` or remount the Box for that. Push to a reactive array for streaming.
+- **Commands from both versions may appear in one stream, but the protocol version is tracked per Card/Surface.** The last version-bearing command (or a v0.8 command) wins for that Surface; do not mix versions for one Surface. Mixing v0.8 and v0.9 across different Surfaces is safe. Do not mix component formats within one `updateComponents` / `surfaceUpdate` call.
 - **Use `{ path: "/foo" }` for dynamic props.** In v0.9, any bare string starting with `/` is also treated as a path — keep URL-like or slash-prefixed literals (`"/search"`) outside the data model or bind them through the model.
 - **Actions are two-part**: `action.event.context` declares write-back targets (`{ key: { path } }`), and the component calls `onAction(name, context)` with the values. The runtime writes those values into the data model, then calls the Box's `onAction` with **the component-supplied context**, not a full data-model snapshot.
 - **Prefer `registerCatalog` over remote catalogs in production.** Remote catalogs fetched from an Agent-controlled URL are untrusted input; use `local://` ids for shipped schemas.

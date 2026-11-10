@@ -53,7 +53,7 @@ const commands = ref<XCardCommand[]>([
 
 ## 自定义组件契约
 
-每个自定义组件都会收到解析后的 A2UI 属性，以及两个注入回调：
+每个自定义组件都会收到解析后的 A2UI 属性、两个注入回调，以及作为**默认插槽**传入的子节点：
 
 ```ts
 interface XCardInjectedProps {
@@ -64,6 +64,7 @@ interface XCardInjectedProps {
 
 - **`onAction(name, context)`** —— 用户交互时调用。`name` 是指令 `action` 中的事件名；`context` 是组件提供的值映射。
 - **`onDataChange(path, value)`** —— 用于双向输入绑定。它把 `value` 写入 Surface 数据模型的 `path`，并触发 UI 重新渲染。
+- **`slots.default`** —— `child` / `children` 会从属性中移除，并作为默认插槽渲染。容器组件必须渲染 `slots.default?.()`，否则 A2UI 树会在该节点中断。
 
 按钮组件示例：
 
@@ -101,7 +102,7 @@ function onCommand(cmd: XCardCommand) {
 
 Box 只处理新追加的指令，无需完整重放。Card 会在队列增长时重新应用自己的指令，这正是渐进渲染的工作方式。
 
-> 用**更短**的数组替换会重置 Box 的内部游标。替换为等长数组不会被观察到 —— 请始终追加或改变长度。
+> 用**更短**的数组替换会重置 Box 的内部游标。替换为等长数组不会被观察到 —— 请始终追加或改变长度。这两种方式都不会重置 Card：其组件注册表和数据模型会一直保留，直到 `deleteSurface` 或重新挂载。
 
 典型 SSE 流程：
 
@@ -168,7 +169,7 @@ registerCatalog(catalog);
 ```
 
 ```ts
-{ version: "v0.9", createSurface: { surfaceId: "booking", catalogId: "local://booking.json" } }
+{ version: "v0.9", createSurface: { surfaceId: "booking", catalogId: "local://booking-catalog.json" } }
 ```
 
 schema 细节与校验行为见 [CATALOG.md](CATALOG.md)。
@@ -181,5 +182,5 @@ schema 细节与校验行为见 [CATALOG.md](CATALOG.md)。
 | 什么都不渲染                           | 没有 `id: "root"` 的组件              | 把根组件设为 `id: "root"`                   |
 | 警告 `component "X" is not registered` | `components` 映射缺少条目或名称不匹配 | 用准确名称注册                              |
 | Card 忽略新指令                        | 修改了数组但长度未变                  | 追加，或使用 `.push`                        |
-| 重置后 Card 仍显示旧状态               | 用等长数组替换了指令                  | 推送不同长度的新数组或重新挂载 Box          |
+| 重置后 Card 仍显示旧状态               | 替换了指令数组（不会清空 Card）       | 发送 `deleteSurface`，或重新挂载 Box        |
 | 字面文本变空                           | 字符串以 `/` 开头被当作路径           | 只对绑定使用 `{ path }`，避免斜杠前缀字面量 |

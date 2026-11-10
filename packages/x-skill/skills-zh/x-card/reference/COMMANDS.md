@@ -1,6 +1,6 @@
 # 指令参考
 
-每条指令都是一个 JSON 对象。运行时检查其键名；指令可以交错并随时间追加。`version` 只出现在 v0.9 指令上 —— 缺失即表示 v0.8 指令。
+每条指令都是一个 JSON 对象。运行时检查其键名；指令可以交错并随时间追加。`version` 只出现在 v0.9 指令上 —— 缺失即表示 v0.8 指令。协议版本按 **Surface/Card** 跟踪：最后一条带版本信息（或 v0.8）的指令决定该 Surface 的属性与动作解析方式，因此不要为同一个 Surface 混用版本。
 
 ```ts
 import type { XCardCommand } from "@antdv-next/x-card";

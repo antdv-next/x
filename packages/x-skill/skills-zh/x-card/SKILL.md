@@ -61,7 +61,7 @@ Agent → A2UI JSON 指令 → XCardBox（指令队列、catalog）
 <script setup lang="tsx">
 import { defineComponent, ref } from "vue";
 import { XCardBox, XCardCard } from "@antdv-next/x-card";
-import type { ActionPayload } from "@antdv-next/x-card";
+import type { ActionPayload, XCardCommand } from "@antdv-next/x-card";
 
 const Text = defineComponent({
   name: "DemoText",
@@ -71,7 +71,7 @@ const Text = defineComponent({
 
 const components = { Text };
 
-const commands = ref([
+const commands = ref<XCardCommand[]>([
   {
     version: "v0.9",
     createSurface: { surfaceId: "demo" },
@@ -126,8 +126,8 @@ function handleAction(payload: ActionPayload) {
 - **`XCardBox` 必须包裹每个 `XCardCard`** —— Card 通过 inject 获取 Box 上下文；放在 Box 外将渲染为空。
 - **`XCardCard` 的 `id` 必须等于指令中的 `surfaceId`**。一个 Surface 对应一个 Card；多个 Card 可共享一个 Box。
 - **组件名必须以大写字母开头，并与指令中的名称完全一致。** 在 `components` 映射中注册；未注册的名称会打印警告并且不渲染。
-- **追加指令，不要用更短的数组原地重建。** Box 只处理新追加的指令，仅在长度变短时重置。流式场景请向响应式数组 `push`。
-- **同一指令流可以混用 v0.8 和 v0.9。** 版本按指令检测（`version: "v0.9"` 或无版本字段）。不要在同一个 `updateComponents` / `surfaceUpdate` 调用中混用两种组件格式。
+- **追加指令，不要用更短的数组原地重建。** Box 只处理新追加的指令，仅在长度变短时重置自身游标。替换数组**不会**重置 Card 的组件注册表或数据模型 —— 需要发送 `deleteSurface` 或重新挂载 Box。流式场景请向响应式数组 `push`。
+- **同一指令流中可以出现两个版本的指令，但协议版本按 Card/Surface 跟踪。** 对该 Surface 而言，最后一条带版本信息（或 v0.8）的指令生效；不要为同一个 Surface 混用版本。不同 Surface 之间混用 v0.8 与 v0.9 是安全的。不要在同一个 `updateComponents` / `surfaceUpdate` 调用中混用两种组件格式。
 - **动态属性使用 `{ path: "/foo" }`。** 在 v0.9 中，任何以 `/` 开头的裸字符串也会被当作路径 —— 类似 URL 或斜杠前缀的字面量（`"/search"`）不要直接作为属性传入。
 - **动作分为两部分**：`action.event.context` 声明回写目标（`{ key: { path } }`），组件调用 `onAction(name, context)` 提供值。运行时会先把这些值写入数据模型，再以**组件提供的 context** 调用 Box 的 `onAction`，而不是完整的数据模型快照。
 - **生产环境优先使用 `registerCatalog` 而不是远程 catalog。** 从 Agent 控制的 URL 拉取的 catalog 属于不可信输入；请使用 `local://` id 引用随包发布的 schema。

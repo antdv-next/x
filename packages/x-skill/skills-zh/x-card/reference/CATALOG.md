@@ -82,7 +82,7 @@ registerCatalog(catalog);
 
 `registerCatalog` 优先使用 `catalog.$id`，其次 `catalog.catalogId`。**两者都不存在时，注册会静默失效。**
 
-`createSurface` 必须引用相同的 id。如果引用未注册的 `local://` id，`loadCatalog` 会返回空 catalog（不报错）；此时校验实际上被跳过。
+`createSurface` 必须引用相同的 id。如果引用未注册的 `local://` id，`loadCatalog` 会返回 `{ $id, components: {} }`（不报错）。由于 `components` 是空对象（真值），每个渲染节点都会在 catalog 查找中失败，并打印 `Component "X" is not defined in catalog`。请在使用前注册 catalog，或省略 `catalogId`。
 
 ## 加载
 

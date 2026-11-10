@@ -58,18 +58,18 @@ NodeRenderer → 组件映射 → 你的 Vue 组件
 
 ## 协议版本
 
-运行时在同一指令流中同时支持 v0.8 和 v0.9。版本按指令检测：存在 `version: "v0.9"` 字段即为 v0.9，否则为 v0.8。
+运行时在同一指令流中同时支持 v0.8 和 v0.9，但协议版本按 **Surface/Card** 跟踪：`version: "v0.9"` 字段标记 v0.9 指令，缺失则标记 v0.8 指令，最后一条带版本信息的指令决定该 Surface 的属性与动作解析方式。不要为同一个 Surface 混用版本；不同 Surface 之间混用是安全的。
 
-| 特性         | v0.8                                                     | v0.9                                        |
-| ------------ | -------------------------------------------------------- | ------------------------------------------- |
-| 版本字段     | 无                                                       | `version: "v0.9"`                           |
-| Surface 创建 | 隐式（`surfaceUpdate`）                                  | 显式 `createSurface`                        |
-| 组件形态     | `component: { Name: { props } }`                         | `component: "Name"` + 扁平属性              |
-| 子节点       | `children: { explicitList }` 或数组                      | `children: string[]`                        |
-| 数据更新     | `dataModelUpdate.contents`（`valueString` / `valueMap`） | `updateDataModel.path` + `value`            |
-| 路径绑定     | `{ path }` 或 `{ literalString }`                        | `{ path }`（以 `/` 开头的裸字符串也会解析） |
-| 根节点选择   | `beginRendering.root`                                    | 始终为 `"root"`                             |
-| 状态         | 旧版兼容                                                 | **推荐**                                    |
+| 特性         | v0.8                                                                    | v0.9                                        |
+| ------------ | ----------------------------------------------------------------------- | ------------------------------------------- |
+| 版本字段     | 无                                                                      | `version: "v0.9"`                           |
+| Surface 创建 | 隐式（`surfaceUpdate`）                                                 | 显式 `createSurface`                        |
+| 组件形态     | `component: { Name: { props } }`                                        | `component: "Name"` + 扁平属性              |
+| 子节点       | `children: { explicitList }` 或数组                                     | `children: string[]`                        |
+| 数据更新     | `dataModelUpdate.contents`（`valueString` / `valueMap`）                | `updateDataModel.path` + `value`            |
+| 路径绑定     | `{ path }` 或 `{ literalString }`（裸 `/...` 字面量仍会被当作路径解析） | `{ path }`（以 `/` 开头的裸字符串也会解析） |
+| 根节点选择   | `beginRendering.root`                                                   | 始终为 `"root"`                             |
+| 状态         | 旧版兼容                                                                | **推荐**                                    |
 
 不要在单次更新调用中混用格式：一个 `updateComponents` 只能包含 v0.9 形态的组件，一个 `surfaceUpdate` 只能包含 v0.8 形态的组件。
 

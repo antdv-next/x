@@ -1,8 +1,8 @@
 # API Reference
 
-Consolidated props, events, slots, and refs for every `@antdv-next/x` component family. Types are exported from `@antdv-next/x`.
+Consolidated props, events, slots, and refs for every `@antdv-next/x` component family. Most types are exported from `@antdv-next/x`; when a helper type is not re-exported, derive it from the component props (for example `NonNullable<BubbleListProps["role"]>`).
 
-> Callback props (`onXxx`) can also be listened to as events with the same camelCase name (`@item-click` ≡ `:on-item-click`).
+> Declared callback props use the `:on-xxx` form (`:on-submit`). Emit-only events use `@kebab-case` (`@item-click`, `@change`); `:on-xxx` does not register emit-only listeners.
 
 ## Bubble
 
@@ -30,12 +30,12 @@ Consolidated props, events, slots, and refs for every `@antdv-next/x` component 
 
 ## BubbleList
 
-| Prop         | Type               | Default      | Description                                                                            |
-| ------------ | ------------------ | ------------ | -------------------------------------------------------------------------------------- |
-| `items`      | `BubbleItemType[]` | — (required) | Each item needs `key` and `role`                                                       |
-| `role`       | `RoleType`         | —            | Role name → props (or `(item) => props`); built-ins: `ai`, `system`, `user`, `divider` |
-| `autoScroll` | `boolean`          | `true`       | Auto-scroll on new messages                                                            |
-| `onScroll`   | `(event) => void`  | —            | Scroll listener                                                                        |
+| Prop         | Type                      | Default      | Description                                                                            |
+| ------------ | ------------------------- | ------------ | -------------------------------------------------------------------------------------- |
+| `items`      | `BubbleItemType[]`        | — (required) | Each item needs `key` and `role`                                                       |
+| `role`       | `BubbleListProps["role"]` | —            | Role name → props (or `(item) => props`); built-ins: `ai`, `system`, `user`, `divider` |
+| `autoScroll` | `boolean`                 | `true`       | Auto-scroll on new messages                                                            |
+| `onScroll`   | `(event) => void`         | —            | Scroll listener                                                                        |
 
 **Slots**: `contentRender`, `loadingRender`, `avatar`, `header`, `footer`, `extra`.
 
@@ -181,30 +181,30 @@ Extends the upload feature set (`accept`, `action`, `method`, `directory`, `mult
 
 **Sub-components**:
 
-| Component         | Props                                                            |
-| ----------------- | ---------------------------------------------------------------- |
-| `ActionsCopy`     | `text?`, `icon?`                                                 |
-| `ActionsFeedback` | `value?` (`'like' \| 'dislike' \| 'default'`), `onChange(value)` |
-| `ActionsAudio`    | `status?` (`'default' \| 'loading' \| 'error' \| 'running'`)     |
-| `ActionsItem`     | generic `ItemType` fields                                        |
+| Component         | Props                                                                                                            |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `ActionsCopy`     | `text?`, `icon?`                                                                                                 |
+| `ActionsFeedback` | `value?` (`'like' \| 'dislike' \| 'default'`), `onChange(value)`                                                 |
+| `ActionsAudio`    | `status?` (`'default' \| 'loading' \| 'error' \| 'running'`)                                                     |
+| `ActionsItem`     | `status?` (`'default' \| 'loading' \| 'error' \| 'running'`), `defaultIcon` (required), `label?`, `runningIcon?` |
 
 ## Sources
 
-| Prop                  | Type               | Default   | Description                                  |
-| --------------------- | ------------------ | --------- | -------------------------------------------- |
-| `items`               | `SourcesItem[]`    | —         | `key`, `title`, `url`, `icon`, `description` |
-| `title`               | `VNodeChild`       | —         | Section heading                              |
-| `expanded` (v-model)  | `boolean`          | —         | Controlled expansion                         |
-| `defaultExpanded`     | `boolean`          | `false`   | Initial expansion                            |
-| `inline`              | `boolean`          | `false`   | Inline compact mode                          |
-| `activeKey`           | `string \| number` | —         | Active source for inline popover             |
-| `popoverOverlayWidth` | `number \| string` | —         | Popover width                                |
-| `expandIconPosition`  | `'start' \| 'end'` | `'start'` | Expand icon side                             |
-| `onClick`             | `(item) => void`   | —         | Source click callback                        |
+| Prop                  | Type                    | Default   | Description                                                        |
+| --------------------- | ----------------------- | --------- | ------------------------------------------------------------------ |
+| `items`               | `SourcesProps["items"]` | —         | Each item: `key`, `title` (required), `url`, `icon`, `description` |
+| `title`               | `VNodeChild`            | —         | Section heading                                                    |
+| `expanded` (v-model)  | `boolean`               | —         | Controlled expansion                                               |
+| `defaultExpanded`     | `boolean`               | `true`    | Initial expansion                                                  |
+| `inline`              | `boolean`               | `false`   | Inline compact mode                                                |
+| `activeKey`           | `string \| number`      | —         | Active source for inline popover                                   |
+| `popoverOverlayWidth` | `number \| string`      | —         | Popover width                                                      |
+| `expandIconPosition`  | `'start' \| 'end'`      | `'start'` | Expand icon side                                                   |
+| `onClick`             | `(item) => void`        | —         | Source click callback                                              |
 
 **Events**: `update:expanded`, `expand`.
 
-**Slots**: `title`, `titleRender`, `iconRender`, `description` (item slots receive `{ item, index, originNode }`), default (fallback when `items` is empty).
+**Slots**: `title`, `titleRender`, `iconRender`, `description` (item slots receive `{ item, index, originNode }`), default (fallback when `items` is not provided).
 
 **Ref**: `nativeElement`.
 
@@ -318,13 +318,13 @@ All other `ConfigProvider` props (including `direction`) pass through.
 
 `Notification` is the default `XNotification` instance exported from `@antdv-next/x`.
 
-| Method              | Signature                                  | Description                    |
-| ------------------- | ------------------------------------------ | ------------------------------ |
-| `open`              | `(options: XNotificationOpenArgs) => void` | Show a system notification     |
-| `close`             | `() => void`                               | Close the current notification |
-| `requestPermission` | `() => Promise<NotificationPermission>`    | Request OS permission          |
-| `permission`        | `NotificationPermission`                   | Current permission state       |
+| Method              | Signature                                  | Description                                                     |
+| ------------------- | ------------------------------------------ | --------------------------------------------------------------- |
+| `open`              | `(options: XNotificationOpenArgs) => void` | Show a system notification                                      |
+| `close`             | `(tags?: string[]) => void`                | Close the given notifications; **all** when called without tags |
+| `requestPermission` | `() => Promise<NotificationPermission>`    | Request OS permission                                           |
+| `permission`        | `NotificationPermission`                   | Current permission state                                        |
 
 `XNotificationOpenArgs` extends the native `NotificationOptions` (`body`, `icon`, `badge`, `tag`, …) with `title: string`, `duration?`, `onClick?`, `onClose?`, `onError?`, `onShow?`.
 
-**Composable**: `useNotification()` returns `[{ permission }, { open, close, requestPermission }]`.
+**Composable**: `Notification.useNotification()` returns `[{ permission }, { open, close, requestPermission }]`. There is no standalone `useNotification` export.

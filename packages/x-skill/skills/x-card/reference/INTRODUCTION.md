@@ -58,18 +58,18 @@ Use a new Surface when:
 
 ## Protocol Versions
 
-The runtime supports v0.8 and v0.9 in the same command stream. Version is detected per command: a `version: "v0.9"` field means v0.9; its absence means v0.8.
+The runtime supports v0.8 and v0.9 in the same command stream, but the protocol version is **tracked per Surface/Card**: a `version: "v0.9"` field marks a v0.9 command, its absence marks a v0.8 command, and the last version-bearing command determines how that Surface's props and actions are resolved. Do not mix versions for the same Surface; mixing versions across different Surfaces is safe.
 
-| Feature          | v0.8                                                    | v0.9                                          |
-| ---------------- | ------------------------------------------------------- | --------------------------------------------- |
-| Version field    | None                                                    | `version: "v0.9"`                             |
-| Surface creation | Implicit (`surfaceUpdate`)                              | Explicit `createSurface`                      |
-| Component shape  | `component: { Name: { props } }`                        | `component: "Name"` + flat props              |
-| Children         | `children: { explicitList }` or array                   | `children: string[]`                          |
-| Data update      | `dataModelUpdate.contents` (`valueString` / `valueMap`) | `updateDataModel.path` + `value`              |
-| Path binding     | `{ path }` or `{ literalString }`                       | `{ path }` (bare `/...` strings also resolve) |
-| Root selection   | `beginRendering.root`                                   | Always `"root"`                               |
-| Status           | Legacy compatibility                                    | **Recommended**                               |
+| Feature          | v0.8                                                                               | v0.9                                          |
+| ---------------- | ---------------------------------------------------------------------------------- | --------------------------------------------- |
+| Version field    | None                                                                               | `version: "v0.9"`                             |
+| Surface creation | Implicit (`surfaceUpdate`)                                                         | Explicit `createSurface`                      |
+| Component shape  | `component: { Name: { props } }`                                                   | `component: "Name"` + flat props              |
+| Children         | `children: { explicitList }` or array                                              | `children: string[]`                          |
+| Data update      | `dataModelUpdate.contents` (`valueString` / `valueMap`)                            | `updateDataModel.path` + `value`              |
+| Path binding     | `{ path }` or `{ literalString }` (a bare `/...` literal still resolves as a path) | `{ path }` (bare `/...` strings also resolve) |
+| Root selection   | `beginRendering.root`                                                              | Always `"root"`                               |
+| Status           | Legacy compatibility                                                               | **Recommended**                               |
 
 Do not mix formats inside a single update call: one `updateComponents` must contain v0.9-shaped components, and one `surfaceUpdate` must contain v0.8-shaped components.
 

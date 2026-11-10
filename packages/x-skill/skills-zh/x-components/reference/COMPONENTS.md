@@ -1,6 +1,6 @@
 # 组件指南
 
-所有示例均使用 Vue 3 SFC 语法。回调属性使用 `onXxx` 形式（`:on-submit`、`:on-change`），与 `@antdv-next/x` 的组件 API 一致。
+所有示例均使用 Vue 3 SFC 语法。已声明的回调属性使用 `:on-xxx` 形式（`:on-submit`）；仅 emit 的事件使用 `@event-name`（`@item-click`、`@change`、`@selected-file-change`、`@expand`）。`:on-xxx` 形式不会注册仅 emit 的监听器。
 
 ## Bubble
 
@@ -173,7 +173,7 @@ const onChange = ({ fileList }: { fileList: any[] }) => {
         <Attachments
           v-model:items="items"
           overflow="scrollX"
-          :on-change="onChange"
+          @change="onChange"
           :get-drop-container="() => undefined"
         />
       </SenderHeader>
@@ -265,7 +265,7 @@ const prompts = [
     title="What would you like to explore?"
     :items="prompts"
     wrap
-    :on-item-click="info => console.log(info.data.label)"
+    @item-click="info => console.log(info.data.label)"
   />
 </template>
 ```
@@ -299,7 +299,7 @@ const expanded = ref(false);
 </template>
 ```
 
-**ThinkProps**：`title`、`loading`（`boolean` 或自定义节点）、`expanded` / `defaultExpanded` / `onExpand`、`blink`、`destroyOnHidden`、`icon`；内容使用默认插槽。
+**ThinkProps**：`title`、`loading`（`boolean` 或自定义节点）、`expanded` / `defaultExpanded`、`blink`、`destroyOnHidden`、`icon`；内容使用默认插槽。事件：`update:expanded`、`expand`。
 
 ## Think / ThoughtChain
 
@@ -331,7 +331,7 @@ const steps = [
 
 **ThoughtChainItemType**：`key`、`title`、`description`、`content`、`footer`、`status`（`'loading' | 'success' | 'error' | 'abort'`）、`icon`（`false` 隐藏）、`collapsible`、`blink`、`destroyOnHidden`。
 
-**ThoughtChain 属性**：`items`、`expandedKeys`（v-model）/ `defaultExpandedKeys` / `onExpand`、`line`（`boolean | 'solid' | 'dashed' | 'dotted'`）。
+**ThoughtChain 属性**：`items`、`expandedKeys`（v-model）/ `defaultExpandedKeys`、`line`（`boolean | 'solid' | 'dashed' | 'dotted'`）。事件：`update:expandedKeys`、`expand`。
 
 ## Actions
 
@@ -380,12 +380,12 @@ const items = [
 
 **内置子组件**：
 
-| 组件              | 用途                                      |
-| ----------------- | ----------------------------------------- |
-| `ActionsCopy`     | 复制到剪贴板按钮 —— 属性 `text`           |
-| `ActionsFeedback` | 点赞/点踩切换 —— 属性 `value`、`onChange` |
-| `ActionsAudio`    | 播放/加载/错误音频按钮 —— 属性 `status`   |
-| `ActionsItem`     | 带 `status`、`label` 的通用条目           |
+| 组件              | 用途                                                                  |
+| ----------------- | --------------------------------------------------------------------- |
+| `ActionsCopy`     | 复制到剪贴板按钮 —— 属性 `text`                                       |
+| `ActionsFeedback` | 点赞/点踩切换 —— 属性 `value`、`onChange`                             |
+| `ActionsAudio`    | 播放/加载/错误音频按钮 —— 属性 `status`                               |
+| `ActionsItem`     | 带 `status`、`label`、`defaultIcon`（必填）、`runningIcon` 的通用条目 |
 
 **Actions 属性**：`items`、`onClick`、`variant`（`'borderless'` 默认 \| `'outlined'` \| `'filled'`）、`fadeIn`、`fadeInLeft`。
 
@@ -396,8 +396,11 @@ const items = [
 ```vue
 <script setup lang="ts">
 import { Sources } from "@antdv-next/x";
+import type { SourcesProps } from "@antdv-next/x";
 
-const items = [
+type SourceItem = NonNullable<SourcesProps["items"]>[number];
+
+const items: SourceItem[] = [
   {
     key: "1",
     title: "Vue Docs",
@@ -406,6 +409,10 @@ const items = [
   },
   { key: "2", title: "MDN", url: "https://developer.mozilla.org" },
 ];
+
+const openSource = (item: SourceItem) => {
+  if (item.url) window.open(item.url);
+};
 </script>
 
 <template>
@@ -413,7 +420,7 @@ const items = [
     title="References"
     :items="items"
     :default-expanded="true"
-    :on-click="item => item.url && window.open(item.url)"
+    :on-click="openSource"
   />
 </template>
 ```
@@ -568,7 +575,7 @@ const fileContentService = {
     :tree-data="treeData"
     :file-content-service="fileContentService"
     default-expand-all
-    :on-selected-file-change="file => console.log(file.path, file.content)"
+    @selected-file-change="file => console.log(file.path, file.content)"
   />
 </template>
 ```
@@ -616,6 +623,6 @@ Notification.open({
 await Notification.requestPermission();
 ```
 
-`Notification` 是 `XNotification` 的默认实例。它在浏览器原生 `NotificationOptions` 基础上扩展了 `title`、`duration`、`onClick`、`onClose`、`onError`、`onShow`。`useNotification()` 返回 `[{ permission }, { open, close, requestPermission }]` 供组合式用法。
+`Notification` 是 `XNotification` 的默认实例。它在浏览器原生 `NotificationOptions` 基础上扩展了 `title`、`duration`、`onClick`、`onClose`、`onError`、`onShow`。`Notification.useNotification()` 返回 `[{ permission }, { open, close, requestPermission }]` 供组合式用法。
 
 > 需要操作系统/浏览器通知权限。浏览器不支持 Notification API 时调用为空操作。

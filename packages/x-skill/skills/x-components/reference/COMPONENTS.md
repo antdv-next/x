@@ -1,6 +1,6 @@
 # Component Guide
 
-All examples use Vue 3 SFC syntax. Callback props use the `onXxx` form (`:on-submit`, `:on-change`), matching the component APIs in `@antdv-next/x`.
+All examples use Vue 3 SFC syntax. Declared callback props use the `:on-xxx` form (`:on-submit`); emit-only events use `@event-name` (`@item-click`, `@change`, `@selected-file-change`, `@expand`). The `:on-xxx` form does not register emit-only listeners.
 
 ## Bubble
 
@@ -173,7 +173,7 @@ const onChange = ({ fileList }: { fileList: any[] }) => {
         <Attachments
           v-model:items="items"
           overflow="scrollX"
-          :on-change="onChange"
+          @change="onChange"
           :get-drop-container="() => undefined"
         />
       </SenderHeader>
@@ -265,7 +265,7 @@ const prompts = [
     title="What would you like to explore?"
     :items="prompts"
     wrap
-    :on-item-click="info => console.log(info.data.label)"
+    @item-click="info => console.log(info.data.label)"
   />
 </template>
 ```
@@ -299,7 +299,7 @@ const expanded = ref(false);
 </template>
 ```
 
-**ThinkProps**: `title`, `loading` (`boolean` or custom node), `expanded` / `defaultExpanded` / `onExpand`, `blink`, `destroyOnHidden`, `icon`; default slot for content.
+**ThinkProps**: `title`, `loading` (`boolean` or custom node), `expanded` / `defaultExpanded`, `blink`, `destroyOnHidden`, `icon`; default slot for content. Events: `update:expanded`, `expand`.
 
 ## Think / ThoughtChain
 
@@ -331,7 +331,7 @@ const steps = [
 
 **ThoughtChainItemType**: `key`, `title`, `description`, `content`, `footer`, `status` (`'loading' | 'success' | 'error' | 'abort'`), `icon` (`false` to hide), `collapsible`, `blink`, `destroyOnHidden`.
 
-**ThoughtChain props**: `items`, `expandedKeys` (v-model) / `defaultExpandedKeys` / `onExpand`, `line` (`boolean | 'solid' | 'dashed' | 'dotted'`).
+**ThoughtChain props**: `items`, `expandedKeys` (v-model) / `defaultExpandedKeys`, `line` (`boolean | 'solid' | 'dashed' | 'dotted'`). Events: `update:expandedKeys`, `expand`.
 
 ## Actions
 
@@ -380,12 +380,12 @@ const items = [
 
 **Built-in sub-components**:
 
-| Component         | Purpose                                         |
-| ----------------- | ----------------------------------------------- |
-| `ActionsCopy`     | Copy-to-clipboard button — prop `text`          |
-| `ActionsFeedback` | Like/dislike toggle — props `value`, `onChange` |
-| `ActionsAudio`    | Play/loading/error audio button — prop `status` |
-| `ActionsItem`     | Generic item with `status`, `label`             |
+| Component         | Purpose                                                                      |
+| ----------------- | ---------------------------------------------------------------------------- |
+| `ActionsCopy`     | Copy-to-clipboard button — prop `text`                                       |
+| `ActionsFeedback` | Like/dislike toggle — props `value`, `onChange`                              |
+| `ActionsAudio`    | Play/loading/error audio button — prop `status`                              |
+| `ActionsItem`     | Generic item with `status`, `label`, `defaultIcon` (required), `runningIcon` |
 
 **Actions props**: `items`, `onClick`, `variant` (`'borderless'` default \| `'outlined'` \| `'filled'`), `fadeIn`, `fadeInLeft`.
 
@@ -396,8 +396,11 @@ const items = [
 ```vue
 <script setup lang="ts">
 import { Sources } from "@antdv-next/x";
+import type { SourcesProps } from "@antdv-next/x";
 
-const items = [
+type SourceItem = NonNullable<SourcesProps["items"]>[number];
+
+const items: SourceItem[] = [
   {
     key: "1",
     title: "Vue Docs",
@@ -406,6 +409,10 @@ const items = [
   },
   { key: "2", title: "MDN", url: "https://developer.mozilla.org" },
 ];
+
+const openSource = (item: SourceItem) => {
+  if (item.url) window.open(item.url);
+};
 </script>
 
 <template>
@@ -413,7 +420,7 @@ const items = [
     title="References"
     :items="items"
     :default-expanded="true"
-    :on-click="item => item.url && window.open(item.url)"
+    :on-click="openSource"
   />
 </template>
 ```
@@ -568,7 +575,7 @@ const fileContentService = {
     :tree-data="treeData"
     :file-content-service="fileContentService"
     default-expand-all
-    :on-selected-file-change="file => console.log(file.path, file.content)"
+    @selected-file-change="file => console.log(file.path, file.content)"
   />
 </template>
 ```
@@ -616,6 +623,6 @@ Notification.open({
 await Notification.requestPermission();
 ```
 
-`Notification` is the default `XNotification` instance. It extends the browser's native `NotificationOptions` with `title`, `duration`, `onClick`, `onClose`, `onError`, `onShow`. `useNotification()` returns `[{ permission }, { open, close, requestPermission }]` for composable usage.
+`Notification` is the default `XNotification` instance. It extends the browser's native `NotificationOptions` with `title`, `duration`, `onClick`, `onClose`, `onError`, `onShow`. `Notification.useNotification()` returns `[{ permission }, { open, close, requestPermission }]` for composable usage.
 
 > Requires OS/browser notification permission. Calls are no-ops when the browser does not support the Notification API.

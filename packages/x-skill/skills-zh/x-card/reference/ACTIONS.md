@@ -10,6 +10,8 @@
 | 组件实现 | 你的 Vue 组件                    | 调用 `onAction(name, context)` 提供值                |
 | 运行时   | `XCardCard`                      | 把提供的值回写到声明的路径，再调用 Box 的 `onAction` |
 
+> **版本说明**：动作回写使用 Card 当前的协议版本（每个 Surface 以最后一条带版本信息的指令为准）。向 v0.9 Surface 混入 v0.8 指令后，v0.9 的 `action.event.context` 将不再产生回写。请为每个 Surface 保持单一版本。
+
 ## v0.9
 
 ### 声明

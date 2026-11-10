@@ -10,6 +10,8 @@ Actions carry user interactions from rendered components back to your applicatio
 | Component implementation | Your Vue component                     | Calls `onAction(name, context)` with the values                                    |
 | Runtime                  | `XCardCard`                            | Writes supplied values back to the declared paths, then calls the Box's `onAction` |
 
+> **Version note**: action write-back uses the Card's current protocol version (the last version-bearing command wins per Surface). Mixing a v0.8 command into a v0.9 Surface makes v0.9 `action.event.context` stop producing write-backs. Keep one version per Surface.
+
 ## v0.9
 
 ### Declare it

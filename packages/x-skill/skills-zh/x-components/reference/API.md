@@ -1,8 +1,8 @@
 # API 参考
 
-汇总 `@antdv-next/x` 各组件的属性、事件、插槽和 ref。类型均从 `@antdv-next/x` 导出。
+汇总 `@antdv-next/x` 各组件的属性、事件、插槽和 ref。大部分类型从 `@antdv-next/x` 导出；未重新导出的辅助类型可从组件属性推导（例如 `NonNullable<BubbleListProps["role"]>`）。
 
-> 回调属性（`onXxx`）也可以使用同名 camelCase 事件监听（`@item-click` ≡ `:on-item-click`）。
+> 已声明的回调属性使用 `:on-xxx` 形式（`:on-submit`）。仅 emit 的事件使用 `@kebab-case`（`@item-click`、`@change`）；`:on-xxx` 不会注册仅 emit 的监听器。
 
 ## Bubble
 
@@ -30,12 +30,12 @@
 
 ## BubbleList
 
-| 属性         | 类型               | 默认值    | 说明                                                                          |
-| ------------ | ------------------ | --------- | ----------------------------------------------------------------------------- |
-| `items`      | `BubbleItemType[]` | —（必填） | 每项需要 `key` 和 `role`                                                      |
-| `role`       | `RoleType`         | —         | 角色名 → 属性（或 `(item) => 属性`）；内置：`ai`、`system`、`user`、`divider` |
-| `autoScroll` | `boolean`          | `true`    | 新消息自动滚动                                                                |
-| `onScroll`   | `(event) => void`  | —         | 滚动监听                                                                      |
+| 属性         | 类型                      | 默认值    | 说明                                                                          |
+| ------------ | ------------------------- | --------- | ----------------------------------------------------------------------------- |
+| `items`      | `BubbleItemType[]`        | —（必填） | 每项需要 `key` 和 `role`                                                      |
+| `role`       | `BubbleListProps["role"]` | —         | 角色名 → 属性（或 `(item) => 属性`）；内置：`ai`、`system`、`user`、`divider` |
+| `autoScroll` | `boolean`                 | `true`    | 新消息自动滚动                                                                |
+| `onScroll`   | `(event) => void`         | —         | 滚动监听                                                                      |
 
 **插槽**：`contentRender`、`loadingRender`、`avatar`、`header`、`footer`、`extra`。
 
@@ -181,30 +181,30 @@
 
 **子组件**：
 
-| 组件              | 属性                                                              |
-| ----------------- | ----------------------------------------------------------------- |
-| `ActionsCopy`     | `text?`、`icon?`                                                  |
-| `ActionsFeedback` | `value?`（`'like' \| 'dislike' \| 'default'`）、`onChange(value)` |
-| `ActionsAudio`    | `status?`（`'default' \| 'loading' \| 'error' \| 'running'`）     |
-| `ActionsItem`     | 通用 `ItemType` 字段                                              |
+| 组件              | 属性                                                                                                           |
+| ----------------- | -------------------------------------------------------------------------------------------------------------- |
+| `ActionsCopy`     | `text?`、`icon?`                                                                                               |
+| `ActionsFeedback` | `value?`（`'like' \| 'dislike' \| 'default'`）、`onChange(value)`                                              |
+| `ActionsAudio`    | `status?`（`'default' \| 'loading' \| 'error' \| 'running'`）                                                  |
+| `ActionsItem`     | `status?`（`'default' \| 'loading' \| 'error' \| 'running'`）、`defaultIcon`（必填）、`label?`、`runningIcon?` |
 
 ## Sources
 
-| 属性                  | 类型               | 默认值    | 说明                                         |
-| --------------------- | ------------------ | --------- | -------------------------------------------- |
-| `items`               | `SourcesItem[]`    | —         | `key`、`title`、`url`、`icon`、`description` |
-| `title`               | `VNodeChild`       | —         | 区块标题                                     |
-| `expanded`（v-model） | `boolean`          | —         | 受控展开                                     |
-| `defaultExpanded`     | `boolean`          | `false`   | 初始展开                                     |
-| `inline`              | `boolean`          | `false`   | 行内紧凑模式                                 |
-| `activeKey`           | `string \| number` | —         | 行内弹层当前来源                             |
-| `popoverOverlayWidth` | `number \| string` | —         | 弹层宽度                                     |
-| `expandIconPosition`  | `'start' \| 'end'` | `'start'` | 展开图标位置                                 |
-| `onClick`             | `(item) => void`   | —         | 来源点击回调                                 |
+| 属性                  | 类型                    | 默认值    | 说明                                                       |
+| --------------------- | ----------------------- | --------- | ---------------------------------------------------------- |
+| `items`               | `SourcesProps["items"]` | —         | 每项：`key`、`title`（必填）、`url`、`icon`、`description` |
+| `title`               | `VNodeChild`            | —         | 区块标题                                                   |
+| `expanded`（v-model） | `boolean`               | —         | 受控展开                                                   |
+| `defaultExpanded`     | `boolean`               | `true`    | 初始展开                                                   |
+| `inline`              | `boolean`               | `false`   | 行内紧凑模式                                               |
+| `activeKey`           | `string \| number`      | —         | 行内弹层当前来源                                           |
+| `popoverOverlayWidth` | `number \| string`      | —         | 弹层宽度                                                   |
+| `expandIconPosition`  | `'start' \| 'end'`      | `'start'` | 展开图标位置                                               |
+| `onClick`             | `(item) => void`        | —         | 来源点击回调                                               |
 
 **事件**：`update:expanded`、`expand`。
 
-**插槽**：`title`、`titleRender`、`iconRender`、`description`（条目插槽接收 `{ item, index, originNode }`）、默认（`items` 为空时的兜底）。
+**插槽**：`title`、`titleRender`、`iconRender`、`description`（条目插槽接收 `{ item, index, originNode }`）、默认（未提供 `items` 时的兜底）。
 
 **Ref**：`nativeElement`。
 
@@ -318,13 +318,13 @@
 
 `Notification` 是从 `@antdv-next/x` 导出的默认 `XNotification` 实例。
 
-| 方法                | 签名                                       | 说明         |
-| ------------------- | ------------------------------------------ | ------------ |
-| `open`              | `(options: XNotificationOpenArgs) => void` | 显示系统通知 |
-| `close`             | `() => void`                               | 关闭当前通知 |
-| `requestPermission` | `() => Promise<NotificationPermission>`    | 请求系统权限 |
-| `permission`        | `NotificationPermission`                   | 当前权限状态 |
+| 方法                | 签名                                       | 说明                                   |
+| ------------------- | ------------------------------------------ | -------------------------------------- |
+| `open`              | `(options: XNotificationOpenArgs) => void` | 显示系统通知                           |
+| `close`             | `(tags?: string[]) => void`                | 关闭指定通知；不传 tags 时关闭**全部** |
+| `requestPermission` | `() => Promise<NotificationPermission>`    | 请求系统权限                           |
+| `permission`        | `NotificationPermission`                   | 当前权限状态                           |
 
 `XNotificationOpenArgs` 在浏览器原生 `NotificationOptions`（`body`、`icon`、`badge`、`tag` 等）基础上扩展了 `title: string`、`duration?`、`onClick?`、`onClose?`、`onError?`、`onShow?`。
 
-**组合式 API**：`useNotification()` 返回 `[{ permission }, { open, close, requestPermission }]`。
+**组合式 API**：`Notification.useNotification()` 返回 `[{ permission }, { open, close, requestPermission }]`。不存在独立的 `useNotification` 导出。

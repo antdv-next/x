@@ -82,7 +82,7 @@ registerCatalog(catalog);
 
 `registerCatalog` uses `catalog.$id` first, then `catalog.catalogId`. **If neither is present, registration silently does nothing.**
 
-`createSurface` must reference the same id. If it references an unregistered `local://` id, `loadCatalog` returns an empty catalog (no error); validation is then effectively skipped.
+`createSurface` must reference the same id. If it references an unregistered `local://` id, `loadCatalog` returns `{ $id, components: {} }` without error. Because `components` is an empty (truthy) object, every rendered node then fails the catalog lookup and logs `Component "X" is not defined in catalog`. Register the catalog before use, or omit `catalogId`.
 
 ## Loading
 

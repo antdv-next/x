@@ -100,7 +100,7 @@ const messages = [
     <Welcome title="你好！" description="有什么可以帮你？" />
     <Prompts
       :items="prompts"
-      :on-item-click="info => console.log(info.data.label)"
+      @item-click="info => console.log(info.data.label)"
     />
     <BubbleList :items="messages" />
     <Sender v-model:value="value" :on-submit="msg => console.log(msg)" />
@@ -118,7 +118,7 @@ const messages = [
 - **优先使用预置子组件** `ActionsCopy`、`ActionsFeedback`、`ActionsAudio`、`ActionsItem`，不要重复实现；旧版 `Actions.Copy` 命名空间写法兼容但不推荐。
 - **Sender 的 `onSubmit` 与 `onChange` 不同**：`onSubmit` 在发送按钮或回车时触发，`onChange` 每次输入都触发，不要混用。
 - **不要把 `Mermaid` 或 `CodeHighlighter` 塞进 Bubble 的 `content` 字符串** —— 使用 `content` 插槽、`contentRender` 或 Markdown 的 `components` 映射。
-- **模板中的回调属性使用 `onXxx` 形式**（`:on-submit`、`:on-change`、`:on-item-click`），双向绑定使用 `v-model:value` / `v-model:items`。
+- **声明的回调属性与仅 emit 的事件绑定方式不同** —— 已声明的 `onXxx` 属性可用 `:on-xxx`（Sender 的 `:on-submit`、`:on-change`）；仅 emit 的事件必须用 `@event-name`（Prompts 的 `@item-click`、Attachments 的 `@change`、Folder 的 `@selected-file-change`、Think/ThoughtChain 的 `@expand`）。`:on-xxx` 形式不会注册仅 emit 的监听器；不确定时查阅 [API.md](reference/API.md)。双向绑定使用 `v-model:value` / `v-model:items`。
 
 # 🤝 技能协作
 
@@ -134,7 +134,7 @@ const messages = [
 
 - [COMPONENTS.md](reference/COMPONENTS.md) —— 逐组件指南，含用法、关键属性和 Vue 示例
 - [PATTERNS.md](reference/PATTERNS.md) —— 完整页面组合模式与集成示例
-- [API.md](reference/API.md) —— 17 个组件族的属性、事件、插槽汇总
+- [API.md](reference/API.md) —— 18 个组件族的属性、事件、插槽汇总
 
 ## 官方文档
 
