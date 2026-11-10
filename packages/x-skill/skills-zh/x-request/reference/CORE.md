@@ -155,20 +155,39 @@ const request = XRequest<{ message: string }, { content: string }>(
   "https://api.example.com/chat",
   {
     params: { message: "你好" },
-    transformStream: () =>
-      new TransformStream({
+    transformStream: () => {
+      let buffer = "";
+      const processLine = (
+        line: string,
+        controller: TransformStreamDefaultController,
+      ) => {
+        if (!line.startsWith("data: ")) return;
+        const data = line.slice(6);
+        if (data !== "[DONE]") {
+          controller.enqueue({ content: data });
+        }
+      };
+
+      return new TransformStream({
         transform(chunk, controller) {
           // chunk 已经是解码后的字符串，不要再调用 TextDecoder
-          for (const line of chunk.split("\n")) {
-            if (line.startsWith("data: ")) {
-              const data = line.slice(6);
-              if (data !== "[DONE]") {
-                controller.enqueue({ content: data });
-              }
-            }
+          const lines = (buffer + chunk).split("\n");
+          buffer = lines.pop() ?? "";
+          for (const rawLine of lines) {
+            processLine(
+              rawLine.endsWith("\r") ? rawLine.slice(0, -1) : rawLine,
+              controller,
+            );
           }
         },
-      }),
+        flush(controller) {
+          processLine(
+            buffer.endsWith("\r") ? buffer.slice(0, -1) : buffer,
+            controller,
+          );
+        },
+      });
+    },
   },
 );
 ```
@@ -177,21 +196,39 @@ const request = XRequest<{ message: string }, { content: string }>(
 
 ```typescript
 // OpenAI SSE 格式：使用工厂函数，保证每次请求都得到新的流
-const openaiStream = () =>
-  new TransformStream({
+const openaiStream = () => {
+  let buffer = "";
+  const processLine = (
+    line: string,
+    controller: TransformStreamDefaultController,
+  ) => {
+    if (!line.startsWith("data: ")) return;
+    const data = line.slice(6);
+    if (data === "[DONE]") return;
+    const json = JSON.parse(data);
+    const content = json.choices?.[0]?.delta?.content || "";
+    if (content) {
+      controller.enqueue({ content });
+    }
+  };
+
+  return new TransformStream({
     transform(chunk, controller) {
-      for (const line of chunk.split("\n")) {
-        if (!line.startsWith("data: ")) continue;
-        const data = line.slice(6);
-        if (data === "[DONE]") continue;
-        const json = JSON.parse(data);
-        const content = json.choices?.[0]?.delta?.content || "";
-        if (content) {
-          controller.enqueue({ content });
-        }
+      const lines = (buffer + chunk).split("\n");
+      buffer = lines.pop() ?? "";
+      for (const rawLine of lines) {
+        const line = rawLine.endsWith("\r") ? rawLine.slice(0, -1) : rawLine;
+        processLine(line, controller);
       }
     },
+    flush(controller) {
+      processLine(
+        buffer.endsWith("\r") ? buffer.slice(0, -1) : buffer,
+        controller,
+      );
+    },
   });
+};
 
 // 使用示例
 const request = XRequest(url, {
@@ -200,4 +237,4 @@ const request = XRequest(url, {
 });
 ```
 
-> ⚠️ **注意**：Web `ReadableStream` 只能被一个 reader 锁定，不要复用同一个 `TransformStream` 实例，始终传入工厂函数（`() => new TransformStream(...)`），如上例所示。另外，chunk 可能在一个 SSE 事件行中间结束，生产环境需要缓存末尾不完整的行。
+> ⚠️ **注意**：Web `ReadableStream` 只能被一个 reader 锁定，不要复用同一个 `TransformStream` 实例，始终传入工厂函数（`() => new TransformStream(...)`），如上例所示。这些示例会缓存跨 chunk 的不完整行；生产环境还应处理完整 SSE 规范，包括多行 `data` 字段和事件边界。
