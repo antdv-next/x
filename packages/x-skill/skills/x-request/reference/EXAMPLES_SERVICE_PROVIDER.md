@@ -1,3 +1,7 @@
+# Service Provider Examples
+
+> These examples show standalone request configuration. When the instance is passed to a Chat Provider (`x-chat-provider` / `use-x-chat`), add `manual: true`, otherwise `AbstractChatProvider` throws `request must be manual`.
+
 ### 1️⃣ OpenAI Standard Format
 
 **Node.js Environment (Safe)**

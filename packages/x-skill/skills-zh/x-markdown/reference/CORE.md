@@ -14,7 +14,10 @@
 npm install @antdv-next/x-markdown
 ```
 
-```tsx
+```vue
+<script setup>
+import "@antdv-next/x-markdown/themes/index.css";
+import "@antdv-next/x-markdown/themes/light.css";
 import { XMarkdown } from "@antdv-next/x-markdown";
 
 const content = `
@@ -23,32 +26,42 @@ const content = `
 - item 1
 - item 2
 `;
+</script>
 
-export default () => <XMarkdown content={content} />;
+<template>
+  <XMarkdown :content="content" class="x-markdown-light" />
+</template>
 ```
+
+`themes/index.css` 提供默认标签样式；`themes/light.css` 或 `themes/dark.css` 提供主题变量。需要内置排版时两个都要引入。
 
 ## 安全默认值
 
-- `content` 和 `children` 二选一即可，不要同时传。
+- 使用 `content`，没有 `children` 属性。
 - 先让纯 Markdown 渲染正确，再加插件或自定义组件。
-- 当模型输出可能包含外链时，优先开启 `openLinksInNewTab`。
-- 如果原始 HTML 只需要保留文本展示，优先使用 `escapeRawHtml`。
-- 如果必须渲染真实 HTML，请显式检查 `dompurifyConfig`。
+- `openLinksInNewTab` 默认就是 `true`。
+- `protectCustomTagNewlines` 默认就是 `true`；只有自定义标签解析确实依赖空行时才关闭。
+- 原始 HTML 内部由 DOMPurify 净化，没有 `dompurifyConfig` 属性。如果希望原始 HTML 只作为文本展示，使用 `escapeRawHtml`。
+- 流式内容优先使用布尔预设：`:streaming="isStreaming"`。
 
 ## 常见集成模式
 
 ### 基础内容块
 
-```tsx
-<XMarkdown content={message} className="x-markdown-light" />
+```vue
+<XMarkdown :content="message" class="x-markdown-light" />
 ```
 
 ### 聊天消息渲染
 
 在 `useXChat` 产出消息列表之后，再用 `XMarkdown` 负责内容展示。
 
-```tsx
-<XMarkdown content={message.message.content} openLinksInNewTab escapeRawHtml />
+```vue
+<XMarkdown
+  :content="message.message.content"
+  :open-links-in-new-tab="true"
+  escape-raw-html
+/>
 ```
 
 ### 最小检查清单
@@ -62,4 +75,4 @@ export default () => <XMarkdown content={content} />;
 
 - 内容是流式分块到达时，阅读 [STREAMING.md](STREAMING.md)
 - 需要自定义标签、代码块、插件、主题时，阅读 [EXTENSIONS.md](EXTENSIONS.md)
-- 需要完整属性表时，阅读 `API.md`
+- 需要完整属性表和默认值时，阅读 `API.md`

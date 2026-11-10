@@ -1,3 +1,7 @@
+# 各服务商配置示例
+
+> 以下示例展示独立请求配置。如果实例要传给 Chat Provider（`x-chat-provider` / `use-x-chat`），请加上 `manual: true`，否则 `AbstractChatProvider` 会抛出 `request must be manual`。
+
 ### 1️⃣ OpenAI 标准格式
 
 **Node.js 环境（安全）**

@@ -1,6 +1,6 @@
 ---
 name: x-markdown
-version: 0.0.1
+version: 0.0.3
 description: Use when building or reviewing Markdown rendering with @antdv-next/x-markdown, including streaming Markdown, custom component mapping, plugins, themes, and chat-oriented rich content.
 ---
 
@@ -39,8 +39,10 @@ It covers:
 | If you need to...                       | Read first                               | Typical outcome                                                      |
 | --------------------------------------- | ---------------------------------------- | -------------------------------------------------------------------- |
 | Render Markdown with the smallest setup | [CORE.md](reference/CORE.md)             | `XMarkdown` renders trusted content with basic styling               |
-| Render LLM streaming chunks             | [STREAMING.md](reference/STREAMING.md)   | Correct `hasNextChunk`, placeholders, tail indicator, loading states |
-| Replace tags with business components   | [EXTENSIONS.md](reference/EXTENSIONS.md) | Stable `components` map for custom tags and code blocks              |
+| Render LLM streaming chunks             | [STREAMING.md](reference/STREAMING.md)   | Boolean preset or `hasNextChunk`, placeholders, tail, loading states |
+| Improve long-stream performance         | [STREAMING.md](reference/STREAMING.md)   | `incremental` sections; only the growing section re-renders          |
+| Add typewriter or fade-in effects       | [STREAMING.md](reference/STREAMING.md)   | `streaming.typewriter` and `animationConfig`                         |
+| Replace tags with business components   | [EXTENSIONS.md](reference/EXTENSIONS.md) | Stable `components` / `componentsProps` maps                         |
 | Add plugins or theme overrides          | [EXTENSIONS.md](reference/EXTENSIONS.md) | Plugin imports, theme class wiring, minimal CSS overrides            |
 | Check prop details and defaults         | [API.md](reference/API.md)               | Full prop table for `XMarkdown` and streaming options                |
 
@@ -53,20 +55,32 @@ It covers:
 
 ## Minimal Setup Reminder
 
-```tsx
+```vue
+<script setup>
 import { XMarkdown } from "@antdv-next/x-markdown";
+</script>
 
-export default () => <XMarkdown content="# Hello" />;
+<template>
+  <XMarkdown content="# Hello" />
+</template>
+```
+
+For streaming, the shortest correct setup is the boolean preset:
+
+```vue
+<XMarkdown :content="content" :streaming="isStreaming" />
 ```
 
 # 🚨 Development Rules
 
 - Prefer a stable `components` object. Do not create new inline component mappings on every render.
-- Use `streaming.hasNextChunk = false` on the final chunk, otherwise incomplete placeholders will not flush into final content.
-- Treat raw HTML carefully. Prefer `escapeRawHtml` when raw HTML should stay visible as text.
-- If raw HTML must be rendered, keep `dompurifyConfig` explicit and minimal.
-- Keep theme overrides small. Start from `x-markdown-light` or `x-markdown-dark` and override only the variables you need.
+- Use `componentsProps` for fixed extra props instead of inline closures; it keeps component references stable.
+- Prefer `:streaming="isStreaming"` (the boolean preset) for LLM output. In the object form, set `hasNextChunk = false` on the final chunk, otherwise incomplete placeholders will not flush into final content.
+- Enable `incremental` for long streams; finished sections stop re-parsing and re-rendering.
+- Treat raw HTML carefully. Use `escapeRawHtml` when raw HTML should stay visible as text; raw HTML is sanitized internally, and there is no `dompurifyConfig` prop.
+- Keep theme overrides small. Import both `themes/index.css` and `x-markdown-light` / `x-markdown-dark`, then override only the variables you need.
 - If a custom component depends on complete syntax, branch on `streamStatus === 'done'`.
+- Keep `config`, `streaming`, `components`, and `componentsProps` stable outside the component (module constants or `computed`).
 
 # 🤝 Skill Collaboration
 
@@ -88,13 +102,13 @@ export default () => <XMarkdown content="# Hello" />;
 - [CORE.md](reference/CORE.md) - Package boundaries, install/setup, safe defaults, common render patterns
 - [STREAMING.md](reference/STREAMING.md) - Chunked rendering, incomplete syntax recovery, loading vs done behavior
 - [EXTENSIONS.md](reference/EXTENSIONS.md) - Components, plugins, themes, custom tag guidance
-- [API.md](reference/API.md) - Generated API reference from the official `x-markdown` docs
+- [API.md](reference/API.md) - Prop tables, streaming options, and defaults aligned with the current source
 
 ## Official Docs
 
-- [XMarkdown Introduction](https://github.com/antdv-next/x/blob/main/packages/docs/src/pages/markdown/introduce.en-US.md)
+- [XMarkdown Introduction](https://github.com/antdv-next/x/blob/main/packages/docs/src/pages/markdown/index.en-US.md)
 - [XMarkdown Examples](https://github.com/antdv-next/x/blob/main/packages/docs/src/pages/markdown/examples.en-US.md)
 - [XMarkdown Streaming](https://github.com/antdv-next/x/blob/main/packages/docs/src/pages/markdown/streaming.en-US.md)
-- [XMarkdown Components](https://github.com/antdv-next/x/blob/main/packages/docs/src/pages/markdown/components.en-US.md)
 - [XMarkdown Plugins](https://github.com/antdv-next/x/blob/main/packages/docs/src/pages/markdown/plugins.en-US.md)
+- [XMarkdown LaTeX Plugin](https://github.com/antdv-next/x/blob/main/packages/docs/src/pages/markdown/plugin-latex.en-US.md)
 - [XMarkdown Themes](https://github.com/antdv-next/x/blob/main/packages/docs/src/pages/markdown/themes.en-US.md)

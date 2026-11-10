@@ -1,6 +1,6 @@
 ---
 name: x-chat-provider
-version: 0.0.1
+version: 0.0.3
 description: Focus on implementing custom Chat Provider, helping to adapt any streaming interface to Antdv Next X standard format
 ---
 
@@ -81,7 +81,7 @@ graph LR
 
 | Package               | Version Requirement | Auto Install | Purpose                                    |
 | --------------------- | ------------------- | ------------ | ------------------------------------------ |
-| **@antdv-next/x-sdk** | ≥0.0.1              | ✅           | Core SDK, includes Provider and Hook       |
+| **@antdv-next/x-sdk** | `>=0.0.4`           | ✅           | Core SDK, includes Provider and Hook       |
 | **@antdv-next/x**     | Latest version      | ✅           | UI component library, build chat interface |
 
 #### 🛠️ One-click Environment Check
@@ -97,7 +97,7 @@ npm install @antdv-next/x-sdk@latest
 
 | SDK Version | Supported Features          | Compatibility  |
 | ----------- | --------------------------- | -------------- |
-| ≥0.0.1      | Full Provider functionality | ✅ Recommended |
+| >=0.0.4     | Full Provider functionality | ✅ Recommended |
 
 ### 🎯 Provider Selection Decision Tree
 
@@ -119,19 +119,20 @@ graph TD
 
 #### Out-of-the-box Providers
 
-| Provider Type         | Applicable Scenario   | Usage Method      |
-| --------------------- | --------------------- | ----------------- |
-| **OpenAI Provider**   | Standard OpenAI API   | Direct import use |
-| **DeepSeek Provider** | Standard DeepSeek API | Direct import use |
+| Provider Type         | Applicable Scenario    | Class name             |
+| --------------------- | ---------------------- | ---------------------- |
+| **OpenAI Provider**   | Standard OpenAI API    | `OpenAIChatProvider`   |
+| **DeepSeek Provider** | Standard DeepSeek API  | `DeepSeekChatProvider` |
+| **Default Provider**  | Minimal transformation | `DefaultChatProvider`  |
 
 #### Quick Decision Guide
 
-| Scenario                     | Recommended Solution       | Example                      |
-| ---------------------------- | -------------------------- | ---------------------------- |
-| Call official OpenAI         | Built-in OpenAI Provider   | `new OpenAIProvider()`       |
-| Call official DeepSeek       | Built-in DeepSeek Provider | `new DeepSeekProvider()`     |
-| Company internal API         | Custom Provider            | See four-step implementation |
-| Third-party non-standard API | Custom Provider            | See four-step implementation |
+| Scenario                     | Recommended Solution       | Example                         |
+| ---------------------------- | -------------------------- | ------------------------------- |
+| Call official OpenAI         | Built-in OpenAI Provider   | `new OpenAIChatProvider(...)`   |
+| Call official DeepSeek       | Built-in DeepSeek Provider | `new DeepSeekChatProvider(...)` |
+| Company internal API         | Custom Provider            | See four-step implementation    |
+| Third-party non-standard API | Custom Provider            | See four-step implementation    |
 
 # 📋 Four Steps to Implement Custom Provider
 
@@ -193,8 +194,14 @@ interface MyAPIResponse {
 ### 🏗️ Code Template (Copy and Use)
 
 ```ts
-// MyChatProvider.ts
+import type {
+  TransformMessage,
+  XRequestConfigOptions,
+} from "@antdv-next/x-sdk";
+
 import { AbstractChatProvider } from "@antdv-next/x-sdk";
+// MyChatProvider.ts
+import { unref } from "vue";
 
 // ====== 1st modification: Define your interface types ======
 interface MyInput {
@@ -224,7 +231,7 @@ export class MyChatProvider extends AbstractChatProvider<
   // Parameter conversion: convert useXChat parameters to your API parameters
   transformParams(
     requestParams: Partial<MyInput>,
-    options: XRequestOptions<MyInput, MyOutput, MyMessage>,
+    options: XRequestConfigOptions<MyInput, MyOutput, MyMessage>,
   ): MyInput {
     if (typeof requestParams !== "object") {
       throw new Error("requestParams must be an object");
@@ -235,7 +242,8 @@ export class MyChatProvider extends AbstractChatProvider<
       context: requestParams.context,
       model: "gpt-3.5-turbo", // Adjust according to your API
       stream: true,
-      ...(options?.params || {}),
+      // options.params may be a ref
+      ...(unref(options?.params) || {}),
     };
   }
 
@@ -249,23 +257,38 @@ export class MyChatProvider extends AbstractChatProvider<
   }
 
   // ====== 3rd modification: Response data conversion ======
-  transformMessage(info: {
-    originMessage: MyMessage;
-    chunk: MyOutput;
-  }): MyMessage {
+  transformMessage(info: TransformMessage<MyMessage, MyOutput>): MyMessage {
     const { originMessage, chunk } = info;
 
-    // Handle end marker
-    if (!chunk?.content || chunk.content === "[DONE]") {
-      return { ...originMessage, status: "success" as const };
+    // The final onSuccess call passes chunks instead of a single chunk.
+    // Return the accumulated message in that case.
+    if (!chunk) {
+      return (
+        originMessage || {
+          content: "",
+          role: "assistant",
+          timestamp: Date.now(),
+        }
+      );
     }
 
-    // Accumulate response content
+    // Handle end marker
+    if (chunk.content === "[DONE]") {
+      return (
+        originMessage || {
+          content: "",
+          role: "assistant",
+          timestamp: Date.now(),
+        }
+      );
+    }
+
+    // Accumulate response content. Do not put MessageStatus here:
+    // useXChat owns the status on MessageInfo.
     return {
-      ...originMessage,
-      content: `${originMessage.content || ""}${chunk.content || ""}`,
-      role: "assistant" as const,
-      status: "loading" as const,
+      content: `${originMessage?.content || ""}${chunk.content || ""}`,
+      role: "assistant",
+      timestamp: originMessage?.timestamp ?? Date.now(),
     };
   }
 }
@@ -303,9 +326,10 @@ npx tsc --noEmit MyChatProvider.ts
 ### 🔧 Complete Integration Example
 
 ```ts
+import { XRequest } from "@antdv-next/x-sdk";
+
 // 1. Import dependencies
 import { MyChatProvider } from "./MyChatProvider";
-import { XRequest } from "@antdv-next/x-sdk";
 
 // 2. Configure XRequest (handled by x-request skill)
 const request = XRequest("https://your-api.com/chat", {
@@ -328,13 +352,20 @@ const request = XRequest("https://your-api.com/chat", {
 
 // 3. Create Provider instance
 const provider = new MyChatProvider({
-  request, // Must pass XRequest instance
+  request, // Must pass an XRequest instance with manual: true
+});
+
+// `request` may also be a factory, evaluated when the Provider is constructed:
+const lazyProvider = new MyChatProvider({
+  request: () => XRequest("https://your-api.com/chat", { manual: true }),
 });
 
 // 4. Now can be used with useXChat
 // This part is handled by use-x-chat skill
 export { provider };
 ```
+
+> `transformLocalMessage` may return one message or an array of messages. `transformMessage` receives the full `TransformMessage` object: `originMessage?`, `chunk`, `chunks`, `status`, and `responseHeaders`. Return only the `ChatMessage`; `useXChat` owns the message status.
 
 ### 🎉 Usage Advantages
 
@@ -486,7 +517,8 @@ class MyProvider extends AbstractChatProvider {
 
 // Mandatory use of XRequest:
 const provider = new MyProvider({
-  request: XRequest("https://your-api.com/chat"),
+  // manual: true is required; AbstractChatProvider throws otherwise
+  request: XRequest("https://your-api.com/chat", { manual: true }),
 });
 ```
 
@@ -535,4 +567,4 @@ After completion:
 
 ## 💻 Example Code
 
-- [custom-provider-width-ui.tsx](https://github.com/antdv-next/x/blob/main/packages/docs/src/pages/sdk/demo/chat-provider-with-ui.vue) - Complete example of custom Provider
+- [chat-provider-with-ui.vue](https://github.com/antdv-next/x/blob/main/packages/docs/src/pages/sdk/demo/chat-provider-with-ui.vue) - Complete example of custom Provider

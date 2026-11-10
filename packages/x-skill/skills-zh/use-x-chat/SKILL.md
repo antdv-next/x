@@ -1,7 +1,7 @@
 ---
 name: use-x-chat
-version: 0.0.1
-description: 专注讲解如何使用 useXChat Hook，包括自定义 Provider 的集成、消息管理、错误处理等
+version: 0.0.3
+description: 使用 useXChat 构建 Vue 聊天状态时使用，覆盖自定义 Provider 集成、消息管理、错误处理和多会话管理。
 ---
 
 # 🎯 技能定位
@@ -20,67 +20,38 @@ description: 专注讲解如何使用 useXChat Hook，包括自定义 Provider �
   - [消息管理](#1-消息管理)
   - [请求控制](#2-请求控制)
   - [错误处理](#3-错误处理)
-  - [完整示例项目](#-完整示例项目)
+  - [多会话管理](#4-多会话管理)
 - [📋 使用前提和依赖](#-使用前提和依赖)
 - [🚨 开发规则](#-开发规则)
 - [🔗 参考资源](#-参考资源)
-  - [📚 核心参考文档](#-核心参考文档)
-  - [🌐 SDK官方文档](#-SDK官方文档)
-  - [💻 示例代码](#-示例代码)
 
 # 🚀 快速开始
 
 ## 1. 依赖管理
 
-### 🎯 自动依赖处理
-
-### 📋 系统要求
-
-- **@antdv-next/x-sdk**: 最新版（自动安装）
-- **@antdv-next/x**: 最新版（UI组件，自动安装）
-
-### ⚠️ 版本问题自动修复
-
-如果检测到版本不匹配，技能会自动：
-
-- ✅ 提示当前版本状态
-- ✅ 提供修复建议
-- ✅ 使用相对路径确保兼容性
-
-#### 🎯 技能内置版本检查
-
-use-x-chat 技能已内置版本检查功能，启动时自动检查版本兼容性：
-
-**🔍 自动检查功能** 技能启动时会自动检查 `@antdv-next/x-sdk` 版本是否符合要求：
-
-**📋 检查内容包括：**
-
-- ✅ 当前安装的版本
-- ✅ 是否符合最低要求
-- ✅ 自动提供修复建议
-- ✅ 友好的错误提示
-
-**🛠️ 版本问题修复** 如果检测到版本不匹配，技能会提供具体的修复命令：
+| 包                    | 版本要求  | 用途                                           |
+| --------------------- | --------- | ---------------------------------------------- |
+| **@antdv-next/x-sdk** | `>=0.0.4` | `useXChat`、`useXConversations`、各类 Provider |
+| **@antdv-next/x**     | 最新版    | UI 组件（Bubble、Sender 等）                   |
 
 ```bash
-# 自动提示的修复命令
-npm install @antdv-next/x-sdk@latest
+npm install @antdv-next/x-sdk @antdv-next/x
 ```
 
 ## 2. 三步集成
 
 ### 步骤1：准备 Provider
 
-这部分由 x-chat-provider 技能负责
+这部分由 x-chat-provider 技能负责。传给 Provider 的 XRequest 必须使用 `manual: true`，否则 `AbstractChatProvider` 会抛出 `request must be manual`。
 
 ```ts
-import { MyChatProvider } from "./MyChatProvider";
 import { XRequest } from "@antdv-next/x-sdk";
 
-// 推荐使用 XRequest 作为默认请求方式
+import { MyChatProvider } from "./MyChatProvider";
+
 const provider = new MyChatProvider({
-  // 默认使用 XRequest，无需自定义 fetch
-  request: XRequest("https://your-api.com/chat"),
+  // Provider 场景必须设置 manual: true
+  request: XRequest("https://your-api.com/chat", { manual: true }),
   // 当设置 requestPlaceholder 时，会在请求开始前显示占位消息
   requestPlaceholder: {
     content: "正在思考中...",
@@ -108,8 +79,8 @@ const provider = new MyChatProvider({
 ### 步骤2：基础使用
 
 ```tsx
-import { defineComponent } from "vue";
 import { useXChat } from "@antdv-next/x-sdk";
+import { defineComponent } from "vue";
 
 const ChatComponent = defineComponent(() => {
   const { messages, onRequest, isRequesting } = useXChat({ provider });
@@ -121,7 +92,12 @@ const ChatComponent = defineComponent(() => {
           {msg.message.role}: {msg.message.content}
         </div>
       ))}
-      <button onClick={() => onRequest({ query: "你好" })}>发送</button>
+      <button
+        disabled={isRequesting.value}
+        onClick={() => onRequest({ query: "你好" })}
+      >
+        发送
+      </button>
     </div>
   );
 });
@@ -129,17 +105,34 @@ const ChatComponent = defineComponent(() => {
 
 ### 步骤3：UI集成
 
+`BubbleList` 需要的是 `BubbleItemType[]`，不是 `MessageInfo[]`，传入前先做映射。Vue 中导出的组件是 `BubbleList`，不存在 `Bubble.List`。
+
 ```tsx
-import { defineComponent } from "vue";
-import { Bubble, Sender } from "@antdv-next/x";
+import { BubbleList, Sender } from "@antdv-next/x";
 import { useXChat } from "@antdv-next/x-sdk";
+import { computed, defineComponent } from "vue";
 
 const ChatUI = defineComponent(() => {
   const { messages, onRequest, isRequesting, abort } = useXChat({ provider });
 
+  const bubbleItems = computed(() =>
+    messages.value.map(({ id, message, status }) => ({
+      key: id,
+      role: message.role,
+      content: message.content,
+      loading: status === "loading",
+    })),
+  );
+
   return () => (
     <div style={{ height: "600px" }}>
-      <Bubble.List items={messages.value} />
+      <BubbleList
+        items={bubbleItems.value}
+        role={{
+          user: { placement: "end" },
+          assistant: { placement: "start" },
+        }}
+      />
       <Sender
         loading={isRequesting.value}
         onSubmit={content => onRequest({ query: content })}
@@ -172,10 +165,10 @@ interface MessageInfo<Message> {
   id: number | string; // 消息唯一标识
   message: Message; // 实际消息内容
   status: MessageStatus; // 发送状态
-  extraInfo?: AnyObject; // 扩展信息
+  extraInfo?: AnyObject; // 每次请求的扩展信息
 }
 
-// 消息状态枚举
+// 消息状态
 type MessageStatus =
   "local" | "loading" | "updating" | "success" | "error" | "abort";
 ```
@@ -185,6 +178,33 @@ type MessageStatus =
 > 💡 **提示**：API可能会随版本更新，建议查看[官方文档](https://github.com/antdv-next/x/blob/main/packages/docs/src/pages/sdk/use-x-chat.zh-CN.md)获取最新信息
 
 核心功能参考内容 [CORE.md](reference/CORE.md)
+
+## 4. 多会话管理
+
+`useXChat` 按 `conversationKey` 隔离消息 store。会话列表交给同包的 `useXConversations`，再把当前激活的 key 传给 `useXChat`：
+
+```ts
+import { useXChat, useXConversations } from "@antdv-next/x-sdk";
+
+const {
+  conversations,
+  activeConversationKey,
+  addConversation,
+  removeConversation,
+} = useXConversations({
+  defaultConversations: [{ key: "1", label: "新会话" }],
+  defaultActiveConversationKey: "1",
+});
+
+const { messages, onRequest, queueRequest } = useXChat({
+  provider,
+  conversationKey: activeConversationKey,
+});
+```
+
+- `conversationKey` 支持 ref；切换 ref 会自动切换消息 store。
+- 异步 `defaultMessages` 尚未加载完就想发送时，调用 `queueRequest(conversationKey, params)`，请求会在加载完成后执行。
+- `useXConversations` 还提供 `setActiveConversationKey`、`setConversation`、`getConversation`、`setConversations` 和 `getMessages`。
 
 # 📋 使用前提和依赖
 
@@ -232,12 +252,13 @@ type MessageStatus =
 
 ## 📚 核心参考文档
 
-- [API.md](reference/API.md) - 完整的 API 参考文档
-- [EXAMPLES.md](reference/EXAMPLES.md) - 所有实战示例代码
+- [API.md](reference/API.md) - 完整 API、返回值、`MessageInfo`、`useXConversations`
+- [EXAMPLES.md](reference/EXAMPLES.md) - 实战示例代码
 
 ## 🌐 SDK官方文档
 
 - [useXChat 官方文档](https://github.com/antdv-next/x/blob/main/packages/docs/src/pages/sdk/use-x-chat.zh-CN.md)
+- [useXConversations 官方文档](https://github.com/antdv-next/x/blob/main/packages/docs/src/pages/sdk/use-x-conversations.zh-CN.md)
 - [XRequest 官方文档](https://github.com/antdv-next/x/blob/main/packages/docs/src/pages/sdk/x-request.zh-CN.md)
 - [Chat Provider 官方文档](https://github.com/antdv-next/x/blob/main/packages/docs/src/pages/sdk/chat-provider.zh-CN.md)
 
