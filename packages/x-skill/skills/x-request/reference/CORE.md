@@ -155,20 +155,39 @@ const request = XRequest<{ message: string }, { content: string }>(
   "https://api.example.com/chat",
   {
     params: { message: "Hello" },
-    transformStream: () =>
-      new TransformStream({
+    transformStream: () => {
+      let buffer = "";
+      const processLine = (
+        line: string,
+        controller: TransformStreamDefaultController,
+      ) => {
+        if (!line.startsWith("data: ")) return;
+        const data = line.slice(6);
+        if (data !== "[DONE]") {
+          controller.enqueue({ content: data });
+        }
+      };
+
+      return new TransformStream({
         transform(chunk, controller) {
           // `chunk` is already a decoded string; do not call TextDecoder again
-          for (const line of chunk.split("\n")) {
-            if (line.startsWith("data: ")) {
-              const data = line.slice(6);
-              if (data !== "[DONE]") {
-                controller.enqueue({ content: data });
-              }
-            }
+          const lines = (buffer + chunk).split("\n");
+          buffer = lines.pop() ?? "";
+          for (const rawLine of lines) {
+            processLine(
+              rawLine.endsWith("\r") ? rawLine.slice(0, -1) : rawLine,
+              controller,
+            );
           }
         },
-      }),
+        flush(controller) {
+          processLine(
+            buffer.endsWith("\r") ? buffer.slice(0, -1) : buffer,
+            controller,
+          );
+        },
+      });
+    },
   },
 );
 ```
@@ -177,21 +196,39 @@ const request = XRequest<{ message: string }, { content: string }>(
 
 ```typescript
 // OpenAI SSE format: reuse this factory so every request gets a new stream
-const openaiStream = () =>
-  new TransformStream({
+const openaiStream = () => {
+  let buffer = "";
+  const processLine = (
+    line: string,
+    controller: TransformStreamDefaultController,
+  ) => {
+    if (!line.startsWith("data: ")) return;
+    const data = line.slice(6);
+    if (data === "[DONE]") return;
+    const json = JSON.parse(data);
+    const content = json.choices?.[0]?.delta?.content || "";
+    if (content) {
+      controller.enqueue({ content });
+    }
+  };
+
+  return new TransformStream({
     transform(chunk, controller) {
-      for (const line of chunk.split("\n")) {
-        if (!line.startsWith("data: ")) continue;
-        const data = line.slice(6);
-        if (data === "[DONE]") continue;
-        const json = JSON.parse(data);
-        const content = json.choices?.[0]?.delta?.content || "";
-        if (content) {
-          controller.enqueue({ content });
-        }
+      const lines = (buffer + chunk).split("\n");
+      buffer = lines.pop() ?? "";
+      for (const rawLine of lines) {
+        const line = rawLine.endsWith("\r") ? rawLine.slice(0, -1) : rawLine;
+        processLine(line, controller);
       }
     },
+    flush(controller) {
+      processLine(
+        buffer.endsWith("\r") ? buffer.slice(0, -1) : buffer,
+        controller,
+      );
+    },
   });
+};
 
 // Usage example
 const request = XRequest(url, {
@@ -200,4 +237,4 @@ const request = XRequest(url, {
 });
 ```
 
-> ⚠️ **Note**: A Web `ReadableStream` can be locked by only one reader, so never reuse a `TransformStream` instance. Always pass a factory (`() => new TransformStream(...)`), as above. A chunk may also end mid-line in an SSE event; production parsers should buffer the trailing partial line.
+> ⚠️ **Note**: A Web `ReadableStream` can be locked by only one reader, so never reuse a `TransformStream` instance. Always pass a factory (`() => new TransformStream(...)`), as above. These examples buffer incomplete lines between chunks; production parsers should also handle the full SSE specification, including multiline `data` fields and event boundaries.
