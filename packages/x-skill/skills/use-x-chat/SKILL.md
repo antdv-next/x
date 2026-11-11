@@ -1,6 +1,6 @@
 ---
 name: use-x-chat
-version: 0.0.3
+version: 0.0.4
 description: Use when building Vue chat state with useXChat, including custom Provider integration, message management, error handling, and multi-conversation management.
 ---
 

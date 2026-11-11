@@ -1,6 +1,6 @@
 ---
 name: x-chat-provider
-version: 0.0.3
+version: 0.0.4
 description: Focus on implementing custom Chat Provider, helping to adapt any streaming interface to Antdv Next X standard format
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: x-markdown
-version: 0.0.3
+version: 0.0.4
 description: Use when building or reviewing Markdown rendering with @antdv-next/x-markdown, including streaming Markdown, custom component mapping, plugins, themes, and chat-oriented rich content.
 ---
 

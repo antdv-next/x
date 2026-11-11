@@ -1,6 +1,6 @@
 ---
 name: x-card
-version: 0.0.3
+version: 0.0.4
 description: 使用 @antdv-next/x-card 渲染 A2UI 动态卡片时使用，覆盖 XCardBox、XCardCard、A2UI v0.8/v0.9 指令、数据绑定、动作事件、组件目录以及自定义组件契约。
 ---
 

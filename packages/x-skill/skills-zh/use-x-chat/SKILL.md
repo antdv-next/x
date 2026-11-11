@@ -1,6 +1,6 @@
 ---
 name: use-x-chat
-version: 0.0.3
+version: 0.0.4
 description: 使用 useXChat 构建 Vue 聊天状态时使用，覆盖自定义 Provider 集成、消息管理、错误处理和多会话管理。
 ---
 

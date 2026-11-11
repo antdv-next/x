@@ -1,6 +1,6 @@
 ---
 name: x-request
-version: 0.0.3
+version: 0.0.4
 description: 专注讲解 XRequest 的实际配置和使用，基于官方文档提供准确的配置说明
 ---
 

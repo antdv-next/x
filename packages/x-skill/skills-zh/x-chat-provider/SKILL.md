@@ -1,6 +1,6 @@
 ---
 name: x-chat-provider
-version: 0.0.3
+version: 0.0.4
 description: 专注于自定义 Chat Provider 的实现，帮助将任意流式接口适配为 Antdv Next X 标准格式
 ---
 

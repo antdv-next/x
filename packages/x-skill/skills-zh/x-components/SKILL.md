@@ -1,6 +1,6 @@
 ---
 name: x-components
-version: 0.0.3
+version: 0.0.4
 description: 使用 @antdv-next/x 构建 AI 对话界面时使用，覆盖 Bubble、BubbleList、Sender、Conversations、Prompts、ThoughtChain、Actions、Welcome、Attachments、Sources、Suggestion、Think、FileCard、CodeHighlighter、Mermaid、Folder、XProvider 和 Notification。
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: x-card
-version: 0.0.3
+version: 0.0.4
 description: Use when rendering A2UI dynamic cards with @antdv-next/x-card — covers XCardBox, XCardCard, A2UI v0.8/v0.9 commands, data binding, action events, component catalogs, and custom component contracts.
 ---
 

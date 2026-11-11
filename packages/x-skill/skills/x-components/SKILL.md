@@ -1,6 +1,6 @@
 ---
 name: x-components
-version: 0.0.3
+version: 0.0.4
 description: Use when building AI chat UIs with @antdv-next/x components — covers Bubble, BubbleList, Sender, Conversations, Prompts, ThoughtChain, Actions, Welcome, Attachments, Sources, Suggestion, Think, FileCard, CodeHighlighter, Mermaid, Folder, XProvider, and Notification.
 ---
 
