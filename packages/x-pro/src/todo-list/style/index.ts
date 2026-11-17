@@ -191,10 +191,6 @@ const genTodoListStyle: GenerateStyle<TodoListToken, CSSObject> = token => {
         minHeight: token.headerHeight,
       },
 
-      [`${listCls}-nested`]: {
-        marginBlockStart: token.marginXS,
-      },
-
       /** 展开入口：与状态图标同尺寸，跟随行高居中，旋转过渡复用头部箭头语义。 */
       [`${itemCls}-expand-icon`]: {
         display: "inline-flex",
@@ -227,15 +223,11 @@ const genTodoListStyle: GenerateStyle<TodoListToken, CSSObject> = token => {
       /**
        * 行下方展开区。`flex-basis: 100%` 保证它独占一行；
        * 左侧缩进由组件按 depth 逐层写入行内 style，这里只负责占满。
-       * 纵向 padding 交给内层，外层高度归零时才能彻底收拢。
+       * 与标题行的间距由 li 的 flex `gap` 提供，不再叠加 padding/margin。
        */
       [`${itemCls}-extra`]: {
         flexBasis: "100%",
         minWidth: 0,
-      },
-
-      [`${itemCls}-extra-inner`]: {
-        paddingBlockStart: token.marginXS,
       },
 
       /**

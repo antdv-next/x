@@ -173,10 +173,7 @@ export default defineComponent<TodoItemRowProps>(props => {
             )}
             style={[props.extraStyle, props.styles?.itemExtra]}
           >
-            {/* 纵向 padding 放在内层：外层高度归零时不会被 padding 顶出残留高度。 */}
-            <div class={`${props.prefixCls}-item-extra-inner`}>
-              {props.extraContent}
-            </div>
+            {props.extraContent}
           </div>
         ) : null}
       </Transition>
