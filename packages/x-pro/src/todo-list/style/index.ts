@@ -184,9 +184,54 @@ const genTodoListStyle: GenerateStyle<TodoListToken, CSSObject> = token => {
 
       [itemCls]: {
         display: "flex",
+        /** 展开区作为第二个 flex 行换行到下方；未展开时与单行表现完全一致。 */
+        flexWrap: "wrap",
         alignItems: "center",
         gap: token.marginXS,
         minHeight: token.headerHeight,
+      },
+
+      [`${listCls}-nested`]: {
+        marginBlockStart: token.marginXS,
+      },
+
+      /** 展开入口：与状态图标同尺寸，跟随行高居中，旋转过渡复用头部箭头语义。 */
+      [`${itemCls}-expand-icon`]: {
+        display: "inline-flex",
+        flex: "none",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 0,
+        border: 0,
+        background: "transparent",
+        color: token.colorTextTertiary,
+        font: "inherit",
+        fontSize: token.fontSizeSM,
+        cursor: "pointer",
+        transition: `transform ${motion}, color ${motion}`,
+
+        "&:hover": {
+          color: token.colorText,
+        },
+
+        "&:focus-visible": {
+          ...focusOutline,
+          borderRadius: token.borderRadiusSM,
+        },
+      },
+
+      [`${itemCls}-expanded > ${itemCls}-expand-icon`]: {
+        transform: "rotate(90deg)",
+      },
+
+      /**
+       * 行下方展开区。`flex-basis: 100%` 保证它独占一行；
+       * 左侧缩进由组件按 depth 逐层写入行内 style，这里只负责占满与纵向节奏。
+       */
+      [`${itemCls}-extra`]: {
+        flexBasis: "100%",
+        minWidth: 0,
+        paddingBlockStart: token.marginXS,
       },
 
       [`${itemCls}-body`]: {
@@ -308,7 +353,9 @@ const genTodoListStyle: GenerateStyle<TodoListToken, CSSObject> = token => {
       },
 
       "@media (prefers-reduced-motion: reduce)": {
-        [`${headerCls}-arrow, ${itemCls}-title, ${itemCls}-strikethrough`]: {
+        [
+          `${headerCls}-arrow, ${itemCls}-title, ${itemCls}-strikethrough, ${itemCls}-expand-icon`
+        ]: {
           transition: "none",
         },
 

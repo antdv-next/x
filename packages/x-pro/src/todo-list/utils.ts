@@ -76,3 +76,50 @@ export function clampProgress(progress: number | undefined) {
 
   return Math.min(100, Math.max(0, progress));
 }
+
+/**
+ * 深度优先展平任务树，供递归计数使用。
+ *
+ * 父节点本身也计入——它既有自己的状态，也带一组子任务；子节点永远是独立的一条。
+ * 防御性处理 `children` 的非数组取值，避免宿主数据不规范时抛错。
+ */
+export function flattenItems(items: TodoItem[]): TodoItem[] {
+  const result: TodoItem[] = [];
+
+  function visit(list: TodoItem[]) {
+    for (const item of list) {
+      result.push(item);
+      if (Array.isArray(item.children) && item.children.length) {
+        visit(item.children);
+      }
+    }
+  }
+
+  visit(items);
+  return result;
+}
+
+/**
+ * 收集所有可展开的节点 id，供实例方法 `expandAll` 使用。
+ */
+export function collectExpandableIds(
+  items: TodoItem[],
+  hasExtraSlot: boolean,
+): string[] {
+  const result: string[] = [];
+  visit(items);
+
+  function visit(list: TodoItem[]) {
+    for (const item of list) {
+      const hasChildren = Array.isArray(item.children) && !!item.children.length;
+      if (item.expandable !== false && (hasChildren || hasExtraSlot)) {
+        result.push(item.id);
+      }
+      if (Array.isArray(item.children)) {
+        visit(item.children);
+      }
+    }
+  }
+
+  return result;
+}

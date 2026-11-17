@@ -18,24 +18,50 @@ export interface TodoItemRowProps {
   titleContent?: VNodeChild;
   /** 已解析的行详情。 */
   detailContent?: VNodeChild;
+  /** 该行是否拥有可展开内容（子任务或 itemExtra 插槽）。 */
+  expandable?: boolean;
+  /** 该行当前是否展开。 */
+  expanded?: boolean;
+  /** 点击展开入口。 */
+  onToggleExpand?: () => void;
+  /** 已解析的展开图标；调用方负责 slot > 内置箭头。 */
+  expandIconContent?: VNodeChild;
+  /** 行下方展开区的内容；仅 expanded 时渲染。 */
+  extraContent?: VNodeChild;
+  /** 展开区的行内缩进样式。 */
+  extraStyle?: CSSProperties;
+  /** 所在层级，写入 data-depth 供样式与测试读取。 */
+  depth?: number;
   classes?: Record<string, string | undefined>;
   styles?: Record<string, CSSProperties | undefined>;
 }
 
 /**
- * 单个任务行：状态图标、标题（带删除线）、详情。
+ * 单个任务行：状态图标、标题（带删除线）、详情，以及可选的展开区。
  *
  * 标题用 `title` 属性兜底展示全文，因为样式上会做单行截断。
+ *
+ * 展开区作为 `li` 的最后一个子节点，借助 `flex-wrap: wrap` 与 `flex-basis: 100%`
+ * 换到第二行；这样原有的三列（图标 / 主体 / 详情）DOM 与 class 完全不变，
+ * 未使用展开能力的清单渲染结果与扩展前逐字一致。
  */
 export default defineComponent<TodoItemRowProps>(props => {
   const titleCls = computed(() => `${props.prefixCls}-item-title`);
 
   return () => (
     <li
-      class={clsx(`${props.prefixCls}-item`, props.classes?.item)}
+      class={clsx(
+        `${props.prefixCls}-item`,
+        {
+          [`${props.prefixCls}-item-expandable`]: props.expandable,
+          [`${props.prefixCls}-item-expanded`]: props.expanded,
+        },
+        props.classes?.item,
+      )}
       style={props.styles?.item}
       data-status={props.status}
       data-index={props.index}
+      data-depth={props.depth ?? 0}
     >
       <TodoStatusIcon
         prefixCls={props.prefixCls}
@@ -76,6 +102,43 @@ export default defineComponent<TodoItemRowProps>(props => {
         >
           {props.detailContent}
         </span>
+      ) : null}
+
+      {props.expandable ? (
+        <button
+          type="button"
+          class={clsx(
+            `${props.prefixCls}-item-expand-icon`,
+            props.classes?.itemExpandIcon,
+          )}
+          style={props.styles?.itemExpandIcon}
+          aria-expanded={props.expanded}
+          onClick={() => props.onToggleExpand?.()}
+        >
+          {props.expandIconContent ?? (
+            <svg
+              viewBox="0 0 1024 1024"
+              width="1em"
+              height="1em"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path d="M340.6 148.6 682 512 340.6 875.4l60.4 60.4L780.8 512 401 88.2z" />
+            </svg>
+          )}
+        </button>
+      ) : null}
+
+      {props.expandable && props.expanded ? (
+        <div
+          class={clsx(
+            `${props.prefixCls}-item-extra`,
+            props.classes?.itemExtra,
+          )}
+          style={[props.extraStyle, props.styles?.itemExtra]}
+        >
+          {props.extraContent}
+        </div>
       ) : null}
     </li>
   );

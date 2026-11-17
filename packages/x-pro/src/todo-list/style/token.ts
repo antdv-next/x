@@ -67,6 +67,8 @@ export interface ComponentToken {
 export const DEFAULT_MAX_HEIGHT = 248;
 /** 状态图标尺寸默认值，单位 px。 */
 export const DEFAULT_ICON_SIZE = 16;
+/** 每展开一层，子内容相对父行的缩进默认值，单位 px。 */
+export const DEFAULT_INDENT_SIZE = 20;
 
 /** 过阻尼弹簧 `spring(360, 32, 0.6)` 的 CSS 近似，阻尼比 ζ ≈ 1.09，无回弹。 */
 export const FOLLOW_MOTION_EASE = "cubic-bezier(0.16, 1, 0.3, 1)";

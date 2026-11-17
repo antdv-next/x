@@ -20,6 +20,7 @@ packageName: x-pro
 <demo src="./demo/streaming.vue">流式执行</demo>
 <demo src="./demo/control.vue">受控展开</demo>
 <demo src="./demo/slots.vue">自定义行内容</demo>
+<demo src="./demo/tree.vue">树形任务与自定义节点</demo>
 <demo src="./demo/semantic.vue">语义化样式</demo>
 
 ## 状态 {#status}
@@ -62,45 +63,60 @@ packageName: x-pro
 | defaultOpen        | 初始展开状态，非受控                                       | `boolean`                | `true`     | -    | ✓        |
 | collapseOnComplete | 全部任务进入终态后是否自动折叠                             | `boolean`                | `true`     | -    | ✓        |
 | maxHeight          | 任务列表最大高度，单位 px，超出后滚动                      | `number`                 | `248`      | -    | ✓        |
+| expandedKeys       | 展开的任务行 id，受控，支持 `v-model:expandedKeys`         | `string[]`               | -          | -    | ×        |
+| defaultExpandedKeys | 初始展开的任务行 id，非受控                              | `string[]`               | -          | -    | ×        |
+| indentSize         | 每展开一层子内容的左缩进，单位 px                         | `number`                 | `20`       | -    | ×        |
+| recursiveCount     | 计数与折叠判定是否递归纳入子任务                          | `boolean`                | `false`    | -    | ×        |
 | classes            | 用于自定义组件内部各语义化结构的 class，支持对象或函数     | `TodoListClassNamesType` | -          | -    | ✓        |
 | styles             | 用于自定义组件内部各语义化结构的行内 style，支持对象或函数 | `TodoListStylesType`     | -          | -    | ✓        |
 
 ### TodoItem {#todo-item}
 
-| 字段     | 说明                                          | 类型                                                       | 默认值      |
-| -------- | --------------------------------------------- | ---------------------------------------------------------- | ----------- |
-| id       | 稳定标识，用于列表 diff 与滚动定位            | `string`                                                   | -           |
-| title    | 任务标题                                      | `string`                                                   | -           |
-| status   | 任务状态                                      | `'pending' \| 'in-progress' \| 'completed' \| 'cancelled'` | `'pending'` |
-| progress | 任务进度，取值 0–100，仅 `in-progress` 下渲染 | `number`                                                   | -           |
-| detail   | 行尾的紧凑元信息，例如耗时或文件数            | `string`                                                   | -           |
+| 字段       | 说明                                              | 类型                                                       | 默认值      |
+| ---------- | ------------------------------------------------- | ---------------------------------------------------------- | ----------- |
+| id         | 稳定标识，用于列表 diff 与滚动定位                | `string`                                                   | -           |
+| title      | 任务标题                                          | `string`                                                   | -           |
+| status     | 任务状态                                          | `'pending' \| 'in-progress' \| 'completed' \| 'cancelled'` | `'pending'` |
+| progress   | 任务进度，取值 0–100，仅 `in-progress` 下渲染     | `number`                                                   | -           |
+| detail     | 行尾的紧凑元信息，例如耗时或文件数                | `string`                                                   | -           |
+| children   | 子任务；非空时该行可展开并递归渲染子清单          | `TodoItem[]`                                               | -           |
+| expandable | 是否显示展开入口；缺省由 `children` 或插槽决定    | `boolean`                                                  | -           |
+| payload    | 自定义节点数据，原样交给插槽，组件不解释          | `unknown`                                                  | -           |
 
 ### 事件 {#events}
 
-| 事件        | 说明                     | 类型                      | 版本 |
-| ----------- | ------------------------ | ------------------------- | ---- |
-| openChange  | 展开状态变化时触发       | `(open: boolean) => void` | -    |
-| update:open | 配合 `v-model:open` 使用 | `(open: boolean) => void` | -    |
+| 事件               | 说明                              | 类型                        | 版本 |
+| ------------------ | --------------------------------- | --------------------------- | ---- |
+| openChange         | 面板展开状态变化时触发            | `(open: boolean) => void`   | -    |
+| update:open        | 配合 `v-model:open` 使用          | `(open: boolean) => void`   | -    |
+| expandedKeysChange | 展开的任务行集合变化时触发        | `(keys: string[]) => void`  | -    |
+| update:expandedKeys | 配合 `v-model:expandedKeys` 使用 | `(keys: string[]) => void`  | -    |
 
 ### 插槽 {#slots}
 
-| 插槽       | 说明                          | 类型                                                                                              | 版本 |
-| ---------- | ----------------------------- | ------------------------------------------------------------------------------------------------- | ---- |
-| header     | 自定义头部标题                | `(slotProps: { open: boolean, completed: number, total: number, status: TodoItemStatus }) => any` | -    |
-| itemTitle  | 自定义任务行标题，优先于 prop | `(slotProps: { item: TodoItem, index: number, status: TodoItemStatus }) => any`                   | -    |
-| itemDetail | 自定义任务行详情，优先于 prop | `(slotProps: { item: TodoItem, index: number, status: TodoItemStatus }) => any`                   | -    |
+| 插槽           | 说明                                     | 类型                                                                                                                       | 版本 |
+| -------------- | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ---- |
+| header         | 自定义头部标题                           | `(slotProps: { open: boolean, completed: number, total: number, status: TodoItemStatus }) => any`                         | -    |
+| itemTitle      | 自定义任务行标题，优先于 prop            | `(slotProps: { item: TodoItem, index: number, status: TodoItemStatus, depth: number }) => any`                            | -    |
+| itemDetail     | 自定义任务行详情，优先于 prop            | `(slotProps: { item: TodoItem, index: number, status: TodoItemStatus, depth: number }) => any`                            | -    |
+| itemExtra      | 自定义展开区内容，优先于默认子清单渲染   | `(slotProps: TodoItemExtraSlotProps) => any`                                                                              | -    |
+| itemExpandIcon | 自定义行展开图标（仅视觉），点击仍由组件处理 | `(slotProps: TodoItemExpandIconSlotProps) => any`                                                                         | -    |
 
 ### 方法 {#methods}
 
 组件 `ref` 会暴露以下实例能力：
 
-| 名称            | 说明         | 参数                                                | 版本 |
-| --------------- | ------------ | --------------------------------------------------- | ---- |
-| setOpen         | 设置展开状态 | `(open: boolean) => void`                           | -    |
-| scrollToEnd     | 滚动到底部   | `(options?: { behavior?: ScrollBehavior }) => void` | -    |
-| open            | 当前是否展开 | `boolean`                                           | -    |
-| nativeElement   | 组件根元素   | `HTMLElement \| null`                               | -    |
-| viewportElement | 滚动容器     | `HTMLElement \| null`                               | -    |
+| 名称            | 说明                       | 参数                                                | 版本 |
+| --------------- | -------------------------- | --------------------------------------------------- | ---- |
+| setOpen         | 设置面板展开状态           | `(open: boolean) => void`                           | -    |
+| scrollToEnd     | 滚动到底部                 | `(options?: { behavior?: ScrollBehavior }) => void` | -    |
+| open            | 当前面板是否展开           | `boolean`                                           | -    |
+| expandedKeys    | 当前展开的任务行 id        | `string[]`                                          | -    |
+| setExpandedKeys | 设置展开的任务行           | `(keys: string[]) => void`                          | -    |
+| expandAll       | 展开所有可展开的行         | `() => void`                                        | -    |
+| collapseAll     | 收起所有任务行             | `() => void`                                        | -    |
+| nativeElement   | 组件根元素                 | `HTMLElement \| null`                               | -    |
+| viewportElement | 滚动容器                   | `HTMLElement \| null`                               | -    |
 
 ## 语义化 DOM {#semantic-dom}
 
