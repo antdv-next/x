@@ -342,3 +342,31 @@ having been open ~40 days; the fixes are wanted downstream regardless.
   cursor now covers them only when they merge.
 - Supersedes the clone caveat above: the local clone is fetched to `da08db1`
   and GitHub API access works from this environment.
+
+## 2026-11-17: cursor already at upstream HEAD; nothing to sync
+
+- Verification (GitHub API, authenticated `gh api`):
+  `compare/da08db16714b608d7f5db248c2b2fcc30a756660...main` returns
+  `status: identical`, `ahead_by: 0`, `behind_by: 0`, `total_commits: 0`.
+  Upstream `pushed_at` is `2026-10-29T09:19:44Z`, the default branch `main`'s
+  HEAD is `da08db167` itself (`Merge pull request #2073 ... changelog-2.10.0`),
+  and the newest tag `2.10.0` points at the same commit. No merged upstream
+  commit exists after the cursor.
+- `.sync-upstream.json` unchanged: `last_synced_commit` stays `da08db1`,
+  `sync_count` stays `8`, `last_synced_at` untouched (nothing was analyzed or
+  ported, so the timestamp would only imply work that did not happen).
+- Downstream state: the 2.10.0 ports are on `main` as `7efc234` (#262), which
+  carries all three ports plus the cursor advance - the earlier "branch layout
+  deviation" note is now superseded by an actual merge. The remote branches
+  `sync/ant-design-x-2066`, `sync/ant-design-x-2070`, `sync/ant-design-x-2071`
+  and `chore/sync-upstream-da08db1` are history-only leftovers (their content
+  is on `main`; they are not ancestors because `#262` was a squash, so
+  `merge-base --is-ancestor` reports them unmerged). Do not re-port from them.
+- Per the standing policy (2026-10-19) no open upstream PRs were enumerated and
+  no tracking issues were filed; the empty range ends the sync.
+- Targeted re-check of the six upstream PRs already recorded in memory
+  (#2055, #2057, #2058, #2065, #2067, #2068 - not an enumeration): all still
+  `state=open`, `merged_at: null`. #2057 (`9ff58c0fe5`) and #2058
+  (`dbc5120865`) have **new head SHAs** since the 2026-10-18/19 entries, so
+  upstream reworked them; if either ever merges, diff against the merge commit,
+  not the head recorded here.
