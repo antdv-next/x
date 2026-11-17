@@ -65,6 +65,34 @@ export default defineComponent<TodoItemRowProps>(props => {
     element.style.opacity = value === "0px" ? "0" : "1";
   }
 
+  /**
+   * 标题点击也触发展开/收起，但跳过插槽里自带的交互元素（链接、按钮、输入框等），
+   * 否则点自定义标题中的链接会连带把这一行折叠。
+   */
+  function onTitleClick(event: MouseEvent) {
+    if (!props.expandable) {
+      return;
+    }
+    const title = event.currentTarget as HTMLElement;
+    const target = event.target as HTMLElement | null;
+    // 标题自身带 role="button"，closest 会匹配到它，因此只在标题内部查找交互子元素。
+    const interactive = target?.closest(
+      "a, button, input, textarea, select, [role='button']",
+    );
+    if (interactive && title.contains(interactive) && interactive !== title) {
+      return;
+    }
+    props.onToggleExpand?.();
+  }
+
+  /** 键盘可达：标题获得焦点后 Enter / Space 与点击等价。 */
+  function onTitleKeydown(event: KeyboardEvent) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      props.onToggleExpand?.();
+    }
+  }
+
   return () => (
     <li
       class={clsx(
@@ -90,9 +118,20 @@ export default defineComponent<TodoItemRowProps>(props => {
 
       <span class={`${props.prefixCls}-item-body`}>
         <span
-          class={clsx(titleCls.value, props.classes?.itemTitle)}
+          class={clsx(
+            titleCls.value,
+            {
+              [`${props.prefixCls}-item-title-clickable`]: props.expandable,
+            },
+            props.classes?.itemTitle,
+          )}
           style={props.styles?.itemTitle}
           title={props.item.title}
+          role={props.expandable ? "button" : undefined}
+          tabindex={props.expandable ? 0 : undefined}
+          aria-expanded={props.expandable ? props.expanded : undefined}
+          onClick={props.expandable ? onTitleClick : undefined}
+          onKeydown={props.expandable ? onTitleKeydown : undefined}
         >
           {props.titleContent}
           <span

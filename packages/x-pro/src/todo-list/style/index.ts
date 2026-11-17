@@ -264,6 +264,16 @@ const genTodoListStyle: GenerateStyle<TodoListToken, CSSObject> = token => {
         transition: `color ${motion}`,
       },
 
+      /** 可展开行的标题也是点击入口，给出与按钮一致的手型和焦点反馈。 */
+      [`${itemCls}-title-clickable`]: {
+        cursor: "pointer",
+
+        "&:focus-visible": {
+          ...focusOutline,
+          borderRadius: token.borderRadiusSM,
+        },
+      },
+
       /**
        * 删除线用 `::after` 的 `scaleX` 描绘，而不是 `text-decoration`：
        * 后者无法过渡，也无法跟随单行截断后的宽度。

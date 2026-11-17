@@ -720,6 +720,7 @@ describe("TodoList", () => {
     ];
     const EXPAND_SELECTOR = ".ant-todo-list-item-expand-icon";
     const EXTRA_SELECTOR = ".ant-todo-list-item-extra";
+    const TITLE_SELECTOR = ".ant-todo-list-item-title";
 
     it("adds an expand affordance only to rows with children", () => {
       const wrapper = mountTodo({ items: tree() });
@@ -752,6 +753,57 @@ describe("TodoList", () => {
 
       await wrapper.find(EXPAND_SELECTOR).trigger("click");
       expect(wrapper.findAll(ITEM_SELECTOR)).toHaveLength(2);
+    });
+
+    it("toggles expansion by clicking the title of an expandable row", async () => {
+      const wrapper = mountTodo({ items: tree() });
+      const firstTitle = wrapper.findAll(TITLE_SELECTOR)[0]!;
+
+      expect(firstTitle.attributes("role")).toBe("button");
+      expect(firstTitle.attributes("tabindex")).toBe("0");
+      expect(firstTitle.attributes("aria-expanded")).toBe("false");
+      expect(wrapper.findAll(ITEM_SELECTOR)).toHaveLength(2);
+
+      await firstTitle.trigger("click");
+      expect(wrapper.findAll(ITEM_SELECTOR)).toHaveLength(4);
+      expect(firstTitle.attributes("aria-expanded")).toBe("true");
+
+      await firstTitle.trigger("click");
+      expect(wrapper.findAll(ITEM_SELECTOR)).toHaveLength(2);
+    });
+
+    it("toggles expansion with Enter / Space on the focused title", async () => {
+      const wrapper = mountTodo({ items: tree() });
+      const firstTitle = wrapper.findAll(TITLE_SELECTOR)[0]!;
+
+      await firstTitle.trigger("keydown", { key: "Enter" });
+      expect(wrapper.findAll(ITEM_SELECTOR)).toHaveLength(4);
+
+      await firstTitle.trigger("keydown", { key: " " });
+      expect(wrapper.findAll(ITEM_SELECTOR)).toHaveLength(2);
+    });
+
+    it("does not toggle when an interactive element inside the title is clicked", async () => {
+      const wrapper = mountTodo(
+        { items: tree() },
+        {
+          itemTitle: ({ item }: any) =>
+            h("a", { class: "title-link", href: "#" }, item.title),
+        },
+      );
+
+      await wrapper.find(".title-link").trigger("click");
+      // 点链接不应连带折叠/展开这一行。
+      expect(wrapper.findAll(ITEM_SELECTOR)).toHaveLength(2);
+    });
+
+    it("keeps a leaf title non-interactive", () => {
+      const wrapper = mountTodo({ items: tree() });
+      const plainTitle = wrapper.findAll(TITLE_SELECTOR)[1]!;
+
+      expect(plainTitle.attributes("role")).toBeUndefined();
+      expect(plainTitle.attributes("tabindex")).toBeUndefined();
+      expect(plainTitle.attributes("aria-expanded")).toBeUndefined();
     });
 
     it("honours defaultExpandedKeys for the uncontrolled initial state", () => {
