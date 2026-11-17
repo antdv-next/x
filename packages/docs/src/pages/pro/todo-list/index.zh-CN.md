@@ -15,6 +15,8 @@ packageName: x-pro
 
 ## 代码演示 {#examples}
 
+面板与任务行的展开 / 收起均带过渡动画（高度 + 透明度），时长由组件 token `motionExpandDuration` / `motionCollapseDuration` 控制，并遵循系统的「减少动态效果」设置。
+
 <demo src="./demo/basic.vue">基础用法</demo>
 <demo src="./demo/status.vue">状态与进度</demo>
 <demo src="./demo/streaming.vue">流式执行</demo>

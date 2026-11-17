@@ -1,7 +1,7 @@
 import type { CSSProperties, VNodeChild } from "vue";
 
 import { clsx } from "@v-c/util";
-import { computed, defineComponent } from "vue";
+import { computed, defineComponent, Transition } from "vue";
 
 import type { TodoItem, TodoItemStatus } from "../types";
 
@@ -47,6 +47,23 @@ export interface TodoItemRowProps {
  */
 export default defineComponent<TodoItemRowProps>(props => {
   const titleCls = computed(() => `${props.prefixCls}-item-title`);
+  /**
+   * 与 style/index.ts 里的 `-item-extra-motion-*` 选择器逐字对应，
+   * 少一段类名过渡就会静默失效（元素照常挂载，但时长为 0）。
+   */
+  const motionCls = computed(
+    () => `${props.prefixCls}-item-extra-motion`,
+  );
+
+  /**
+   * 高度过渡由 JS hooks 驱动：`auto` 无法参与 CSS 过渡，必须在进入时量出
+   * 实际高度，结束后再交还给内容，这样子树后续展开不会被裁掉。
+   */
+  function setHeight(node: Element, value: string) {
+    const element = node as HTMLElement;
+    element.style.height = value;
+    element.style.opacity = value === "0px" ? "0" : "1";
+  }
 
   return () => (
     <li
@@ -129,17 +146,40 @@ export default defineComponent<TodoItemRowProps>(props => {
         </button>
       ) : null}
 
-      {props.expandable && props.expanded ? (
-        <div
-          class={clsx(
-            `${props.prefixCls}-item-extra`,
-            props.classes?.itemExtra,
-          )}
-          style={[props.extraStyle, props.styles?.itemExtra]}
-        >
-          {props.extraContent}
-        </div>
-      ) : null}
+      <Transition
+        name={motionCls.value}
+        onBeforeEnter={el => setHeight(el, "0px")}
+        onEnter={el => setHeight(el, `${(el as HTMLElement).scrollHeight}px`)}
+        onAfterEnter={el => setHeight(el, "auto")}
+        onBeforeLeave={el =>
+          setHeight(el, `${(el as HTMLElement).scrollHeight}px`)
+        }
+        onLeave={el => {
+          // 先落一次布局，让浏览器从当前高度开始过渡而不是直接跳到 0。
+          void (el as HTMLElement).offsetHeight;
+          setHeight(el, "0px");
+        }}
+        onAfterLeave={el => {
+          const element = el as HTMLElement;
+          element.style.height = "";
+          element.style.opacity = "";
+        }}
+      >
+        {props.expandable && props.expanded ? (
+          <div
+            class={clsx(
+              `${props.prefixCls}-item-extra`,
+              props.classes?.itemExtra,
+            )}
+            style={[props.extraStyle, props.styles?.itemExtra]}
+          >
+            {/* 纵向 padding 放在内层：外层高度归零时不会被 padding 顶出残留高度。 */}
+            <div class={`${props.prefixCls}-item-extra-inner`}>
+              {props.extraContent}
+            </div>
+          </div>
+        ) : null}
+      </Transition>
     </li>
   );
 });

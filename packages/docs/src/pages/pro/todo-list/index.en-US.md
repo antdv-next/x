@@ -14,6 +14,8 @@ packageName: x-pro
 
 ## Examples {#examples}
 
+Both the panel and individual task rows animate their expand / collapse (height + opacity). Durations come from the `motionExpandDuration` / `motionCollapseDuration` component tokens, and the animation respects the system "reduce motion" setting.
+
 <demo src="./demo/basic.vue">Basic</demo>
 <demo src="./demo/status.vue">Status and progress</demo>
 <demo src="./demo/streaming.vue">Streaming execution</demo>

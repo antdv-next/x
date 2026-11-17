@@ -226,12 +226,30 @@ const genTodoListStyle: GenerateStyle<TodoListToken, CSSObject> = token => {
 
       /**
        * 行下方展开区。`flex-basis: 100%` 保证它独占一行；
-       * 左侧缩进由组件按 depth 逐层写入行内 style，这里只负责占满与纵向节奏。
+       * 左侧缩进由组件按 depth 逐层写入行内 style，这里只负责占满。
+       * 纵向 padding 交给内层，外层高度归零时才能彻底收拢。
        */
       [`${itemCls}-extra`]: {
         flexBasis: "100%",
         minWidth: 0,
+      },
+
+      [`${itemCls}-extra-inner`]: {
         paddingBlockStart: token.marginXS,
+      },
+
+      /**
+       * 展开 / 收起的高度与透明度过渡。高度目标由 JS hooks 量出后写入行内 style，
+       * 这里只声明过渡本身；`overflow: hidden` 只在动画期间生效，结束后内容可正常溢出。
+       */
+      [`${itemCls}-extra-motion-enter-active`]: {
+        overflow: "hidden",
+        transition: `height ${enterMotion}, opacity ${enterMotion}`,
+      },
+
+      [`${itemCls}-extra-motion-leave-active`]: {
+        overflow: "hidden",
+        transition: `height ${leaveMotion}, opacity ${leaveMotion}`,
       },
 
       [`${itemCls}-body`]: {
@@ -363,10 +381,11 @@ const genTodoListStyle: GenerateStyle<TodoListToken, CSSObject> = token => {
           transition: "none",
         },
 
-        [`${contentCls}-motion-enter-active, ${contentCls}-motion-leave-active`]:
-          {
-            transition: "none",
-          },
+        [
+          `${contentCls}-motion-enter-active, ${contentCls}-motion-leave-active, ${itemCls}-extra-motion-enter-active, ${itemCls}-extra-motion-leave-active`
+        ]: {
+          transition: "none",
+        },
 
         [`${headerCls}-counter-motion-enter-active, ${headerCls}-counter-motion-leave-active`]:
           {
