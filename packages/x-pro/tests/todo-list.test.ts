@@ -786,13 +786,46 @@ describe("TodoList", () => {
         },
       );
 
-      // 插槽存在时，连叶子行也获得展开入口。
+      // 两行都有实质内容：a 有子任务，plain 的插槽返回了自定义面板。
       expect(wrapper.findAll(EXPAND_SELECTOR)).toHaveLength(2);
 
       await wrapper.findAll(EXPAND_SELECTOR)[1]!.trigger("click");
       expect(wrapper.find(".custom-extra").text()).toBe("plain:0:true");
       // 插槽优先：默认子清单不再渲染。
       expect(wrapper.find(".ant-todo-list-list-nested").exists()).toBe(false);
+    });
+
+    it("hides the expand affordance on leaves without content, even with an itemExtra slot", () => {
+      // 树：a 有子任务，a-1 / a-2 是纯叶子；插槽只对 id='3' 的假想行返回内容。
+      const wrapper = mountTodo(
+        { items: tree() },
+        {
+          itemExtra: ({ item }: any) =>
+            item.id === "nothing" ? h("div", "extra") : null,
+        },
+      );
+
+      const rows = wrapper.findAll(ITEM_SELECTOR);
+      expect(rows).toHaveLength(2);
+      // 只有 a 有子任务可展开；plain 是叶子且插槽没给它内容。
+      expect(rows[0]!.find(EXPAND_SELECTOR).exists()).toBe(true);
+      expect(rows[1]!.find(EXPAND_SELECTOR).exists()).toBe(false);
+      expect(wrapper.findAll(EXPAND_SELECTOR)).toHaveLength(1);
+    });
+
+    it("still expands a leaf that has itemExtra content gated by v-if", () => {
+      // 常见于 `v-if="expanded && ..."`：探测阶段须按展开态取值，
+      // 否则有内容的叶子会被误判成无箭头。
+      const wrapper = mountTodo(
+        { items: [todo("leaf")] },
+        {
+          itemExtra: ({ expanded }: any) =>
+            expanded ? h("div", { class: "gated-extra" }, "detail") : null,
+        },
+      );
+
+      expect(wrapper.findAll(EXPAND_SELECTOR)).toHaveLength(1);
+      expect(wrapper.find(".gated-extra").exists()).toBe(false);
     });
 
     it("falls back to the child list when itemExtra renders a comment node", async () => {

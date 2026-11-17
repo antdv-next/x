@@ -101,10 +101,13 @@ export function flattenItems(items: TodoItem[]): TodoItem[] {
 
 /**
  * 收集所有可展开的节点 id，供实例方法 `expandAll` 使用。
+ *
+ * `hasExtra` 按行判断——纯叶子即便传了 `itemExtra` 插槽，只要插槽对该行
+ * 没有返回实质内容，就不算可展开，与渲染层的箭头判定保持一致。
  */
 export function collectExpandableIds(
   items: TodoItem[],
-  hasExtraSlot: boolean,
+  hasExtra: (item: TodoItem) => boolean,
 ): string[] {
   const result: string[] = [];
   visit(items);
@@ -112,7 +115,7 @@ export function collectExpandableIds(
   function visit(list: TodoItem[]) {
     for (const item of list) {
       const hasChildren = Array.isArray(item.children) && !!item.children.length;
-      if (item.expandable !== false && (hasChildren || hasExtraSlot)) {
+      if (item.expandable !== false && (hasChildren || hasExtra(item))) {
         result.push(item.id);
       }
       if (Array.isArray(item.children)) {

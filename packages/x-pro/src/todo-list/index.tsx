@@ -255,23 +255,32 @@ const TodoList = defineComponent<
       const baseProps: TodoItemSlotProps = { item, index, status, depth };
       const hasChildren =
         Array.isArray(item.children) && item.children.length > 0;
-      const expandable =
-        item.expandable !== false && (hasChildren || !!slots.itemExtra);
-      const expanded = expandable && expandedState.isExpanded(item.id);
+      const selfExpanded = expandedState.isExpanded(item.id);
 
-      const extraProps: TodoItemExtraSlotProps = {
+      /**
+       * 探测该行有没有「展开后值得展示的内容」，决定要不要画展开箭头。
+       *
+       * expanded 传 true：宿主常用 `v-if="expanded && ..."` 包裹展开内容，
+       * 若按当前收起态探测会拿到注释节点，把有内容的行误判成叶子。
+       * 探测结果在真正展开时直接复用，避免同一行多次调用插槽。
+       */
+      const probeProps: TodoItemExtraSlotProps = {
         ...baseProps,
-        expanded,
+        expanded: true,
         toggle: () => expandedState.toggle(item.id),
       };
+      const probed = slots.itemExtra?.(probeProps);
+      const hasExtra = hasSlotContent(probed);
+
+      // 纯叶子（既无子任务、插槽也无内容）不给箭头；显式 expandable: false 始终关闭。
+      const expandable = item.expandable !== false && (hasChildren || hasExtra);
+      const expanded = expandable && selfExpanded;
 
       let extraContent: VNodeChild = null;
-      if (expandable && expanded) {
-        // 插槽优先：宿主完全接管展开区内容，包括是否渲染子清单。
-        // v-if 为假的插槽分支是注释节点，不算内容，此时仍回退到子清单。
-        const slotted = slots.itemExtra?.(extraProps);
-        if (hasSlotContent(slotted)) {
-          extraContent = slotted;
+      if (expanded) {
+        if (hasExtra) {
+          // 插槽优先：宿主完全接管展开区内容，包括是否渲染子清单。
+          extraContent = probed;
         } else if (hasChildren) {
           // 缺省：递归渲染一棵子清单。子树继承 prefixCls 与统计口径，
           // 但拥有自己的 DOM 层级，缩进由 item-extra 的 padding 提供。
@@ -373,7 +382,20 @@ const TodoList = defineComponent<
       },
       expandAll: () => {
         expandedState.setKeys(
-          collectExpandableIds(mergedItems.value, !!slots.itemExtra),
+          collectExpandableIds(mergedItems.value, item =>
+            slots.itemExtra
+              ? hasSlotContent(
+                  slots.itemExtra({
+                    item,
+                    index: 0,
+                    depth: 0,
+                    status: resolveTodoStatus(item),
+                    expanded: true,
+                    toggle: () => expandedState.toggle(item.id),
+                  }),
+                )
+              : false,
+          ),
         );
       },
       collapseAll: () => expandedState.setKeys([]),

@@ -186,24 +186,27 @@ describe("todo-list utils", () => {
       todo("plain"),
       { ...todo("c"), children: [todo("c-1")], expandable: false },
     ];
+    const noExtra = () => false;
 
     it("collects ids of rows that have children", () => {
-      expect(collectExpandableIds(tree, false)).toEqual(["a"]);
+      expect(collectExpandableIds(tree, noExtra)).toEqual(["a"]);
     });
 
-    it("treats every row, including nested ones, as expandable when an extra slot is present", () => {
-      // a 被展开后其子节点 a-1 才可见，但 collectExpandableIds 收集的是全树候选，
-      // 由 expandAll 一次性写入；只有显式 expandable: false 的 c 被排除。
-      expect(collectExpandableIds(tree, true)).toEqual([
-        "a",
-        "a-1",
-        "plain",
-        "c-1",
-      ]);
+    it("includes nested rows that have their own children", () => {
+      const nested: TodoItem[] = [
+        { ...todo("a"), children: [{ ...todo("a-1"), children: [todo("a-1-1")] }] },
+      ];
+      expect(collectExpandableIds(nested, noExtra)).toEqual(["a", "a-1"]);
+    });
+
+    it("includes a leaf only when its extra slot has real content", () => {
+      // plain 是叶子：只有插槽对它返回内容时才算可展开。
+      const withPlainExtra = (item: TodoItem) => item.id === "plain";
+      expect(collectExpandableIds(tree, withPlainExtra)).toEqual(["a", "plain"]);
     });
 
     it("honours an explicit expandable: false", () => {
-      expect(collectExpandableIds(tree, true)).not.toContain("c");
+      expect(collectExpandableIds(tree, () => true)).not.toContain("c");
     });
   });
 });
