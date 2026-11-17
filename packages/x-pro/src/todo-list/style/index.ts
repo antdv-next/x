@@ -12,6 +12,7 @@ interface TodoListToken extends FullToken<"TodoList"> {
   headerHeight: number;
   iconSize: number;
   itemGap: number;
+  itemExpandGap: number;
   colorStatusProgress: string;
   colorStatusCompleted: string;
   colorStatusCancelled: string;
@@ -187,7 +188,9 @@ const genTodoListStyle: GenerateStyle<TodoListToken, CSSObject> = token => {
         /** 展开区作为第二个 flex 行换行到下方；未展开时与单行表现完全一致。 */
         flexWrap: "wrap",
         alignItems: "center",
-        gap: token.marginXS,
+        /** 横向保持行内间距，纵向用更小的展开间距体现父子从属。 */
+        columnGap: token.marginXS,
+        rowGap: token.itemExpandGap,
         minHeight: token.headerHeight,
       },
 

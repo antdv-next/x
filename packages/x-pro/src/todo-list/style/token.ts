@@ -17,6 +17,11 @@ export interface ComponentToken {
    */
   itemGap: number;
   /**
+   * @desc 展开区（子任务 / 自定义面板）与父行之间的间距；比行间距更紧凑，体现从属关系。
+   * @descEN Gap between the expanded area (children / custom panel) and its parent row. Tighter than the row gap to signal hierarchy.
+   */
+  itemExpandGap: number;
+  /**
    * @desc 进行中状态的颜色。
    * @descEN Color of the in-progress status.
    */
@@ -85,6 +90,7 @@ export function prepareComponentToken(
     headerHeight: 24,
     iconSize: DEFAULT_ICON_SIZE,
     itemGap: token.marginXS,
+    itemExpandGap: token.marginXXS,
     colorStatusProgress: token.colorPrimary,
     colorStatusCompleted: token.colorSuccess,
     colorStatusCancelled: token.colorTextQuaternary,
