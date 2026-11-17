@@ -161,7 +161,10 @@ describe("todo-list utils", () => {
       const list: TodoItem[] = [
         {
           ...todo("a"),
-          children: [todo("a-1"), { ...todo("a-2"), children: [todo("a-2-1")] }],
+          children: [
+            todo("a-1"),
+            { ...todo("a-2"), children: [todo("a-2-1")] },
+          ],
         },
         todo("b"),
       ];
@@ -175,7 +178,9 @@ describe("todo-list utils", () => {
     });
 
     it("ignores a non-array children value", () => {
-      const list = [{ ...todo("a"), children: "oops" }] as unknown as TodoItem[];
+      const list = [
+        { ...todo("a"), children: "oops" },
+      ] as unknown as TodoItem[];
       expect(flattenItems(list).map(item => item.id)).toEqual(["a"]);
     });
   });
@@ -194,7 +199,10 @@ describe("todo-list utils", () => {
 
     it("includes nested rows that have their own children", () => {
       const nested: TodoItem[] = [
-        { ...todo("a"), children: [{ ...todo("a-1"), children: [todo("a-1-1")] }] },
+        {
+          ...todo("a"),
+          children: [{ ...todo("a-1"), children: [todo("a-1-1")] }],
+        },
       ];
       expect(collectExpandableIds(nested, noExtra)).toEqual(["a", "a-1"]);
     });
@@ -202,7 +210,10 @@ describe("todo-list utils", () => {
     it("includes a leaf only when its extra slot has real content", () => {
       // plain 是叶子：只有插槽对它返回内容时才算可展开。
       const withPlainExtra = (item: TodoItem) => item.id === "plain";
-      expect(collectExpandableIds(tree, withPlainExtra)).toEqual(["a", "plain"]);
+      expect(collectExpandableIds(tree, withPlainExtra)).toEqual([
+        "a",
+        "plain",
+      ]);
     });
 
     it("honours an explicit expandable: false", () => {

@@ -29,7 +29,12 @@ const items = ref<TodoItem[]>([
     progress: 60,
     children: [
       { id: "2-1", title: "Status icons", status: "completed" },
-      { id: "2-2", title: "Expandable rows", status: "in-progress", progress: 40 },
+      {
+        id: "2-2",
+        title: "Expandable rows",
+        status: "in-progress",
+        progress: 40,
+      },
       {
         id: "2-3",
         title: "Nested children",
@@ -75,7 +80,11 @@ function toggle(id: string) {
       }"
     >
       <template #itemDetail="{ item }">
-        <a-typography-text v-if="item.detail" type="secondary" style="font-size: 12px">
+        <a-typography-text
+          v-if="item.detail"
+          type="secondary"
+          style="font-size: 12px"
+        >
           {{ item.detail }}
         </a-typography-text>
       </template>
@@ -100,10 +109,14 @@ function toggle(id: string) {
       </template>
     </TodoList>
 
-    <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px">
+    <div
+      style="display: flex; flex-direction: column; gap: 8px; font-size: 13px"
+    >
       <span>展开的行：{{ expandedKeys.join(", ") || "（无）" }}</span>
       <a-space>
-        <a-button size="small" @click="expandedKeys = ['1', '2', '3']">全部展开</a-button>
+        <a-button size="small" @click="expandedKeys = ['1', '2', '3']"
+          >全部展开</a-button
+        >
         <a-button size="small" @click="expandedKeys = []">全部收起</a-button>
         <a-button size="small" @click="toggle('2')">切换 Plan panel</a-button>
       </a-space>

@@ -114,7 +114,8 @@ export function collectExpandableIds(
 
   function visit(list: TodoItem[]) {
     for (const item of list) {
-      const hasChildren = Array.isArray(item.children) && !!item.children.length;
+      const hasChildren =
+        Array.isArray(item.children) && !!item.children.length;
       if (item.expandable !== false && (hasChildren || hasExtra(item))) {
         result.push(item.id);
       }

@@ -51,9 +51,7 @@ export default defineComponent<TodoItemRowProps>(props => {
    * 与 style/index.ts 里的 `-item-extra-motion-*` 选择器逐字对应，
    * 少一段类名过渡就会静默失效（元素照常挂载，但时长为 0）。
    */
-  const motionCls = computed(
-    () => `${props.prefixCls}-item-extra-motion`,
-  );
+  const motionCls = computed(() => `${props.prefixCls}-item-extra-motion`);
 
   /**
    * 高度过渡由 JS hooks 驱动：`auto` 无法参与 CSS 过渡，必须在进入时量出

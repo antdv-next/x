@@ -4,7 +4,14 @@ import { clsx } from "@v-c/util";
 import { useBaseConfig } from "antdv-next/config-provider/context";
 import useCSSVarCls from "antdv-next/config-provider/hooks/useCSSVarCls";
 import { useLocaleContext } from "antdv-next/locale/index";
-import { Comment, computed, defineComponent, isVNode, shallowRef, Transition } from "vue";
+import {
+  Comment,
+  computed,
+  defineComponent,
+  isVNode,
+  shallowRef,
+  Transition,
+} from "vue";
 
 import type { TodoListLocale, XProLocale } from "../locale/types";
 import type {
@@ -140,9 +147,7 @@ const TodoList = defineComponent<
 
     const completed = computed(() => countCompleted(statsItems.value));
     const total = computed(() => statsItems.value.length);
-    const overallStatus = computed(() =>
-      deriveOverallStatus(statsItems.value),
-    );
+    const overallStatus = computed(() => deriveOverallStatus(statsItems.value));
     const overallProgress = computed(() =>
       resolveOverallProgress(statsItems.value),
     );
@@ -250,7 +255,11 @@ const TodoList = defineComponent<
      * 渲染单个任务行。抽成函数供顶层与子清单递归共用，
      * 所有插槽参数都带上 depth，宿主可据此调整自定义内容的层级表现。
      */
-    function renderRow(item: TodoItem, index: number, depth: number): VNodeChild {
+    function renderRow(
+      item: TodoItem,
+      index: number,
+      depth: number,
+    ): VNodeChild {
       const status = resolveTodoStatus(item);
       const baseProps: TodoItemSlotProps = { item, index, status, depth };
       const hasChildren =
@@ -301,12 +310,10 @@ const TodoList = defineComponent<
           expandable={expandable}
           expanded={expanded}
           onToggleExpand={() => expandedState.toggle(item.id)}
-          expandIconContent={
-            slots.itemExpandIcon?.({
-              ...baseProps,
-              expanded,
-            } as TodoItemExpandIconSlotProps)
-          }
+          expandIconContent={slots.itemExpandIcon?.({
+            ...baseProps,
+            expanded,
+          } as TodoItemExpandIconSlotProps)}
           extraContent={extraContent}
           extraStyle={{ paddingInlineStart: `${mergedIndentSize.value}px` }}
           depth={depth}

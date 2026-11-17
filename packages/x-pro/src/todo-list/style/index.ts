@@ -376,21 +376,19 @@ const genTodoListStyle: GenerateStyle<TodoListToken, CSSObject> = token => {
       },
 
       "@media (prefers-reduced-motion: reduce)": {
-        [
-          `${headerCls}-arrow, ${itemCls}-title, ${itemCls}-strikethrough, ${itemCls}-expand-icon`
-        ]: {
-          transition: "none",
-        },
+        [`${headerCls}-arrow, ${itemCls}-title, ${itemCls}-strikethrough, ${itemCls}-expand-icon`]:
+          {
+            transition: "none",
+          },
 
         [`${statusCls}-check, ${statusCls}-cross`]: {
           transition: "none",
         },
 
-        [
-          `${contentCls}-motion-enter-active, ${contentCls}-motion-leave-active, ${itemCls}-extra-motion-enter-active, ${itemCls}-extra-motion-leave-active`
-        ]: {
-          transition: "none",
-        },
+        [`${contentCls}-motion-enter-active, ${contentCls}-motion-leave-active, ${itemCls}-extra-motion-enter-active, ${itemCls}-extra-motion-leave-active`]:
+          {
+            transition: "none",
+          },
 
         [`${headerCls}-counter-motion-enter-active, ${headerCls}-counter-motion-leave-active`]:
           {

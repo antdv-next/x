@@ -834,7 +834,11 @@ describe("TodoList", () => {
         { items: tree() },
         {
           itemExtra: ({ item, depth, expanded }: any) =>
-            h("div", { class: "custom-extra" }, `${item.id}:${depth}:${expanded}`),
+            h(
+              "div",
+              { class: "custom-extra" },
+              `${item.id}:${depth}:${expanded}`,
+            ),
         },
       );
 
@@ -925,6 +929,7 @@ describe("TodoList", () => {
       const items: TodoItem[] = [
         {
           id: "a",
+          title: "a",
           status: "completed",
           children: [todo("a-1", "completed"), todo("a-2", "pending")],
         },
@@ -934,7 +939,9 @@ describe("TodoList", () => {
         "1 of 1 completed",
       );
       expect(
-        mountTodo({ items, recursiveCount: true }).find(COUNTER_SELECTOR).text(),
+        mountTodo({ items, recursiveCount: true })
+          .find(COUNTER_SELECTOR)
+          .text(),
       ).toBe("2 of 3 completed");
     });
 
@@ -965,6 +972,7 @@ describe("TodoList", () => {
         items: [
           {
             id: "a",
+            title: "a",
             status: "completed",
             children: [todo("a-1", "in-progress")],
           },
@@ -976,6 +984,7 @@ describe("TodoList", () => {
         items: [
           {
             id: "a",
+            title: "a",
             status: "completed",
             children: [todo("a-1", "in-progress")],
           },
