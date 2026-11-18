@@ -17,7 +17,7 @@ export type TodoItemStatus =
   | "cancelled";
 
 export interface TodoItem {
-  /** 稳定标识，用于列表 diff 与滚动定位。 */
+  /** 稳定标识，必须在整棵任务树内唯一，用于列表 diff 与展开状态。 */
   id: string;
   /** 任务标题。 */
   title: string;
@@ -211,7 +211,7 @@ export interface TodoHeaderSlotProps {
 }
 
 export interface TodoListSlots {
-  /** 自定义任务行标题，优先于 `TodoItem.title`。 */
+  /** 自定义任务行标题，优先于 `TodoItem.title`。使用此插槽时，标题点击不会切换展开状态。 */
   itemTitle?: (slotProps: TodoItemSlotProps) => any;
   /** 自定义任务行详情，优先于 `TodoItem.detail`。 */
   itemDetail?: (slotProps: TodoItemSlotProps) => any;
