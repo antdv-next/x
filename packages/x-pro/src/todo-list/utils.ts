@@ -85,9 +85,14 @@ export function clampProgress(progress: number | undefined) {
  */
 export function flattenItems(items: TodoItem[]): TodoItem[] {
   const result: TodoItem[] = [];
+  const visited = new WeakSet<TodoItem>();
 
   function visit(list: TodoItem[]) {
     for (const item of list) {
+      if (visited.has(item)) {
+        continue;
+      }
+      visited.add(item);
       result.push(item);
       if (Array.isArray(item.children) && item.children.length) {
         visit(item.children);
@@ -107,22 +112,32 @@ export function flattenItems(items: TodoItem[]): TodoItem[] {
  */
 export function collectExpandableIds(
   items: TodoItem[],
-  hasExtra: (item: TodoItem) => boolean,
+  hasExtra: (item: TodoItem, index: number, depth: number) => boolean,
 ): string[] {
   const result: string[] = [];
-  visit(items);
+  const visited = new WeakSet<TodoItem>();
+  const ids = new Set<string>();
+  visit(items, 0);
 
-  function visit(list: TodoItem[]) {
-    for (const item of list) {
+  function visit(list: TodoItem[], depth: number) {
+    list.forEach((item, index) => {
+      if (visited.has(item)) {
+        return;
+      }
+      visited.add(item);
       const hasChildren =
         Array.isArray(item.children) && !!item.children.length;
-      if (item.expandable !== false && (hasChildren || hasExtra(item))) {
-        result.push(item.id);
+      const hasItemExtra = hasExtra(item, index, depth);
+      if (item.expandable !== false && (hasChildren || hasItemExtra)) {
+        if (!ids.has(item.id)) {
+          result.push(item.id);
+          ids.add(item.id);
+        }
+        if (hasChildren && !hasItemExtra) {
+          visit(item.children!, depth + 1);
+        }
       }
-      if (Array.isArray(item.children)) {
-        visit(item.children);
-      }
-    }
+    });
   }
 
   return result;

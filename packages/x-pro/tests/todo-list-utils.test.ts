@@ -183,6 +183,12 @@ describe("todo-list utils", () => {
       ] as unknown as TodoItem[];
       expect(flattenItems(list).map(item => item.id)).toEqual(["a"]);
     });
+
+    it("does not recurse forever through cyclic children", () => {
+      const cyclic = todo("cycle");
+      cyclic.children = [cyclic];
+      expect(flattenItems([cyclic]).map(item => item.id)).toEqual(["cycle"]);
+    });
   });
 
   describe("collectExpandableIds", () => {
@@ -218,6 +224,33 @@ describe("todo-list utils", () => {
 
     it("honours an explicit expandable: false", () => {
       expect(collectExpandableIds(tree, () => true)).not.toContain("c");
+    });
+
+    it("does not visit children hidden by an explicitly closed parent", () => {
+      const hidden: TodoItem[] = [
+        {
+          ...todo("closed"),
+          expandable: false,
+          children: [{ ...todo("hidden"), children: [todo("deeper")] }],
+        },
+      ];
+      expect(collectExpandableIds(hidden, () => false)).toEqual([]);
+    });
+
+    it("passes each row's actual index and depth to the extra probe", () => {
+      const nested: TodoItem[] = [
+        { ...todo("root"), children: [todo("first"), todo("second")] },
+      ];
+      const positions: Array<[string, number, number]> = [];
+      collectExpandableIds(nested, (item, index, depth) => {
+        positions.push([item.id, index, depth]);
+        return item.id === "second" && index === 1 && depth === 1;
+      });
+      expect(positions).toEqual([
+        ["root", 0, 0],
+        ["first", 0, 1],
+        ["second", 1, 1],
+      ]);
     });
   });
 });

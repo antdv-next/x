@@ -17,7 +17,6 @@ import type { TodoListLocale, XProLocale } from "../locale/types";
 import type {
   TodoItem,
   TodoItemExpandIconSlotProps,
-  TodoItemExtraSlotProps,
   TodoItemSlotProps,
   TodoItemStatus,
   TodoListClassNamesType,
@@ -251,6 +250,17 @@ const TodoList = defineComponent<
 
     const contentId = `${prefixCls.value}-content`;
 
+    function probeItemExtra(item: TodoItem, index: number, depth: number) {
+      return slots.itemExtra?.({
+        item,
+        index,
+        depth,
+        status: resolveTodoStatus(item),
+        expanded: true,
+        toggle: () => expandedState.toggle(item.id),
+      });
+    }
+
     /**
      * 渲染单个任务行。抽成函数供顶层与子清单递归共用，
      * 所有插槽参数都带上 depth，宿主可据此调整自定义内容的层级表现。
@@ -273,12 +283,7 @@ const TodoList = defineComponent<
        * 若按当前收起态探测会拿到注释节点，把有内容的行误判成叶子。
        * 探测结果在真正展开时直接复用，避免同一行多次调用插槽。
        */
-      const probeProps: TodoItemExtraSlotProps = {
-        ...baseProps,
-        expanded: true,
-        toggle: () => expandedState.toggle(item.id),
-      };
-      const probed = slots.itemExtra?.(probeProps);
+      const probed = probeItemExtra(item, index, depth);
       const hasExtra = hasSlotContent(probed);
 
       // 纯叶子（既无子任务、插槽也无内容）不给箭头；显式 expandable: false 始终关闭。
@@ -389,19 +394,8 @@ const TodoList = defineComponent<
       },
       expandAll: () => {
         expandedState.setKeys(
-          collectExpandableIds(mergedItems.value, item =>
-            slots.itemExtra
-              ? hasSlotContent(
-                  slots.itemExtra({
-                    item,
-                    index: 0,
-                    depth: 0,
-                    status: resolveTodoStatus(item),
-                    expanded: true,
-                    toggle: () => expandedState.toggle(item.id),
-                  }),
-                )
-              : false,
+          collectExpandableIds(mergedItems.value, (item, index, depth) =>
+            hasSlotContent(probeItemExtra(item, index, depth)),
           ),
         );
       },

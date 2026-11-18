@@ -185,8 +185,6 @@ const genTodoListStyle: GenerateStyle<TodoListToken, CSSObject> = token => {
 
       [itemCls]: {
         display: "flex",
-        /** 展开区作为第二个 flex 行换行到下方；未展开时与单行表现完全一致。 */
-        flexWrap: "wrap",
         alignItems: "center",
         /** 横向保持行内间距，纵向用更小的展开间距体现父子从属。 */
         columnGap: token.marginXS,
@@ -194,10 +192,17 @@ const genTodoListStyle: GenerateStyle<TodoListToken, CSSObject> = token => {
         minHeight: token.headerHeight,
       },
 
-      /** 展开入口：与状态图标同尺寸，跟随行高居中，旋转过渡复用头部箭头语义。 */
+      /** 只有可展开行需要为展开区预留第二个 flex 行。 */
+      [`${itemCls}-expandable`]: {
+        flexWrap: "wrap",
+      },
+
+      /** 展开入口保持至少 24px 命中区域，箭头图形本身仍沿用小字号。 */
       [`${itemCls}-expand-icon`]: {
         display: "inline-flex",
         flex: "none",
+        width: 24,
+        height: 24,
         alignItems: "center",
         justifyContent: "center",
         padding: 0,

@@ -1,6 +1,6 @@
 import type { ComputedRef, Ref } from "vue";
 
-import { computed, ref, watch } from "vue";
+import { computed, ref } from "vue";
 
 export interface TodoListExpandedKeysOptions {
   /** 受控的展开行集合，`undefined` 表示非受控。 */
@@ -57,12 +57,6 @@ export function useTodoListExpandedKeys(options: TodoListExpandedKeysOptions) {
   function markKeys(keys: string[]) {
     innerKeys.value = [...new Set(keys)];
   }
-
-  watch(defaultExpandedKeys, value => {
-    if (expandedKeys.value === undefined) {
-      innerKeys.value = [...new Set(value)];
-    }
-  });
 
   return {
     mergedKeys,

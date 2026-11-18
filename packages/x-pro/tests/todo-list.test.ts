@@ -887,6 +887,25 @@ describe("TodoList", () => {
       expect(wrapper.findAll(ITEM_SELECTOR)).toHaveLength(4);
     });
 
+    it("does not reset user expansion when a literal default array is re-created", async () => {
+      const wrapper = mountTodo({
+        items: tree(),
+        defaultExpandedKeys: [],
+      });
+      const api = wrapper.vm as unknown as TodoListRef;
+      api.setExpandedKeys(["a"]);
+      await nextTick();
+
+      await wrapper.setProps({
+        title: "Updated title",
+        defaultExpandedKeys: [],
+      });
+      await nextTick();
+
+      expect(api.expandedKeys).toEqual(["a"]);
+      expect(wrapper.findAll(ITEM_SELECTOR)).toHaveLength(4);
+    });
+
     it("follows a controlled expandedKeys prop and broadcasts changes", async () => {
       const wrapper = mountTodo({ items: tree(), expandedKeys: [] });
 
@@ -906,25 +925,26 @@ describe("TodoList", () => {
         { items: tree() },
         {
           itemExtra: ({ item, depth, expanded }: any) =>
-            h(
-              "div",
-              { class: "custom-extra" },
-              `${item.id}:${depth}:${expanded}`,
-            ),
+            item.id === "a"
+              ? h(
+                  "div",
+                  { class: "custom-extra" },
+                  `${item.id}:${depth}:${expanded}`,
+                )
+              : null,
         },
       );
 
-      // 两行都有实质内容：a 有子任务，plain 的插槽返回了自定义面板。
-      expect(wrapper.findAll(EXPAND_SELECTOR)).toHaveLength(2);
+      expect(wrapper.findAll(EXPAND_SELECTOR)).toHaveLength(1);
 
-      await wrapper.findAll(EXPAND_SELECTOR)[1]!.trigger("click");
-      expect(wrapper.find(".custom-extra").text()).toBe("plain:0:true");
+      await wrapper.find(EXPAND_SELECTOR).trigger("click");
+      expect(wrapper.find(".custom-extra").text()).toBe("a:0:true");
       // 插槽优先：默认子清单不再渲染。
       expect(wrapper.find(".ant-todo-list-list-nested").exists()).toBe(false);
     });
 
     it("hides the expand affordance on leaves without content, even with an itemExtra slot", () => {
-      // 树：a 有子任务，a-1 / a-2 是纯叶子；插槽只对 id='3' 的假想行返回内容。
+      // 树：a 有子任务，a-1 / a-2 是纯叶子；插槽只对不存在的行返回内容。
       const wrapper = mountTodo(
         { items: tree() },
         {
@@ -1037,6 +1057,91 @@ describe("TodoList", () => {
       api.setExpandedKeys(["a"]);
       await nextTick();
       expect(wrapper.findAll(ITEM_SELECTOR)).toHaveLength(4);
+    });
+
+    it("expands only rows whose itemExtra is available at their real position", async () => {
+      const wrapper = mountTodo(
+        {
+          items: [
+            {
+              ...todo("root"),
+              children: [todo("nested"), todo("nested-extra")],
+            },
+          ],
+        },
+        {
+          itemExtra: ({ item, depth, index }: any) =>
+            depth === 1 && index === 1
+              ? h("div", { class: "nested-extra" }, item.id)
+              : null,
+        },
+      );
+
+      const api = wrapper.vm as unknown as TodoListRef;
+      api.expandAll();
+      await nextTick();
+
+      expect(api.expandedKeys).toEqual(["root", "nested-extra"]);
+      expect(wrapper.find(".nested-extra").text()).toBe("nested-extra");
+    });
+
+    it("does not collect descendants hidden by a non-expandable parent", async () => {
+      const wrapper = mountTodo({
+        items: [
+          {
+            ...todo("closed"),
+            expandable: false,
+            children: [{ ...todo("hidden"), children: [todo("deeper")] }],
+          },
+          { ...todo("open"), children: [todo("visible")] },
+        ],
+      });
+      const api = wrapper.vm as unknown as TodoListRef;
+
+      api.expandAll();
+      await nextTick();
+
+      expect(api.expandedKeys).toEqual(["open"]);
+    });
+
+    it("keeps row transition classes aligned with generated styles", async () => {
+      const wrapper = mount(TodoList, {
+        attachTo: document.body,
+        global: { stubs: { transition: false } },
+        props: {
+          items: [{ ...todo("a"), children: [todo("a-1")] }],
+        },
+      });
+
+      await wrapper.find(EXPAND_SELECTOR).trigger("click");
+      expect(wrapper.find(EXTRA_SELECTOR).classes()).toContain(
+        "ant-todo-list-item-extra-motion-enter-active",
+      );
+      const styles = [...document.querySelectorAll("style")]
+        .map(style => style.textContent ?? "")
+        .join("\n");
+      expect(styles).toMatch(
+        /\.ant-todo-list-item-extra-motion-enter-active\s*\{[^}]*transition:[^}]*height/,
+      );
+    });
+
+    it("handles empty trees and duplicate ids in expandAll", async () => {
+      const empty = mountTodo({ items: [] });
+      (empty.vm as unknown as TodoListRef).expandAll();
+      await nextTick();
+      expect((empty.vm as unknown as TodoListRef).expandedKeys).toEqual([]);
+
+      const duplicate = mountTodo({
+        items: [
+          { ...todo("same"), children: [todo("child")] },
+          { ...todo("same"), children: [todo("child")] },
+        ],
+      });
+      (duplicate.vm as unknown as TodoListRef).expandAll();
+      await nextTick();
+      expect((duplicate.vm as unknown as TodoListRef).expandedKeys).toEqual([
+        "same",
+      ]);
     });
 
     it("does not auto-collapse while a child is still running under recursiveCount", async () => {
