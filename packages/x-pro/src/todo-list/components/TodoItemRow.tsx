@@ -85,6 +85,10 @@ export default defineComponent<TodoItemRowProps>(props => {
 
   /** 键盘可达：标题获得焦点后 Enter / Space 与点击等价。 */
   function onTitleKeydown(event: KeyboardEvent) {
+    // 只处理标题自身的按键，保留插槽内交互元素的原生键盘行为。
+    if (event.target !== event.currentTarget) {
+      return;
+    }
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
       props.onToggleExpand?.();

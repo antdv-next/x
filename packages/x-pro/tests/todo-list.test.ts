@@ -776,12 +776,84 @@ describe("TodoList", () => {
       const wrapper = mountTodo({ items: tree() });
       const firstTitle = wrapper.findAll(TITLE_SELECTOR)[0]!;
 
-      await firstTitle.trigger("keydown", { key: "Enter" });
+      const enter = new KeyboardEvent("keydown", {
+        key: "Enter",
+        bubbles: true,
+        cancelable: true,
+      });
+      firstTitle.element.dispatchEvent(enter);
+      await nextTick();
+      expect(enter.defaultPrevented).toBe(true);
       expect(wrapper.findAll(ITEM_SELECTOR)).toHaveLength(4);
 
-      await firstTitle.trigger("keydown", { key: " " });
+      const space = new KeyboardEvent("keydown", {
+        key: " ",
+        bubbles: true,
+        cancelable: true,
+      });
+      firstTitle.element.dispatchEvent(space);
+      await nextTick();
+      expect(space.defaultPrevented).toBe(true);
       expect(wrapper.findAll(ITEM_SELECTOR)).toHaveLength(2);
     });
+
+    it.each([
+      ["link", () => h("a", { class: "title-control", href: "#" }, "Link")],
+      ["button", () => h("button", { class: "title-control" }, "Button")],
+      ["input", () => h("input", { class: "title-control" })],
+      ["textarea", () => h("textarea", { class: "title-control" })],
+      ["select", () => h("select", { class: "title-control" })],
+      [
+        "custom button",
+        () =>
+          h(
+            "span",
+            { class: "title-control", role: "button", tabindex: 0 },
+            "Button",
+          ),
+      ],
+      [
+        "editable content",
+        () =>
+          h(
+            "span",
+            { contenteditable: "true" },
+            h("span", { class: "title-control" }, "Edit"),
+          ),
+      ],
+      [
+        "nested button content",
+        () =>
+          h("button", null, h("span", { class: "title-control" }, "Button")),
+      ],
+    ] as const)(
+      "preserves Enter / Space events from a title %s",
+      async (_name, renderControl) => {
+        const wrapper = mountTodo(
+          { items: tree() },
+          { itemTitle: () => renderControl() },
+        );
+        const control = wrapper.find(".title-control");
+
+        for (const key of ["Enter", " "]) {
+          const event = new KeyboardEvent("keydown", {
+            key,
+            bubbles: true,
+            cancelable: true,
+          });
+          control.element.dispatchEvent(event);
+          await nextTick();
+
+          expect(event.defaultPrevented).toBe(false);
+          expect(wrapper.find(TITLE_SELECTOR).attributes("aria-expanded")).toBe(
+            "false",
+          );
+          expect(wrapper.findAll(ITEM_SELECTOR)).toHaveLength(2);
+          expect(wrapper.emitted("expandedKeysChange")).toBeUndefined();
+          expect(wrapper.emitted("update:expandedKeys")).toBeUndefined();
+        }
+      },
+    );
 
     it("does not toggle when an interactive element inside the title is clicked", async () => {
       const wrapper = mountTodo(
