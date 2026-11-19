@@ -24,6 +24,12 @@ Both the panel and individual task rows animate their expand / collapse (height 
 <demo src="./demo/tree.vue">Tree tasks and custom nodes</demo>
 <demo src="./demo/semantic.vue">Semantic styling</demo>
 
+## Tree Expansion {#tree-expansion}
+
+Task IDs must be stable and unique across the entire tree, not just within a sibling list. If your data uses IDs that are local to each branch, prefix them with a stable branch identifier before passing them to TodoList.
+
+Click the default task title or use the arrow button to expand a row. The arrow is the keyboard control. When you provide an `itemTitle` slot, title interactions belong to the slot and do not toggle expansion automatically.
+
 ## Status {#status}
 
 Every entry has one of four statuses. They share a single SVG whose shape is switched by a status class:
@@ -75,7 +81,7 @@ Properties marked ✓ can be configured globally through `XProProvider`.
 
 | Field      | Description                                                         | Type                                                       | Default     |
 | ---------- | ------------------------------------------------------------------- | ---------------------------------------------------------- | ----------- |
-| id         | Stable identifier used for list diffing and scroll targeting        | `string`                                                   | -           |
+| id         | Stable identifier unique across the entire task tree                | `string`                                                   | -           |
 | title      | Task title                                                          | `string`                                                   | -           |
 | status     | Task status                                                         | `'pending' \| 'in-progress' \| 'completed' \| 'cancelled'` | `'pending'` |
 | progress   | Task progress, 0–100, rendered as the arc only while `in-progress`  | `number`                                                   | -           |

@@ -1,3 +1,5 @@
+import { toRaw } from "vue";
+
 import type { TodoItem, TodoItemStatus } from "./types";
 
 /** 头部标题缺省值，未提供 `title` 且 locale 未覆盖时使用。 */
@@ -85,9 +87,15 @@ export function clampProgress(progress: number | undefined) {
  */
 export function flattenItems(items: TodoItem[]): TodoItem[] {
   const result: TodoItem[] = [];
+  const visited = new WeakSet<TodoItem>();
 
   function visit(list: TodoItem[]) {
     for (const item of list) {
+      const identity = toRaw(item);
+      if (visited.has(identity)) {
+        continue;
+      }
+      visited.add(identity);
       result.push(item);
       if (Array.isArray(item.children) && item.children.length) {
         visit(item.children);
@@ -99,6 +107,19 @@ export function flattenItems(items: TodoItem[]): TodoItem[] {
   return result;
 }
 
+export function getExpandableChildren(
+  item: TodoItem,
+  ancestors: ReadonlySet<TodoItem>,
+): TodoItem[] | undefined {
+  const { children } = item;
+  if (
+    Array.isArray(children) &&
+    children.some(child => !ancestors.has(toRaw(child)))
+  ) {
+    return children;
+  }
+}
+
 /**
  * 收集所有可展开的节点 id，供实例方法 `expandAll` 使用。
  *
@@ -107,23 +128,30 @@ export function flattenItems(items: TodoItem[]): TodoItem[] {
  */
 export function collectExpandableIds(
   items: TodoItem[],
-  hasExtra: (item: TodoItem) => boolean,
+  hasExtra: (item: TodoItem, index: number, depth: number) => boolean,
 ): string[] {
-  const result: string[] = [];
-  visit(items);
+  const ancestors = new Set<TodoItem>();
+  const ids = new Set<string>();
+  visit(items, 0);
 
-  function visit(list: TodoItem[]) {
-    for (const item of list) {
-      const hasChildren =
-        Array.isArray(item.children) && !!item.children.length;
-      if (item.expandable !== false && (hasChildren || hasExtra(item))) {
-        result.push(item.id);
+  function visit(list: TodoItem[], depth: number) {
+    list.forEach((item, index) => {
+      const identity = toRaw(item);
+      if (item.expandable === false || ancestors.has(identity)) {
+        return;
       }
-      if (Array.isArray(item.children)) {
-        visit(item.children);
+      ancestors.add(identity);
+      const children = getExpandableChildren(item, ancestors);
+      const hasItemExtra = hasExtra(item, index, depth);
+      if (children || hasItemExtra) {
+        ids.add(item.id);
       }
-    }
+      if (children && !hasItemExtra) {
+        visit(children, depth + 1);
+      }
+      ancestors.delete(identity);
+    });
   }
 
-  return result;
+  return [...ids];
 }

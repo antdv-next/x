@@ -10,6 +10,7 @@ import {
   defineComponent,
   isVNode,
   shallowRef,
+  toRaw,
   Transition,
 } from "vue";
 
@@ -17,7 +18,6 @@ import type { TodoListLocale, XProLocale } from "../locale/types";
 import type {
   TodoItem,
   TodoItemExpandIconSlotProps,
-  TodoItemExtraSlotProps,
   TodoItemSlotProps,
   TodoItemStatus,
   TodoListClassNamesType,
@@ -52,6 +52,7 @@ import {
   countCompleted,
   deriveOverallStatus,
   flattenItems,
+  getExpandableChildren,
   resolveOverallProgress,
   resolveTodoStatus,
 } from "./utils";
@@ -162,8 +163,8 @@ const TodoList = defineComponent<
     }
 
     function updateExpandedKeys(next: string[]) {
-      emit("update:expandedKeys", next);
-      emit("expandedKeysChange", next);
+      emit("update:expandedKeys", [...next]);
+      emit("expandedKeysChange", [...next]);
     }
 
     const openState = useTodoListOpen({
@@ -251,6 +252,17 @@ const TodoList = defineComponent<
 
     const contentId = `${prefixCls.value}-content`;
 
+    function probeItemExtra(item: TodoItem, index: number, depth: number) {
+      return slots.itemExtra?.({
+        item,
+        index,
+        depth,
+        status: resolveTodoStatus(item),
+        expanded: true,
+        toggle: () => expandedState.toggle(item.id),
+      });
+    }
+
     /**
      * 渲染单个任务行。抽成函数供顶层与子清单递归共用，
      * 所有插槽参数都带上 depth，宿主可据此调整自定义内容的层级表现。
@@ -259,11 +271,11 @@ const TodoList = defineComponent<
       item: TodoItem,
       index: number,
       depth: number,
+      ancestors: Set<TodoItem>,
     ): VNodeChild {
       const status = resolveTodoStatus(item);
       const baseProps: TodoItemSlotProps = { item, index, status, depth };
-      const hasChildren =
-        Array.isArray(item.children) && item.children.length > 0;
+      const children = getExpandableChildren(item, ancestors);
       const selfExpanded = expandedState.isExpanded(item.id);
 
       /**
@@ -273,16 +285,12 @@ const TodoList = defineComponent<
        * 若按当前收起态探测会拿到注释节点，把有内容的行误判成叶子。
        * 探测结果在真正展开时直接复用，避免同一行多次调用插槽。
        */
-      const probeProps: TodoItemExtraSlotProps = {
-        ...baseProps,
-        expanded: true,
-        toggle: () => expandedState.toggle(item.id),
-      };
-      const probed = slots.itemExtra?.(probeProps);
+      const probed =
+        item.expandable === false ? null : probeItemExtra(item, index, depth);
       const hasExtra = hasSlotContent(probed);
 
       // 纯叶子（既无子任务、插槽也无内容）不给箭头；显式 expandable: false 始终关闭。
-      const expandable = item.expandable !== false && (hasChildren || hasExtra);
+      const expandable = item.expandable !== false && (!!children || hasExtra);
       const expanded = expandable && selfExpanded;
 
       let extraContent: VNodeChild = null;
@@ -290,10 +298,10 @@ const TodoList = defineComponent<
         if (hasExtra) {
           // 插槽优先：宿主完全接管展开区内容，包括是否渲染子清单。
           extraContent = probed;
-        } else if (hasChildren) {
+        } else if (children) {
           // 缺省：递归渲染一棵子清单。子树继承 prefixCls 与统计口径，
           // 但拥有自己的 DOM 层级，缩进由 item-extra 的 padding 提供。
-          extraContent = renderList(item.children ?? [], depth + 1, true);
+          extraContent = renderList(children, depth + 1, ancestors);
         }
       }
 
@@ -306,9 +314,17 @@ const TodoList = defineComponent<
           status={status}
           statusLabel={statusLabels.value[status]}
           titleContent={slots.itemTitle?.(baseProps) ?? item.title}
+          titleClickable={expandable && !slots.itemTitle}
           detailContent={slots.itemDetail?.(baseProps) ?? item.detail ?? null}
           expandable={expandable}
           expanded={expanded}
+          expandLabel={
+            expandable
+              ? formatTemplate(localeText.value.toggleLabel, {
+                  title: item.title,
+                })
+              : undefined
+          }
           onToggleExpand={() => expandedState.toggle(item.id)}
           expandIconContent={slots.itemExpandIcon?.({
             ...baseProps,
@@ -343,8 +359,9 @@ const TodoList = defineComponent<
     function renderList(
       items: TodoItem[],
       depth: number,
-      nested = false,
+      ancestors = new Set<TodoItem>(),
     ): VNodeChild {
+      const nested = depth > 0;
       return (
         <ul
           class={clsx(
@@ -361,7 +378,16 @@ const TodoList = defineComponent<
           ]}
           aria-label={nested ? undefined : mergedTitle.value}
         >
-          {items.map((item, index) => renderRow(item, index, depth))}
+          {items.map((item, index) => {
+            const identity = toRaw(item);
+            if (ancestors.has(identity)) {
+              return null;
+            }
+            ancestors.add(identity);
+            const row = renderRow(item, index, depth, ancestors);
+            ancestors.delete(identity);
+            return row;
+          })}
         </ul>
       );
     }
@@ -383,25 +409,11 @@ const TodoList = defineComponent<
       get expandedKeys() {
         return [...expandedState.mergedKeys.value];
       },
-      setExpandedKeys: keys => {
-        expandedState.markKeys(keys);
-        updateExpandedKeys([...new Set(keys)]);
-      },
+      setExpandedKeys: expandedState.setKeys,
       expandAll: () => {
         expandedState.setKeys(
-          collectExpandableIds(mergedItems.value, item =>
-            slots.itemExtra
-              ? hasSlotContent(
-                  slots.itemExtra({
-                    item,
-                    index: 0,
-                    depth: 0,
-                    status: resolveTodoStatus(item),
-                    expanded: true,
-                    toggle: () => expandedState.toggle(item.id),
-                  }),
-                )
-              : false,
+          collectExpandableIds(mergedItems.value, (item, index, depth) =>
+            hasSlotContent(probeItemExtra(item, index, depth)),
           ),
         );
       },

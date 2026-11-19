@@ -50,6 +50,7 @@ const items = ref<TodoItem[]>([
     id: "3",
     title: "Write the docs",
     status: "pending",
+    detail: "Owner review pending",
     payload: { owner: "docs", estimate: "2h" },
   },
 ]);
@@ -104,7 +105,7 @@ function toggle(id: string) {
           "
         >
           <span>Owner: {{ (item.payload as any)?.owner }}</span>
-          <a @click.prevent="toggle(item.id)">收起</a>
+          <a @click.prevent="toggle">收起</a>
         </div>
       </template>
     </TodoList>

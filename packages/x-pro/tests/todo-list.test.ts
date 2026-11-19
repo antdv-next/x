@@ -758,43 +758,30 @@ describe("TodoList", () => {
     it("toggles expansion by clicking the title of an expandable row", async () => {
       const wrapper = mountTodo({ items: tree() });
       const firstTitle = wrapper.findAll(TITLE_SELECTOR)[0]!;
+      const arrow = wrapper.get(EXPAND_SELECTOR);
 
-      expect(firstTitle.attributes("role")).toBe("button");
-      expect(firstTitle.attributes("tabindex")).toBe("0");
-      expect(firstTitle.attributes("aria-expanded")).toBe("false");
+      expect(firstTitle.attributes("role")).toBeUndefined();
+      expect(firstTitle.attributes("tabindex")).toBeUndefined();
+      expect(firstTitle.attributes("aria-expanded")).toBeUndefined();
       expect(wrapper.findAll(ITEM_SELECTOR)).toHaveLength(2);
 
       await firstTitle.trigger("click");
       expect(wrapper.findAll(ITEM_SELECTOR)).toHaveLength(4);
-      expect(firstTitle.attributes("aria-expanded")).toBe("true");
+      expect(arrow.attributes("aria-expanded")).toBe("true");
 
       await firstTitle.trigger("click");
       expect(wrapper.findAll(ITEM_SELECTOR)).toHaveLength(2);
     });
 
-    it("toggles expansion with Enter / Space on the focused title", async () => {
+    it("uses a named native button as the only focusable row toggle", () => {
       const wrapper = mountTodo({ items: tree() });
-      const firstTitle = wrapper.findAll(TITLE_SELECTOR)[0]!;
+      const row = wrapper.findAll(ITEM_SELECTOR)[0]!;
+      const arrow = row.get(`button${EXPAND_SELECTOR}`);
 
-      const enter = new KeyboardEvent("keydown", {
-        key: "Enter",
-        bubbles: true,
-        cancelable: true,
-      });
-      firstTitle.element.dispatchEvent(enter);
-      await nextTick();
-      expect(enter.defaultPrevented).toBe(true);
-      expect(wrapper.findAll(ITEM_SELECTOR)).toHaveLength(4);
-
-      const space = new KeyboardEvent("keydown", {
-        key: " ",
-        bubbles: true,
-        cancelable: true,
-      });
-      firstTitle.element.dispatchEvent(space);
-      await nextTick();
-      expect(space.defaultPrevented).toBe(true);
-      expect(wrapper.findAll(ITEM_SELECTOR)).toHaveLength(2);
+      expect(row.findAll("button, [tabindex]")).toHaveLength(1);
+      expect(arrow.attributes("type")).toBe("button");
+      expect(arrow.attributes("aria-label")).toBe("Toggle Parent");
+      expect(arrow.attributes("aria-expanded")).toBe("false");
     });
 
     it.each([
@@ -827,7 +814,7 @@ describe("TodoList", () => {
           h("button", null, h("span", { class: "title-control" }, "Button")),
       ],
     ] as const)(
-      "preserves Enter / Space events from a title %s",
+      "preserves Enter, Space and click events from a title %s",
       async (_name, renderControl) => {
         const wrapper = mountTodo(
           { items: tree() },
@@ -845,28 +832,36 @@ describe("TodoList", () => {
           await nextTick();
 
           expect(event.defaultPrevented).toBe(false);
-          expect(wrapper.find(TITLE_SELECTOR).attributes("aria-expanded")).toBe(
-            "false",
-          );
+          expect(
+            wrapper.find(EXPAND_SELECTOR).attributes("aria-expanded"),
+          ).toBe("false");
           expect(wrapper.findAll(ITEM_SELECTOR)).toHaveLength(2);
           expect(wrapper.emitted("expandedKeysChange")).toBeUndefined();
           expect(wrapper.emitted("update:expandedKeys")).toBeUndefined();
         }
+
+        await control.trigger("click");
+        expect(wrapper.emitted("update:expandedKeys")).toBeUndefined();
       },
     );
 
-    it("does not toggle when an interactive element inside the title is clicked", async () => {
+    it("leaves a custom title slot in control of its pointer interaction", async () => {
+      const onClick = vi.fn();
       const wrapper = mountTodo(
         { items: tree() },
         {
-          itemTitle: ({ item }: any) =>
-            h("a", { class: "title-link", href: "#" }, item.title),
+          itemTitle: () =>
+            h("span", { class: "custom-title", onClick }, "Custom"),
         },
       );
 
-      await wrapper.find(".title-link").trigger("click");
-      // 点链接不应连带折叠/展开这一行。
+      await wrapper.get(".custom-title").trigger("click");
+      expect(onClick).toHaveBeenCalledTimes(1);
+      expect(wrapper.emitted("update:expandedKeys")).toBeUndefined();
       expect(wrapper.findAll(ITEM_SELECTOR)).toHaveLength(2);
+
+      await wrapper.get(EXPAND_SELECTOR).trigger("click");
+      expect(wrapper.findAll(ITEM_SELECTOR)).toHaveLength(4);
     });
 
     it("keeps a leaf title non-interactive", () => {
@@ -887,6 +882,25 @@ describe("TodoList", () => {
       expect(wrapper.findAll(ITEM_SELECTOR)).toHaveLength(4);
     });
 
+    it("does not reset user expansion when a literal default array is re-created", async () => {
+      const wrapper = mountTodo({
+        items: tree(),
+        defaultExpandedKeys: [],
+      });
+      const api = wrapper.vm as unknown as TodoListRef;
+      api.setExpandedKeys(["a"]);
+      await nextTick();
+
+      await wrapper.setProps({
+        title: "Updated title",
+        defaultExpandedKeys: [],
+      });
+      await nextTick();
+
+      expect(api.expandedKeys).toEqual(["a"]);
+      expect(wrapper.findAll(ITEM_SELECTOR)).toHaveLength(4);
+    });
+
     it("follows a controlled expandedKeys prop and broadcasts changes", async () => {
       const wrapper = mountTodo({ items: tree(), expandedKeys: [] });
 
@@ -901,30 +915,51 @@ describe("TodoList", () => {
       expect(wrapper.findAll(ITEM_SELECTOR)).toHaveLength(4);
     });
 
+    it("isolates both expansion event payloads from uncontrolled state", async () => {
+      const onChange = vi.fn((keys: string[]) => {
+        expect(keys).toEqual(["a"]);
+        keys.push("unrelated");
+      });
+      const wrapper = mountTodo({
+        items: tree(),
+        "onUpdate:expandedKeys": (keys: string[]) => keys.splice(0),
+        onExpandedKeysChange: onChange,
+      });
+
+      await wrapper.get(EXPAND_SELECTOR).trigger("click");
+
+      expect(onChange).toHaveBeenCalledTimes(1);
+      expect((wrapper.vm as unknown as TodoListRef).expandedKeys).toEqual([
+        "a",
+      ]);
+      expect(wrapper.findAll(ITEM_SELECTOR)).toHaveLength(4);
+    });
+
     it("lets itemExtra take over the expanded area and receive its context", async () => {
       const wrapper = mountTodo(
         { items: tree() },
         {
           itemExtra: ({ item, depth, expanded }: any) =>
-            h(
-              "div",
-              { class: "custom-extra" },
-              `${item.id}:${depth}:${expanded}`,
-            ),
+            item.id === "a"
+              ? h(
+                  "div",
+                  { class: "custom-extra" },
+                  `${item.id}:${depth}:${expanded}`,
+                )
+              : null,
         },
       );
 
-      // 两行都有实质内容：a 有子任务，plain 的插槽返回了自定义面板。
-      expect(wrapper.findAll(EXPAND_SELECTOR)).toHaveLength(2);
+      expect(wrapper.findAll(EXPAND_SELECTOR)).toHaveLength(1);
 
-      await wrapper.findAll(EXPAND_SELECTOR)[1]!.trigger("click");
-      expect(wrapper.find(".custom-extra").text()).toBe("plain:0:true");
+      await wrapper.find(EXPAND_SELECTOR).trigger("click");
+      expect(wrapper.find(".custom-extra").text()).toBe("a:0:true");
       // 插槽优先：默认子清单不再渲染。
       expect(wrapper.find(".ant-todo-list-list-nested").exists()).toBe(false);
     });
 
     it("hides the expand affordance on leaves without content, even with an itemExtra slot", () => {
-      // 树：a 有子任务，a-1 / a-2 是纯叶子；插槽只对 id='3' 的假想行返回内容。
+      // 树：a 有子任务，a-1 / a-2 是纯叶子；插槽只对不存在的行返回内容。
       const wrapper = mountTodo(
         { items: tree() },
         {
@@ -1037,6 +1072,132 @@ describe("TodoList", () => {
       api.setExpandedKeys(["a"]);
       await nextTick();
       expect(wrapper.findAll(ITEM_SELECTOR)).toHaveLength(4);
+    });
+
+    it("skips cyclic ancestors while keeping sibling rows and their indices", async () => {
+      const root = todo("root");
+      const branch = todo("branch", undefined, {
+        children: [root, todo("leaf")],
+      });
+      root.children = [root, branch];
+      const wrapper = mountTodo({
+        items: [root],
+        recursiveCount: true,
+        defaultExpandedKeys: ["root", "branch"],
+      });
+
+      const rows = wrapper.findAll(ITEM_SELECTOR);
+      expect(rows).toHaveLength(3);
+      expect(rows.map(row => row.attributes("data-index"))).toEqual([
+        "0",
+        "1",
+        "1",
+      ]);
+      expect(wrapper.get(COUNTER_SELECTOR).text()).toBe("0 of 3 completed");
+
+      const api = wrapper.vm as unknown as TodoListRef;
+      api.collapseAll();
+      await nextTick();
+      api.expandAll();
+      await nextTick();
+      expect(api.expandedKeys).toEqual(["root", "branch"]);
+      expect(wrapper.findAll(ITEM_SELECTOR)).toHaveLength(3);
+    });
+
+    it("does not expose an empty disclosure for a cycle-only child list", () => {
+      const root = todo("root");
+      root.children = [root];
+      const wrapper = mountTodo({ items: [root] });
+
+      expect(wrapper.find(EXPAND_SELECTOR).exists()).toBe(false);
+      const api = wrapper.vm as unknown as TodoListRef;
+      api.expandAll();
+      expect(api.expandedKeys).toEqual([]);
+    });
+
+    it("expands only rows whose itemExtra is available at their real position", async () => {
+      const wrapper = mountTodo(
+        {
+          items: [
+            {
+              ...todo("root"),
+              children: [todo("nested"), todo("nested-extra")],
+            },
+          ],
+        },
+        {
+          itemExtra: ({ item, depth, index }: any) =>
+            depth === 1 && index === 1
+              ? h("div", { class: "nested-extra" }, item.id)
+              : null,
+        },
+      );
+
+      const api = wrapper.vm as unknown as TodoListRef;
+      api.expandAll();
+      await nextTick();
+
+      expect(api.expandedKeys).toEqual(["root", "nested-extra"]);
+      expect(wrapper.find(".nested-extra").text()).toBe("nested-extra");
+    });
+
+    it("does not collect descendants hidden by a non-expandable parent", async () => {
+      const wrapper = mountTodo({
+        items: [
+          {
+            ...todo("closed"),
+            expandable: false,
+            children: [{ ...todo("hidden"), children: [todo("deeper")] }],
+          },
+          { ...todo("open"), children: [todo("visible")] },
+        ],
+      });
+      const api = wrapper.vm as unknown as TodoListRef;
+
+      api.expandAll();
+      await nextTick();
+
+      expect(api.expandedKeys).toEqual(["open"]);
+    });
+
+    it("keeps row transition classes aligned with generated styles", async () => {
+      const wrapper = mount(TodoList, {
+        attachTo: document.body,
+        global: { stubs: { transition: false } },
+        props: {
+          items: [{ ...todo("a"), children: [todo("a-1")] }],
+        },
+      });
+
+      await wrapper.find(EXPAND_SELECTOR).trigger("click");
+      expect(wrapper.find(EXTRA_SELECTOR).classes()).toContain(
+        "ant-todo-list-item-extra-motion-enter-active",
+      );
+      const styles = [...document.querySelectorAll("style")]
+        .map(style => style.textContent ?? "")
+        .join("\n");
+      expect(styles).toMatch(
+        /\.ant-todo-list-item-extra-motion-enter-active\s*\{[^}]*transition:[^}]*height/,
+      );
+    });
+
+    it("handles empty trees and duplicate ids in expandAll", async () => {
+      const empty = mountTodo({ items: [] });
+      (empty.vm as unknown as TodoListRef).expandAll();
+      await nextTick();
+      expect((empty.vm as unknown as TodoListRef).expandedKeys).toEqual([]);
+
+      const duplicate = mountTodo({
+        items: [
+          { ...todo("same"), children: [todo("child")] },
+          { ...todo("same"), children: [todo("child")] },
+        ],
+      });
+      (duplicate.vm as unknown as TodoListRef).expandAll();
+      await nextTick();
+      expect((duplicate.vm as unknown as TodoListRef).expandedKeys).toEqual([
+        "same",
+      ]);
     });
 
     it("does not auto-collapse while a child is still running under recursiveCount", async () => {
