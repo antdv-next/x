@@ -12,6 +12,7 @@ interface TodoListToken extends FullToken<"TodoList"> {
   headerHeight: number;
   iconSize: number;
   itemGap: number;
+  itemExpandGap: number;
   colorStatusProgress: string;
   colorStatusCompleted: string;
   colorStatusCancelled: string;
@@ -184,9 +185,66 @@ const genTodoListStyle: GenerateStyle<TodoListToken, CSSObject> = token => {
 
       [itemCls]: {
         display: "flex",
+        /** 展开区作为第二个 flex 行换行到下方；未展开时与单行表现完全一致。 */
+        flexWrap: "wrap",
         alignItems: "center",
-        gap: token.marginXS,
+        /** 横向保持行内间距，纵向用更小的展开间距体现父子从属。 */
+        columnGap: token.marginXS,
+        rowGap: token.itemExpandGap,
         minHeight: token.headerHeight,
+      },
+
+      /** 展开入口：与状态图标同尺寸，跟随行高居中，旋转过渡复用头部箭头语义。 */
+      [`${itemCls}-expand-icon`]: {
+        display: "inline-flex",
+        flex: "none",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 0,
+        border: 0,
+        background: "transparent",
+        color: token.colorTextTertiary,
+        font: "inherit",
+        fontSize: token.fontSizeSM,
+        cursor: "pointer",
+        transition: `transform ${motion}, color ${motion}`,
+
+        "&:hover": {
+          color: token.colorText,
+        },
+
+        "&:focus-visible": {
+          ...focusOutline,
+          borderRadius: token.borderRadiusSM,
+        },
+      },
+
+      [`${itemCls}-expanded > ${itemCls}-expand-icon`]: {
+        transform: "rotate(90deg)",
+      },
+
+      /**
+       * 行下方展开区。`flex-basis: 100%` 保证它独占一行；
+       * 左侧缩进由组件按 depth 逐层写入行内 style，这里只负责占满。
+       * 与标题行的间距由 li 的 flex `gap` 提供，不再叠加 padding/margin。
+       */
+      [`${itemCls}-extra`]: {
+        flexBasis: "100%",
+        minWidth: 0,
+      },
+
+      /**
+       * 展开 / 收起的高度与透明度过渡。高度目标由 JS hooks 量出后写入行内 style，
+       * 这里只声明过渡本身；`overflow: hidden` 只在动画期间生效，结束后内容可正常溢出。
+       */
+      [`${itemCls}-extra-motion-enter-active`]: {
+        overflow: "hidden",
+        transition: `height ${enterMotion}, opacity ${enterMotion}`,
+      },
+
+      [`${itemCls}-extra-motion-leave-active`]: {
+        overflow: "hidden",
+        transition: `height ${leaveMotion}, opacity ${leaveMotion}`,
       },
 
       [`${itemCls}-body`]: {
@@ -204,6 +262,16 @@ const genTodoListStyle: GenerateStyle<TodoListToken, CSSObject> = token => {
         whiteSpace: "nowrap",
         verticalAlign: "bottom",
         transition: `color ${motion}`,
+      },
+
+      /** 可展开行的标题也是点击入口，给出与按钮一致的手型和焦点反馈。 */
+      [`${itemCls}-title-clickable`]: {
+        cursor: "pointer",
+
+        "&:focus-visible": {
+          ...focusOutline,
+          borderRadius: token.borderRadiusSM,
+        },
       },
 
       /**
@@ -308,15 +376,16 @@ const genTodoListStyle: GenerateStyle<TodoListToken, CSSObject> = token => {
       },
 
       "@media (prefers-reduced-motion: reduce)": {
-        [`${headerCls}-arrow, ${itemCls}-title, ${itemCls}-strikethrough`]: {
-          transition: "none",
-        },
+        [`${headerCls}-arrow, ${itemCls}-title, ${itemCls}-strikethrough, ${itemCls}-expand-icon`]:
+          {
+            transition: "none",
+          },
 
         [`${statusCls}-check, ${statusCls}-cross`]: {
           transition: "none",
         },
 
-        [`${contentCls}-motion-enter-active, ${contentCls}-motion-leave-active`]:
+        [`${contentCls}-motion-enter-active, ${contentCls}-motion-leave-active, ${itemCls}-extra-motion-enter-active, ${itemCls}-extra-motion-leave-active`]:
           {
             transition: "none",
           },

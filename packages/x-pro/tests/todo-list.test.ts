@@ -3,7 +3,7 @@ import type { Plugin } from "vue";
 
 import { mount } from "@vue/test-utils";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createApp, h, nextTick, ref } from "vue";
+import { createApp, createCommentVNode, h, nextTick, ref } from "vue";
 
 import type { TodoItem, TodoListRef } from "../src/todo-list/types";
 
@@ -706,5 +706,368 @@ describe("TodoList", () => {
 
     expect(wrapper.findAll(ITEM_SELECTOR)).toHaveLength(0);
     expect(wrapper.find(COUNTER_SELECTOR).text()).toBe("0 of 0 completed");
+  });
+
+  describe("tree expansion", () => {
+    const tree = (): TodoItem[] => [
+      {
+        id: "a",
+        title: "Parent",
+        status: "in-progress",
+        children: [todo("a-1"), todo("a-2")],
+      },
+      todo("plain"),
+    ];
+    const EXPAND_SELECTOR = ".ant-todo-list-item-expand-icon";
+    const EXTRA_SELECTOR = ".ant-todo-list-item-extra";
+    const TITLE_SELECTOR = ".ant-todo-list-item-title";
+
+    it("adds an expand affordance only to rows with children", () => {
+      const wrapper = mountTodo({ items: tree() });
+      const rows = wrapper.findAll(ITEM_SELECTOR);
+
+      expect(rows[0]!.find(EXPAND_SELECTOR).exists()).toBe(true);
+      expect(rows[1]!.find(EXPAND_SELECTOR).exists()).toBe(false);
+      expect(rows[0]!.attributes("data-depth")).toBe("0");
+      expect(rows[0]!.find(EXPAND_SELECTOR).attributes("aria-expanded")).toBe(
+        "false",
+      );
+    });
+
+    it("renders the nested list only after expanding, then hides it again", async () => {
+      const wrapper = mountTodo({ items: tree() });
+
+      expect(wrapper.find(EXTRA_SELECTOR).exists()).toBe(false);
+      expect(wrapper.findAll(ITEM_SELECTOR)).toHaveLength(2);
+
+      await wrapper.find(EXPAND_SELECTOR).trigger("click");
+
+      const rows = wrapper.findAll(ITEM_SELECTOR);
+      expect(rows).toHaveLength(4);
+      expect(rows[1]!.attributes("data-depth")).toBe("1");
+      expect(rows[1]!.attributes("data-index")).toBe("0");
+      expect(wrapper.find(".ant-todo-list-list-nested").exists()).toBe(true);
+      expect(wrapper.find(EXPAND_SELECTOR).attributes("aria-expanded")).toBe(
+        "true",
+      );
+
+      await wrapper.find(EXPAND_SELECTOR).trigger("click");
+      expect(wrapper.findAll(ITEM_SELECTOR)).toHaveLength(2);
+    });
+
+    it("toggles expansion by clicking the title of an expandable row", async () => {
+      const wrapper = mountTodo({ items: tree() });
+      const firstTitle = wrapper.findAll(TITLE_SELECTOR)[0]!;
+
+      expect(firstTitle.attributes("role")).toBe("button");
+      expect(firstTitle.attributes("tabindex")).toBe("0");
+      expect(firstTitle.attributes("aria-expanded")).toBe("false");
+      expect(wrapper.findAll(ITEM_SELECTOR)).toHaveLength(2);
+
+      await firstTitle.trigger("click");
+      expect(wrapper.findAll(ITEM_SELECTOR)).toHaveLength(4);
+      expect(firstTitle.attributes("aria-expanded")).toBe("true");
+
+      await firstTitle.trigger("click");
+      expect(wrapper.findAll(ITEM_SELECTOR)).toHaveLength(2);
+    });
+
+    it("toggles expansion with Enter / Space on the focused title", async () => {
+      const wrapper = mountTodo({ items: tree() });
+      const firstTitle = wrapper.findAll(TITLE_SELECTOR)[0]!;
+
+      const enter = new KeyboardEvent("keydown", {
+        key: "Enter",
+        bubbles: true,
+        cancelable: true,
+      });
+      firstTitle.element.dispatchEvent(enter);
+      await nextTick();
+      expect(enter.defaultPrevented).toBe(true);
+      expect(wrapper.findAll(ITEM_SELECTOR)).toHaveLength(4);
+
+      const space = new KeyboardEvent("keydown", {
+        key: " ",
+        bubbles: true,
+        cancelable: true,
+      });
+      firstTitle.element.dispatchEvent(space);
+      await nextTick();
+      expect(space.defaultPrevented).toBe(true);
+      expect(wrapper.findAll(ITEM_SELECTOR)).toHaveLength(2);
+    });
+
+    it.each([
+      ["link", () => h("a", { class: "title-control", href: "#" }, "Link")],
+      ["button", () => h("button", { class: "title-control" }, "Button")],
+      ["input", () => h("input", { class: "title-control" })],
+      ["textarea", () => h("textarea", { class: "title-control" })],
+      ["select", () => h("select", { class: "title-control" })],
+      [
+        "custom button",
+        () =>
+          h(
+            "span",
+            { class: "title-control", role: "button", tabindex: 0 },
+            "Button",
+          ),
+      ],
+      [
+        "editable content",
+        () =>
+          h(
+            "span",
+            { contenteditable: "true" },
+            h("span", { class: "title-control" }, "Edit"),
+          ),
+      ],
+      [
+        "nested button content",
+        () =>
+          h("button", null, h("span", { class: "title-control" }, "Button")),
+      ],
+    ] as const)(
+      "preserves Enter / Space events from a title %s",
+      async (_name, renderControl) => {
+        const wrapper = mountTodo(
+          { items: tree() },
+          { itemTitle: () => renderControl() },
+        );
+        const control = wrapper.find(".title-control");
+
+        for (const key of ["Enter", " "]) {
+          const event = new KeyboardEvent("keydown", {
+            key,
+            bubbles: true,
+            cancelable: true,
+          });
+          control.element.dispatchEvent(event);
+          await nextTick();
+
+          expect(event.defaultPrevented).toBe(false);
+          expect(wrapper.find(TITLE_SELECTOR).attributes("aria-expanded")).toBe(
+            "false",
+          );
+          expect(wrapper.findAll(ITEM_SELECTOR)).toHaveLength(2);
+          expect(wrapper.emitted("expandedKeysChange")).toBeUndefined();
+          expect(wrapper.emitted("update:expandedKeys")).toBeUndefined();
+        }
+      },
+    );
+
+    it("does not toggle when an interactive element inside the title is clicked", async () => {
+      const wrapper = mountTodo(
+        { items: tree() },
+        {
+          itemTitle: ({ item }: any) =>
+            h("a", { class: "title-link", href: "#" }, item.title),
+        },
+      );
+
+      await wrapper.find(".title-link").trigger("click");
+      // 点链接不应连带折叠/展开这一行。
+      expect(wrapper.findAll(ITEM_SELECTOR)).toHaveLength(2);
+    });
+
+    it("keeps a leaf title non-interactive", () => {
+      const wrapper = mountTodo({ items: tree() });
+      const plainTitle = wrapper.findAll(TITLE_SELECTOR)[1]!;
+
+      expect(plainTitle.attributes("role")).toBeUndefined();
+      expect(plainTitle.attributes("tabindex")).toBeUndefined();
+      expect(plainTitle.attributes("aria-expanded")).toBeUndefined();
+    });
+
+    it("honours defaultExpandedKeys for the uncontrolled initial state", () => {
+      const wrapper = mountTodo({
+        items: tree(),
+        defaultExpandedKeys: ["a"],
+      });
+
+      expect(wrapper.findAll(ITEM_SELECTOR)).toHaveLength(4);
+    });
+
+    it("follows a controlled expandedKeys prop and broadcasts changes", async () => {
+      const wrapper = mountTodo({ items: tree(), expandedKeys: [] });
+
+      await wrapper.find(EXPAND_SELECTOR).trigger("click");
+
+      expect(lastPayload(wrapper, "expandedKeysChange")).toEqual([["a"]]);
+      expect(lastPayload(wrapper, "update:expandedKeys")).toEqual([["a"]]);
+      // 受控宿主没接住，视图仍按 props 保持收起。
+      expect(wrapper.findAll(ITEM_SELECTOR)).toHaveLength(2);
+
+      await wrapper.setProps({ expandedKeys: ["a"] });
+      expect(wrapper.findAll(ITEM_SELECTOR)).toHaveLength(4);
+    });
+
+    it("lets itemExtra take over the expanded area and receive its context", async () => {
+      const wrapper = mountTodo(
+        { items: tree() },
+        {
+          itemExtra: ({ item, depth, expanded }: any) =>
+            h(
+              "div",
+              { class: "custom-extra" },
+              `${item.id}:${depth}:${expanded}`,
+            ),
+        },
+      );
+
+      // 两行都有实质内容：a 有子任务，plain 的插槽返回了自定义面板。
+      expect(wrapper.findAll(EXPAND_SELECTOR)).toHaveLength(2);
+
+      await wrapper.findAll(EXPAND_SELECTOR)[1]!.trigger("click");
+      expect(wrapper.find(".custom-extra").text()).toBe("plain:0:true");
+      // 插槽优先：默认子清单不再渲染。
+      expect(wrapper.find(".ant-todo-list-list-nested").exists()).toBe(false);
+    });
+
+    it("hides the expand affordance on leaves without content, even with an itemExtra slot", () => {
+      // 树：a 有子任务，a-1 / a-2 是纯叶子；插槽只对 id='3' 的假想行返回内容。
+      const wrapper = mountTodo(
+        { items: tree() },
+        {
+          itemExtra: ({ item }: any) =>
+            item.id === "nothing" ? h("div", "extra") : null,
+        },
+      );
+
+      const rows = wrapper.findAll(ITEM_SELECTOR);
+      expect(rows).toHaveLength(2);
+      // 只有 a 有子任务可展开；plain 是叶子且插槽没给它内容。
+      expect(rows[0]!.find(EXPAND_SELECTOR).exists()).toBe(true);
+      expect(rows[1]!.find(EXPAND_SELECTOR).exists()).toBe(false);
+      expect(wrapper.findAll(EXPAND_SELECTOR)).toHaveLength(1);
+    });
+
+    it("still expands a leaf that has itemExtra content gated by v-if", () => {
+      // 常见于 `v-if="expanded && ..."`：探测阶段须按展开态取值，
+      // 否则有内容的叶子会被误判成无箭头。
+      const wrapper = mountTodo(
+        { items: [todo("leaf")] },
+        {
+          itemExtra: ({ expanded }: any) =>
+            expanded ? h("div", { class: "gated-extra" }, "detail") : null,
+        },
+      );
+
+      expect(wrapper.findAll(EXPAND_SELECTOR)).toHaveLength(1);
+      expect(wrapper.find(".gated-extra").exists()).toBe(false);
+    });
+
+    it("falls back to the child list when itemExtra renders a comment node", async () => {
+      // Vue 把 v-if 为假的分支编译成注释 VNode；它不应盖掉默认子清单。
+      const wrapper = mountTodo(
+        { items: tree(), defaultExpandedKeys: ["a"] },
+        {
+          itemExtra: ({ item }: any) =>
+            item.id === "a" ? createCommentVNode("v-if") : null,
+        },
+      );
+
+      expect(wrapper.findAll(ITEM_SELECTOR)).toHaveLength(4);
+      expect(wrapper.find(".ant-todo-list-list-nested").exists()).toBe(true);
+    });
+
+    it("uses itemExpandIcon over the built-in arrow", () => {
+      const wrapper = mountTodo(
+        { items: tree() },
+        {
+          itemExpandIcon: () => h("span", { class: "custom-icon" }, "+"),
+        },
+      );
+
+      expect(wrapper.find(".custom-icon").exists()).toBe(true);
+    });
+
+    it("toggles when a custom expand icon is clicked", async () => {
+      const wrapper = mountTodo(
+        { items: tree() },
+        {
+          itemExpandIcon: ({ expanded }: any) =>
+            h("span", { class: "icon-proxy" }, expanded ? "open" : "closed"),
+        },
+      );
+
+      expect(wrapper.find(".icon-proxy").text()).toBe("closed");
+      // 图标只是视觉，点击由组件外层按钮统一处理。
+      await wrapper.find(EXPAND_SELECTOR).trigger("click");
+      expect(wrapper.findAll(ITEM_SELECTOR)).toHaveLength(4);
+      expect(wrapper.find(".icon-proxy").text()).toBe("open");
+    });
+
+    it("counts top-level rows by default and all rows with recursiveCount", () => {
+      const items: TodoItem[] = [
+        {
+          id: "a",
+          title: "a",
+          status: "completed",
+          children: [todo("a-1", "completed"), todo("a-2", "pending")],
+        },
+      ];
+
+      expect(mountTodo({ items }).find(COUNTER_SELECTOR).text()).toBe(
+        "1 of 1 completed",
+      );
+      expect(
+        mountTodo({ items, recursiveCount: true })
+          .find(COUNTER_SELECTOR)
+          .text(),
+      ).toBe("2 of 3 completed");
+    });
+
+    it("exposes expandedKeys helpers through the ref", async () => {
+      const wrapper = mountTodo({ items: tree() });
+      const api = wrapper.vm as unknown as TodoListRef;
+
+      expect(api.expandedKeys).toEqual([]);
+
+      api.expandAll();
+      await nextTick();
+      expect(api.expandedKeys).toEqual(["a"]);
+      expect(wrapper.findAll(ITEM_SELECTOR)).toHaveLength(4);
+      expect(lastPayload(wrapper, "expandedKeysChange")).toEqual([["a"]]);
+
+      api.collapseAll();
+      await nextTick();
+      expect(api.expandedKeys).toEqual([]);
+      expect(wrapper.findAll(ITEM_SELECTOR)).toHaveLength(2);
+
+      api.setExpandedKeys(["a"]);
+      await nextTick();
+      expect(wrapper.findAll(ITEM_SELECTOR)).toHaveLength(4);
+    });
+
+    it("does not auto-collapse while a child is still running under recursiveCount", async () => {
+      const wrapper = mountTodo({
+        items: [
+          {
+            id: "a",
+            title: "a",
+            status: "completed",
+            children: [todo("a-1", "in-progress")],
+          },
+        ],
+        recursiveCount: true,
+      });
+
+      await wrapper.setProps({
+        items: [
+          {
+            id: "a",
+            title: "a",
+            status: "completed",
+            children: [todo("a-1", "in-progress")],
+          },
+        ],
+      });
+
+      // 子树还有 in-progress，统计口径未全终态，因此不折叠。
+      expect(wrapper.emitted("openChange")).toBeUndefined();
+      expect(wrapper.find(HEADER_SELECTOR).attributes("aria-expanded")).toBe(
+        "true",
+      );
+    });
   });
 });

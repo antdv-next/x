@@ -1,14 +1,24 @@
-import type { App, SlotsType } from "vue";
+import type { App, SlotsType, VNodeChild } from "vue";
 
 import { clsx } from "@v-c/util";
 import { useBaseConfig } from "antdv-next/config-provider/context";
 import useCSSVarCls from "antdv-next/config-provider/hooks/useCSSVarCls";
 import { useLocaleContext } from "antdv-next/locale/index";
-import { computed, defineComponent, shallowRef, Transition } from "vue";
+import {
+  Comment,
+  computed,
+  defineComponent,
+  isVNode,
+  shallowRef,
+  Transition,
+} from "vue";
 
 import type { TodoListLocale, XProLocale } from "../locale/types";
 import type {
   TodoItem,
+  TodoItemExpandIconSlotProps,
+  TodoItemExtraSlotProps,
+  TodoItemSlotProps,
   TodoItemStatus,
   TodoListClassNamesType,
   TodoListEmits,
@@ -32,13 +42,16 @@ import enUSLocale from "../locale/en_US";
 import TodoDisclosure from "./components/TodoDisclosure";
 import TodoItemRow from "./components/TodoItemRow";
 import TodoStatusIcon from "./components/TodoStatusIcon";
+import { useTodoListExpandedKeys } from "./hooks/useTodoListExpandedKeys";
 import { useTodoListOpen } from "./hooks/useTodoListOpen";
 import { useTodoListScroll } from "./hooks/useTodoListScroll";
 import useStyle from "./style";
-import { DEFAULT_MAX_HEIGHT } from "./style/token";
+import { DEFAULT_INDENT_SIZE, DEFAULT_MAX_HEIGHT } from "./style/token";
 import {
+  collectExpandableIds,
   countCompleted,
   deriveOverallStatus,
+  flattenItems,
   resolveOverallProgress,
   resolveTodoStatus,
 } from "./utils";
@@ -52,6 +65,31 @@ export type TodoListSemanticName = keyof TodoListSemanticClassNames &
 type TodoListEmitOptions = {
   [K in keyof TodoListEmits]: TodoListEmits[K];
 };
+
+/**
+ * 判断插槽是否给出了「实质内容」。
+ *
+ * Vue 会把 `v-if` 为假的插槽分支编译成注释 VNode，直接判 `!= null` 会把它
+ * 误当成有效内容，从而盖掉默认的子任务递归渲染。这里递归剥掉数组与注释节点。
+ */
+function hasSlotContent(value: unknown): boolean {
+  if (value === null || value === undefined || typeof value === "boolean") {
+    return false;
+  }
+  if (Array.isArray(value)) {
+    return value.some(hasSlotContent);
+  }
+  if (isVNode(value)) {
+    if (value.type === Comment) {
+      return false;
+    }
+    if (Array.isArray(value.children)) {
+      return value.children.some(hasSlotContent);
+    }
+    return true;
+  }
+  return true;
+}
 
 const TodoList = defineComponent<
   TodoListProps,
@@ -87,14 +125,31 @@ const TodoList = defineComponent<
     const mergedDefaultOpen = computed(
       () => props.defaultOpen ?? xProConfig.value.defaultOpen ?? true,
     );
-
-    const completed = computed(() => countCompleted(mergedItems.value));
-    const total = computed(() => mergedItems.value.length);
-    const overallStatus = computed(() =>
-      deriveOverallStatus(mergedItems.value),
+    const mergedIndentSize = computed(
+      () => props.indentSize ?? DEFAULT_INDENT_SIZE,
     );
+    const mergedRecursiveCount = computed(() => props.recursiveCount ?? false);
+    const mergedDefaultExpandedKeys = computed<string[]>(() =>
+      Array.isArray(props.defaultExpandedKeys) ? props.defaultExpandedKeys : [],
+    );
+
+    /**
+     * 统计口径：递归计数开启时先深度展平，否则原样使用顶层 items。
+     *
+     * 这样既不改动 utils 里既有函数的签名，也让「计数 / 进度 / 折叠判定」
+     * 三处共享同一份数据，避免顶层全完成但子树还在跑时提前折叠。
+     */
+    const statsItems = computed<TodoItem[]>(() =>
+      mergedRecursiveCount.value
+        ? flattenItems(mergedItems.value)
+        : mergedItems.value,
+    );
+
+    const completed = computed(() => countCompleted(statsItems.value));
+    const total = computed(() => statsItems.value.length);
+    const overallStatus = computed(() => deriveOverallStatus(statsItems.value));
     const overallProgress = computed(() =>
-      resolveOverallProgress(mergedItems.value),
+      resolveOverallProgress(statsItems.value),
     );
 
     /**
@@ -106,12 +161,23 @@ const TodoList = defineComponent<
       emit("openChange", next);
     }
 
+    function updateExpandedKeys(next: string[]) {
+      emit("update:expandedKeys", next);
+      emit("expandedKeysChange", next);
+    }
+
     const openState = useTodoListOpen({
-      items: mergedItems,
+      items: statsItems,
       open: computed(() => props.open),
       defaultOpen: mergedDefaultOpen,
       collapseOnComplete: mergedCollapseOnComplete,
       setOpen: updateOpen,
+    });
+
+    const expandedState = useTodoListExpandedKeys({
+      expandedKeys: computed(() => props.expandedKeys),
+      defaultExpandedKeys: mergedDefaultExpandedKeys,
+      setExpandedKeys: updateExpandedKeys,
     });
 
     const mergedOpen = openState.mergedOpen;
@@ -185,6 +251,121 @@ const TodoList = defineComponent<
 
     const contentId = `${prefixCls.value}-content`;
 
+    /**
+     * 渲染单个任务行。抽成函数供顶层与子清单递归共用，
+     * 所有插槽参数都带上 depth，宿主可据此调整自定义内容的层级表现。
+     */
+    function renderRow(
+      item: TodoItem,
+      index: number,
+      depth: number,
+    ): VNodeChild {
+      const status = resolveTodoStatus(item);
+      const baseProps: TodoItemSlotProps = { item, index, status, depth };
+      const hasChildren =
+        Array.isArray(item.children) && item.children.length > 0;
+      const selfExpanded = expandedState.isExpanded(item.id);
+
+      /**
+       * 探测该行有没有「展开后值得展示的内容」，决定要不要画展开箭头。
+       *
+       * expanded 传 true：宿主常用 `v-if="expanded && ..."` 包裹展开内容，
+       * 若按当前收起态探测会拿到注释节点，把有内容的行误判成叶子。
+       * 探测结果在真正展开时直接复用，避免同一行多次调用插槽。
+       */
+      const probeProps: TodoItemExtraSlotProps = {
+        ...baseProps,
+        expanded: true,
+        toggle: () => expandedState.toggle(item.id),
+      };
+      const probed = slots.itemExtra?.(probeProps);
+      const hasExtra = hasSlotContent(probed);
+
+      // 纯叶子（既无子任务、插槽也无内容）不给箭头；显式 expandable: false 始终关闭。
+      const expandable = item.expandable !== false && (hasChildren || hasExtra);
+      const expanded = expandable && selfExpanded;
+
+      let extraContent: VNodeChild = null;
+      if (expanded) {
+        if (hasExtra) {
+          // 插槽优先：宿主完全接管展开区内容，包括是否渲染子清单。
+          extraContent = probed;
+        } else if (hasChildren) {
+          // 缺省：递归渲染一棵子清单。子树继承 prefixCls 与统计口径，
+          // 但拥有自己的 DOM 层级，缩进由 item-extra 的 padding 提供。
+          extraContent = renderList(item.children ?? [], depth + 1, true);
+        }
+      }
+
+      return (
+        <TodoItemRow
+          key={item.id}
+          prefixCls={prefixCls.value}
+          item={item}
+          index={index}
+          status={status}
+          statusLabel={statusLabels.value[status]}
+          titleContent={slots.itemTitle?.(baseProps) ?? item.title}
+          detailContent={slots.itemDetail?.(baseProps) ?? item.detail ?? null}
+          expandable={expandable}
+          expanded={expanded}
+          onToggleExpand={() => expandedState.toggle(item.id)}
+          expandIconContent={slots.itemExpandIcon?.({
+            ...baseProps,
+            expanded,
+          } as TodoItemExpandIconSlotProps)}
+          extraContent={extraContent}
+          extraStyle={{ paddingInlineStart: `${mergedIndentSize.value}px` }}
+          depth={depth}
+          classes={{
+            item: mergedClassNames.value.item,
+            itemIcon: mergedClassNames.value.itemIcon,
+            itemTitle: mergedClassNames.value.itemTitle,
+            itemStrikethrough: mergedClassNames.value.itemStrikethrough,
+            itemDetail: mergedClassNames.value.itemDetail,
+            itemExpandIcon: mergedClassNames.value.itemExpandIcon,
+            itemExtra: mergedClassNames.value.itemExtra,
+          }}
+          styles={{
+            item: mergedStyles.value.item,
+            itemIcon: mergedStyles.value.itemIcon,
+            itemTitle: mergedStyles.value.itemTitle,
+            itemStrikethrough: mergedStyles.value.itemStrikethrough,
+            itemDetail: mergedStyles.value.itemDetail,
+            itemExpandIcon: mergedStyles.value.itemExpandIcon,
+            itemExtra: mergedStyles.value.itemExtra,
+          }}
+        />
+      );
+    }
+
+    /** 渲染一层清单。子清单只多一个 `-nested` 语义类，不重复头部与滚动容器。 */
+    function renderList(
+      items: TodoItem[],
+      depth: number,
+      nested = false,
+    ): VNodeChild {
+      return (
+        <ul
+          class={clsx(
+            `${prefixCls.value}-list`,
+            {
+              [`${prefixCls.value}-list-nested`]: nested,
+            },
+            mergedClassNames.value.list,
+            nested && mergedClassNames.value.listNested,
+          )}
+          style={[
+            mergedStyles.value.list,
+            nested && mergedStyles.value.listNested,
+          ]}
+          aria-label={nested ? undefined : mergedTitle.value}
+        >
+          {items.map((item, index) => renderRow(item, index, depth))}
+        </ul>
+      );
+    }
+
     const api: TodoListRef = {
       get nativeElement() {
         return rootRef.value ?? null;
@@ -199,6 +380,32 @@ const TodoList = defineComponent<
         openState.markManual(next);
         updateOpen(next);
       },
+      get expandedKeys() {
+        return [...expandedState.mergedKeys.value];
+      },
+      setExpandedKeys: keys => {
+        expandedState.markKeys(keys);
+        updateExpandedKeys([...new Set(keys)]);
+      },
+      expandAll: () => {
+        expandedState.setKeys(
+          collectExpandableIds(mergedItems.value, item =>
+            slots.itemExtra
+              ? hasSlotContent(
+                  slots.itemExtra({
+                    item,
+                    index: 0,
+                    depth: 0,
+                    status: resolveTodoStatus(item),
+                    expanded: true,
+                    toggle: () => expandedState.toggle(item.id),
+                  }),
+                )
+              : false,
+          ),
+        );
+      },
+      collapseAll: () => expandedState.setKeys([]),
       scrollToEnd: options => scroll.scrollToEnd(options),
     };
 
@@ -299,45 +506,7 @@ const TodoList = defineComponent<
           style={mergedStyles.value.content}
           contentRef={viewportRef}
         >
-          <ul
-            class={clsx(`${prefixCls.value}-list`, mergedClassNames.value.list)}
-            style={mergedStyles.value.list}
-            aria-label={mergedTitle.value}
-          >
-            {mergedItems.value.map((item, index) => {
-              const status = resolveTodoStatus(item);
-              const slotProps = { item, index, status };
-
-              return (
-                <TodoItemRow
-                  key={item.id}
-                  prefixCls={prefixCls.value}
-                  item={item}
-                  index={index}
-                  status={status}
-                  statusLabel={statusLabels.value[status]}
-                  titleContent={slots.itemTitle?.(slotProps) ?? item.title}
-                  detailContent={
-                    slots.itemDetail?.(slotProps) ?? item.detail ?? null
-                  }
-                  classes={{
-                    item: mergedClassNames.value.item,
-                    itemIcon: mergedClassNames.value.itemIcon,
-                    itemTitle: mergedClassNames.value.itemTitle,
-                    itemStrikethrough: mergedClassNames.value.itemStrikethrough,
-                    itemDetail: mergedClassNames.value.itemDetail,
-                  }}
-                  styles={{
-                    item: mergedStyles.value.item,
-                    itemIcon: mergedStyles.value.itemIcon,
-                    itemTitle: mergedStyles.value.itemTitle,
-                    itemStrikethrough: mergedStyles.value.itemStrikethrough,
-                    itemDetail: mergedStyles.value.itemDetail,
-                  }}
-                />
-              );
-            })}
-          </ul>
+          {renderList(mergedItems.value, 0)}
         </TodoDisclosure>
       </div>
     );
@@ -356,6 +525,8 @@ const TodoList = defineComponent<
 
 export type {
   TodoItem,
+  TodoItemExpandIconSlotProps,
+  TodoItemExtraSlotProps,
   TodoItemSlotProps,
   TodoItemStatus,
   TodoHeaderSlotProps,

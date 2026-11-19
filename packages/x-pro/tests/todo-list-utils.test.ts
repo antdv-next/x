@@ -5,8 +5,10 @@ import type { TodoItem } from "../src/todo-list/types";
 import {
   areAllTerminal,
   clampProgress,
+  collectExpandableIds,
   countCompleted,
   deriveOverallStatus,
+  flattenItems,
   isTerminalStatus,
   resolveOverallProgress,
   resolveTodoStatus,
@@ -145,6 +147,77 @@ describe("todo-list utils", () => {
     it("degrades a missing or NaN value to zero", () => {
       expect(clampProgress(undefined)).toBe(0);
       expect(clampProgress(Number.NaN)).toBe(0);
+    });
+  });
+
+  describe("flattenItems", () => {
+    it("returns a flat copy for a flat list", () => {
+      const list = [todo("a"), todo("b")];
+      expect(flattenItems(list)).toEqual(list);
+      expect(flattenItems(list)).not.toBe(list);
+    });
+
+    it("includes parents and children in depth-first order", () => {
+      const list: TodoItem[] = [
+        {
+          ...todo("a"),
+          children: [
+            todo("a-1"),
+            { ...todo("a-2"), children: [todo("a-2-1")] },
+          ],
+        },
+        todo("b"),
+      ];
+      expect(flattenItems(list).map(item => item.id)).toEqual([
+        "a",
+        "a-1",
+        "a-2",
+        "a-2-1",
+        "b",
+      ]);
+    });
+
+    it("ignores a non-array children value", () => {
+      const list = [
+        { ...todo("a"), children: "oops" },
+      ] as unknown as TodoItem[];
+      expect(flattenItems(list).map(item => item.id)).toEqual(["a"]);
+    });
+  });
+
+  describe("collectExpandableIds", () => {
+    const tree: TodoItem[] = [
+      { ...todo("a"), children: [todo("a-1")] },
+      todo("plain"),
+      { ...todo("c"), children: [todo("c-1")], expandable: false },
+    ];
+    const noExtra = () => false;
+
+    it("collects ids of rows that have children", () => {
+      expect(collectExpandableIds(tree, noExtra)).toEqual(["a"]);
+    });
+
+    it("includes nested rows that have their own children", () => {
+      const nested: TodoItem[] = [
+        {
+          ...todo("a"),
+          children: [{ ...todo("a-1"), children: [todo("a-1-1")] }],
+        },
+      ];
+      expect(collectExpandableIds(nested, noExtra)).toEqual(["a", "a-1"]);
+    });
+
+    it("includes a leaf only when its extra slot has real content", () => {
+      // plain 是叶子：只有插槽对它返回内容时才算可展开。
+      const withPlainExtra = (item: TodoItem) => item.id === "plain";
+      expect(collectExpandableIds(tree, withPlainExtra)).toEqual([
+        "a",
+        "plain",
+      ]);
+    });
+
+    it("honours an explicit expandable: false", () => {
+      expect(collectExpandableIds(tree, () => true)).not.toContain("c");
     });
   });
 });
