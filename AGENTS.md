@@ -71,3 +71,12 @@ the `DESIGN CONTRACT` comment above `trackSectionBoundary` in
 splitter's contract, and
 `packages/x-markdown/src/XMarkdown/__tests__/incremental.test.ts` (whose "does
 not split" assertions are the specification).
+
+## Pull requests
+
+Open GitHub PRs against the repository template by default: start the PR body
+from `.github/PULL_REQUEST_TEMPLATE.md` (or
+`.github/PULL_REQUEST_TEMPLATE_CN.md` when the PR is written in Chinese). Keep
+its sections — change-type checklist, related issues, background and solution,
+and the English/Chinese changelog table — and fill them in instead of replacing
+the template with an ad-hoc summary.
