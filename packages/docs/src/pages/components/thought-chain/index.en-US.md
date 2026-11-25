@@ -51,6 +51,8 @@ description: The ThoughtChain component is used to visualize and track the call 
 | `content`      | Custom node content area                                   | `({ item, index, expanded, collapsible, toggleExpand, originNode }) => VNodeChild`         |
 | `footer`       | Custom node footer content                                 | `({ item, index, expanded, collapsible, toggleExpand, originNode }) => VNodeChild`         |
 
+> `collapseIcon` is rendered inside the node title, so clicking it bubbles up to the title and toggles the node automatically. Do not call `toggleExpand` in the icon's click handler, or the node will toggle twice and appear unresponsive. Use `@click.stop` if the icon needs its own interaction.
+
 ### ThoughtChainItemType
 
 | Property        | Description                                          | Type                                           | Default       | Version |

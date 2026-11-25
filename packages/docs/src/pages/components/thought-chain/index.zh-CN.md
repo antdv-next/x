@@ -52,6 +52,8 @@ description: 思维链组件用于可视化和追踪 Agent 对 Actions 和 Tools
 | `content`      | 自定义节点内容区                     | `({ item, index, expanded, collapsible, toggleExpand, originNode }) => VNodeChild`         |
 | `footer`       | 自定义节点底部区                     | `({ item, index, expanded, collapsible, toggleExpand, originNode }) => VNodeChild`         |
 
+> `collapseIcon` 渲染在节点标题内，点击图标会冒泡到标题并自动切换展开状态，无需在图标的点击事件中再调用 `toggleExpand`，否则会切换两次而看起来无效。如需为图标绑定独立交互，请使用 `@click.stop` 阻止冒泡。
+
 ### ThoughtChainItemType
 
 | 属性            | 说明                              | 类型                                           | 默认值      | 版本 |
