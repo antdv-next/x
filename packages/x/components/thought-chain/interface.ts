@@ -12,6 +12,7 @@ export type SemanticType =
   | "item"
   | "itemHeader"
   | "itemIcon"
+  | "itemCollapseIcon"
   | "itemContent"
   | "itemFooter";
 
@@ -28,6 +29,10 @@ export interface ThoughtChainNodeSharedSlotInfo {
 export interface ThoughtChainIconSlotInfo extends ThoughtChainNodeSharedSlotInfo {
   originNode: VNodeChild | null | undefined;
   status?: ThoughtChainItemStatus;
+}
+
+export interface ThoughtChainCollapseIconSlotInfo extends ThoughtChainNodeSharedSlotInfo {
+  originNode: VNodeChild | null | undefined;
 }
 
 export interface ThoughtChainTitleSlotInfo extends ThoughtChainNodeSharedSlotInfo {
@@ -94,6 +99,12 @@ export interface ThoughtChainItemType {
    * @descZH 是否可折叠
    */
   collapsible?: boolean;
+
+  /**
+   * @desc Custom collapse indicator; false hides it
+   * @descZH 自定义折叠指示图标；为 false 时隐藏
+   */
+  collapseIcon?: false | VNodeChild;
 
   /**
    * @desc Enable blink animation on the title

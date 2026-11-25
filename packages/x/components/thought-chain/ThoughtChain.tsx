@@ -5,6 +5,7 @@ import { computed, defineComponent, ref, useAttrs, watch } from "vue";
 
 import type {
   SemanticType,
+  ThoughtChainCollapseIconSlotInfo,
   ThoughtChainContentSlotInfo,
   ThoughtChainDescriptionSlotInfo,
   ThoughtChainFooterSlotInfo,
@@ -196,6 +197,14 @@ export const XThoughtChain = defineComponent({
                     ? info =>
                         (slots.iconRender ?? slots["icon-render"])?.(
                           info as ThoughtChainIconSlotInfo,
+                        )
+                    : undefined
+                }
+                collapseIconRenderSlot={
+                  (slots.collapseIcon ?? slots["collapse-icon"])
+                    ? info =>
+                        (slots.collapseIcon ?? slots["collapse-icon"])?.(
+                          info as ThoughtChainCollapseIconSlotInfo,
                         )
                     : undefined
                 }

@@ -248,6 +248,143 @@ describe("ThoughtChain", () => {
     expect(wrapper.emitted("update:expandedKeys")).toBeTruthy();
   });
 
+  it("renders the default collapse icon only for collapsible items with content", () => {
+    const wrapper = mount(ThoughtChain, {
+      props: {
+        items: [
+          // Collapsible item with content
+          {
+            key: "1",
+            title: "Collapsible",
+            content: "Content",
+            collapsible: true,
+          },
+          // Collapsible without content: nothing to collapse
+          { key: "2", title: "No content", collapsible: true },
+          // Content but not collapsible
+          { key: "3", title: "Not collapsible", content: "Content" },
+        ],
+      },
+    });
+
+    expect(
+      wrapper.findAll(".antd-thought-chain-node-collapse-icon").length,
+    ).toBe(1);
+  });
+
+  it("supports a collapseIcon slot with expand info and all slot fields", async () => {
+    const wrapper = mount(ThoughtChain, {
+      props: {
+        items: [
+          {
+            key: "1",
+            title: "Collapsible",
+            content: "Content",
+            collapsible: true,
+          },
+        ],
+        defaultExpandedKeys: ["1"],
+      },
+      slots: {
+        collapseIcon: ({
+          item,
+          index,
+          expanded,
+          collapsible,
+          originNode,
+        }: any) => (
+          <span class="slot-collapse-icon">
+            {`${item.key}-${index}-${expanded ? "open" : "closed"}-${collapsible ? "yes" : "no"}-${originNode ? "origin" : "none"}`}
+          </span>
+        ),
+      },
+    });
+
+    expect(wrapper.find(".slot-collapse-icon").text()).toBe(
+      "1-0-open-yes-origin",
+    );
+
+    await wrapper.find(".slot-collapse-icon").trigger("click");
+    await nextTick();
+
+    expect(wrapper.find(".slot-collapse-icon").text()).toBe(
+      "1-0-closed-yes-origin",
+    );
+  });
+
+  it("hides the collapse icon when the collapseIcon slot returns nothing", () => {
+    const wrapper = mount(ThoughtChain, {
+      props: {
+        items: [
+          {
+            key: "1",
+            title: "Collapsible",
+            content: "Content",
+            collapsible: true,
+          },
+        ],
+      },
+      slots: {
+        collapseIcon: () => null,
+      },
+    });
+
+    expect(
+      wrapper.find(".antd-thought-chain-node-collapse-icon").exists(),
+    ).toBe(false);
+  });
+
+  it("supports item-level custom and hidden collapse icons", () => {
+    const wrapper = mount(ThoughtChain, {
+      props: {
+        items: [
+          {
+            key: "1",
+            title: "Custom",
+            content: "Content",
+            collapsible: true,
+            collapseIcon: h("span", { class: "my-collapse-icon" }, "▾"),
+          },
+          {
+            key: "2",
+            title: "Hidden",
+            content: "Content",
+            collapsible: true,
+            collapseIcon: false,
+          },
+        ],
+      },
+    });
+
+    expect(wrapper.find(".my-collapse-icon").exists()).toBe(true);
+    expect(
+      wrapper.findAll(".antd-thought-chain-node-collapse-icon").length,
+    ).toBe(1);
+  });
+
+  it("supports itemCollapseIcon semantic classes and styles", () => {
+    const wrapper = mount(ThoughtChain, {
+      props: {
+        items: [
+          {
+            key: "1",
+            title: "Collapsible",
+            content: "Content",
+            collapsible: true,
+          },
+        ],
+        classes: { itemCollapseIcon: "custom-collapse-icon" },
+        styles: { itemCollapseIcon: { color: "red" } },
+      },
+    });
+
+    const icon = wrapper.find<HTMLElement>(
+      ".antd-thought-chain-node-collapse-icon",
+    );
+    expect(icon.classes()).toContain("custom-collapse-icon");
+    expect(icon.element.style.color).toBe("red");
+  });
+
   it("supports collapsible items with toggle", async () => {
     const wrapper = mount(ThoughtChain, {
       props: {

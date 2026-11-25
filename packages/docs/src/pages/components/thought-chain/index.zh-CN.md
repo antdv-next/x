@@ -16,6 +16,7 @@ description: 思维链组件用于可视化和追踪 Agent 对 Actions 和 Tools
 <demo src="./demo/simple.vue">简洁思维链</demo>
 <demo src="./demo/collapsible.vue">可折叠的</demo>
 <demo src="./demo/controlled-collapsible.vue">受控的折叠</demo>
+<demo src="./demo/custom-collapse-icon.vue">自定义折叠图标</demo>
 <demo src="./demo/customization.vue">客制化</demo>
 <demo src="./demo/slot.vue">插槽自定义</demo>
 <demo src="./demo/nested.vue">嵌套使用</demo>
@@ -26,29 +27,30 @@ description: 思维链组件用于可视化和追踪 Agent 对 Actions 和 Tools
 
 ### ThoughtChainProps
 
-| 属性                   | 说明                              | 类型                                                                                           | 默认值    | 版本 |
-| ---------------------- | --------------------------------- | ---------------------------------------------------------------------------------------------- | --------- | ---- |
-| items                  | 思维节点集合                      | `ThoughtChainItemType[]`                                                                       | -         | -    |
-| defaultExpandedKeys    | 初始化展开的节点                  | `string[]`                                                                                     | -         | -    |
-| expandedKeys (v-model) | 当前展开的节点                    | `string[]`                                                                                     | -         | -    |
-| onExpand               | 展开节点变化回调                  | `(expandedKeys: string[]) => void`                                                             | -         | -    |
-| line                   | 线条样式，为 `false` 时不展示线条 | `boolean \| 'solid' \| 'dashed' \| 'dotted'`                                                   | `'solid'` | -    |
-| classes                | 语义化结构的类名                  | `Record<'root'\|'item'\|'itemIcon'\|'itemHeader'\|'itemContent'\|'itemFooter', string>`        | -         | -    |
-| prefixCls              | 自定义前缀                        | `string`                                                                                       | -         | -    |
-| styles                 | 语义化结构的样式                  | `Record<'root'\|'item'\|'itemIcon'\|'itemHeader'\|'itemContent'\|'itemFooter', CSSProperties>` | -         | -    |
-| rootClass              | 根元素样式类名                    | `string`                                                                                       | -         | -    |
+| 属性                   | 说明                              | 类型                                                                                                               | 默认值    | 版本 |
+| ---------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------ | --------- | ---- |
+| items                  | 思维节点集合                      | `ThoughtChainItemType[]`                                                                                           | -         | -    |
+| defaultExpandedKeys    | 初始化展开的节点                  | `string[]`                                                                                                         | -         | -    |
+| expandedKeys (v-model) | 当前展开的节点                    | `string[]`                                                                                                         | -         | -    |
+| onExpand               | 展开节点变化回调                  | `(expandedKeys: string[]) => void`                                                                                 | -         | -    |
+| line                   | 线条样式，为 `false` 时不展示线条 | `boolean \| 'solid' \| 'dashed' \| 'dotted'`                                                                       | `'solid'` | -    |
+| classes                | 语义化结构的类名                  | `Record<'root'\|'item'\|'itemIcon'\|'itemHeader'\|'itemCollapseIcon'\|'itemContent'\|'itemFooter', string>`        | -         | -    |
+| prefixCls              | 自定义前缀                        | `string`                                                                                                           | -         | -    |
+| styles                 | 语义化结构的样式                  | `Record<'root'\|'item'\|'itemIcon'\|'itemHeader'\|'itemCollapseIcon'\|'itemContent'\|'itemFooter', CSSProperties>` | -         | -    |
+| rootClass              | 根元素样式类名                    | `string`                                                                                                           | -         | -    |
 
 ### ThoughtChain Slots
 
 > 插槽优先级高于 `items` 中的同名 `VNodeChild` 配置。
 
-| 插槽名        | 说明               | 类型                                                                                       |
-| ------------- | ------------------ | ------------------------------------------------------------------------------------------ |
-| `iconRender`  | 自定义节点图标内容 | `({ item, index, expanded, collapsible, toggleExpand, originNode, status }) => VNodeChild` |
-| `title`       | 自定义节点标题内容 | `({ item, index, expanded, collapsible, toggleExpand, originNode }) => VNodeChild`         |
-| `description` | 自定义节点描述内容 | `({ item, index, expanded, collapsible, toggleExpand, originNode }) => VNodeChild`         |
-| `content`     | 自定义节点内容区   | `({ item, index, expanded, collapsible, toggleExpand, originNode }) => VNodeChild`         |
-| `footer`      | 自定义节点底部区   | `({ item, index, expanded, collapsible, toggleExpand, originNode }) => VNodeChild`         |
+| 插槽名         | 说明                                 | 类型                                                                                       |
+| -------------- | ------------------------------------ | ------------------------------------------------------------------------------------------ |
+| `iconRender`   | 自定义节点图标内容                   | `({ item, index, expanded, collapsible, toggleExpand, originNode, status }) => VNodeChild` |
+| `collapseIcon` | 自定义折叠指示图标，返回空内容时隐藏 | `({ item, index, expanded, collapsible, toggleExpand, originNode }) => VNodeChild`         |
+| `title`        | 自定义节点标题内容                   | `({ item, index, expanded, collapsible, toggleExpand, originNode }) => VNodeChild`         |
+| `description`  | 自定义节点描述内容                   | `({ item, index, expanded, collapsible, toggleExpand, originNode }) => VNodeChild`         |
+| `content`      | 自定义节点内容区                     | `({ item, index, expanded, collapsible, toggleExpand, originNode }) => VNodeChild`         |
+| `footer`       | 自定义节点底部区                     | `({ item, index, expanded, collapsible, toggleExpand, originNode }) => VNodeChild`         |
 
 ### ThoughtChainItemType
 
@@ -62,6 +64,7 @@ description: 思维链组件用于可视化和追踪 Agent 对 Actions 和 Tools
 | status          | 思维节点状态                      | `'loading' \| 'success' \| 'error' \| 'abort'` | -           | -    |
 | title           | 思维节点标题                      | `VNodeChild`                                   | -           | -    |
 | collapsible     | 思维节点是否可折叠                | `boolean`                                      | `false`     | -    |
+| collapseIcon    | 折叠指示图标，为 `false` 时隐藏   | `false \| VNodeChild`                          | 默认箭头    | -    |
 | blink           | 闪动效果                          | `boolean`                                      | -           | -    |
 | destroyOnHidden | 折叠时是否销毁内容节点            | `boolean`                                      | `true`      | -    |
 
