@@ -370,3 +370,17 @@ having been open ~40 days; the fixes are wanted downstream regardless.
   (`dbc5120865`) have **new head SHAs** since the 2026-10-18/19 entries, so
   upstream reworked them; if either ever merges, diff against the merge commit,
   not the head recorded here.
+
+## 2026-11-25: CJK bare-URL autolink boundary re-applied downstream-only
+
+- `packages/x-markdown` again stops GFM bare URLs at CJK punctuation
+  (`），。！？；：、`), fixing the regression left by the 2026-10-19 revert of
+  #255. This is a **downstream-only bug fix**, not a re-port: upstream #2055 is
+  still `OPEN` with the unchanged head `8eae4ac5fc`, so the 2026-10-19 policy
+  (only merged upstream commits) and the cursor (`.sync-upstream.json`,
+  `da08db1`, `sync_count: 8`) are untouched.
+- The mechanism, repro and tests are recorded in `x-markdown.md` §5. Re-port
+  path when #2055 merges: the `da08db1..HEAD` enumeration will find it; diff
+  the merge commit against our `configureCjkAutolinks()` / `CJK_AUTOLINK_BOUNDARY`
+  implementation instead of applying the PR head, because the behaviour already
+  exists downstream.

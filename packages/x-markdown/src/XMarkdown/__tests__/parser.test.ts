@@ -19,6 +19,75 @@ describe("XMarkdown Parser (marked v16)", () => {
     expect(html).toBe('<p><a href="https://a.com">a</a></p>');
   });
 
+  describe("CJK autolinks", () => {
+    it("stops a bare URL at CJK punctuation", () => {
+      const parser = new Parser();
+      const result = parser.parse(
+        "**百度**（http://www.baidu.c），接着后面的内容",
+      );
+
+      expect(result).toBe(
+        '<p><strong>百度</strong>（<a href="http://www.baidu.c" target="_blank" rel="noopener noreferrer">http://www.baidu.c</a>），接着后面的内容</p>',
+      );
+    });
+
+    it("stops before the prose after a URL wrapped in full-width parentheses", () => {
+      const parser = new Parser();
+      const result = parser.parse(
+        "**看这个链接地址**（https://x.antdv-next.cn），随后返回的数据内容............",
+      );
+
+      expect(result).toBe(
+        '<p><strong>看这个链接地址</strong>（<a href="https://x.antdv-next.cn" target="_blank" rel="noopener noreferrer">https://x.antdv-next.cn</a>），随后返回的数据内容............</p>',
+      );
+    });
+
+    it("preserves balanced CJK parentheses inside a bare URL", () => {
+      const parser = new Parser();
+      const result = parser.parse("https://example.com/路径（详情），继续");
+
+      expect(result).toBe(
+        '<p><a href="https://example.com/路径（详情）" target="_blank" rel="noopener noreferrer">https://example.com/路径（详情）</a>，继续</p>',
+      );
+    });
+
+    it.each([
+      "https://example.com/路径（详情，更多）",
+      "https://example.com/路径（详情（第一，第二）；更多）",
+      "https://example.com/路径（详情",
+      "https://example.com/路径（详情（第一，第二）",
+    ])("keeps punctuation only within balanced CJK parentheses: %s", url => {
+      const parser = new Parser();
+      const result = parser.parse(`${url}，继续`);
+
+      expect(result).toBe(
+        `<p><a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>，继续</p>`,
+      );
+    });
+
+    it("does not change explicit markdown links with CJK punctuation in the destination", () => {
+      const parser = new Parser();
+      const result = parser.parse("[示例](https://example.com/路径，详情)");
+
+      expect(result).toBe(
+        '<p><a href="https://example.com/路径，详情" target="_blank" rel="noopener noreferrer">示例</a></p>',
+      );
+    });
+
+    // `setOptions({ config })` 会重建 marked 实例，CJK 覆写必须重新挂载，
+    // 否则一次 config 更新就会静默退回吞标点的旧行为。
+    it("survives a marked config update", () => {
+      const parser = new Parser();
+      parser.setOptions({ config: { breaks: true } });
+
+      expect(
+        parser.parse("**百度**（http://www.baidu.c），接着后面的内容"),
+      ).toBe(
+        '<p><strong>百度</strong>（<a href="http://www.baidu.c" target="_blank" rel="noopener noreferrer">http://www.baidu.c</a>），接着后面的内容</p>',
+      );
+    });
+  });
+
   it("paragraph respects paragraphTag option", () => {
     const parser = new Parser({ paragraphTag: "div" });
     const html = parser.parse("text");
