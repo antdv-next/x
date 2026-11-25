@@ -10,6 +10,7 @@ const locales = {
     item: "单个节点容器",
     itemHeader: "节点头部",
     itemIcon: "节点图标",
+    itemCollapseIcon: "折叠指示图标",
     itemContent: "节点内容（可折叠）",
     itemFooter: "节点底部",
   },
@@ -18,6 +19,7 @@ const locales = {
     item: "Node container",
     itemHeader: "Node header",
     itemIcon: "Node icon",
+    itemCollapseIcon: "Collapse indicator",
     itemContent: "Node content (collapsible)",
     itemFooter: "Node footer",
   },
@@ -34,6 +36,7 @@ const semantics = computed(() => [
   { name: "item", desc: semanticLocale.value.item },
   { name: "itemHeader", desc: semanticLocale.value.itemHeader },
   { name: "itemIcon", desc: semanticLocale.value.itemIcon },
+  { name: "itemCollapseIcon", desc: semanticLocale.value.itemCollapseIcon },
   { name: "itemContent", desc: semanticLocale.value.itemContent },
   { name: "itemFooter", desc: semanticLocale.value.itemFooter },
 ]);
@@ -44,6 +47,7 @@ const items = [
     title: "Analyze Task",
     status: "success" as const,
     content: "Understanding user requirements...",
+    collapsible: true,
     footer: "Completed in 2s",
   },
   {

@@ -12,6 +12,7 @@ import {
 
 import type {
   SemanticType,
+  ThoughtChainCollapseIconSlotInfo,
   ThoughtChainContentSlotInfo,
   ThoughtChainDescriptionSlotInfo,
   ThoughtChainFooterSlotInfo,
@@ -59,6 +60,12 @@ export default defineComponent({
     iconRenderSlot: {
       type: Function as PropType<
         ((info: ThoughtChainIconSlotInfo) => VNodeChild) | undefined
+      >,
+      default: undefined,
+    },
+    collapseIconRenderSlot: {
+      type: Function as PropType<
+        ((info: ThoughtChainCollapseIconSlotInfo) => VNodeChild) | undefined
       >,
       default: undefined,
     },
@@ -155,21 +162,35 @@ export default defineComponent({
       const hasContent = hasRenderableNode(contentNode);
       const collapsible = !!item.collapsible && hasContent;
 
+      const collapseRotation = props.expanded ? 90 : isRtl.value ? -90 : 0;
+      const defaultCollapseIcon = isRtl.value ? (
+        <LeftOutlined rotate={collapseRotation} />
+      ) : (
+        <RightOutlined rotate={collapseRotation} />
+      );
+      // `false` hides the indicator; a custom node replaces the default arrow.
+      const originCollapseIcon =
+        item.collapseIcon === false
+          ? null
+          : (item.collapseIcon ?? defaultCollapseIcon);
+      const collapseIconNode = collapsible
+        ? props.collapseIconRenderSlot
+          ? props.collapseIconRenderSlot({
+              ...createSharedSlotInfo(collapsible),
+              originNode: originCollapseIcon,
+            } as ThoughtChainCollapseIconSlotInfo)
+          : originCollapseIcon
+        : null;
       // Only show collapse icon when collapsible AND has content
-      const collapseIcon = collapsible ? (
-        <span
-          class={`${cls}-collapse-icon`}
-          style={{
-            transform: props.expanded
-              ? "rotate(90deg)"
-              : isRtl.value
-                ? "rotate(-90deg)"
-                : "rotate(0deg)",
-          }}
-        >
-          {isRtl.value ? <LeftOutlined /> : <RightOutlined />}
-        </span>
-      ) : null;
+      const collapseIcon =
+        collapsible && hasRenderableNode(collapseIconNode) ? (
+          <span
+            class={[`${cls}-collapse-icon`, props.classes?.itemCollapseIcon]}
+            style={props.styles?.itemCollapseIcon}
+          >
+            {collapseIconNode}
+          </span>
+        ) : null;
       const titleNode = props.titleRenderSlot
         ? props.titleRenderSlot({
             ...createSharedSlotInfo(collapsible),

@@ -15,6 +15,7 @@ description: The ThoughtChain component is used to visualize and track the call 
 <demo src="./demo/simple.vue">Simple ThoughtChain</demo>
 <demo src="./demo/collapsible.vue">Collapsible</demo>
 <demo src="./demo/controlled-collapsible.vue">Controlled Collapsible</demo>
+<demo src="./demo/custom-collapse-icon.vue">Custom Collapse Icon</demo>
 <demo src="./demo/customization.vue">Customization</demo>
 <demo src="./demo/slot.vue">Slots</demo>
 <demo src="./demo/nested.vue">Nested Usage</demo>
@@ -25,44 +26,48 @@ description: The ThoughtChain component is used to visualize and track the call 
 
 ### ThoughtChainProps
 
-| Property               | Description                               | Type                                                                                           | Default   | Version |
-| ---------------------- | ----------------------------------------- | ---------------------------------------------------------------------------------------------- | --------- | ------- |
-| items                  | Collection of thought nodes               | `ThoughtChainItemType[]`                                                                       | -         | -       |
-| defaultExpandedKeys    | Initially expanded nodes                  | `string[]`                                                                                     | -         | -       |
-| expandedKeys (v-model) | Currently expanded nodes                  | `string[]`                                                                                     | -         | -       |
-| onExpand               | Callback for when expanded nodes change   | `(expandedKeys: string[]) => void`                                                             | -         | -       |
-| line                   | Line style, no line is shown when `false` | `boolean \| 'solid' \| 'dashed' \| 'dotted'`                                                   | `'solid'` | -       |
-| classes                | Class names for semantic structure        | `Record<'root'\|'item'\|'itemIcon'\|'itemHeader'\|'itemContent'\|'itemFooter', string>`        | -         | -       |
-| prefixCls              | Custom prefix                             | `string`                                                                                       | -         | -       |
-| styles                 | Styles for semantic structure             | `Record<'root'\|'item'\|'itemIcon'\|'itemHeader'\|'itemContent'\|'itemFooter', CSSProperties>` | -         | -       |
-| rootClass              | Root element class name                   | `string`                                                                                       | -         | -       |
+| Property               | Description                               | Type                                                                                                               | Default   | Version |
+| ---------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | --------- | ------- |
+| items                  | Collection of thought nodes               | `ThoughtChainItemType[]`                                                                                           | -         | -       |
+| defaultExpandedKeys    | Initially expanded nodes                  | `string[]`                                                                                                         | -         | -       |
+| expandedKeys (v-model) | Currently expanded nodes                  | `string[]`                                                                                                         | -         | -       |
+| onExpand               | Callback for when expanded nodes change   | `(expandedKeys: string[]) => void`                                                                                 | -         | -       |
+| line                   | Line style, no line is shown when `false` | `boolean \| 'solid' \| 'dashed' \| 'dotted'`                                                                       | `'solid'` | -       |
+| classes                | Class names for semantic structure        | `Record<'root'\|'item'\|'itemIcon'\|'itemHeader'\|'itemCollapseIcon'\|'itemContent'\|'itemFooter', string>`        | -         | -       |
+| prefixCls              | Custom prefix                             | `string`                                                                                                           | -         | -       |
+| styles                 | Styles for semantic structure             | `Record<'root'\|'item'\|'itemIcon'\|'itemHeader'\|'itemCollapseIcon'\|'itemContent'\|'itemFooter', CSSProperties>` | -         | -       |
+| rootClass              | Root element class name                   | `string`                                                                                                           | -         | -       |
 
 ### ThoughtChain Slots
 
 > Slots take priority over the same-named `VNodeChild` fields in `items`.
 
-| Slot Name     | Description                | Type                                                                                       |
-| ------------- | -------------------------- | ------------------------------------------------------------------------------------------ |
-| `iconRender`  | Custom node icon content   | `({ item, index, expanded, collapsible, toggleExpand, originNode, status }) => VNodeChild` |
-| `title`       | Custom node title content  | `({ item, index, expanded, collapsible, toggleExpand, originNode }) => VNodeChild`         |
-| `description` | Custom node description    | `({ item, index, expanded, collapsible, toggleExpand, originNode }) => VNodeChild`         |
-| `content`     | Custom node content area   | `({ item, index, expanded, collapsible, toggleExpand, originNode }) => VNodeChild`         |
-| `footer`      | Custom node footer content | `({ item, index, expanded, collapsible, toggleExpand, originNode }) => VNodeChild`         |
+| Slot Name      | Description                                                | Type                                                                                       |
+| -------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `iconRender`   | Custom node icon content                                   | `({ item, index, expanded, collapsible, toggleExpand, originNode, status }) => VNodeChild` |
+| `collapseIcon` | Custom collapse indicator; return an empty node to hide it | `({ item, index, expanded, collapsible, toggleExpand, originNode }) => VNodeChild`         |
+| `title`        | Custom node title content                                  | `({ item, index, expanded, collapsible, toggleExpand, originNode }) => VNodeChild`         |
+| `description`  | Custom node description                                    | `({ item, index, expanded, collapsible, toggleExpand, originNode }) => VNodeChild`         |
+| `content`      | Custom node content area                                   | `({ item, index, expanded, collapsible, toggleExpand, originNode }) => VNodeChild`         |
+| `footer`       | Custom node footer content                                 | `({ item, index, expanded, collapsible, toggleExpand, originNode }) => VNodeChild`         |
+
+> `collapseIcon` is rendered inside the node title, so clicking it bubbles up to the title and toggles the node automatically. Do not call `toggleExpand` in the icon's click handler, or the node will toggle twice and appear unresponsive. Use `@click.stop` if the icon needs its own interaction.
 
 ### ThoughtChainItemType
 
-| Property        | Description                                          | Type                                           | Default     | Version |
-| --------------- | ---------------------------------------------------- | ---------------------------------------------- | ----------- | ------- |
-| content         | Content of the thought node                          | `VNodeChild`                                   | -           | -       |
-| description     | Description of the thought node                      | `VNodeChild`                                   | -           | -       |
-| footer          | Footer of the thought node                           | `VNodeChild`                                   | -           | -       |
-| icon            | Icon of the thought node, not displayed when `false` | `false \| VNodeChild`                          | DefaultIcon | -       |
-| key             | Unique identifier for the thought node               | `string`                                       | -           | -       |
-| status          | Status of the thought node                           | `'loading' \| 'success' \| 'error' \| 'abort'` | -           | -       |
-| title           | Title of the thought node                            | `VNodeChild`                                   | -           | -       |
-| collapsible     | Whether the thought node is collapsible              | `boolean`                                      | `false`     | -       |
-| blink           | Blink mode                                           | `boolean`                                      | -           | -       |
-| destroyOnHidden | Whether to destroy the content node when collapsed   | `boolean`                                      | `true`      | -       |
+| Property        | Description                                          | Type                                           | Default       | Version |
+| --------------- | ---------------------------------------------------- | ---------------------------------------------- | ------------- | ------- |
+| content         | Content of the thought node                          | `VNodeChild`                                   | -             | -       |
+| description     | Description of the thought node                      | `VNodeChild`                                   | -             | -       |
+| footer          | Footer of the thought node                           | `VNodeChild`                                   | -             | -       |
+| icon            | Icon of the thought node, not displayed when `false` | `false \| VNodeChild`                          | DefaultIcon   | -       |
+| key             | Unique identifier for the thought node               | `string`                                       | -             | -       |
+| status          | Status of the thought node                           | `'loading' \| 'success' \| 'error' \| 'abort'` | -             | -       |
+| title           | Title of the thought node                            | `VNodeChild`                                   | -             | -       |
+| collapsible     | Whether the thought node is collapsible              | `boolean`                                      | `false`       | -       |
+| collapseIcon    | Collapse indicator, hidden when `false`              | `false \| VNodeChild`                          | Default arrow | -       |
+| blink           | Blink mode                                           | `boolean`                                      | -             | -       |
+| destroyOnHidden | Whether to destroy the content node when collapsed   | `boolean`                                      | `true`        | -       |
 
 ### ThoughtChain.Item
 

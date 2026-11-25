@@ -2,6 +2,7 @@ import ThoughtChainItem from "./Item";
 import ThoughtChain from "./ThoughtChain";
 
 export type {
+  ThoughtChainCollapseIconSlotInfo,
   ThoughtChainContentSlotInfo,
   ThoughtChainDescriptionSlotInfo,
   ThoughtChainFooterSlotInfo,
