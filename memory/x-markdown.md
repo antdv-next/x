@@ -14,6 +14,10 @@ change does not undo a decision recorded there.
   missed, how the splitter treats math.
 - **3. Streaming preset, typewriter and the Vue API mapping** — the
   downstream-only fixes and the Vue API translation.
+- **4. Link and paragraph renderer output** — the deliberate renderer
+  differences from marked's defaults.
+- **5. Bare-URL autolinks and CJK punctuation** — why a bare URL stops at CJK
+  punctuation, and the downstream-only re-application of `ant-design/x#2055`.
 
 ## 1. `streaming.incremental` section boundaries
 
@@ -555,3 +559,48 @@ in both places for exactly this reason.)
   than the autolink feature.
 - Do not mount a marked extension only in the constructor; `updateMarkedConfig`
   rebuilds the instance.
+
+## 5. Bare-URL autolinks and CJK punctuation
+
+**Files:** `packages/x-markdown/src/XMarkdown/core/Parser.ts`
+(`CJK_AUTOLINK_BOUNDARY`, `configureCjkAutolinks`, and its two call sites).
+**Upstream counterpart:** `ant-design/x#2055` (still `OPEN`, head `8eae4ac5fc`
+when this was re-applied).
+**History:** ported as `d50013f` (#255) on 2026-10-18, reverted with the other
+unmerged-PR ports in `14aa16c` (#257) on 2026-10-19. Re-applied 2026-11-25 as a
+**downstream-only bug fix**, not a sync port - the cursor does not move and the
+"only merged upstream commits" policy is unchanged.
+
+### The bug
+
+- **Repro:** `**看这个链接地址**（https://x.antdv-next.cn），随后返回的数据内容............`
+- **Ground truth (marked 16.4.2, `gfm: true`):** the GFM `url` rule is
+  `^((?:https?|ftp)://|www\.)(?:[a-zA-Z0-9-]+\.?)+[^\s<]*` - a bare URL ends
+  only at whitespace or `<`. CJK punctuation is not a boundary, so the link
+  token becomes `https://x.antdv-next.cn），随后返回的数据内容`. marked's
+  `_backpedal` only strips trailing ASCII punctuation, so the trailing
+  `............` lands outside the link while the CJK prose stays inside it.
+- **Rendered result (before):** `看这个链接地址（` is text, then one `<a>` whose
+  text and `href` are `https://x.antdv-next.cn），随后返回的数据内容`, then
+  `............` as text. The sentence tail is painted as a link and the `href`
+  is a broken URL.
+- **Our fix:** override marked's `url` tokenizer and truncate the token at the
+  first `），。！？；：、`. A balanced `（...）` pair inside the URL protects the
+  punctuation between the pair (nested pairs included); an unmatched `（`
+  protects nothing. The override is mounted in the constructor **and** in
+  `updateMarkedConfig`, which rebuilds the marked instance.
+
+### Do not
+
+- Do not drop the `updateMarkedConfig` mount: `setOptions({ config })` rebuilds
+  the instance, and a missing mount silently restores the swallowing behaviour.
+- Do not widen the boundary set to ASCII `.`/`,`/`)`: marked's `_backpedal`
+  already handles trailing ASCII punctuation, and a URL path may legitimately
+  contain them.
+- When upstream #2055 merges, diff our implementation against the merge commit
+  instead of blind-porting it (see `upstream-sync.md`).
+
+**Covering tests:** `packages/x-markdown/src/XMarkdown/__tests__/parser.test.ts`
+-> `CJK autolinks` (the reported repro, plain truncation, balanced and unmatched
+full-width parentheses, explicit markdown links, and the config-update
+re-mount).
