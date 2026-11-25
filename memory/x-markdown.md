@@ -584,11 +584,18 @@ unmerged-PR ports in `14aa16c` (#257) on 2026-10-19. Re-applied 2026-11-25 as a
   text and `href` are `https://x.antdv-next.cn），随后返回的数据内容`, then
   `............` as text. The sentence tail is painted as a link and the `href`
   is a broken URL.
-- **Our fix:** override marked's `url` tokenizer and truncate the token at the
-  first `），。！？；：、`. A balanced `（...）` pair inside the URL protects the
-  punctuation between the pair (nested pairs included); an unmatched `（`
-  protects nothing. The override is mounted in the constructor **and** in
-  `updateMarkedConfig`, which rebuilds the marked instance.
+- **Our fix:** override marked's `url` tokenizer before `options.config` is
+  applied (so a user's `config.tokenizer.url` still runs first and falls back
+  to ours only on `false`), locate the first CJK boundary
+  (`），。！？；：、》」』】〕〉”’…`, opening CJK brackets/quotes on the host
+  before `/`/`?`/`#`, or trailing ASCII punctuation/unbalanced `)` immediately
+  followed by CJK characters — while still protecting balanced `（...）` inside
+  URL paths), and re-run `Tokenizer.prototype.url.call(this, ...)` on the
+  truncated slice so marked's own `_backpedal` and `www.` prefix handling run
+  cleanly. The override is mounted via `createMarkedInstance()` in both the
+  constructor and `updateMarkedConfig`. The `link` renderer also escapes `"` in
+  `href` and HTML-escapes `title` to avoid broken attributes while keeping CJK
+  `href` characters literal.
 
 ### Do not
 

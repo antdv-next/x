@@ -1,6 +1,7 @@
 import { mount } from "@vue/test-utils";
+import { ConfigProvider } from "antdv-next";
 import { describe, expect, it } from "vite-plus/test";
-import { h, nextTick } from "vue";
+import { createTextVNode, h, nextTick } from "vue";
 
 import ThoughtChain from "../ThoughtChain";
 
@@ -383,6 +384,111 @@ describe("ThoughtChain", () => {
     );
     expect(icon.classes()).toContain("custom-collapse-icon");
     expect(icon.element.style.color).toBe("red");
+  });
+
+  it("rotates the default collapse icon correctly in RTL direction", async () => {
+    const wrapper = mount({
+      render() {
+        return (
+          <ConfigProvider direction="rtl">
+            <ThoughtChain
+              items={[
+                {
+                  key: "1",
+                  title: "Collapsible",
+                  content: "Content",
+                  collapsible: true,
+                },
+              ]}
+            />
+          </ConfigProvider>
+        );
+      },
+    });
+
+    const getSvgStyle = () =>
+      wrapper
+        .find(".antd-thought-chain-node-collapse-icon svg")
+        .attributes("style") ?? "";
+
+    // Collapsed in RTL: LeftOutlined points left (rotate 0)
+    expect(getSvgStyle()).not.toContain("rotate(-90deg)");
+    expect(getSvgStyle()).not.toContain("rotate(90deg)");
+
+    // Expanded in RTL: LeftOutlined rotates -90deg to point down
+    await wrapper.find(".antd-thought-chain-node-collapsible").trigger("click");
+    await nextTick();
+    expect(getSvgStyle()).toContain("rotate(-90deg)");
+  });
+
+  it("does not double-toggle when toggleExpand is called inside collapseIcon slot", async () => {
+    const wrapper = mount(ThoughtChain, {
+      props: {
+        items: [
+          {
+            key: "1",
+            title: "Collapsible",
+            content: "Content",
+            collapsible: true,
+          },
+        ],
+      },
+      slots: {
+        collapseIcon: ({ toggleExpand }: any) => (
+          <button class="slot-toggle-btn" onClick={toggleExpand}>
+            toggle
+          </button>
+        ),
+      },
+    });
+
+    await wrapper.find(".slot-toggle-btn").trigger("click");
+    await nextTick();
+
+    expect(wrapper.emitted("expand")).toEqual([[["1"]]]);
+    expect(wrapper.find(".antd-thought-chain-node-content").exists()).toBe(
+      true,
+    );
+  });
+
+  it("does not render an empty wrapper when collapseIcon is empty text", () => {
+    const propWrapper = mount(ThoughtChain, {
+      props: {
+        items: [
+          {
+            key: "1",
+            title: "Empty String",
+            content: "Content",
+            collapsible: true,
+            collapseIcon: "",
+          },
+        ],
+      },
+    });
+
+    expect(
+      propWrapper.find(".antd-thought-chain-node-collapse-icon").exists(),
+    ).toBe(false);
+
+    const slotWrapper = mount(ThoughtChain, {
+      props: {
+        items: [
+          {
+            key: "1",
+            title: "Empty Text VNode",
+            content: "Content",
+            collapsible: true,
+          },
+        ],
+      },
+      slots: {
+        collapseIcon: () => [createTextVNode("   ")],
+      },
+    });
+
+    expect(
+      slotWrapper.find(".antd-thought-chain-node-collapse-icon").exists(),
+    ).toBe(false);
   });
 
   it("supports collapsible items with toggle", async () => {

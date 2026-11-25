@@ -19,9 +19,104 @@ export function escapeHtml(html: string): string {
   return html;
 }
 
-const CJK_AUTOLINK_BOUNDARY = /[），。！？；：、]/u;
+const CJK_AUTOLINK_BOUNDARY = /[），。！？；：、》」』】〕〉”’…]/u;
+const CJK_HOST_OPEN_BOUNDARY = /[（《「『【〔〈“‘]/u;
 const CJK_PAREN_OPEN = "（";
 const CJK_PAREN_CLOSE = "）";
+const CJK_CHAR =
+  /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u;
+const ASCII_BOUNDARY_BEFORE_CJK = /[?!.,;*'"~]/;
+const AUTOLINK_SCHEME_RE = /^(?:(?:https?|ftp):\/\/|www\.)/i;
+
+function findCjkAutolinkBoundary(raw: string): number {
+  const schemeMatch = AUTOLINK_SCHEME_RE.exec(raw);
+  if (!schemeMatch) {
+    return -1;
+  }
+
+  const schemeEnd = schemeMatch[0].length;
+  let pathStart = raw.length;
+  for (let index = schemeEnd; index < raw.length; index += 1) {
+    const ch = raw[index];
+    if (ch === "/" || ch === "?" || ch === "#") {
+      pathStart = index;
+      break;
+    }
+  }
+
+  // 只有路径/查询/片段内配对成功的中文括号区间才受保护；
+  // 主机名后紧跟的 `（`（如 `https://a.com（文档站）。`）和未配对的 `（` 均不保护后续正文。
+  const matchedParens = new Map<number, number>();
+  const openParens: number[] = [];
+  for (let index = pathStart; index < raw.length; index += 1) {
+    const character = raw[index];
+    if (character === CJK_PAREN_OPEN) {
+      openParens.push(index);
+    } else if (character === CJK_PAREN_CLOSE && openParens.length > 0) {
+      matchedParens.set(openParens.pop()!, index);
+    }
+  }
+
+  let asciiOpenParens = 0;
+  let asciiOpenBrackets = 0;
+  let asciiOpenBraces = 0;
+  for (let index = schemeEnd; index < raw.length; index += 1) {
+    const character = raw[index];
+    const closeIndex = matchedParens.get(index);
+    if (closeIndex !== undefined) {
+      // 跳到配对右括号之后，其间的标点属于链接本身
+      index = closeIndex;
+      continue;
+    }
+
+    if (CJK_AUTOLINK_BOUNDARY.test(character)) {
+      return index;
+    }
+
+    if (index < pathStart && CJK_HOST_OPEN_BOUNDARY.test(character)) {
+      return index;
+    }
+
+    const nextChar = raw[index + 1];
+    const nextIsCjkChar = !!nextChar && CJK_CHAR.test(nextChar);
+    const nextIsCjkOrPunct =
+      nextIsCjkChar || (!!nextChar && CJK_AUTOLINK_BOUNDARY.test(nextChar));
+    if (character === "(") {
+      asciiOpenParens += 1;
+    } else if (character === ")") {
+      if (asciiOpenParens > 0) {
+        asciiOpenParens -= 1;
+      } else if (nextIsCjkChar) {
+        return index;
+      }
+    } else if (character === "[") {
+      asciiOpenBrackets += 1;
+    } else if (character === "]") {
+      if (asciiOpenBrackets > 0) {
+        asciiOpenBrackets -= 1;
+      } else if (nextIsCjkOrPunct) {
+        return index;
+      }
+    } else if (character === "{") {
+      asciiOpenBraces += 1;
+    } else if (character === "}") {
+      if (asciiOpenBraces > 0) {
+        asciiOpenBraces -= 1;
+      } else if (nextIsCjkOrPunct) {
+        return index;
+      }
+    } else if (nextIsCjkChar) {
+      if (
+        ASCII_BOUNDARY_BEFORE_CJK.test(character) ||
+        (index < pathStart && character === ":")
+      ) {
+        return index;
+      }
+    }
+  }
+
+  return -1;
+}
 
 export class Parser {
   private static readonly COMPLETE_FENCED_CODE =
@@ -49,9 +144,17 @@ export class Parser {
       codeBlockStatus: options.codeBlockStatus ?? {},
     };
 
-    this.markdownInstance = new Marked(this.options.config);
-    this.configureCjkAutolinks();
-    this.configureRenderers();
+    this.markdownInstance = this.createMarkedInstance();
+  }
+
+  private createMarkedInstance(): Marked {
+    const instance = new Marked();
+    // 先挂载 CJK 裸链接截断，再应用用户的 `options.config`，确保用户自定义的
+    // `config.tokenizer.url` 始终优先被调用，只有在返回 `false` 时才回退到这里。
+    this.configureCjkAutolinks(instance);
+    instance.use(this.options.config);
+    this.configureRenderers(instance);
+    return instance;
   }
 
   private updateMarkedConfig(config: MarkedConfig): void {
@@ -59,19 +162,17 @@ export class Parser {
       ...this.options.config,
       ...config,
     };
-    this.markdownInstance = new Marked(this.options.config);
-    this.configureCjkAutolinks();
-    this.configureRenderers();
+    this.markdownInstance = this.createMarkedInstance();
   }
 
   /**
    * marked 的 GFM 裸链接（`url` token）只在空白或 `<` 处结束，中文正文里紧跟
-   * URL 的标点（`），。！？；：、`）以及其后的正文会被一起并进链接。这里在
-   * marked 自己的 `url` tokenizer 之后按 CJK 边界截断 token；成对的全角括号
-   * 内部受保护（URL 路径里的中文括号不算边界），未配对的开括号不保护后续正文。
+   * URL 的标点以及其后的正文会被一起并进链接。这里在 marked 自己的 `url`
+   * tokenizer 之后按 CJK 边界截断并重跑 `Tokenizer.prototype.url`，让 marked
+   * 自行完成 `_backpedal` 尾部 ASCII 标点清理与 `www.` 前缀补全。
    */
-  private configureCjkAutolinks() {
-    this.markdownInstance.use({
+  private configureCjkAutolinks(instance: Marked) {
+    instance.use({
       tokenizer: {
         url(src) {
           const token = Tokenizer.prototype.url.call(this, src);
@@ -79,50 +180,24 @@ export class Parser {
             return false;
           }
 
-          // 只有配对成功的括号区间才受保护；未配对的开括号不能让后续正文免于截断
-          const matchedParens = new Map<number, number>();
-          const openParens: number[] = [];
-          for (let index = 0; index < token.raw.length; index += 1) {
-            const character = token.raw[index];
-            if (character === CJK_PAREN_OPEN) {
-              openParens.push(index);
-            } else if (character === CJK_PAREN_CLOSE && openParens.length > 0) {
-              matchedParens.set(openParens.pop()!, index);
-            }
-          }
-
-          let boundaryIndex = -1;
-          for (let index = 0; index < token.raw.length; index += 1) {
-            const closeIndex = matchedParens.get(index);
-            if (closeIndex !== undefined) {
-              // 跳到配对右括号之后，其间的标点属于链接本身
-              index = closeIndex;
-            } else if (CJK_AUTOLINK_BOUNDARY.test(token.raw[index])) {
-              boundaryIndex = index;
-              break;
-            }
-          }
-
+          const boundaryIndex = findCjkAutolinkBoundary(token.raw);
           if (boundaryIndex < 0) {
             return false;
           }
 
-          const raw = token.raw.slice(0, boundaryIndex);
-          const removedLength = token.raw.length - raw.length;
-          const href = token.href.slice(0, token.href.length - removedLength);
-          return {
-            ...token,
-            raw,
-            text: raw,
-            href,
-            tokens: [{ type: "text", raw, text: raw }],
-          };
+          // 重跑 marked 原生 `url` tokenizer 以重新执行 `_backpedal` 和 `www.` 前缀处理。
+          // 注意此处不能用 `?? false`：若截断后不再构成有效链接（如 `https://，继续`），
+          // 返回 `undefined` 可阻止 marked 回退到未截断的默认 `url` tokenizer。
+          return Tokenizer.prototype.url.call(
+            this,
+            token.raw.slice(0, boundaryIndex),
+          );
         },
       },
     });
   }
 
-  private configureRenderers() {
+  private configureRenderers(instance: Marked) {
     const options = this.options;
     const consumeCodeBlockState = (lang: string): "loading" | "done" =>
       this.consumeCodeBlockState(lang);
@@ -140,7 +215,7 @@ export class Parser {
       return parser ? parser.parseInline(tokens ?? []) : "";
     };
 
-    this.markdownInstance.use({
+    instance.use({
       renderer: {
         // marked v13 起渲染器统一改收 token 对象（v14 移除旧的多参签名）；
         // 方法简写保证 `this` 指向 marked 内部 Renderer 实例
@@ -152,11 +227,17 @@ export class Parser {
         },
 
         link(token: Tokens.Link): string {
-          const titleAttr = token.title ? ` title="${token.title}"` : "";
+          const href = token.href.replace(
+            /["<>]/g,
+            ch => escapeReplacements[ch] || ch,
+          );
+          const titleAttr = token.title
+            ? ` title="${escapeHtml(token.title)}"`
+            : "";
           const targetAttr = options.openLinksInNewTab
             ? ` target="_blank" rel="noopener noreferrer"`
             : "";
-          return `<a href="${token.href}"${titleAttr}${targetAttr}>${markedParseInline(this, token.tokens)}</a>`;
+          return `<a href="${href}"${titleAttr}${targetAttr}>${markedParseInline(this, token.tokens)}</a>`;
         },
 
         paragraph(token: Tokens.Paragraph): string {
