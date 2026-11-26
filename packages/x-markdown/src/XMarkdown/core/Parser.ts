@@ -11,11 +11,8 @@ const escapeReplacements: Record<string, string> = {
   '"': "&quot;",
   "'": "&#39;",
 };
-// 字面写在 URL 里的 `&copy;` 会被浏览器当成 HTML 实体解码，href 必须转义。
-// `&amp;` / `&lt;` / `&gt;` / `&quot;` / 数字实体是属性里的标准编码，保持原样
-// 才能让 `[x](...?a=1&amp;b=2)` 这类目的地仍解码成 `&b=2`。
-const HREF_AMP_RE = /&(?!(?:amp|lt|gt|quot|apos|#\d+|#[xX][0-9a-fA-F]+);)/g;
 const ATTRIBUTE_ENTITY_RE = /&(?!(?:#\d{1,7}|#[xX][0-9a-fA-F]{1,6}|\w+);)/g;
+const CJK_WRAPPER_TRAILING_PUNCTUATION = /^[，。！？；：、]/u;
 
 export function escapeHtml(html: string): string {
   if (/[&<>"']/.test(html)) {
@@ -24,90 +21,47 @@ export function escapeHtml(html: string): string {
   return html;
 }
 
-function escapeAttribute(value: string, preserveEntities: boolean): string {
-  const ampersandPattern = preserveEntities ? ATTRIBUTE_ENTITY_RE : HREF_AMP_RE;
+function escapeMarkdownAttribute(value: string): string {
   return value
-    .replace(ampersandPattern, "&amp;")
+    .replace(ATTRIBUTE_ENTITY_RE, "&amp;")
     .replace(/["<>]/g, ch => escapeReplacements[ch]);
 }
 
-const CJK_AUTOLINK_BOUNDARY = /[），。！？；：、》」』】〕〉”’…]/u;
-// 引号在正文里是标点而非 URL 括号，只在主机名后作为边界，不参与配对保护。
-const CJK_HOST_OPEN_BOUNDARY = /[（《「『【〔〈“‘]/u;
-// 开括号到对应收尾字符的映射：URL 路径中成对出现时内部标点属于链接。
-const CJK_BRACKET_PAIRS: Record<string, string> = {
-  "（": "）",
-  "《": "》",
-  "「": "」",
-  "『": "』",
-  "【": "】",
-  "〔": "〕",
-  "〈": "〉",
-};
-const CJK_CHAR =
-  /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u;
-const AUTOLINK_SCHEME_RE = /^(?:(?:https?|ftp):\/\/|www\.)/i;
+/**
+ * 不再猜测一般裸链接的结尾：`/路径，详情` 既可能是完整路径，也可能是正文。
+ * `new URL()` 只能验证候选地址，不能判断作者意图；按标点继续细分会误截合法的
+ * 域名、路径或查询串。仅识别 `（URL），正文` 这类外层配对，其余沿用 marked。
+ * 需要明确边界时，生成 `[链接文字](URL)`。详见 `memory/x-markdown.md`。
+ */
+function trimCjkAutolinkWrapper(token: Tokens.Link, src: string): Tokens.Link {
+  let depth = 1;
+  for (let index = 0; index < token.raw.length; index += 1) {
+    if (token.raw[index] === "（") {
+      depth += 1;
+    } else if (token.raw[index] === "）" && --depth === 0) {
+      if (!CJK_WRAPPER_TRAILING_PUNCTUATION.test(src.charAt(index + 1))) break;
 
-function findCjkAutolinkBoundary(raw: string): number {
-  const schemeMatch = AUTOLINK_SCHEME_RE.exec(raw);
-  if (!schemeMatch) {
-    return -1;
-  }
+      const raw = token.raw.slice(0, index);
+      const href = token.href.slice(
+        0,
+        token.href.length - token.raw.length + index,
+      );
+      try {
+        new URL(href);
+      } catch {
+        break;
+      }
 
-  const schemeEnd = schemeMatch[0].length;
-  let pathStart = raw.length;
-  for (let index = schemeEnd; index < raw.length; index += 1) {
-    const ch = raw[index];
-    if (ch === "/" || ch === "?" || ch === "#") {
-      pathStart = index;
-      break;
+      return {
+        ...token,
+        raw,
+        text: raw,
+        href,
+        tokens: [{ type: "text", raw, text: raw }],
+      };
     }
   }
-
-  // 只有路径/查询/片段内配对成功的中文括号区间才受保护；
-  // 主机名后紧跟的开括号（如 `https://a.com（文档站）。`）和未配对的开括号均不保护后续正文。
-  const matchedParens = new Map<number, number>();
-  const openBrackets: Array<{ index: number; close: string }> = [];
-  for (let index = pathStart; index < raw.length; index += 1) {
-    const character = raw[index];
-    const expectedClose = CJK_BRACKET_PAIRS[character];
-    if (expectedClose) {
-      openBrackets.push({ index, close: expectedClose });
-    } else if (
-      openBrackets.length > 0 &&
-      openBrackets.at(-1)!.close === character
-    ) {
-      matchedParens.set(openBrackets.pop()!.index, index);
-    }
-  }
-
-  for (let index = schemeEnd; index < raw.length; index += 1) {
-    const character = raw[index];
-    const closeIndex = matchedParens.get(index);
-    if (closeIndex !== undefined) {
-      // 跳到配对右括号之后，其间的标点属于链接本身
-      index = closeIndex;
-      continue;
-    }
-
-    if (CJK_AUTOLINK_BOUNDARY.test(character)) {
-      return index;
-    }
-
-    if (index < pathStart && CJK_HOST_OPEN_BOUNDARY.test(character)) {
-      return index;
-    }
-
-    const nextChar = raw[index + 1];
-    const nextIsCjkChar = !!nextChar && CJK_CHAR.test(nextChar);
-    if (index < pathStart && character === ":" && nextIsCjkChar) {
-      // 主机名里的 `:` 后面直接跟汉字时不是端口，属于正文；路径/查询/片段里的
-      // ASCII 结构字符（`.` `?` `,` `~` 等）即使是正文标点也不能猜，交给 marked。
-      return index;
-    }
-  }
-
-  return -1;
+  return token;
 }
 
 export class Parser {
@@ -141,11 +95,12 @@ export class Parser {
 
   private createMarkedInstance(): Marked {
     const instance = new Marked();
+    const bareAutolinks = new WeakSet<Tokens.Link>();
     // 先挂载 CJK 裸链接截断，再应用用户的 `options.config`，确保用户自定义的
     // `config.tokenizer.url` 始终优先被调用，只有在返回 `false` 时才回退到这里。
-    this.configureCjkAutolinks(instance);
+    this.configureBareAutolinks(instance, bareAutolinks);
     instance.use(this.options.config);
-    this.configureRenderers(instance);
+    this.configureRenderers(instance, bareAutolinks);
     return instance;
   }
 
@@ -158,40 +113,50 @@ export class Parser {
   }
 
   /**
-   * marked 的 GFM 裸链接（`url` token）只在空白或 `<` 处结束，中文正文里紧跟
-   * URL 的标点以及其后的正文会被一起并进链接。这里在 marked 自己的 `url`
-   * tokenizer 之后按 CJK 边界截断并重跑 `Tokenizer.prototype.url`，让 marked
-   * 自行完成 `_backpedal` 尾部 ASCII 标点清理与 `www.` 前缀补全。
-   * 路径/查询/片段里的 ASCII 字符即使是句子标点也不当作边界：猜错会截断合法
-   * URL（IDN 主机、`?关键词`、`~用户`），而 CJK 收尾标点已足够覆盖正文。
+   * `url()` 只看到 URL 开头的剩余输入。行内扩展提供同一次分词的左侧文本，
+   * 但不消费输入：仅 `（URL），正文` 这类外层配对形式改动 marked 的裸链接。
    */
-  private configureCjkAutolinks(instance: Marked) {
+  private configureBareAutolinks(
+    instance: Marked,
+    bareAutolinks: WeakSet<Tokens.Link>,
+  ) {
+    const wrappedSources = new WeakMap<Tokenizer["lexer"], string>();
     instance.use({
+      extensions: [
+        {
+          name: "cjkAutolinkContext",
+          level: "inline",
+          tokenizer(src, tokens) {
+            const previous = tokens.at(-1);
+            if (previous?.type === "text" && previous.raw.endsWith("（")) {
+              wrappedSources.set(this.lexer, src);
+            } else {
+              wrappedSources.delete(this.lexer);
+            }
+            return undefined;
+          },
+        },
+      ],
       tokenizer: {
         url(src) {
           const token = Tokenizer.prototype.url.call(this, src);
-          if (!token) {
-            return false;
-          }
+          if (!token) return undefined;
 
-          const boundaryIndex = findCjkAutolinkBoundary(token.raw);
-          if (boundaryIndex < 0) {
-            return false;
-          }
-
-          // 重跑 marked 原生 `url` tokenizer 以重新执行 `_backpedal` 和 `www.` 前缀处理。
-          // 注意此处不能用 `?? false`：若截断后不再构成有效链接（如 `https://，继续`），
-          // 返回 `undefined` 可阻止 marked 回退到未截断的默认 `url` tokenizer。
-          return Tokenizer.prototype.url.call(
-            this,
-            token.raw.slice(0, boundaryIndex),
-          );
+          const link =
+            wrappedSources.get(this.lexer) === src
+              ? trimCjkAutolinkWrapper(token, src)
+              : token;
+          bareAutolinks.add(link);
+          return link;
         },
       },
     });
   }
 
-  private configureRenderers(instance: Marked) {
+  private configureRenderers(
+    instance: Marked,
+    bareAutolinks: WeakSet<Tokens.Link>,
+  ) {
     const options = this.options;
     const consumeCodeBlockState = (lang: string): "loading" | "done" =>
       this.consumeCodeBlockState(lang);
@@ -221,15 +186,20 @@ export class Parser {
         },
 
         link(token: Tokens.Link): string {
-          const explicitLink = token.raw.startsWith("[");
-          const href = escapeAttribute(token.href, explicitLink);
+          const bare = bareAutolinks.has(token);
+          const href = bare
+            ? escapeHtml(token.href)
+            : escapeMarkdownAttribute(token.href);
           const titleAttr = token.title
-            ? ` title="${escapeAttribute(token.title, true)}"`
+            ? ` title="${escapeMarkdownAttribute(token.title)}"`
             : "";
           const targetAttr = options.openLinksInNewTab
             ? ` target="_blank" rel="noopener noreferrer"`
             : "";
-          return `<a href="${href}"${titleAttr}${targetAttr}>${markedParseInline(this, token.tokens)}</a>`;
+          const text = bare
+            ? escapeHtml(token.text)
+            : markedParseInline(this, token.tokens);
+          return `<a href="${href}"${titleAttr}${targetAttr}>${text}</a>`;
         },
 
         paragraph(token: Tokens.Paragraph): string {

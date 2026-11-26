@@ -26,6 +26,8 @@ title: 介绍
 - [CommonMark](https://github.com/commonmark/commonmark-spec/wiki/Markdown-Flavors)
 - [GitHub Flavored Markdown (GFM)](https://github.github.com/gfm/)
 
+裸链接沿用 marked 的 GFM 自动链接规则。对于 `（https://example.com），后续` 这类写法，成对的全角括号和紧随其后的中文标点会留在链接外。其他情况下，紧跟 URL 的中文标点可能被视为地址的一部分。生成 Markdown 时，建议使用 `[链接文字](URL)` 明确边界。
+
 ## 安装
 
 <InstallDependencies npm='npm install @antdv-next/x-markdown' yarn='yarn add @antdv-next/x-markdown' pnpm='pnpm install @antdv-next/x-markdown' bun='bun add @antdv-next/x-markdown'></InstallDependencies>

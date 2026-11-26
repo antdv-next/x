@@ -26,6 +26,8 @@ title: Introduction
 - [CommonMark](https://github.com/commonmark/commonmark-spec/wiki/Markdown-Flavors)
 - [GitHub Flavored Markdown (GFM)](https://github.github.com/gfm/)
 
+Bare URLs follow marked's GFM autolink rules. In `（https://example.com），后续`, the matching full-width parentheses and the punctuation immediately after them stay outside the link. In other cases, CJK punctuation adjacent to a URL may be treated as part of the address. When generating Markdown, use `[link text](URL)` to make the boundary explicit.
+
 ## Installation
 
 <InstallDependencies npm='npm install @antdv-next/x-markdown' yarn='yarn add @antdv-next/x-markdown' pnpm='pnpm install @antdv-next/x-markdown' bun='bun add @antdv-next/x-markdown'></InstallDependencies>

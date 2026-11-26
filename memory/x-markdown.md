@@ -683,3 +683,58 @@ escaping with the standard-entity baseline).
   confirmed CJK boundary is passed back through marked's `_backpedal`.
 - **Covering tests:** parser regressions for `/docs&sol;/...` and
   `&amp;` titles, plus query values ending in each ASCII closer before CJK.
+
+#### 2026-11-26: follow-up review found IDN, trailing query, and angle-autolink regressions
+
+- **IDN:** `https://docs【测试】.example.com/path，继续` links to `https://docs`
+  on PR #273 (`580a932`). The URL parser accepts the full name and converts it
+  to `xn--docs-ty3cg1380i8b5b.example.com`. Default marked (the upstream
+  renderer baseline) keeps that hostname but also consumes the prose;
+  downstream `main` keeps the host and stops at `，`. An opener before the
+  first path delimiter does not necessarily follow a complete hostname.
+- **Trailing query:** `https://example.com/?tag=A&label;，继续` loses
+  `&label;` from its `href` after the second tokenizer pass. The browser keeps
+  it in the query; default marked keeps it but also consumes the prose;
+  downstream `main` keeps it and stops at `，`. Marked's `_backpedal` treats
+  `&label;` specially once it becomes the end of the candidate, so attribute
+  escaping no longer gets a chance to preserve it.
+- **Angle autolink:** `<https://example.com/docs&sol;guide>` still displays
+  `https://example.com/docs/guide` but now links to `/docs&sol;guide`. Both
+  default marked and downstream `main` produce `/docs/guide` in the DOM.
+  `raw.startsWith("[")` misses marked's separate angle-autolink tokenizer and
+  applies the bare-URL escaping policy there too.
+- **Decision and verification:** these are review findings, not accepted
+  divergences. Review-time DOM comparisons against default marked 16.4.2 and
+  downstream `main` reproduced all three. Add parser regressions asserting the
+  DOM `href` when fixing them; the existing tests cover neither a CJK opener
+  inside the hostname, an entity-shaped query suffix at the CJK boundary,
+  nor a named entity in an angle autolink.
+
+#### 2026-11-26: only a full-width wrapper delimits a CJK bare URL
+
+- **Decision:** supersedes the general CJK boundary rules and bare-URL entity
+  whitelist above. An unwrapped `https://example.com/路径，详情` is ambiguous:
+  the browser accepts `，详情` as part of the path, and marked 16.4.2 (the
+  upstream baseline) links the whole run. Keep marked's boundary for such
+  input, even when the punctuation was intended as prose. Use `[label](URL)`
+  when generating Markdown so there is no need to guess.
+- **Narrow exception:** `（https://example.com/路径（详情）），继续` has a
+  full-width opener immediately before a built-in GFM URL, a matching closer
+  and immediately following Chinese punctuation. Marked includes `），继续`
+  in the link; we remove only the outer wrapper and prose from the token.
+  Balanced parentheses inside the URL stay. The candidate must parse with
+  the browser's `URL` constructor; the constructor is not a source of
+  boundaries or a serializer for the `href`. Keep marked's `www.` prefix.
+  Do not run the shortened token through `_backpedal` again: a query ending
+  in `&label;` or `)` must stay intact. A user `url` tokenizer still wins;
+  this exception runs only on the built-in fallback.
+- **Entity handling:** the built-in `url` tokenizer identifies bare URL
+  tokens, so both their label and `href` keep literal `&copy;`, `&amp;` and
+  numeric references. Stock marked lets the browser decode them. Inline,
+  reference and angle-bracket links keep their existing Markdown entity
+  semantics, including `<https://example.com/docs&sol;guide>`. The renderer
+  still escapes quotes and keeps non-ASCII `href` characters literal.
+- **Covering tests:** `parser.test.ts` compares ambiguous and unsupported
+  wrappers with stock marked, and checks DOM `href`, label and surrounding
+  text for the original repro, nested wrappers, IDNs, trailing query
+  characters, entity forms, GFM configuration and custom tokenizers.
