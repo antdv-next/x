@@ -1,4 +1,4 @@
-import type { TokenizerAndRendererExtension } from "marked";
+import type { MarkedExtension, TokenizerAndRendererExtension } from "marked";
 import type { Component } from "vue";
 
 export enum StreamCacheTokenType {
@@ -297,6 +297,9 @@ export interface MarkedConfig {
   breaks?: boolean;
   gfm?: boolean;
   extensions?: TokenizerAndRendererExtension[] | null;
+  // 用户自定义 tokenizer（如 `url`）优先于 CJK 截断覆写；marked 的 `use()` 在
+  // 返回 `false` 时回退到我们挂载的实现。
+  tokenizer?: MarkedExtension["tokenizer"];
 }
 
 export interface ComponentProps {

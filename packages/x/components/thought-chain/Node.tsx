@@ -131,9 +131,14 @@ export default defineComponent({
       index: props.index,
       expanded: props.expanded,
       collapsible,
-      toggleExpand: () => {
+      toggleExpand: (event?: Event) => {
+        // 插槽按钮常位于可点击标题内部：先阻止冒泡，避免同一次点击再触发容器。
+        event?.stopPropagation();
         toggledBySlot = true;
-        queueMicrotask(() => {
+        // 调用方不传事件时仍会冒泡到容器，由容器的 onClick 消费该标记；
+        // 兜底复位必须在宏任务里——真实浏览器在每个监听器返回后就会跑 microtask，
+        // microtask 会在冒泡到容器之前把标记清掉，导致一次点击切换两次。
+        setTimeout(() => {
           toggledBySlot = false;
         });
         emit("toggleExpand");

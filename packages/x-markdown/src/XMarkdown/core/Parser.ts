@@ -20,12 +20,21 @@ export function escapeHtml(html: string): string {
 }
 
 const CJK_AUTOLINK_BOUNDARY = /[），。！？；：、》」』】〕〉”’…]/u;
-const CJK_HOST_OPEN_BOUNDARY = /[（《「『【〔〈“‘]/u;
-const CJK_PAREN_OPEN = "（";
-const CJK_PAREN_CLOSE = "）";
+// 开括号/引号到对应收尾字符的映射：URL 路径中成对出现时内部标点属于链接，
+// 主机名后紧跟的开括号则是正文边界。
+const CJK_BRACKET_PAIRS: Record<string, string> = {
+  "（": "）",
+  "《": "》",
+  "「": "」",
+  "『": "』",
+  "【": "】",
+  "〔": "〕",
+  "〈": "〉",
+  "“": "”",
+  "‘": "’",
+};
 const CJK_CHAR =
   /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u;
-const ASCII_BOUNDARY_BEFORE_CJK = /[?!.,;*'"~]/;
 const AUTOLINK_SCHEME_RE = /^(?:(?:https?|ftp):\/\/|www\.)/i;
 
 function findCjkAutolinkBoundary(raw: string): number {
@@ -45,15 +54,19 @@ function findCjkAutolinkBoundary(raw: string): number {
   }
 
   // 只有路径/查询/片段内配对成功的中文括号区间才受保护；
-  // 主机名后紧跟的 `（`（如 `https://a.com（文档站）。`）和未配对的 `（` 均不保护后续正文。
+  // 主机名后紧跟的开括号（如 `https://a.com（文档站）。`）和未配对的开括号均不保护后续正文。
   const matchedParens = new Map<number, number>();
-  const openParens: number[] = [];
+  const openBrackets: Array<{ index: number; close: string }> = [];
   for (let index = pathStart; index < raw.length; index += 1) {
     const character = raw[index];
-    if (character === CJK_PAREN_OPEN) {
-      openParens.push(index);
-    } else if (character === CJK_PAREN_CLOSE && openParens.length > 0) {
-      matchedParens.set(openParens.pop()!, index);
+    const expectedClose = CJK_BRACKET_PAIRS[character];
+    if (expectedClose) {
+      openBrackets.push({ index, close: expectedClose });
+    } else if (
+      openBrackets.length > 0 &&
+      openBrackets.at(-1)!.close === character
+    ) {
+      matchedParens.set(openBrackets.pop()!.index, index);
     }
   }
 
@@ -73,7 +86,7 @@ function findCjkAutolinkBoundary(raw: string): number {
       return index;
     }
 
-    if (index < pathStart && CJK_HOST_OPEN_BOUNDARY.test(character)) {
+    if (index < pathStart && Object.hasOwn(CJK_BRACKET_PAIRS, character)) {
       return index;
     }
 
@@ -105,13 +118,10 @@ function findCjkAutolinkBoundary(raw: string): number {
       } else if (nextIsCjkOrPunct) {
         return index;
       }
-    } else if (nextIsCjkChar) {
-      if (
-        ASCII_BOUNDARY_BEFORE_CJK.test(character) ||
-        (index < pathStart && character === ":")
-      ) {
-        return index;
-      }
+    } else if (index < pathStart && character === ":" && nextIsCjkChar) {
+      // 主机名里的 `:` 后面直接跟汉字时不是端口，属于正文；路径/查询/片段里的
+      // ASCII 结构字符（`.` `?` `,` `~` 等）即使是正文标点也不能猜，交给 marked。
+      return index;
     }
   }
 
@@ -170,6 +180,8 @@ export class Parser {
    * URL 的标点以及其后的正文会被一起并进链接。这里在 marked 自己的 `url`
    * tokenizer 之后按 CJK 边界截断并重跑 `Tokenizer.prototype.url`，让 marked
    * 自行完成 `_backpedal` 尾部 ASCII 标点清理与 `www.` 前缀补全。
+   * 路径/查询/片段里的 ASCII 字符即使是句子标点也不当作边界：猜错会截断合法
+   * URL（IDN 主机、`?关键词`、`~用户`），而 CJK 收尾标点已足够覆盖正文。
    */
   private configureCjkAutolinks(instance: Marked) {
     instance.use({

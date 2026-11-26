@@ -65,6 +65,94 @@ describe("XMarkdown Parser (marked v16)", () => {
       );
     });
 
+    // ASCII 结构字符后跟汉字既可能是 URL 的一部分，也可能是正文标点；
+    // 猜错会把合法链接截断（IDN 主机、查询串、版本号），因此一律不猜。
+    it.each([
+      ["https://www.例子.中国", "了解"],
+      ["https://example.com/search?关键词", "后续"],
+      ["https://a.com/~用户", "后续"],
+      ["https://example.com/docs/v1.中文版", "后续"],
+      ["https://a.com/a,b,中文", "后续"],
+      ["https://a.com/x*中文", "后续"],
+      ["https://a.com/路径#中文", "后续"],
+      ["https://a.com/wiki/A_(B)中文", "后续"],
+    ])(
+      "does not truncate at an ASCII URL character followed by CJK: %s",
+      (url, tail) => {
+        const href = url.startsWith("www.") ? `http://${url}` : url;
+        expect(new Parser().parse(`${url} ${tail}`)).toBe(
+          `<p><a href="${href}" target="_blank" rel="noopener noreferrer">${url}</a> ${tail}</p>`,
+        );
+      },
+    );
+
+    // marked 的裸 `www.` 主机规则本身只认 ASCII 主机名，IDN 不产生链接；
+    // 我们的覆写也不能把它截成 `www` 后重跑 tokenizer（那会静默吞掉仅有的链接）。
+    it("leaves a bare www IDN host alone as marked does", () => {
+      expect(new Parser().parse("www.例子.中国 了解")).toBe(
+        "<p>www.例子.中国 了解</p>",
+      );
+    });
+
+    it("stops at the extended CJK closing punctuation", () => {
+      expect(
+        new Parser().parse("看 https://a.com/路径》」』】〕〉”’…后面"),
+      ).toBe(
+        '<p>看 <a href="https://a.com/路径" target="_blank" rel="noopener noreferrer">https://a.com/路径</a>》」』】〕〉”’…后面</p>',
+      );
+    });
+
+    it("stops before prose right after the host", () => {
+      expect(new Parser().parse("地址 https://a.com（文档站）。")).toBe(
+        '<p>地址 <a href="https://a.com" target="_blank" rel="noopener noreferrer">https://a.com</a>（文档站）。</p>',
+      );
+    });
+
+    it.each([
+      "https://a.com/【标签】页",
+      "https://a.com/《详情》页",
+      "https://a.com/「详情」页",
+    ])("protects balanced non-fullwidth-paren CJK brackets: %s", url => {
+      expect(new Parser().parse(`${url}，继续`)).toBe(
+        `<p><a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>，继续</p>`,
+      );
+    });
+
+    it("keeps prose as text when truncation leaves no valid URL", () => {
+      expect(new Parser().parse("见 https://，继续")).toBe(
+        "<p>见 https://，继续</p>",
+      );
+    });
+
+    it("runs a user url tokenizer first and falls back to ours on false", () => {
+      const calls: string[] = [];
+      const parser = new Parser({
+        config: {
+          tokenizer: {
+            url(src) {
+              calls.push(src);
+              return false;
+            },
+          },
+        },
+      });
+
+      expect(parser.parse("看 https://a.com/路径，继续")).toBe(
+        '<p>看 <a href="https://a.com/路径" target="_blank" rel="noopener noreferrer">https://a.com/路径</a>，继续</p>',
+      );
+      expect(calls.length).toBeGreaterThan(0);
+    });
+
+    it("escapes quotes in href and title", () => {
+      const parser = new Parser();
+      expect(parser.parse('https://a.com/"onmouseover="alert(1)')).toBe(
+        '<p><a href="https://a.com/&quot;onmouseover=&quot;alert(1)" target="_blank" rel="noopener noreferrer">https://a.com/&quot;onmouseover=&quot;alert(1)</a></p>',
+      );
+      expect(parser.parse('[link](https://a.com "ti\\"tle")')).toBe(
+        '<p><a href="https://a.com" title="ti&quot;tle" target="_blank" rel="noopener noreferrer">link</a></p>',
+      );
+    });
+
     it("does not change explicit markdown links with CJK punctuation in the destination", () => {
       const parser = new Parser();
       const result = parser.parse("[示例](https://example.com/路径，详情)");

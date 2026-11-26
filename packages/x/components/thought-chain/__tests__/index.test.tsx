@@ -451,6 +451,41 @@ describe("ThoughtChain", () => {
     );
   });
 
+  it("keeps the slot flag until the event finishes bubbling in a real browser", async () => {
+    let toggleExpand: ((event?: Event) => void) | undefined;
+    const wrapper = mount(ThoughtChain, {
+      props: {
+        items: [
+          {
+            key: "1",
+            title: "Collapsible",
+            content: "Content",
+            collapsible: true,
+          },
+        ],
+      },
+      slots: {
+        collapseIcon: (info: any) => {
+          toggleExpand = info.toggleExpand;
+          return <button class="slot-toggle-btn">toggle</button>;
+        },
+      },
+    });
+
+    // 模拟真实点击：按钮监听器里调用 toggleExpand 后浏览器会跑一次 microtask
+    // checkpoint，之后事件才冒泡到标题容器。trigger('click') 是同步派发，测不到。
+    toggleExpand!();
+    await Promise.resolve();
+    await wrapper.find(".antd-thought-chain-node-collapsible").trigger("click");
+
+    expect(wrapper.emitted("expand")).toHaveLength(1);
+
+    // 宏任务复位后，下一次普通点击仍能正常切换。
+    await new Promise(resolve => setTimeout(resolve));
+    await wrapper.find(".antd-thought-chain-node-collapsible").trigger("click");
+    expect(wrapper.emitted("expand")).toHaveLength(2);
+  });
+
   it("does not render an empty wrapper when collapseIcon is empty text", () => {
     const propWrapper = mount(ThoughtChain, {
       props: {

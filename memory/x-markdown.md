@@ -584,30 +584,58 @@ unmerged-PR ports in `14aa16c` (#257) on 2026-10-19. Re-applied 2026-11-25 as a
   text and `href` are `https://x.antdv-next.cn），随后返回的数据内容`, then
   `............` as text. The sentence tail is painted as a link and the `href`
   is a broken URL.
-- **Our fix:** override marked's `url` tokenizer before `options.config` is
-  applied (so a user's `config.tokenizer.url` still runs first and falls back
-  to ours only on `false`), locate the first CJK boundary
-  (`），。！？；：、》」』】〕〉”’…`, opening CJK brackets/quotes on the host
-  before `/`/`?`/`#`, or trailing ASCII punctuation/unbalanced `)` immediately
-  followed by CJK characters — while still protecting balanced `（...）` inside
-  URL paths), and re-run `Tokenizer.prototype.url.call(this, ...)` on the
-  truncated slice so marked's own `_backpedal` and `www.` prefix handling run
-  cleanly. The override is mounted via `createMarkedInstance()` in both the
-  constructor and `updateMarkedConfig`. The `link` renderer also escapes `"` in
-  `href` and HTML-escapes `title` to avoid broken attributes while keeping CJK
-  `href` characters literal.
+- **Our fix (2026-11-25, superseded by the 2026-11-26 entry below):** override
+  marked's `url` tokenizer and truncate the token at the first
+  `），。！？；：、`. A balanced `（...）` pair inside the URL protects the
+  punctuation between the pair (nested pairs included); an unmatched `（`
+  protects nothing. The override is mounted in the constructor **and** in
+  `updateMarkedConfig`, which rebuilds the marked instance.
+
+#### 2026-11-26: re-tokenise, respect the user tokenizer, escape attributes, and do not guess ASCII boundaries
+
+Supersedes the 2026-11-25 fix above. Ground truth is marked 16.4.2 unless noted.
+
+- **Repro / why the old rule was wrong:** `https://www.例子.中国 了解` became
+  `<a href="https://www">`; `https://example.com/search?关键词` became
+  `.../search`; `https://example.com/docs/v1.中文版`, `https://a.com/a,b,中文`,
+  `https://a.com/x*中文` and `https://a.com/路径#中文` were truncated mid-URL.
+  A `.` in an IDN host, `?` starting a query and `~`/`*`/`,`/`#` in a path are
+  legal URL characters; "followed by a CJK character" does not mean the URL
+  ended. A bare `www.例子.中国` is not autolinked at all (the `www.` host rule
+  is ASCII-only), so truncation must not manufacture a `https://www` link either.
+- **Our behaviour before this fix:** `ASCII_BOUNDARY_BEFORE_CJK =
+/[?!.,;*'"~]/` and a host-level `:` rule truncated at every such character
+  immediately followed by CJK; bracket protection covered only `（）`; the
+  truncated token was hand-built by slicing `href`/`raw`/`text`; the override
+  was mounted before user config, so a user's `config.tokenizer.url` never ran.
+- **Decision:** boundaries are CJK closing punctuation
+  (`），。！？；：、》」』】〕〉”’…`), an opening CJK bracket/quote on the host,
+  `:` on the host followed by CJK, and unbalanced ASCII `)`/`]`/`}` followed by
+  CJK. Balanced CJK pairs in `CJK_BRACKET_PAIRS`
+  (`（）《》「」『』【】〔〕〈〉“”‘’`) protect their contents. Truncation re-runs
+  `Tokenizer.prototype.url.call(this, ...)` so marked's `_backpedal` and `www.`
+  prefix handling apply; returning `undefined` on an invalid truncated slice
+  keeps the text unlinked (marked's `use()` falls back only on literal `false`).
+  `createMarkedInstance()` mounts our override **before** `options.config`, so
+  the user's `url` tokenizer runs first and ours is the `false` fallback; it is
+  called from both the constructor and `updateMarkedConfig`. The `link` renderer
+  escapes `"`/`<`/`>` in `href` and HTML-escapes `title`, keeping CJK literal.
+- **Covering tests:** see the updated list below; the ASCII table pins the
+  non-truncation cases and the bare-`www` IDN case pins marked's baseline.
 
 ### Do not
 
 - Do not drop the `updateMarkedConfig` mount: `setOptions({ config })` rebuilds
   the instance, and a missing mount silently restores the swallowing behaviour.
-- Do not widen the boundary set to ASCII `.`/`,`/`)`: marked's `_backpedal`
-  already handles trailing ASCII punctuation, and a URL path may legitimately
-  contain them.
+- Do not widen the boundary set to ASCII `.`/`,`/`)` (or `?`/`~`/`*`/`#`):
+  marked's `_backpedal` already handles trailing ASCII punctuation, and a URL
+  host/path/query may legitimately contain them. See the 2026-11-26 entry.
 - When upstream #2055 merges, diff our implementation against the merge commit
   instead of blind-porting it (see `upstream-sync.md`).
 
 **Covering tests:** `packages/x-markdown/src/XMarkdown/__tests__/parser.test.ts`
 -> `CJK autolinks` (the reported repro, plain truncation, balanced and unmatched
-full-width parentheses, explicit markdown links, and the config-update
-re-mount).
+full-width parentheses, explicit markdown links, the config-update re-mount,
+the no-ASCII-boundary table, bare-`www` IDN baseline, extended closing
+punctuation, host-open bracket, balanced non-`（）` pairs, invalid truncation,
+user `url` tokenizer priority, and `href`/`title` escaping).
