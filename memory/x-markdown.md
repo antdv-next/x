@@ -534,11 +534,11 @@ Downstream overrides `link` and `paragraph` on the marked instance, and both
 render slightly different HTML than marked's defaults — which is what
 upstream's `Parser` uses.
 
-| Where               | Ground truth (marked default)                                                                                                  | Upstream behaviour                                       | Our behaviour                                                                  |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| `paragraph`         | `<p>…</p>\n` — the default renderer appends a trailing newline                                                                 | keeps the trailing `\n`                                  | emits `<p>…</p>` with no trailing newline                                      |
-| `link`              | runs `href` through marked's `cleanUrl`, percent-encoding non-ASCII: `路径（详情）` -> `%E8%B7%AF%E5%BE%84%EF%BC%88…%EF%BC%89` | keeps `cleanUrl` (its test asserts the encoded `href`)   | writes `token.href` verbatim, so a CJK `href` stays literal                    |
-| `openLinksInNewTab` | n/a (marked has no such option)                                                                                                | defaults to `false`; its tests get a bare `<a href="…">` | defaults to `true`, so links carry `target="_blank" rel="noopener noreferrer"` |
+| Where               | Ground truth (marked default)                                                                                                  | Upstream behaviour                                       | Our behaviour                                                                                     |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `paragraph`         | `<p>…</p>\n` — the default renderer appends a trailing newline                                                                 | keeps the trailing `\n`                                  | emits `<p>…</p>` with no trailing newline                                                         |
+| `link`              | runs `href` through marked's `cleanUrl`, percent-encoding non-ASCII: `路径（详情）` -> `%E8%B7%AF%E5%BE%84%EF%BC%88…%EF%BC%89` | keeps `cleanUrl` (its test asserts the encoded `href`)   | keeps `token.href` literal (CJK included), escaping only ambiguous `&` and `"<>` in the attribute |
+| `openLinksInNewTab` | n/a (marked has no such option)                                                                                                | defaults to `false`; its tests get a bare `<a href="…">` | defaults to `true`, so links carry `target="_blank" rel="noopener noreferrer"`                    |
 
 **Decision (2026-10-17, still standing after the 2026-10-19 revert): keep
 as-is.** Re-routing `link` through `cleanUrl` would change every existing
@@ -584,23 +584,157 @@ unmerged-PR ports in `14aa16c` (#257) on 2026-10-19. Re-applied 2026-11-25 as a
   text and `href` are `https://x.antdv-next.cn），随后返回的数据内容`, then
   `............` as text. The sentence tail is painted as a link and the `href`
   is a broken URL.
-- **Our fix:** override marked's `url` tokenizer and truncate the token at the
-  first `），。！？；：、`. A balanced `（...）` pair inside the URL protects the
+- **Our fix (2026-11-25, superseded by the 2026-11-26 entry below):** override
+  marked's `url` tokenizer and truncate the token at the first
+  `），。！？；：、`. A balanced `（...）` pair inside the URL protects the
   punctuation between the pair (nested pairs included); an unmatched `（`
   protects nothing. The override is mounted in the constructor **and** in
   `updateMarkedConfig`, which rebuilds the marked instance.
+
+#### 2026-11-26: re-tokenise, respect the user tokenizer, escape attributes, and do not guess ASCII boundaries
+
+Supersedes the 2026-11-25 fix above. Ground truth is marked 16.4.2 unless noted.
+
+- **Repro / why the old rule was wrong:** `https://www.例子.中国 了解` became
+  `<a href="https://www">`; `https://example.com/search?关键词` became
+  `.../search`; `https://example.com/docs/v1.中文版`, `https://a.com/a,b,中文`,
+  `https://a.com/x*中文` and `https://a.com/路径#中文` were truncated mid-URL.
+  A `.` in an IDN host, `?` starting a query and `~`/`*`/`,`/`#` in a path are
+  legal URL characters; "followed by a CJK character" does not mean the URL
+  ended. A bare `www.例子.中国` is not autolinked at all (the `www.` host rule
+  is ASCII-only), so truncation must not manufacture a `https://www` link either.
+- **Our behaviour before this fix:** `ASCII_BOUNDARY_BEFORE_CJK =
+/[?!.,;*'"~]/` and a host-level `:` rule truncated at every such character
+  immediately followed by CJK; bracket protection covered only `（）`; the
+  truncated token was hand-built by slicing `href`/`raw`/`text`; the override
+  was mounted before user config, so a user's `config.tokenizer.url` never ran.
+- **Decision:** boundaries are CJK closing punctuation
+  (`），。！？；：、》」』】〕〉”’…`), an opening CJK bracket/quote on the host,
+  `:` on the host followed by CJK, and unbalanced ASCII `)`/`]`/`}` followed by
+  CJK. Balanced CJK pairs in `CJK_BRACKET_PAIRS`
+  (`（）《》「」『』【】〔〕〈〉`) protect their contents; `“”`/`‘’` are prose
+  punctuation, so their openers stay host-only boundaries and their closers
+  stay unconditional boundaries. Truncation re-runs
+  `Tokenizer.prototype.url.call(this, ...)` so marked's `_backpedal` and `www.`
+  prefix handling apply; returning `undefined` on an invalid truncated slice
+  keeps the text unlinked (marked's `use()` falls back only on literal `false`).
+  `createMarkedInstance()` mounts our override **before** `options.config`, so
+  the user's `url` tokenizer runs first and ours is the `false` fallback; it is
+  called from both the constructor and `updateMarkedConfig`. The `link` renderer
+  escapes `"`/`<`/`>` in `href` and HTML-escapes `title`, keeping CJK literal.
+- **Addendum (same day, ambiguous `&`):** a literal `&copy;` inside a URL is
+  decoded by the browser as the `©` entity, corrupting the `href`; marked's
+  own renderer has the same bug (its `cleanUrl` only calls `encodeURI`, which
+  does not escape `&`). We now escape `&` in `href` **unless** it starts a
+  standard attribute entity (`&amp;`, `&lt;`, `&gt;`, `&quot;`, `&apos;` or a
+  numeric one), so `?a=1&copy;y` stays literal while `[x](...?a=1&amp;b=2)`
+  still decodes to `&b=2`. CJK `href` characters remain literal.
+- **Covering tests:** see the updated list below; the ASCII table pins the
+  non-truncation cases and the bare-`www` IDN case pins marked's baseline.
 
 ### Do not
 
 - Do not drop the `updateMarkedConfig` mount: `setOptions({ config })` rebuilds
   the instance, and a missing mount silently restores the swallowing behaviour.
-- Do not widen the boundary set to ASCII `.`/`,`/`)`: marked's `_backpedal`
-  already handles trailing ASCII punctuation, and a URL path may legitimately
-  contain them.
+- Do not widen the boundary set to ASCII `.`/`,`/`)` (or `?`/`~`/`*`/`#`):
+  marked's `_backpedal` already handles trailing ASCII punctuation, and a URL
+  host/path/query may legitimately contain them. See the 2026-11-26 entry.
 - When upstream #2055 merges, diff our implementation against the merge commit
   instead of blind-porting it (see `upstream-sync.md`).
 
 **Covering tests:** `packages/x-markdown/src/XMarkdown/__tests__/parser.test.ts`
 -> `CJK autolinks` (the reported repro, plain truncation, balanced and unmatched
-full-width parentheses, explicit markdown links, and the config-update
-re-mount).
+full-width parentheses, explicit markdown links, the config-update re-mount,
+the no-ASCII-boundary table, bare-`www` IDN baseline, extended closing
+punctuation, host-open bracket, balanced non-`（）` pairs, invalid truncation,
+user `url` tokenizer priority, `href`/`title` escaping, and ambiguous-`&`
+escaping with the standard-entity baseline).
+
+#### 2026-11-26: PR #273 review found explicit-link entity and ASCII closer regressions
+
+- **Repro (attributes):** `[说明](/docs&sol;guide "研发 &amp; 测试")`
+  (also as a reference link). In the DOM, marked's default renderer (used by
+  upstream) and downstream `main` produce `/docs/guide` and `研发 & 测试`.
+  PR #273 (`9101616`) instead produces `/docs&sol;guide` and `研发 &amp; 测试`:
+  the `href` whitelist omits valid HTML named references, and `escapeHtml`
+  double-escapes the title. The literal `&copy;` fix for bare URLs must not
+  change entity semantics in explicit Markdown links.
+- **Repro (boundaries):** `查 https://example.com/search?q=版本)中文，继续`
+  (also with `]` or `}`). The browser's URL parser accepts the closer as
+  part of the query value. Default marked keeps the closer and also swallows
+  the CJK sentence tail; downstream `main` correctly stops at `，`. PR #273
+  instead drops the closer and `中文`, silently changing the query.
+- **Decision:** these are regressions, not deliberate divergences. Preserve
+  entity handling for explicit Markdown links while escaping literal bare-URL
+  ampersands by source. Do not treat a mid-URL ASCII closer as a boundary
+  solely because a CJK character follows it; leave trailing ASCII cleanup to
+  marked after a confirmed CJK boundary.
+- **Verification:** review-time DOM assertions against marked, downstream
+  `main`, and `9101616` reproduced both differences. Add regression tests to
+  `src/XMarkdown/__tests__/parser.test.ts` with the fixes; neither case is
+  covered by the PR's existing tests.
+
+#### 2026-11-26: follow-up fix preserves explicit entities and query closers
+
+- **Implementation:** explicit Markdown link and title attributes now preserve
+  the same named/numeric entity forms that marked's `escape` preserves, while
+  bare URL attributes retain the narrower `&amp;` safety whitelist. ASCII
+  `)`/`]`/`}` are no longer boundaries merely because CJK follows them; a
+  confirmed CJK boundary is passed back through marked's `_backpedal`.
+- **Covering tests:** parser regressions for `/docs&sol;/...` and
+  `&amp;` titles, plus query values ending in each ASCII closer before CJK.
+
+#### 2026-11-26: follow-up review found IDN, trailing query, and angle-autolink regressions
+
+- **IDN:** `https://docs【测试】.example.com/path，继续` links to `https://docs`
+  on PR #273 (`580a932`). The URL parser accepts the full name and converts it
+  to `xn--docs-ty3cg1380i8b5b.example.com`. Default marked (the upstream
+  renderer baseline) keeps that hostname but also consumes the prose;
+  downstream `main` keeps the host and stops at `，`. An opener before the
+  first path delimiter does not necessarily follow a complete hostname.
+- **Trailing query:** `https://example.com/?tag=A&label;，继续` loses
+  `&label;` from its `href` after the second tokenizer pass. The browser keeps
+  it in the query; default marked keeps it but also consumes the prose;
+  downstream `main` keeps it and stops at `，`. Marked's `_backpedal` treats
+  `&label;` specially once it becomes the end of the candidate, so attribute
+  escaping no longer gets a chance to preserve it.
+- **Angle autolink:** `<https://example.com/docs&sol;guide>` still displays
+  `https://example.com/docs/guide` but now links to `/docs&sol;guide`. Both
+  default marked and downstream `main` produce `/docs/guide` in the DOM.
+  `raw.startsWith("[")` misses marked's separate angle-autolink tokenizer and
+  applies the bare-URL escaping policy there too.
+- **Decision and verification:** these are review findings, not accepted
+  divergences. Review-time DOM comparisons against default marked 16.4.2 and
+  downstream `main` reproduced all three. Add parser regressions asserting the
+  DOM `href` when fixing them; the existing tests cover neither a CJK opener
+  inside the hostname, an entity-shaped query suffix at the CJK boundary,
+  nor a named entity in an angle autolink.
+
+#### 2026-11-26: only a full-width wrapper delimits a CJK bare URL
+
+- **Decision:** supersedes the general CJK boundary rules and bare-URL entity
+  whitelist above. An unwrapped `https://example.com/路径，详情` is ambiguous:
+  the browser accepts `，详情` as part of the path, and marked 16.4.2 (the
+  upstream baseline) links the whole run. Keep marked's boundary for such
+  input, even when the punctuation was intended as prose. Use `[label](URL)`
+  when generating Markdown so there is no need to guess.
+- **Narrow exception:** `（https://example.com/路径（详情）），继续` has a
+  full-width opener immediately before a built-in GFM URL, a matching closer
+  and immediately following Chinese punctuation. Marked includes `），继续`
+  in the link; we remove only the outer wrapper and prose from the token.
+  Balanced parentheses inside the URL stay. The candidate must parse with
+  the browser's `URL` constructor; the constructor is not a source of
+  boundaries or a serializer for the `href`. Keep marked's `www.` prefix.
+  Do not run the shortened token through `_backpedal` again: a query ending
+  in `&label;` or `)` must stay intact. A user `url` tokenizer still wins;
+  this exception runs only on the built-in fallback.
+- **Entity handling:** the built-in `url` tokenizer identifies bare URL
+  tokens, so both their label and `href` keep literal `&copy;`, `&amp;` and
+  numeric references. Stock marked lets the browser decode them. Inline,
+  reference and angle-bracket links keep their existing Markdown entity
+  semantics, including `<https://example.com/docs&sol;guide>`. The renderer
+  still escapes quotes and keeps non-ASCII `href` characters literal.
+- **Covering tests:** `parser.test.ts` compares ambiguous and unsupported
+  wrappers with stock marked, and checks DOM `href`, label and surrounding
+  text for the original repro, nested wrappers, IDNs, trailing query
+  characters, entity forms, GFM configuration and custom tokenizers.

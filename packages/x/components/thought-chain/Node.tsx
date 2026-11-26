@@ -3,9 +3,12 @@ import type { CSSProperties, PropType, VNodeChild } from "vue";
 import { LeftOutlined, RightOutlined } from "@antdv-next/icons";
 import { useConfig } from "antdv-next/config-provider/context";
 import {
+  Fragment,
+  Text,
   Transition,
   computed,
   defineComponent,
+  isVNode,
   vShow,
   withDirectives,
 } from "vue";
@@ -23,6 +26,23 @@ import type {
 
 import { hasRenderableNode } from "../_utils/vue";
 import { STATUS_ICON_MAP } from "./Status";
+
+function hasRenderableCollapseIcon(node: unknown): boolean {
+  if (!hasRenderableNode(node)) return false;
+  if (typeof node === "string") return node.trim().length > 0;
+  if (Array.isArray(node)) return node.some(hasRenderableCollapseIcon);
+  if (isVNode(node)) {
+    if (node.type === Text) {
+      return typeof node.children === "string"
+        ? node.children.trim().length > 0
+        : hasRenderableNode(node.children);
+    }
+    if (node.type === Fragment && Array.isArray(node.children)) {
+      return node.children.some(hasRenderableCollapseIcon);
+    }
+  }
+  return true;
+}
 
 export default defineComponent({
   name: "ThoughtChainNode",
@@ -104,12 +124,23 @@ export default defineComponent({
 
     const statusCls = computed(() => `${props.prefixCls}-status`);
 
+    let toggledBySlot = false;
+
     const createSharedSlotInfo = (collapsible: boolean) => ({
       item: props.item,
       index: props.index,
       expanded: props.expanded,
       collapsible,
-      toggleExpand: () => emit("toggleExpand"),
+      toggleExpand: () => {
+        toggledBySlot = true;
+        // 复位必须在宏任务里：真实浏览器在每个监听器返回后就会跑 microtask
+        // checkpoint，microtask 会在冒泡到标题容器之前执行；同一事件派发内的
+        // 容器 onClick 会消费该标记，下一次点击不受影响。
+        setTimeout(() => {
+          toggledBySlot = false;
+        });
+        emit("toggleExpand");
+      },
     });
 
     // Render icon
@@ -162,7 +193,7 @@ export default defineComponent({
       const hasContent = hasRenderableNode(contentNode);
       const collapsible = !!item.collapsible && hasContent;
 
-      const collapseRotation = props.expanded ? 90 : isRtl.value ? -90 : 0;
+      const collapseRotation = props.expanded ? (isRtl.value ? -90 : 90) : 0;
       const defaultCollapseIcon = isRtl.value ? (
         <LeftOutlined rotate={collapseRotation} />
       ) : (
@@ -183,7 +214,7 @@ export default defineComponent({
         : null;
       // Only show collapse icon when collapsible AND has content
       const collapseIcon =
-        collapsible && hasRenderableNode(collapseIconNode) ? (
+        collapsible && hasRenderableCollapseIcon(collapseIconNode) ? (
           <span
             class={[`${cls}-collapse-icon`, props.classes?.itemCollapseIcon]}
             style={props.styles?.itemCollapseIcon}
@@ -220,7 +251,17 @@ export default defineComponent({
                   [`${props.prefixCls}-motion-blink`]: item.blink,
                 },
               ]}
-              onClick={collapsible ? () => emit("toggleExpand") : undefined}
+              onClick={
+                collapsible
+                  ? () => {
+                      if (toggledBySlot) {
+                        toggledBySlot = false;
+                        return;
+                      }
+                      emit("toggleExpand");
+                    }
+                  : undefined
+              }
             >
               {titleNode}
               {collapseIcon}
