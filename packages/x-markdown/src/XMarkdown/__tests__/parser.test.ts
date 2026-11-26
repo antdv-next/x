@@ -153,6 +153,26 @@ describe("XMarkdown Parser (marked v16)", () => {
       );
     });
 
+    it("escapes ambiguous ampersands in href but keeps standard entities", () => {
+      const parser = new Parser();
+      const domHref = (html: string) =>
+        new DOMParser()
+          .parseFromString(html, "text/html")
+          .querySelector("a")!
+          .getAttribute("href");
+
+      const bare = parser.parse("看 https://a.com/?a=1&copy;y 后面");
+      expect(bare).toContain('href="https://a.com/?a=1&amp;copy;y"');
+      expect(domHref(bare)).toBe("https://a.com/?a=1&copy;y");
+
+      const normal = parser.parse("看 https://a.com/?a=1&copy=2 后面");
+      expect(domHref(normal)).toBe("https://a.com/?a=1&copy=2");
+
+      const encoded = parser.parse("[x](https://a.com/?a=1&amp;b=2)");
+      expect(encoded).toContain('href="https://a.com/?a=1&amp;b=2"');
+      expect(domHref(encoded)).toBe("https://a.com/?a=1&b=2");
+    });
+
     it("does not change explicit markdown links with CJK punctuation in the destination", () => {
       const parser = new Parser();
       const result = parser.parse("[示例](https://example.com/路径，详情)");

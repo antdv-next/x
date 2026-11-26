@@ -11,6 +11,10 @@ const escapeReplacements: Record<string, string> = {
   '"': "&quot;",
   "'": "&#39;",
 };
+// 字面写在 URL 里的 `&copy;` 会被浏览器当成 HTML 实体解码，href 必须转义。
+// `&amp;` / `&lt;` / `&gt;` / `&quot;` / 数字实体是属性里的标准编码，保持原样
+// 才能让 `[x](...?a=1&amp;b=2)` 这类目的地仍解码成 `&b=2`。
+const HREF_AMP_RE = /&(?!(?:amp|lt|gt|quot|apos|#\d+|#[xX][0-9a-fA-F]+);)/g;
 
 export function escapeHtml(html: string): string {
   if (/[&<>"']/.test(html)) {
@@ -238,10 +242,9 @@ export class Parser {
         },
 
         link(token: Tokens.Link): string {
-          const href = token.href.replace(
-            /["<>]/g,
-            ch => escapeReplacements[ch] || ch,
-          );
+          const href = token.href
+            .replace(HREF_AMP_RE, "&amp;")
+            .replace(/["<>]/g, ch => escapeReplacements[ch] || ch);
           const titleAttr = token.title
             ? ` title="${escapeHtml(token.title)}"`
             : "";

@@ -534,11 +534,11 @@ Downstream overrides `link` and `paragraph` on the marked instance, and both
 render slightly different HTML than marked's defaults — which is what
 upstream's `Parser` uses.
 
-| Where               | Ground truth (marked default)                                                                                                  | Upstream behaviour                                       | Our behaviour                                                                  |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| `paragraph`         | `<p>…</p>\n` — the default renderer appends a trailing newline                                                                 | keeps the trailing `\n`                                  | emits `<p>…</p>` with no trailing newline                                      |
-| `link`              | runs `href` through marked's `cleanUrl`, percent-encoding non-ASCII: `路径（详情）` -> `%E8%B7%AF%E5%BE%84%EF%BC%88…%EF%BC%89` | keeps `cleanUrl` (its test asserts the encoded `href`)   | writes `token.href` verbatim, so a CJK `href` stays literal                    |
-| `openLinksInNewTab` | n/a (marked has no such option)                                                                                                | defaults to `false`; its tests get a bare `<a href="…">` | defaults to `true`, so links carry `target="_blank" rel="noopener noreferrer"` |
+| Where               | Ground truth (marked default)                                                                                                  | Upstream behaviour                                       | Our behaviour                                                                                     |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `paragraph`         | `<p>…</p>\n` — the default renderer appends a trailing newline                                                                 | keeps the trailing `\n`                                  | emits `<p>…</p>` with no trailing newline                                                         |
+| `link`              | runs `href` through marked's `cleanUrl`, percent-encoding non-ASCII: `路径（详情）` -> `%E8%B7%AF%E5%BE%84%EF%BC%88…%EF%BC%89` | keeps `cleanUrl` (its test asserts the encoded `href`)   | keeps `token.href` literal (CJK included), escaping only ambiguous `&` and `"<>` in the attribute |
+| `openLinksInNewTab` | n/a (marked has no such option)                                                                                                | defaults to `false`; its tests get a bare `<a href="…">` | defaults to `true`, so links carry `target="_blank" rel="noopener noreferrer"`                    |
 
 **Decision (2026-10-17, still standing after the 2026-10-19 revert): keep
 as-is.** Re-routing `link` through `cleanUrl` would change every existing
@@ -622,6 +622,13 @@ Supersedes the 2026-11-25 fix above. Ground truth is marked 16.4.2 unless noted.
   the user's `url` tokenizer runs first and ours is the `false` fallback; it is
   called from both the constructor and `updateMarkedConfig`. The `link` renderer
   escapes `"`/`<`/`>` in `href` and HTML-escapes `title`, keeping CJK literal.
+- **Addendum (same day, ambiguous `&`):** a literal `&copy;` inside a URL is
+  decoded by the browser as the `©` entity, corrupting the `href`; marked's
+  own renderer has the same bug (its `cleanUrl` only calls `encodeURI`, which
+  does not escape `&`). We now escape `&` in `href` **unless** it starts a
+  standard attribute entity (`&amp;`, `&lt;`, `&gt;`, `&quot;`, `&apos;` or a
+  numeric one), so `?a=1&copy;y` stays literal while `[x](...?a=1&amp;b=2)`
+  still decodes to `&b=2`. CJK `href` characters remain literal.
 - **Covering tests:** see the updated list below; the ASCII table pins the
   non-truncation cases and the bare-`www` IDN case pins marked's baseline.
 
@@ -640,4 +647,5 @@ Supersedes the 2026-11-25 fix above. Ground truth is marked 16.4.2 unless noted.
 full-width parentheses, explicit markdown links, the config-update re-mount,
 the no-ASCII-boundary table, bare-`www` IDN baseline, extended closing
 punctuation, host-open bracket, balanced non-`（）` pairs, invalid truncation,
-user `url` tokenizer priority, and `href`/`title` escaping).
+user `url` tokenizer priority, `href`/`title` escaping, and ambiguous-`&`
+escaping with the standard-entity baseline).
