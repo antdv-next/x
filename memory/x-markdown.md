@@ -612,7 +612,9 @@ Supersedes the 2026-11-25 fix above. Ground truth is marked 16.4.2 unless noted.
   (`），。！？；：、》」』】〕〉”’…`), an opening CJK bracket/quote on the host,
   `:` on the host followed by CJK, and unbalanced ASCII `)`/`]`/`}` followed by
   CJK. Balanced CJK pairs in `CJK_BRACKET_PAIRS`
-  (`（）《》「」『』【】〔〕〈〉“”‘’`) protect their contents. Truncation re-runs
+  (`（）《》「」『』【】〔〕〈〉`) protect their contents; `“”`/`‘’` are prose
+  punctuation, so their openers stay host-only boundaries and their closers
+  stay unconditional boundaries. Truncation re-runs
   `Tokenizer.prototype.url.call(this, ...)` so marked's `_backpedal` and `www.`
   prefix handling apply; returning `undefined` on an invalid truncated slice
   keeps the text unlinked (marked's `use()` falls back only on literal `false`).

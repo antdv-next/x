@@ -20,8 +20,9 @@ export function escapeHtml(html: string): string {
 }
 
 const CJK_AUTOLINK_BOUNDARY = /[），。！？；：、》」』】〕〉”’…]/u;
-// 开括号/引号到对应收尾字符的映射：URL 路径中成对出现时内部标点属于链接，
-// 主机名后紧跟的开括号则是正文边界。
+// 引号在正文里是标点而非 URL 括号，只在主机名后作为边界，不参与配对保护。
+const CJK_HOST_OPEN_BOUNDARY = /[（《「『【〔〈“‘]/u;
+// 开括号到对应收尾字符的映射：URL 路径中成对出现时内部标点属于链接。
 const CJK_BRACKET_PAIRS: Record<string, string> = {
   "（": "）",
   "《": "》",
@@ -30,8 +31,6 @@ const CJK_BRACKET_PAIRS: Record<string, string> = {
   "【": "】",
   "〔": "〕",
   "〈": "〉",
-  "“": "”",
-  "‘": "’",
 };
 const CJK_CHAR =
   /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u;
@@ -86,7 +85,7 @@ function findCjkAutolinkBoundary(raw: string): number {
       return index;
     }
 
-    if (index < pathStart && Object.hasOwn(CJK_BRACKET_PAIRS, character)) {
+    if (index < pathStart && CJK_HOST_OPEN_BOUNDARY.test(character)) {
       return index;
     }
 

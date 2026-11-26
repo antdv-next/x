@@ -23,7 +23,7 @@ export interface ThoughtChainNodeSharedSlotInfo {
   index: number;
   expanded: boolean;
   collapsible: boolean;
-  toggleExpand: (event?: Event) => void;
+  toggleExpand: () => void;
 }
 
 export interface ThoughtChainIconSlotInfo extends ThoughtChainNodeSharedSlotInfo {
