@@ -15,12 +15,20 @@ const escapeReplacements: Record<string, string> = {
 // `&amp;` / `&lt;` / `&gt;` / `&quot;` / 数字实体是属性里的标准编码，保持原样
 // 才能让 `[x](...?a=1&amp;b=2)` 这类目的地仍解码成 `&b=2`。
 const HREF_AMP_RE = /&(?!(?:amp|lt|gt|quot|apos|#\d+|#[xX][0-9a-fA-F]+);)/g;
+const ATTRIBUTE_ENTITY_RE = /&(?!(?:#\d{1,7}|#[xX][0-9a-fA-F]{1,6}|\w+);)/g;
 
 export function escapeHtml(html: string): string {
   if (/[&<>"']/.test(html)) {
     return html.replace(/[&<>"']/g, ch => escapeReplacements[ch] || ch);
   }
   return html;
+}
+
+function escapeAttribute(value: string, preserveEntities: boolean): string {
+  const ampersandPattern = preserveEntities ? ATTRIBUTE_ENTITY_RE : HREF_AMP_RE;
+  return value
+    .replace(ampersandPattern, "&amp;")
+    .replace(/["<>]/g, ch => escapeReplacements[ch]);
 }
 
 const CJK_AUTOLINK_BOUNDARY = /[），。！？；：、》」』】〕〉”’…]/u;
@@ -73,9 +81,6 @@ function findCjkAutolinkBoundary(raw: string): number {
     }
   }
 
-  let asciiOpenParens = 0;
-  let asciiOpenBrackets = 0;
-  let asciiOpenBraces = 0;
   for (let index = schemeEnd; index < raw.length; index += 1) {
     const character = raw[index];
     const closeIndex = matchedParens.get(index);
@@ -95,33 +100,7 @@ function findCjkAutolinkBoundary(raw: string): number {
 
     const nextChar = raw[index + 1];
     const nextIsCjkChar = !!nextChar && CJK_CHAR.test(nextChar);
-    const nextIsCjkOrPunct =
-      nextIsCjkChar || (!!nextChar && CJK_AUTOLINK_BOUNDARY.test(nextChar));
-    if (character === "(") {
-      asciiOpenParens += 1;
-    } else if (character === ")") {
-      if (asciiOpenParens > 0) {
-        asciiOpenParens -= 1;
-      } else if (nextIsCjkChar) {
-        return index;
-      }
-    } else if (character === "[") {
-      asciiOpenBrackets += 1;
-    } else if (character === "]") {
-      if (asciiOpenBrackets > 0) {
-        asciiOpenBrackets -= 1;
-      } else if (nextIsCjkOrPunct) {
-        return index;
-      }
-    } else if (character === "{") {
-      asciiOpenBraces += 1;
-    } else if (character === "}") {
-      if (asciiOpenBraces > 0) {
-        asciiOpenBraces -= 1;
-      } else if (nextIsCjkOrPunct) {
-        return index;
-      }
-    } else if (index < pathStart && character === ":" && nextIsCjkChar) {
+    if (index < pathStart && character === ":" && nextIsCjkChar) {
       // 主机名里的 `:` 后面直接跟汉字时不是端口，属于正文；路径/查询/片段里的
       // ASCII 结构字符（`.` `?` `,` `~` 等）即使是正文标点也不能猜，交给 marked。
       return index;
@@ -242,11 +221,10 @@ export class Parser {
         },
 
         link(token: Tokens.Link): string {
-          const href = token.href
-            .replace(HREF_AMP_RE, "&amp;")
-            .replace(/["<>]/g, ch => escapeReplacements[ch] || ch);
+          const explicitLink = token.raw.startsWith("[");
+          const href = escapeAttribute(token.href, explicitLink);
           const titleAttr = token.title
-            ? ` title="${escapeHtml(token.title)}"`
+            ? ` title="${escapeAttribute(token.title, true)}"`
             : "";
           const targetAttr = options.openLinksInNewTab
             ? ` target="_blank" rel="noopener noreferrer"`

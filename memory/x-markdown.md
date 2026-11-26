@@ -649,3 +649,37 @@ the no-ASCII-boundary table, bare-`www` IDN baseline, extended closing
 punctuation, host-open bracket, balanced non-`（）` pairs, invalid truncation,
 user `url` tokenizer priority, `href`/`title` escaping, and ambiguous-`&`
 escaping with the standard-entity baseline).
+
+#### 2026-11-26: PR #273 review found explicit-link entity and ASCII closer regressions
+
+- **Repro (attributes):** `[说明](/docs&sol;guide "研发 &amp; 测试")`
+  (also as a reference link). In the DOM, marked's default renderer (used by
+  upstream) and downstream `main` produce `/docs/guide` and `研发 & 测试`.
+  PR #273 (`9101616`) instead produces `/docs&sol;guide` and `研发 &amp; 测试`:
+  the `href` whitelist omits valid HTML named references, and `escapeHtml`
+  double-escapes the title. The literal `&copy;` fix for bare URLs must not
+  change entity semantics in explicit Markdown links.
+- **Repro (boundaries):** `查 https://example.com/search?q=版本)中文，继续`
+  (also with `]` or `}`). The browser's URL parser accepts the closer as
+  part of the query value. Default marked keeps the closer and also swallows
+  the CJK sentence tail; downstream `main` correctly stops at `，`. PR #273
+  instead drops the closer and `中文`, silently changing the query.
+- **Decision:** these are regressions, not deliberate divergences. Preserve
+  entity handling for explicit Markdown links while escaping literal bare-URL
+  ampersands by source. Do not treat a mid-URL ASCII closer as a boundary
+  solely because a CJK character follows it; leave trailing ASCII cleanup to
+  marked after a confirmed CJK boundary.
+- **Verification:** review-time DOM assertions against marked, downstream
+  `main`, and `9101616` reproduced both differences. Add regression tests to
+  `src/XMarkdown/__tests__/parser.test.ts` with the fixes; neither case is
+  covered by the PR's existing tests.
+
+#### 2026-11-26: follow-up fix preserves explicit entities and query closers
+
+- **Implementation:** explicit Markdown link and title attributes now preserve
+  the same named/numeric entity forms that marked's `escape` preserves, while
+  bare URL attributes retain the narrower `&amp;` safety whitelist. ASCII
+  `)`/`]`/`}` are no longer boundaries merely because CJK follows them; a
+  confirmed CJK boundary is passed back through marked's `_backpedal`.
+- **Covering tests:** parser regressions for `/docs&sol;/...` and
+  `&amp;` titles, plus query values ending in each ASCII closer before CJK.

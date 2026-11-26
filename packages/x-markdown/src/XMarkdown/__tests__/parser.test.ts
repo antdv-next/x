@@ -86,6 +86,16 @@ describe("XMarkdown Parser (marked v16)", () => {
       },
     );
 
+    it.each([")", "]", "}"])(
+      "keeps an ASCII closer inside a URL query before CJK text: %s",
+      closer => {
+        const url = `https://example.com/search?q=版本${closer}中文`;
+        expect(new Parser().parse(`${url}，继续`)).toBe(
+          `<p><a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>，继续</p>`,
+        );
+      },
+    );
+
     // marked 的裸 `www.` 主机规则本身只认 ASCII 主机名，IDN 不产生链接；
     // 我们的覆写也不能把它截成 `www` 后重跑 tokenizer（那会静默吞掉仅有的链接）。
     it("leaves a bare www IDN host alone as marked does", () => {
@@ -171,6 +181,17 @@ describe("XMarkdown Parser (marked v16)", () => {
       const encoded = parser.parse("[x](https://a.com/?a=1&amp;b=2)");
       expect(encoded).toContain('href="https://a.com/?a=1&amp;b=2"');
       expect(domHref(encoded)).toBe("https://a.com/?a=1&b=2");
+    });
+
+    it("preserves named entities in explicit Markdown link attributes", () => {
+      const parser = new Parser();
+      const html = parser.parse('[说明](/docs&sol;guide "研发 &amp; 测试")');
+      const anchor = new DOMParser()
+        .parseFromString(html, "text/html")
+        .querySelector("a")!;
+
+      expect(anchor.getAttribute("href")).toBe("/docs/guide");
+      expect(anchor.getAttribute("title")).toBe("研发 & 测试");
     });
 
     it("does not change explicit markdown links with CJK punctuation in the destination", () => {
